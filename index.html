@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face Orchestra XR</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="app">
+      <div id="status">
+        <strong>Face Orchestra XR</strong>
+        <span>Enter AR/VR, then press A on the right controller to spawn.</span>
+      </div>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
