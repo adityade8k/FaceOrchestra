@@ -1,7 +1,7 @@
 export const MODEL_PATH = "./model/horn_gltf.glb";
 
-export const DEBUG_SHOW_COLLIDERS = false;
-export const DEBUG_SHOW_BOUNDING_BOXES = false;
+export const DEBUG_SHOW_COLLIDERS = true;
+export const DEBUG_SHOW_BOUNDING_BOXES = true;
 export const DEBUG_SHOW_RAYS = true;
 export const DEBUG_LOG_MORPHS = true;
 
@@ -56,8 +56,9 @@ export const XR_BUTTONS = {
 export const XR_OPTIONAL_FEATURES = ["local-floor", "bounded-floor", "dom-overlay"];
 
 export const INSTRUMENT_TEXTURE_PATHS = {
-  normalMap: "./textures/normal.jpg",
-  roughnessMap: "./textures/roughness.jpg",
+  baseMap: "./model/clown_horn_diffuse_map.png",
+  normalMap: "./model/Clay001_2K-JPG_NormalGL.jpg",
+  roughnessMap: "./model/Clay001_2K-JPG_Roughness_curves.png",
 };
 
 export const INTERACTION_COLLIDERS = [
@@ -137,11 +138,3 @@ export const SPATIAL_AUDIO_SETTINGS = {
     z: 0.62,
   },
 };
-
-export const INSTRUMENT_BASE_COLORS = [
-  { name: "Deep Slate", hex: 0x395e66 },
-  { name: "Mulberry", hex: 0x533b4d },
-  { name: "Seafoam", hex: 0x9cc4b2 },
-  { name: "Dusty Rose", hex: 0xc98ca7 },
-  { name: "Coral Pink", hex: 0xe76d83 },
-];

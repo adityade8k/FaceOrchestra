@@ -10,7 +10,6 @@ import {
   DEBUG_SHOW_RAYS,
   DEFAULT_INSTRUMENT_DISTANCE,
   EAR_DRAG_SENSITIVITY,
-  INSTRUMENT_BASE_COLORS,
   INSTRUMENT_BASE_SCALE,
   INSTRUMENT_TEXTURE_PATHS,
   INTERACTION_COLLIDERS,
@@ -92,7 +91,6 @@ const VOWEL_LETTERS_BY_MORPH = {
 };
 
 const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
-const FACE_MATERIAL_COLOR = INSTRUMENT_BASE_COLORS[0].hex;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
 const tempMatrix = new THREE.Matrix4();
@@ -165,15 +163,9 @@ export function applyStandardInstrumentMaterials(root, textures = {}) {
 }
 
 function makeStandardInstrumentMaterial(sourceMaterial, textures = {}) {
-  const sourceColor = sourceMaterial?.color;
-  const color =
-    sourceColor && sourceColor.r + sourceColor.g + sourceColor.b < 2.85
-      ? sourceColor
-      : new THREE.Color(FACE_MATERIAL_COLOR);
-
   return new THREE.MeshStandardMaterial({
-    color,
-    map: null,
+    color: 0xffffff,
+    map: textures.baseMap ?? null,
     normalMap: textures.normalMap ?? null,
     roughnessMap: textures.roughnessMap ?? null,
     roughness: textures.roughnessMap ? 1 : sourceMaterial?.roughness ?? 0.48,
@@ -183,42 +175,21 @@ function makeStandardInstrumentMaterial(sourceMaterial, textures = {}) {
 }
 
 async function loadInstrumentMaterialTextures(textureLoader) {
-  const [normalMap, roughnessMap] = await Promise.all([
+  const [baseMap, normalMap, roughnessMap] = await Promise.all([
+    textureLoader.loadAsync(INSTRUMENT_TEXTURE_PATHS.baseMap),
     textureLoader.loadAsync(INSTRUMENT_TEXTURE_PATHS.normalMap),
     textureLoader.loadAsync(INSTRUMENT_TEXTURE_PATHS.roughnessMap),
   ]);
 
-  for (const texture of [normalMap, roughnessMap]) {
+  baseMap.colorSpace = THREE.SRGBColorSpace;
+
+  for (const texture of [baseMap, normalMap, roughnessMap]) {
     texture.flipY = false;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
   }
 
-  return { normalMap, roughnessMap };
-}
-
-function getInstrumentBaseColor(index) {
-  return INSTRUMENT_BASE_COLORS[index % INSTRUMENT_BASE_COLORS.length];
-}
-
-function applyInstrumentInstanceBaseColor(root, colorHex) {
-  root.traverse((object) => {
-    if (!object.isMesh || object.userData.isHitTarget) {
-      return;
-    }
-
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    const instanceMaterials = materials.map((material) => {
-      const instanceMaterial = material.clone();
-      instanceMaterial.map = null;
-      if (instanceMaterial.color) {
-        instanceMaterial.color.setHex(colorHex);
-      }
-      return instanceMaterial;
-    });
-
-    object.material = Array.isArray(object.material) ? instanceMaterials : instanceMaterials[0];
-  });
+  return { baseMap, normalMap, roughnessMap };
 }
 
 function makeHitTargetMaterial(name) {
@@ -1340,10 +1311,6 @@ export class InstrumentController {
     const instrument = cloneSkeletonAware(this.instrumentTemplate);
     instrument.name = `FaceInstrument_${this.instrumentStates.length + 1}`;
     instrument.visible = true;
-    const baseColor = getInstrumentBaseColor(this.instrumentStates.length);
-    instrument.userData.baseColorName = baseColor.name;
-    instrument.userData.baseColorHex = baseColor.hex;
-    applyInstrumentInstanceBaseColor(instrument, baseColor.hex);
     instrument.traverse((object) => {
       delete object.userData.instrumentState;
     });
