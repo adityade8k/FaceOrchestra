@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { ARButton } from "three/addons/webxr/ARButton.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
-import { InstrumentController } from "./InstrumentController.js";
-import { VowelSynth } from "./VowelSynth.js";
+import { MODEL_PATH, XR_OPTIONAL_FEATURES } from "./config.js";
+import { InstrumentController } from "./instrument/InstrumentController.js";
+import { VowelSynth } from "./audio/VowelSynth.js";
 
 const app = document.querySelector("#app");
 const status = document.querySelector("#status span");
@@ -44,7 +45,7 @@ instrumentController
   })
   .catch((error) => {
     console.error(error);
-    status.textContent = "Could not load models/scene/honk.gltf. Check the model path and console.";
+    status.textContent = `Could not load ${MODEL_PATH}. Check the model path and console.`;
   });
 
 renderer.xr.addEventListener("sessionstart", () => {
@@ -92,7 +93,7 @@ async function setupXRButton() {
   if (supportsAR) {
     document.body.appendChild(
       ARButton.createButton(renderer, {
-        optionalFeatures: ["local-floor", "bounded-floor", "dom-overlay"],
+        optionalFeatures: XR_OPTIONAL_FEATURES,
         domOverlay: { root: document.body },
       }),
     );
