@@ -22,6 +22,7 @@ import {
   SHOW_INSTRUCTION_PANEL,
   SPATIAL_AUDIO_SETTINGS,
   SPAWN_DISTANCE,
+  SPAWN_Y_OFFSET,
   SQUEEZE_SENSITIVITY,
   XR_BUTTONS,
 } from "../config.js";
@@ -99,6 +100,8 @@ const tempVector = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
 const tempScale = new THREE.Vector3();
 const tempPanelTarget = new THREE.Vector3();
+const tempSpawnForward = new THREE.Vector3();
+const tempSpawnTarget = new THREE.Vector3();
 const tempBox = new THREE.Box3();
 const tempBoxA = new THREE.Box3();
 const tempBoxB = new THREE.Box3();
@@ -1318,7 +1321,7 @@ export class InstrumentController {
     }
 
     const instrument = this.createSpawnedInstrument();
-    this.positionObjectInFrontOfCamera(instrument, SPAWN_DISTANCE, false);
+    this.positionObjectInFrontOfCamera(instrument, SPAWN_DISTANCE);
     instrument.scale.setScalar(INSTRUMENT_BASE_SCALE);
   }
 
@@ -1328,7 +1331,7 @@ export class InstrumentController {
     }
 
     const instrument = this.createSpawnedInstrument();
-    this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE, false);
+    this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE);
     instrument.position.y -= 0.38;
     instrument.scale.setScalar(INSTRUMENT_BASE_SCALE);
   }
@@ -1354,18 +1357,25 @@ export class InstrumentController {
     return instrument;
   }
 
-  positionObjectInFrontOfCamera(object, distance, rotateToFaceUser = true) {
+  positionObjectInFrontOfCamera(object, distance) {
     const userCamera = this.getUserCamera();
     userCamera.updateMatrixWorld(true);
     userCamera.getWorldPosition(tempVector);
-    userCamera.getWorldDirection(tempScale);
-    object.position.copy(tempVector).addScaledVector(tempScale, distance);
-    object.position.y -= 0.08;
-    userCamera.getWorldQuaternion(tempQuaternion);
-    object.quaternion.copy(tempQuaternion);
-    if (rotateToFaceUser) {
-      object.rotateY(Math.PI);
+    userCamera.getWorldDirection(tempSpawnForward);
+
+    tempSpawnForward.y = 0;
+    if (tempSpawnForward.lengthSq() < 0.0001) {
+      tempSpawnForward.set(0, 0, -1);
+    } else {
+      tempSpawnForward.normalize();
     }
+
+    object.position.copy(tempVector).addScaledVector(tempSpawnForward, distance);
+    object.position.y = tempVector.y + SPAWN_Y_OFFSET;
+
+    tempSpawnTarget.copy(tempVector);
+    tempSpawnTarget.y = object.position.y;
+    object.lookAt(tempSpawnTarget);
   }
 
   positionPanelInFrontOfCamera(object, distance) {
