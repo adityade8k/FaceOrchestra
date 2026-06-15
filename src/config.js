@@ -2,7 +2,7 @@ export const MODEL_PATH = "./model/horn_gltf.glb";
 
 export const DEBUG_SHOW_COLLIDERS = false;
 export const DEBUG_SHOW_BOUNDING_BOXES = false;
-export const DEBUG_SHOW_RAYS = false;
+export const DEBUG_SHOW_RAYS = true;
 export const DEBUG_LOG_MORPHS = true;
 
 export const MORPH_TARGET_NAMES = {

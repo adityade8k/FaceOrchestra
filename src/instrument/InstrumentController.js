@@ -319,9 +319,12 @@ export class InstrumentController {
       color: RAY_COLOR_DEFAULT,
       transparent: true,
       opacity: 0.88,
+      depthTest: false,
+      depthWrite: false,
     });
     const line = new THREE.Line(geometry, material);
     line.name = "ControllerRay";
+    line.renderOrder = 1000;
     line.visible = false;
     return line;
   }
