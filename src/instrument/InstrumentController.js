@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkeletonAware } from "three/addons/utils/SkeletonUtils.js";
 import {
+  BEND_COLLIDER_ROTATION_DEGREES,
   BEND_SENSITIVITY,
   BEND_SMOOTHING,
   DEBUG_LOG_MORPHS,
@@ -26,6 +27,7 @@ import {
   XR_BUTTONS,
 } from "../config.js";
 import { DebugVisuals } from "../debug/DebugVisuals.js";
+import { setChordBounds } from "./ChordBounds.js";
 import { MorphTargetController } from "./MorphTargetController.js";
 
 export const DEBUG_SHOW_HIT_TARGETS = DEBUG_SHOW_COLLIDERS;
@@ -93,9 +95,12 @@ const VOWEL_LETTERS_BY_MORPH = {
 const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
+const BEND_ALIGNED_COLLIDER_GROUP_NAME = "BEND_aligned_interaction_colliders";
 const tempMatrix = new THREE.Matrix4();
 const tempVector = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
+const tempBendQuaternion = new THREE.Quaternion();
+const tempBendEuler = new THREE.Euler();
 const tempScale = new THREE.Vector3();
 const tempPanelTarget = new THREE.Vector3();
 const tempSpawnForward = new THREE.Vector3();
@@ -105,7 +110,6 @@ const tempBoxA = new THREE.Box3();
 const tempBoxB = new THREE.Box3();
 const tempBoxCenter = new THREE.Vector3();
 const tempBoxSize = new THREE.Vector3();
-const tempBoxScaleSize = new THREE.Vector3();
 const tempAudioPosition = new THREE.Vector3();
 const tempAudioForward = new THREE.Vector3();
 const tempAudioUp = new THREE.Vector3();
@@ -433,8 +437,9 @@ export class InstrumentController {
       targetBendValue: 0,
       activeBends: new Map(),
     };
+    state.bendAlignedColliderGroup = root.getObjectByName(BEND_ALIGNED_COLLIDER_GROUP_NAME) || null;
     state.morphController = new MorphTargetController(root);
-    state.debugVisuals = DEBUG_SHOW_BOUNDING_BOXES ? new DebugVisuals(root, hitTargets) : null;
+    state.debugVisuals = DEBUG_SHOW_BOUNDING_BOXES ? new DebugVisuals(root) : null;
     this.nextInstrumentId += 1;
 
     if (attachToHitTargets) {
@@ -487,11 +492,17 @@ export class InstrumentController {
     tempBox.getSize(tempBoxSize);
 
     const maxSize = Math.max(tempBoxSize.x, tempBoxSize.y, tempBoxSize.z);
+    const bendAlignedGroup = new THREE.Group();
+    bendAlignedGroup.name = BEND_ALIGNED_COLLIDER_GROUP_NAME;
+    bendAlignedGroup.position.copy(tempBoxCenter);
+    root.add(bendAlignedGroup);
 
     for (const target of PROCEDURAL_MORPH_TARGET_SPHERES) {
+      const parent = this.isBendAlignedTarget(target) ? bendAlignedGroup : root;
       const radius = maxSize * target.size;
       const travel = tempBoxSize.y * target.movementRange;
       const neutralY = tempBoxCenter.y + target.y * tempBoxSize.y;
+      const parentOffsetY = parent === bendAlignedGroup ? bendAlignedGroup.position.y : 0;
       const sphere = new THREE.Mesh(
         new THREE.SphereGeometry(radius, 24, 16),
         new THREE.MeshBasicMaterial({
@@ -512,16 +523,16 @@ export class InstrumentController {
       sphere.userData.invertVerticalMorph = Boolean(target.invertVerticalMorph);
       sphere.material.wireframe = DEBUG_SHOW_COLLIDERS;
       sphere.renderOrder = 20;
-      sphere.userData.neutralY = neutralY;
-      sphere.userData.minY = neutralY - travel;
-      sphere.userData.maxY = neutralY + travel;
+      sphere.userData.neutralY = neutralY - parentOffsetY;
+      sphere.userData.minY = neutralY - travel - parentOffsetY;
+      sphere.userData.maxY = neutralY + travel - parentOffsetY;
       sphere.position.set(
-        tempBoxCenter.x + target.x * tempBoxSize.x,
-        neutralY,
-        tempBoxCenter.z + target.z * tempBoxSize.z,
+        tempBoxCenter.x + target.x * tempBoxSize.x - (parent === bendAlignedGroup ? bendAlignedGroup.position.x : 0),
+        neutralY - parentOffsetY,
+        tempBoxCenter.z + target.z * tempBoxSize.z - (parent === bendAlignedGroup ? bendAlignedGroup.position.z : 0),
       );
 
-      root.add(sphere);
+      parent.add(sphere);
       hitTargets[target.name] = sphere;
     }
 
@@ -529,6 +540,10 @@ export class InstrumentController {
       "Procedural morph target spheres:",
       PROCEDURAL_MORPH_TARGET_SPHERES.map((target) => target.name),
     );
+  }
+
+  isBendAlignedTarget(target) {
+    return target.type === "ear" || target.type === "nose";
   }
 
   initializeInstrumentState(state) {
@@ -731,6 +746,7 @@ export class InstrumentController {
       }
     }
 
+    instrumentState.debugVisuals?.dispose();
     instrumentState.root.removeFromParent();
     this.instrumentStates = this.instrumentStates.filter((state) => state !== instrumentState);
 
@@ -780,13 +796,16 @@ export class InstrumentController {
 
     if (config.type === "holdSqueeze") {
       const voiceId = this.getControllerVoiceId(controller);
+      controller.updateMatrixWorld(true);
+      const bendStartQuaternion = controller.getWorldQuaternion(new THREE.Quaternion());
       controllerState.activeTriggerInteraction = {
         type: "holdSqueeze",
         targetName,
         instrumentState,
         voiceId,
         activeVoiceIds: new Set(),
-        bendStartX: controller.position.x,
+        bendStartQuaternion,
+        bendStartInverseQuaternion: bendStartQuaternion.clone().invert(),
       };
       return;
     }
@@ -974,11 +993,7 @@ export class InstrumentController {
     for (const { interaction, controller } of activeHoldInteractions) {
       const chain = this.getTouchingInstrumentChain(interaction.instrumentState);
       const desiredVoiceIds = new Set();
-      const bendAmount = THREE.MathUtils.clamp(
-        (controller.position.x - interaction.bendStartX) * BEND_SENSITIVITY,
-        -1,
-        1,
-      );
+      const bendAmount = this.getControllerRollBend(controller, interaction);
 
       for (const chainState of chain) {
         const voiceId = this.getInstrumentVoiceId(interaction.voiceId, chainState);
@@ -1011,6 +1026,7 @@ export class InstrumentController {
       state.targetBendValue = state.hornHolders.size > 0 ? THREE.MathUtils.clamp(bendSum, -1, 1) : 0;
       state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
       state.morphController.setBend(state.bendValue);
+      this.updateBendAlignedColliders(state);
 
       const pulse = 1 + state.hornSqueezeValue * 0.035;
       state.root.scale.setScalar(INSTRUMENT_BASE_SCALE * pulse);
@@ -1026,8 +1042,8 @@ export class InstrumentController {
           hornAmount: synthState.hornSqueezeValue,
           spatialGain: 1,
           masterGain: SPATIAL_AUDIO_SETTINGS.masterGain,
-          leftEar: Math.abs(synthState.morphController.getEarAmount("left")),
-          rightEar: Math.abs(synthState.morphController.getEarAmount("right")),
+          leftEar: synthState.morphController.getEarAmount("left"),
+          rightEar: synthState.morphController.getEarAmount("right"),
           nose: synthState.morphController.getValue(MORPH_TARGET_NAMES.nose),
           vowel: synthState.currentVowelLetter === "neutral" ? "A" : synthState.currentVowelLetter,
           pitchBendSemitones,
@@ -1035,6 +1051,23 @@ export class InstrumentController {
         this.updateInstrumentSpatialVoice(voiceId, synthState);
       }
     }
+  }
+
+  updateBendAlignedColliders(state) {
+    if (!state.bendAlignedColliderGroup) {
+      return;
+    }
+
+    state.bendAlignedColliderGroup.rotation.z =
+      state.bendValue * THREE.MathUtils.degToRad(BEND_COLLIDER_ROTATION_DEGREES);
+  }
+
+  getControllerRollBend(controller, interaction) {
+    controller.updateMatrixWorld(true);
+    controller.getWorldQuaternion(tempBendQuaternion);
+    tempBendQuaternion.premultiply(interaction.bendStartInverseQuaternion);
+    tempBendEuler.setFromQuaternion(tempBendQuaternion, "XYZ");
+    return THREE.MathUtils.clamp(tempBendEuler.z * BEND_SENSITIVITY, -1, 1);
   }
 
   updateAudioListener() {
@@ -1126,53 +1159,12 @@ export class InstrumentController {
   }
 
   areInstrumentBodyCollidersTouching(firstState, secondState) {
-    this.setInstrumentHitBodyBounds(firstState, tempBoxA).expandByScalar(SPATIAL_AUDIO_SETTINGS.contactChainMargin);
-    this.setInstrumentHitBodyBounds(secondState, tempBoxB).expandByScalar(SPATIAL_AUDIO_SETTINGS.contactChainMargin);
+    setChordBounds(firstState.root, tempBoxA);
+    setChordBounds(secondState.root, tempBoxB);
     if (tempBoxA.isEmpty() || tempBoxB.isEmpty()) {
       return false;
     }
     return tempBoxA.intersectsBox(tempBoxB);
-  }
-
-  setInstrumentHitBodyBounds(instrumentState, targetBox) {
-    const bodyTarget = instrumentState.hitTargets.HIT_body;
-    targetBox.makeEmpty();
-
-    if (bodyTarget) {
-      bodyTarget.updateWorldMatrix(true, false);
-      targetBox.setFromObject(bodyTarget);
-      this.shrinkBoxForContactChain(targetBox);
-      return targetBox;
-    }
-
-    return this.setInstrumentVisibleBounds(instrumentState, targetBox);
-  }
-
-  shrinkBoxForContactChain(targetBox) {
-    if (targetBox.isEmpty()) {
-      return;
-    }
-
-    targetBox.getCenter(tempBoxCenter);
-    targetBox.getSize(tempBoxSize);
-    tempBoxScaleSize.set(
-      tempBoxSize.x * SPATIAL_AUDIO_SETTINGS.contactChainBoxScale.x,
-      tempBoxSize.y * SPATIAL_AUDIO_SETTINGS.contactChainBoxScale.y,
-      tempBoxSize.z * SPATIAL_AUDIO_SETTINGS.contactChainBoxScale.z,
-    );
-    targetBox.setFromCenterAndSize(tempBoxCenter, tempBoxScaleSize);
-  }
-
-  setInstrumentVisibleBounds(instrumentState, targetBox) {
-    targetBox.makeEmpty();
-    instrumentState.root.updateWorldMatrix(true, true);
-    instrumentState.root.traverse((object) => {
-      if (!object.isMesh || object.userData.isHitTarget) {
-        return;
-      }
-      targetBox.expandByObject(object);
-    });
-    return targetBox;
   }
 
   updateRaycastHover() {

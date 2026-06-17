@@ -1,7 +1,7 @@
 export const MODEL_PATH = "./model/horn_gltf.glb";
 
-export const DEBUG_SHOW_COLLIDERS = true;
-export const DEBUG_SHOW_BOUNDING_BOXES = true;
+export const DEBUG_SHOW_COLLIDERS = false;
+export const DEBUG_SHOW_BOUNDING_BOXES = false;
 export const DEBUG_SHOW_RAYS = true;
 export const DEBUG_LOG_MORPHS = true;
 
@@ -34,14 +34,27 @@ export const INTERACTION_TARGET_NAMES = {
   body: "HIT_body",
 };
 
-export const BEND_SENSITIVITY = 5.5;
+export const BEND_SENSITIVITY = 2.5;
 export const BEND_SMOOTHING = 0.18;
+export const BEND_COLLIDER_ROTATION_DEGREES = -18;
 export const MAX_PITCH_BEND_SEMITONES = 4;
 export const SQUEEZE_SENSITIVITY = 0.18;
 export const EAR_DRAG_SENSITIVITY = 1.8;
 export const NOSE_DRAG_SENSITIVITY = 1.8;
 
-export const INSTRUMENT_BASE_SCALE = 1.8;
+export const NASALITY_SETTINGS = {
+  oralReductionAtMax: 0.55,
+  lowGainAtMax: 1.25,
+  highGainAtMax: 0.65,
+  highFrequencyLiftAtMax: 260,
+};
+export const CHORD_BOX_SCALE = {
+  x: 0.55,
+  y: 0.75,
+  z: 0.55,
+};
+
+export const INSTRUMENT_BASE_SCALE = 3.5;
 export const SPAWN_DISTANCE = 0.75;
 export const DEFAULT_INSTRUMENT_DISTANCE = 1.05;
 export const SPAWN_Y_OFFSET = -0.12;
@@ -68,20 +81,20 @@ export const INTERACTION_COLLIDERS = [
     side: "left",
     invertVerticalMorph: false,
     size: 0.045,
-    x: -0.22,
+    x: -0.2,
     y: 0.22,
     z: 0,
-    movementRange: 0.05,
+    movementRange: 0.04,
     color: 0x72d572,
   },
   {
     name: INTERACTION_TARGET_NAMES.nose,
     type: "nose",
-    size: 0.035,
+    size: 0.045,
     x: 0,
-    y: 0.22,
-    z: 0.21,
-    movementRange: 0.05,
+    y: 0.21,
+    z: 0.20,
+    movementRange: 0.03,
     color: 0x5ac8fa,
   },
   {
@@ -90,18 +103,18 @@ export const INTERACTION_COLLIDERS = [
     side: "right",
     invertVerticalMorph: false,
     size: 0.045,
-    x: 0.22,
-    y: 0.21,
+    x: 0.2,
+    y: 0.215,
     z: 0,
-    movementRange: 0.05,
+    movementRange: 0.04,
     color: 0x9e8cff,
   },
   {
     name: INTERACTION_TARGET_NAMES.mouth,
     type: "mouth",
-    size: 0.035,
+    size: 0.03,
     x: 0,
-    y: 0.15,
+    y: 0.12,
     z: 0.12,
     movementRange: 0,
     color: 0xf0a23c,
@@ -130,11 +143,5 @@ export const SPATIAL_AUDIO_SETTINGS = {
     coneInnerAngle: 35,
     coneOuterAngle: 110,
     coneOuterGain: 0.02,
-  },
-  contactChainMargin: 0,
-  contactChainBoxScale: {
-    x: 0.62,
-    y: 0.62,
-    z: 0.62,
   },
 };

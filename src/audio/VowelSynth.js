@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { NASALITY_SETTINGS } from "../config.js";
 
 export const FORMANTS = {
   A: { freq: [800, 1300, 2500], gain: [1.0, 0.62, 0.28], q: [10, 16, 18] },
@@ -12,6 +13,8 @@ export const VOWEL_ROUNDNESS = {
   O: { freq: 610, gain: 0.34, q: 10 },
   U: { freq: 420, gain: 0.42, q: 12 },
 };
+
+const F4_FREQUENCY = 349.23;
 
 export class VowelSynth {
   constructor() {
@@ -54,7 +57,7 @@ export class VowelSynth {
     const nasalHighGain = this.audioCtx.createGain();
 
     source.type = "sawtooth";
-    source.frequency.setValueAtTime(140, now);
+    source.frequency.setValueAtTime(F4_FREQUENCY, now);
 
     vibrato.type = "sine";
     vibrato.frequency.setValueAtTime(5.2, now);
@@ -212,15 +215,19 @@ export class VowelSynth {
     }
 
     const now = this.audioCtx.currentTime;
-    const pitchNorm = THREE.MathUtils.clamp(leftEar, 0, 1);
-    const brightness = THREE.MathUtils.clamp(rightEar, 0, 1);
+    const pitchControl = THREE.MathUtils.clamp(leftEar, -1, 1);
+    const octaveControl = THREE.MathUtils.clamp(rightEar, -1, 1);
     const nasalAmount = THREE.MathUtils.clamp(nose, 0, 1);
-    const octave = [0.5, 1, 2, 4][Math.round(brightness * 3)];
-    const frequency = THREE.MathUtils.lerp(80, 320, pitchNorm) * octave;
+    const octave = THREE.MathUtils.mapLinear(octaveControl, -1, 1, 2, 6);
+    const pitchSemitones =
+      pitchControl < 0
+        ? THREE.MathUtils.mapLinear(pitchControl, -1, 0, -5, 0)
+        : THREE.MathUtils.mapLinear(pitchControl, 0, 1, 0, 7);
+    const frequency = F4_FREQUENCY * 2 ** (pitchSemitones / 12) * 2 ** (octave - 4);
     if (pitchBendSemitones !== null) {
       voice.pitchBendSemitones = pitchBendSemitones;
     }
-    const detune = THREE.MathUtils.lerp(-12, 18, brightness) + voice.pitchBendSemitones * 100;
+    const detune = voice.pitchBendSemitones * 100;
     const gain = Math.max(
       0.0001,
       hornAmount * 0.72 * THREE.MathUtils.clamp(spatialGain, 0, 1) * Math.max(masterGain, 0),
@@ -228,12 +235,12 @@ export class VowelSynth {
 
     voice.source.frequency.setTargetAtTime(frequency, now, 0.035);
     voice.source.detune.setTargetAtTime(detune, now, 0.045);
-    voice.vibrato.frequency.setTargetAtTime(5.2 + brightness * 1.6, now, 0.06);
+    voice.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);
     voice.master.gain.setTargetAtTime(gain, now, 0.035);
-    voice.oralMix.gain.setTargetAtTime(1 - nasalAmount * 0.22, now, 0.05);
-    voice.nasalLowGain.gain.setTargetAtTime(0.0001 + nasalAmount * 0.67, now, 0.05);
-    voice.nasalHigh.frequency.setTargetAtTime(1150 + nasalAmount * 180, now, 0.05);
-    voice.nasalHighGain.gain.setTargetAtTime(0.0001 + nasalAmount * 0.3, now, 0.05);
+    voice.oralMix.gain.setTargetAtTime(1 - nasalAmount * NASALITY_SETTINGS.oralReductionAtMax, now, 0.05);
+    voice.nasalLowGain.gain.setTargetAtTime(0.0001 + nasalAmount * NASALITY_SETTINGS.lowGainAtMax, now, 0.05);
+    voice.nasalHigh.frequency.setTargetAtTime(1150 + nasalAmount * NASALITY_SETTINGS.highFrequencyLiftAtMax, now, 0.05);
+    voice.nasalHighGain.gain.setTargetAtTime(0.0001 + nasalAmount * NASALITY_SETTINGS.highGainAtMax, now, 0.05);
   }
 
   updateListener({ position, forward, up }) {
