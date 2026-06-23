@@ -60,7 +60,7 @@ export const INSTRUMENT_BASE_SCALE = 2.5;
 export const SPAWN_DISTANCE = 0.75;
 export const DEFAULT_INSTRUMENT_DISTANCE = 1.05;
 export const SPAWN_Y_OFFSET = -0.12;
-export const SHOW_INSTRUCTION_PANEL = true;
+export const SHOW_INSTRUCTION_PANEL = false;
 
 export const SPAWN_COMPONENT_OPTIONS = [
   {
