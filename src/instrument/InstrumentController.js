@@ -6,6 +6,7 @@ import {
   BEND_SENSITIVITY,
   BEND_SMOOTHING,
   DEBUG_LOG_MORPHS,
+  DEBUG_LOG_RAYCAST,
   DEBUG_SHOW_BOUNDING_BOXES,
   DEBUG_SHOW_COLLIDERS,
   DEBUG_SHOW_RAYS,
@@ -21,6 +22,7 @@ import {
   NOSE_DRAG_SENSITIVITY,
   SHOW_INSTRUCTION_PANEL,
   SPATIAL_AUDIO_SETTINGS,
+  SPAWN_COMPONENT_OPTIONS,
   SPAWN_DISTANCE,
   SPAWN_Y_OFFSET,
   SQUEEZE_SENSITIVITY,
@@ -31,7 +33,7 @@ import { setChordBounds } from "./ChordBounds.js";
 import { MorphTargetController } from "./MorphTargetController.js";
 
 export const DEBUG_SHOW_HIT_TARGETS = DEBUG_SHOW_COLLIDERS;
-export const DEBUG_RAYCAST = DEBUG_SHOW_RAYS;
+export const DEBUG_RAYCAST = DEBUG_LOG_RAYCAST;
 
 export const MORPH_TARGETS = {
   nose: MORPH_TARGET_NAMES.nose,
@@ -96,14 +98,35 @@ const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
 const BEND_ALIGNED_COLLIDER_GROUP_NAME = "BEND_aligned_interaction_colliders";
+const RADIAL_MENU_RADIUS = 0.18;
+const RADIAL_MENU_INNER_RADIUS = 0.035;
+const RADIAL_MENU_DISTANCE = 0.22;
+const RADIAL_MENU_ROLL_STEP = THREE.MathUtils.degToRad(32);
+const RADIAL_MENU_ROLL_DEADZONE = THREE.MathUtils.degToRad(9);
+const RADIAL_MENU_BASE_OPACITY = 0.38;
+const RADIAL_MENU_HIGHLIGHT_OPACITY = 0.88;
+const C_MAJOR_SCALE_PRESET = [
+  { label: "C", semitonesFromF: -5 },
+  { label: "D", semitonesFromF: -3 },
+  { label: "E", semitonesFromF: -1 },
+  { label: "F", semitonesFromF: 0 },
+  { label: "G", semitonesFromF: 2 },
+  { label: "A", semitonesFromF: 4 },
+  { label: "B", semitonesFromF: 6 },
+  { label: "C", semitonesFromF: 7 },
+];
+const SCALE_PRESET_SPACING = 0.32;
 const tempMatrix = new THREE.Matrix4();
 const tempVector = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
+const tempRadialQuaternion = new THREE.Quaternion();
+const tempRadialEuler = new THREE.Euler();
 const tempBendQuaternion = new THREE.Quaternion();
 const tempBendEuler = new THREE.Euler();
 const tempScale = new THREE.Vector3();
 const tempPanelTarget = new THREE.Vector3();
 const tempSpawnForward = new THREE.Vector3();
+const tempSpawnRight = new THREE.Vector3();
 const tempSpawnTarget = new THREE.Vector3();
 const tempBox = new THREE.Box3();
 const tempBoxA = new THREE.Box3();
@@ -197,13 +220,15 @@ async function loadInstrumentMaterialTextures(textureLoader) {
 }
 
 function makeHitTargetMaterial(name) {
-  return new THREE.MeshBasicMaterial({
+  const material = new THREE.MeshBasicMaterial({
     color: getHitTargetColor(name),
     transparent: true,
     opacity: HIT_MARKER_OPACITY,
     depthWrite: false,
     wireframe: DEBUG_SHOW_COLLIDERS,
   });
+  material.userData.disposeOnInstrumentDelete = true;
+  return material;
 }
 
 function getHitTargetColor(name) {
@@ -226,8 +251,11 @@ export class InstrumentController {
     this.loader = new GLTFLoader();
     this.textureLoader = new THREE.TextureLoader();
     this.raycaster = new THREE.Raycaster();
+    this.raycastTargets = [];
+    this.raycastIntersections = [];
 
     this.instrumentTemplate = null;
+    this.componentTemplates = new Map();
     this.instrumentMaterialTextures = null;
     this.nextInstrumentId = 1;
     this.instrumentStates = [];
@@ -268,6 +296,9 @@ export class InstrumentController {
       const rayLine = this.createRayLine();
       controller.add(rayLine);
       controller.userData.rayLine = rayLine;
+      const radialMenu = this.createRadialMenu();
+      controller.add(radialMenu);
+      controller.userData.radialMenu = radialMenu;
 
       this.controllers.push(controller);
       this.controllerStates.set(controller, {
@@ -280,6 +311,15 @@ export class InstrumentController {
         gripHeld: false,
         gripInstrumentState: null,
         gripOffsetMatrix: new THREE.Matrix4(),
+        raySqueezeVoiceId: null,
+        raySqueezeActiveVoiceIds: new Set(),
+        raySqueezeInstrumentState: null,
+        raySqueezeStartQuaternion: new THREE.Quaternion(),
+        raySqueezeStartInverseQuaternion: new THREE.Quaternion(),
+        radialMenuOpen: false,
+        radialMenuCancelled: false,
+        radialMenuSelectedIndex: 0,
+        radialMenuStartQuaternion: new THREE.Quaternion(),
       });
       this.scene.add(controller);
 
@@ -307,6 +347,85 @@ export class InstrumentController {
     return line;
   }
 
+  createRadialMenu() {
+    const group = new THREE.Group();
+    group.name = "SpawnRadialMenu";
+    group.position.set(0, 0, -RADIAL_MENU_DISTANCE);
+    group.visible = false;
+    group.renderOrder = 1100;
+    group.userData.segments = [];
+
+    const optionCount = Math.max(SPAWN_COMPONENT_OPTIONS.length, 1);
+    const arc = (Math.PI * 2) / optionCount;
+    const startOffset = Math.PI / 2;
+
+    SPAWN_COMPONENT_OPTIONS.forEach((option, index) => {
+      const startAngle = startOffset - index * arc;
+      const endAngle = startAngle - arc;
+      const segment = new THREE.Mesh(
+        this.createRadialSegmentGeometry(startAngle, endAngle),
+        new THREE.MeshBasicMaterial({
+          color: option.color,
+          transparent: true,
+          opacity: RADIAL_MENU_BASE_OPACITY,
+          side: THREE.DoubleSide,
+          depthTest: false,
+          depthWrite: false,
+        }),
+      );
+      segment.name = `SpawnRadialSegment_${option.id}`;
+      segment.renderOrder = 1100;
+      group.add(segment);
+      group.userData.segments.push(segment);
+
+      const label = this.createRadialMenuLabel(option.label);
+      const midAngle = (startAngle + endAngle) * 0.5;
+      const labelRadius = RADIAL_MENU_RADIUS * 0.64;
+      label.position.set(Math.cos(midAngle) * labelRadius, Math.sin(midAngle) * labelRadius, 0.006);
+      group.add(label);
+    });
+
+    return group;
+  }
+
+  createRadialSegmentGeometry(startAngle, endAngle) {
+    const shape = new THREE.Shape();
+    shape.moveTo(Math.cos(startAngle) * RADIAL_MENU_INNER_RADIUS, Math.sin(startAngle) * RADIAL_MENU_INNER_RADIUS);
+    shape.lineTo(Math.cos(startAngle) * RADIAL_MENU_RADIUS, Math.sin(startAngle) * RADIAL_MENU_RADIUS);
+    shape.absarc(0, 0, RADIAL_MENU_RADIUS, startAngle, endAngle, true);
+    shape.lineTo(Math.cos(endAngle) * RADIAL_MENU_INNER_RADIUS, Math.sin(endAngle) * RADIAL_MENU_INNER_RADIUS);
+    shape.absarc(0, 0, RADIAL_MENU_INNER_RADIUS, endAngle, startAngle, false);
+    shape.closePath();
+    return new THREE.ShapeGeometry(shape, 36);
+  }
+
+  createRadialMenuLabel(labelText) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 96;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#10100e";
+    ctx.font = "700 34px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(labelText, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.042), material);
+    label.name = `SpawnRadialLabel_${labelText}`;
+    label.renderOrder = 1110;
+    return label;
+  }
+
   createInstructionPanel() {
     const panelGroup = new THREE.Group();
     panelGroup.name = "InstructionPanel";
@@ -331,7 +450,9 @@ export class InstrumentController {
     ctx.fillStyle = "rgba(247, 239, 226, 0.92)";
     const lines = [
       "Close this panel to spawn the first face instrument.",
-      "After closing, press A on the right controller to spawn another.",
+      "After closing, hold A to open the spawn menu.",
+      "Rotate your wrist to highlight Honk, Honk C, or Looper, then release A.",
+      "Press grip while the menu is open to cancel.",
       "Aim at the mouth and press trigger to cycle vowels.",
       "Aim at the horn and hold trigger to squeeze and play sound.",
       "Aim at ears or nose and hold trigger, then move up/down.",
@@ -394,7 +515,8 @@ export class InstrumentController {
   }
 
   async loadInstrument() {
-    const gltf = await this.loader.loadAsync(MODEL_PATH);
+    const honkOption = SPAWN_COMPONENT_OPTIONS.find((option) => option.id === "honk") || SPAWN_COMPONENT_OPTIONS[0];
+    const gltf = await this.loader.loadAsync(honkOption.modelPath || MODEL_PATH);
     this.instrumentMaterialTextures = await loadInstrumentMaterialTextures(this.textureLoader);
     this.instrumentTemplate = gltf.scene;
     this.instrumentTemplate.name = "FaceInstrumentTemplate";
@@ -414,6 +536,42 @@ export class InstrumentController {
 
     this.logModelDiagnostics(templateState);
     this.initializeInstrumentState(templateState);
+    this.componentTemplates.set(honkOption.id, {
+      ...honkOption,
+      template: this.instrumentTemplate,
+      interactive: true,
+    });
+
+    for (const variantOption of SPAWN_COMPONENT_OPTIONS.filter((option) => option.variantOf === honkOption.id)) {
+      this.componentTemplates.set(variantOption.id, {
+        ...variantOption,
+        template: this.instrumentTemplate,
+        interactive: true,
+      });
+    }
+
+    await Promise.all(
+      SPAWN_COMPONENT_OPTIONS.filter((option) => option.id !== honkOption.id && !option.variantOf).map((option) =>
+        this.loadStaticComponentTemplate(option),
+      ),
+    );
+  }
+
+  async loadStaticComponentTemplate(option) {
+    const gltf = await this.loader.loadAsync(option.modelPath);
+    const template = gltf.scene;
+    template.name = `${option.label}Template`;
+    template.visible = false;
+
+    const templateHitTargets = collectHitTargets(template);
+    this.createBodyGripTarget(template, templateHitTargets);
+    this.createInstrumentState(template, findMorphMesh(template), templateHitTargets, false);
+
+    this.componentTemplates.set(option.id, {
+      ...option,
+      template,
+      interactive: false,
+    });
   }
 
   createInstrumentState(
@@ -438,7 +596,9 @@ export class InstrumentController {
       activeBends: new Map(),
     };
     state.bendAlignedColliderGroup = root.getObjectByName(BEND_ALIGNED_COLLIDER_GROUP_NAME) || null;
-    state.morphController = new MorphTargetController(root);
+    state.morphController = new MorphTargetController(root, {
+      warnMissingExpectedMorphs: this.hasExpectedHonkMorphs(morphMeshes),
+    });
     state.debugVisuals = DEBUG_SHOW_BOUNDING_BOXES ? new DebugVisuals(root) : null;
     this.nextInstrumentId += 1;
 
@@ -451,6 +611,10 @@ export class InstrumentController {
     }
 
     return state;
+  }
+
+  hasExpectedHonkMorphs(morphMeshes) {
+    return morphMeshes.some((mesh) => mesh.morphTargetDictionary?.[MORPH_TARGET_NAMES.squeeze] !== undefined);
   }
 
   createBodyGripTarget(root, hitTargets) {
@@ -591,6 +755,48 @@ export class InstrumentController {
     }
   }
 
+  onXRSessionEnd() {
+    this.hideInstructionPanel();
+    this.pendingPanelPlacementFrames = 0;
+
+    for (const controller of this.controllers) {
+      const state = this.controllerStates.get(controller);
+      if (!state) {
+        continue;
+      }
+
+      if (state.hoveredTarget) {
+        this.setTargetHighlight(state.hoveredTarget, false);
+      }
+      this.releaseRaySqueeze(state);
+      this.closeRadialMenu(controller);
+
+      state.trigger = false;
+      state.grip = false;
+      state.a = false;
+      state.x = false;
+      state.hoveredTarget = null;
+      state.activeTriggerInteraction = null;
+      state.gripHeld = false;
+      state.gripInstrumentState = null;
+      state.raySqueezeVoiceId = null;
+      state.raySqueezeInstrumentState = null;
+      controller.userData.gamepad = null;
+
+      if (controller.userData.rayLine) {
+        controller.userData.rayLine.visible = false;
+      }
+    }
+
+    for (const state of this.instrumentStates) {
+      state.hornHolders.clear();
+      state.activeBends.clear();
+      state.targetBendValue = 0;
+    }
+
+    this.synth.releaseAll();
+  }
+
   showInstructionPanel() {
     if (!this.instructionPanel) {
       return;
@@ -602,6 +808,10 @@ export class InstrumentController {
   }
 
   hideInstructionPanel() {
+    if (!this.instructionPanel) {
+      return;
+    }
+
     this.instructionPanel.visible = false;
     this.panelVisible = false;
   }
@@ -618,6 +828,7 @@ export class InstrumentController {
   update() {
     this.updatePendingPanelPlacement();
     this.pollControllers();
+    this.updateRadialMenus();
     this.updateRaycastHover();
     this.updateTriggerInteraction();
     this.updateGripTransform();
@@ -659,7 +870,10 @@ export class InstrumentController {
     };
 
     if (controller.userData.handedness === "right" && next.a && !state.a) {
-      this.handleAPress();
+      this.handleAPress(controller);
+    }
+    if (controller.userData.handedness === "right" && !next.a && state.a) {
+      this.handleARelease(controller);
     }
     if (controller.userData.handedness === "left" && next.x && !state.x) {
       this.handleDeletePress(controller);
@@ -670,7 +884,9 @@ export class InstrumentController {
     if (!next.trigger && state.trigger) {
       this.handleTriggerRelease(controller);
     }
-    if (next.grip && !state.grip) {
+    if (next.grip && !state.grip && state.radialMenuOpen) {
+      this.cancelRadialMenu(controller);
+    } else if (next.grip && !state.grip) {
       this.handleGripPress(controller);
     }
     if (!next.grip && state.grip) {
@@ -681,8 +897,14 @@ export class InstrumentController {
   }
 
   findGamepad(handedness) {
-    const gamepads = navigator.getGamepads ? [...navigator.getGamepads()] : [];
-    return gamepads.find((gamepad) => gamepad?.hand === handedness) || null;
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (let i = 0; i < gamepads.length; i += 1) {
+      const gamepad = gamepads[i];
+      if (gamepad?.hand === handedness) {
+        return gamepad;
+      }
+    }
+    return null;
   }
 
   getRightController() {
@@ -697,13 +919,64 @@ export class InstrumentController {
     return `${controllerVoiceId}:instrument-${instrumentState.id}`;
   }
 
-  handleAPress() {
+  handleAPress(controller) {
     if (!this.instructionPanelClosed) {
       return;
     }
 
     this.synth.ensureAudio();
-    this.spawnInstrumentInFrontOfCamera();
+    this.openRadialMenu(controller);
+  }
+
+  handleARelease(controller) {
+    const state = this.controllerStates.get(controller);
+    if (!state?.radialMenuOpen) {
+      return;
+    }
+
+    const selectedOption = SPAWN_COMPONENT_OPTIONS[state.radialMenuSelectedIndex];
+    const cancelled = state.radialMenuCancelled;
+    this.closeRadialMenu(controller);
+
+    if (!cancelled && selectedOption) {
+      this.spawnComponentInFrontOfCamera(selectedOption.id);
+    }
+  }
+
+  openRadialMenu(controller) {
+    const state = this.controllerStates.get(controller);
+    if (!state) {
+      return;
+    }
+
+    controller.updateMatrixWorld(true);
+    controller.getWorldQuaternion(state.radialMenuStartQuaternion);
+    state.radialMenuOpen = true;
+    state.radialMenuCancelled = false;
+    state.radialMenuSelectedIndex = 0;
+    controller.userData.radialMenu.visible = true;
+    this.updateRadialMenuVisuals(controller);
+  }
+
+  closeRadialMenu(controller) {
+    const state = this.controllerStates.get(controller);
+    if (state) {
+      state.radialMenuOpen = false;
+      state.radialMenuCancelled = false;
+    }
+    if (controller?.userData.radialMenu) {
+      controller.userData.radialMenu.visible = false;
+    }
+  }
+
+  cancelRadialMenu(controller) {
+    const state = this.controllerStates.get(controller);
+    if (!state?.radialMenuOpen) {
+      return;
+    }
+
+    state.radialMenuCancelled = true;
+    this.closeRadialMenu(controller);
   }
 
   handleDeletePress(controller) {
@@ -716,13 +989,73 @@ export class InstrumentController {
     this.deleteInstrument(instrumentState);
   }
 
+  updateRadialMenus() {
+    for (const controller of this.controllers) {
+      const state = this.controllerStates.get(controller);
+      if (!state?.radialMenuOpen) {
+        continue;
+      }
+
+      state.radialMenuSelectedIndex = this.getRadialMenuSelectedIndex(controller, state);
+      this.updateRadialMenuVisuals(controller);
+    }
+  }
+
+  getRadialMenuSelectedIndex(controller, state) {
+    const optionCount = SPAWN_COMPONENT_OPTIONS.length;
+    if (optionCount <= 1) {
+      return 0;
+    }
+
+    controller.updateMatrixWorld(true);
+    controller.getWorldQuaternion(tempRadialQuaternion);
+    tempQuaternion.copy(state.radialMenuStartQuaternion).invert();
+    tempRadialQuaternion.premultiply(tempQuaternion);
+    tempRadialEuler.setFromQuaternion(tempRadialQuaternion, "XYZ");
+
+    const roll = tempRadialEuler.z;
+    if (Math.abs(roll) < RADIAL_MENU_ROLL_DEADZONE) {
+      return 0;
+    }
+
+    if (roll > 0) {
+      return 0;
+    }
+
+    return THREE.MathUtils.clamp(Math.ceil(Math.abs(roll) / RADIAL_MENU_ROLL_STEP), 1, optionCount - 1);
+  }
+
+  updateRadialMenuVisuals(controller) {
+    const menu = controller?.userData.radialMenu;
+    const state = this.controllerStates.get(controller);
+    if (!menu || !state) {
+      return;
+    }
+
+    for (const [index, segment] of menu.userData.segments.entries()) {
+      const selected = index === state.radialMenuSelectedIndex;
+      segment.material.opacity = selected ? RADIAL_MENU_HIGHLIGHT_OPACITY : RADIAL_MENU_BASE_OPACITY;
+      segment.scale.setScalar(selected ? 1.08 : 1);
+    }
+  }
+
   deleteInstrument(instrumentState) {
+    const instrumentVoiceSuffix = `:instrument-${instrumentState.id}`;
+
     for (const controller of this.controllers) {
       const controllerState = this.controllerStates.get(controller);
       const interaction = controllerState?.activeTriggerInteraction;
       if (interaction?.activeVoiceIds?.has(this.getInstrumentVoiceId(interaction.voiceId, instrumentState))) {
         this.synth.resetPitchBend(this.getInstrumentVoiceId(interaction.voiceId, instrumentState));
         this.synth.release(this.getInstrumentVoiceId(interaction.voiceId, instrumentState));
+      }
+
+      for (const activeVoiceId of controllerState?.raySqueezeActiveVoiceIds || []) {
+        if (activeVoiceId === this.getInstrumentVoiceId(controllerState.raySqueezeVoiceId, instrumentState)) {
+          this.synth.resetPitchBend(activeVoiceId);
+          this.synth.release(activeVoiceId);
+          controllerState.raySqueezeActiveVoiceIds.delete(activeVoiceId);
+        }
       }
 
       if (interaction?.instrumentState === instrumentState) {
@@ -740,19 +1073,49 @@ export class InstrumentController {
         controllerState.gripInstrumentState = null;
       }
 
+      if (controllerState?.raySqueezeInstrumentState === instrumentState) {
+        controllerState.raySqueezeInstrumentState = null;
+      }
+
       if (controllerState?.hoveredTarget && this.isObjectInInstrument(controllerState.hoveredTarget, instrumentState)) {
         this.setTargetHighlight(controllerState.hoveredTarget, false);
         controllerState.hoveredTarget = null;
       }
     }
 
+    this.synth.releaseMatchingVoiceIds((voiceId) => voiceId.endsWith(instrumentVoiceSuffix));
     instrumentState.debugVisuals?.dispose();
+    this.disposeInstrumentResources(instrumentState);
     instrumentState.root.removeFromParent();
     this.instrumentStates = this.instrumentStates.filter((state) => state !== instrumentState);
 
     if (this.activeInstrumentState === instrumentState) {
       this.activeInstrumentState = this.instrumentStates.at(-1) || null;
     }
+  }
+
+  disposeInstrumentResources(instrumentState) {
+    const disposedMaterials = new Set();
+
+    instrumentState.root.traverse((object) => {
+      if (object.userData.instrumentState === instrumentState) {
+        delete object.userData.instrumentState;
+      }
+
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        if (!material?.userData.disposeOnInstrumentDelete || disposedMaterials.has(material)) {
+          continue;
+        }
+        material.dispose();
+        disposedMaterials.add(material);
+      }
+    });
+
+    instrumentState.hornHolders.clear();
+    instrumentState.activeBends.clear();
+    instrumentState.hitTargetList.length = 0;
+    instrumentState.morphMeshes.length = 0;
   }
 
   isObjectInInstrument(object, instrumentState) {
@@ -769,6 +1132,7 @@ export class InstrumentController {
   handleTriggerPress(controller) {
     this.synth.ensureAudio();
     const controllerState = this.controllerStates.get(controller);
+    this.initializeRaySqueeze(controller);
     const hit = this.getCurrentHit(controller);
 
     if (hit?.object?.userData.isCloseButton) {
@@ -795,18 +1159,7 @@ export class InstrumentController {
     }
 
     if (config.type === "holdSqueeze") {
-      const voiceId = this.getControllerVoiceId(controller);
-      controller.updateMatrixWorld(true);
-      const bendStartQuaternion = controller.getWorldQuaternion(new THREE.Quaternion());
-      controllerState.activeTriggerInteraction = {
-        type: "holdSqueeze",
-        targetName,
-        instrumentState,
-        voiceId,
-        activeVoiceIds: new Set(),
-        bendStartQuaternion,
-        bendStartInverseQuaternion: bendStartQuaternion.clone().invert(),
-      };
+      controllerState.activeTriggerInteraction = null;
       return;
     }
 
@@ -829,6 +1182,7 @@ export class InstrumentController {
   handleTriggerRelease(controller) {
     const controllerState = this.controllerStates.get(controller);
     const interaction = controllerState?.activeTriggerInteraction;
+    this.releaseRaySqueeze(controllerState);
     if (interaction?.type === "holdSqueeze") {
       for (const activeVoiceId of interaction.activeVoiceIds || []) {
         this.synth.resetPitchBend(activeVoiceId);
@@ -837,6 +1191,35 @@ export class InstrumentController {
       interaction.instrumentState?.activeBends?.delete(interaction.voiceId);
     }
     controllerState.activeTriggerInteraction = null;
+  }
+
+  initializeRaySqueeze(controller) {
+    const controllerState = this.controllerStates.get(controller);
+    if (!controllerState) {
+      return;
+    }
+
+    controllerState.raySqueezeVoiceId = this.getControllerVoiceId(controller);
+    this.resetRaySqueezeReference(controller, controllerState);
+  }
+
+  resetRaySqueezeReference(controller, controllerState) {
+    controller.updateMatrixWorld(true);
+    controller.getWorldQuaternion(controllerState.raySqueezeStartQuaternion);
+    controllerState.raySqueezeStartInverseQuaternion.copy(controllerState.raySqueezeStartQuaternion).invert();
+  }
+
+  releaseRaySqueeze(controllerState) {
+    if (!controllerState) {
+      return;
+    }
+
+    for (const activeVoiceId of controllerState.raySqueezeActiveVoiceIds || []) {
+      this.synth.resetPitchBend(activeVoiceId);
+      this.synth.release(activeVoiceId);
+    }
+    controllerState.raySqueezeActiveVoiceIds.clear();
+    controllerState.raySqueezeInstrumentState = null;
   }
 
   updateTriggerInteraction() {
@@ -984,18 +1367,30 @@ export class InstrumentController {
 
     const activeHoldInteractions = [];
     for (const controller of this.controllers) {
-      const interaction = this.controllerStates.get(controller)?.activeTriggerInteraction;
+      const controllerState = this.controllerStates.get(controller);
+      const interaction = controllerState?.activeTriggerInteraction;
       if (interaction?.type === "holdSqueeze" && interaction.instrumentState?.root?.visible) {
         activeHoldInteractions.push({ interaction, controller });
+      }
+      if (
+        controllerState?.trigger &&
+        interaction?.type !== "verticalDragMorph" &&
+        !controllerState.gripHeld
+      ) {
+        const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState);
+        if (raySqueezeInteraction) {
+          activeHoldInteractions.push({ interaction: raySqueezeInteraction, controller });
+        }
       }
     }
 
     for (const { interaction, controller } of activeHoldInteractions) {
       const chain = this.getTouchingInstrumentChain(interaction.instrumentState);
+      const playableChain = chain.filter((chainState) => chainState.interactive);
       const desiredVoiceIds = new Set();
       const bendAmount = this.getControllerRollBend(controller, interaction);
 
-      for (const chainState of chain) {
+      for (const chainState of playableChain) {
         const voiceId = this.getInstrumentVoiceId(interaction.voiceId, chainState);
         desiredVoiceIds.add(voiceId);
         chainState.hornHolders.add(voiceId);
@@ -1010,11 +1405,22 @@ export class InstrumentController {
         }
       }
 
-      interaction.activeVoiceIds = desiredVoiceIds;
-      interaction.activeChain = chain;
+      if (interaction.isRaySqueeze) {
+        interaction.activeVoiceIds.clear();
+        for (const voiceId of desiredVoiceIds) {
+          interaction.activeVoiceIds.add(voiceId);
+        }
+      } else {
+        interaction.activeVoiceIds = desiredVoiceIds;
+      }
+      interaction.activeChain = playableChain;
     }
 
     for (const state of this.instrumentStates) {
+      if (!state.interactive) {
+        continue;
+      }
+
       state.hornSqueezeValue = THREE.MathUtils.lerp(
         state.hornSqueezeValue,
         state.hornHolders.size > 0 ? 1 : 0,
@@ -1022,7 +1428,10 @@ export class InstrumentController {
       );
       state.morphController.setSqueeze(state.hornSqueezeValue);
 
-      const bendSum = [...state.activeBends.values()].reduce((sum, value) => sum + value, 0);
+      let bendSum = 0;
+      for (const value of state.activeBends.values()) {
+        bendSum += value;
+      }
       state.targetBendValue = state.hornHolders.size > 0 ? THREE.MathUtils.clamp(bendSum, -1, 1) : 0;
       state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
       state.morphController.setBend(state.bendValue);
@@ -1047,10 +1456,40 @@ export class InstrumentController {
           nose: synthState.morphController.getValue(MORPH_TARGET_NAMES.nose),
           vowel: synthState.currentVowelLetter === "neutral" ? "A" : synthState.currentVowelLetter,
           pitchBendSemitones,
+          pitchSnap: synthState.pitchSnap,
         });
         this.updateInstrumentSpatialVoice(voiceId, synthState);
       }
     }
+  }
+
+  getRaySqueezeInteraction(controller, controllerState) {
+    const hit = this.getCurrentHit(controller);
+    const targetName = hit?.object?.name;
+    const config = INTERACTION_MAP[targetName];
+    const hitInstrumentState = hit?.object?.userData.instrumentState;
+    if (config?.type === "holdSqueeze" && hitInstrumentState?.interactive && hitInstrumentState.root?.visible) {
+      if (controllerState.raySqueezeInstrumentState !== hitInstrumentState) {
+        this.resetRaySqueezeReference(controller, controllerState);
+      }
+      controllerState.raySqueezeInstrumentState = hitInstrumentState;
+      this.activeInstrumentState = hitInstrumentState;
+    }
+
+    const instrumentState = controllerState.raySqueezeInstrumentState;
+    if (!instrumentState?.interactive || !instrumentState.root?.visible) {
+      return null;
+    }
+
+    return {
+      type: "holdSqueeze",
+      targetName: INTERACTION_TARGET_NAMES.horn,
+      instrumentState,
+      voiceId: controllerState.raySqueezeVoiceId || this.getControllerVoiceId(controller),
+      activeVoiceIds: controllerState.raySqueezeActiveVoiceIds,
+      bendStartInverseQuaternion: controllerState.raySqueezeStartInverseQuaternion,
+      isRaySqueeze: true,
+    };
   }
 
   updateBendAlignedColliders(state) {
@@ -1211,17 +1650,22 @@ export class InstrumentController {
     this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
     this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-    const targets = [];
+    const targets = this.raycastTargets;
+    targets.length = 0;
     if (this.panelVisible && this.closeButton) {
       targets.push(this.closeButton);
     }
     for (const state of this.instrumentStates) {
       if (state.root.visible) {
-        targets.push(...state.hitTargetList);
+        for (const target of state.hitTargetList) {
+          targets.push(target);
+        }
       }
     }
 
-    const intersections = this.raycaster.intersectObjects(targets, true);
+    const intersections = this.raycastIntersections;
+    intersections.length = 0;
+    this.raycaster.intersectObjects(targets, true, intersections);
     const hit =
       intersections.find((intersection) => intersection.object.userData.isProceduralMorphTarget) ||
       intersections.find((intersection) => intersection.object.name !== "HIT_body") ||
@@ -1279,13 +1723,88 @@ export class InstrumentController {
   }
 
   spawnInstrumentInFrontOfCamera() {
-    if (!this.instrumentTemplate) {
+    this.spawnComponentInFrontOfCamera("honk");
+  }
+
+  spawnComponentInFrontOfCamera(componentId) {
+    const componentOption = this.componentTemplates.get(componentId);
+    if (componentOption?.preset === "cMajorScale") {
+      this.spawnCMajorScalePreset();
       return;
     }
 
-    const instrument = this.createSpawnedInstrument();
-    this.positionObjectInFrontOfCamera(instrument, SPAWN_DISTANCE);
-    instrument.scale.setScalar(INSTRUMENT_BASE_SCALE);
+    const component = this.createSpawnedComponent(componentId);
+    if (!component) {
+      return;
+    }
+
+    this.positionObjectInFrontOfCamera(component, SPAWN_DISTANCE);
+    component.scale.setScalar(INSTRUMENT_BASE_SCALE);
+  }
+
+  spawnCMajorScalePreset() {
+    const userCamera = this.getUserCamera();
+    userCamera.updateMatrixWorld(true);
+    userCamera.getWorldPosition(tempVector);
+    userCamera.getWorldDirection(tempSpawnForward);
+    userCamera.getWorldQuaternion(tempQuaternion);
+
+    tempSpawnForward.y = 0;
+    if (tempSpawnForward.lengthSq() < 0.0001) {
+      tempSpawnForward.set(0, 0, -1);
+    } else {
+      tempSpawnForward.normalize();
+    }
+
+    tempSpawnRight.set(1, 0, 0).applyQuaternion(tempQuaternion);
+    tempSpawnRight.y = 0;
+    if (tempSpawnRight.lengthSq() < 0.0001) {
+      tempSpawnRight.crossVectors(tempSpawnForward, new THREE.Vector3(0, 1, 0)).normalize();
+    } else {
+      tempSpawnRight.normalize();
+    }
+
+    const rowCenter = tempVector.clone().addScaledVector(tempSpawnForward, SPAWN_DISTANCE);
+    rowCenter.y = tempVector.y + SPAWN_Y_OFFSET;
+    const firstOffset = -((C_MAJOR_SCALE_PRESET.length - 1) * SCALE_PRESET_SPACING) * 0.5;
+
+    for (const [index, note] of C_MAJOR_SCALE_PRESET.entries()) {
+      const instrument = this.createSpawnedComponent("honk");
+      if (!instrument) {
+        continue;
+      }
+
+      instrument.name = `Honk_${note.label}_${index + 1}`;
+      instrument.position.copy(rowCenter).addScaledVector(tempSpawnRight, firstOffset + index * SCALE_PRESET_SPACING);
+      instrument.scale.setScalar(INSTRUMENT_BASE_SCALE);
+
+      tempSpawnTarget.copy(tempVector);
+      tempSpawnTarget.y = instrument.position.y;
+      instrument.lookAt(tempSpawnTarget);
+
+      this.applyScalePresetNote(this.activeInstrumentState, note);
+    }
+  }
+
+  applyScalePresetNote(state, note) {
+    if (!state?.interactive) {
+      return;
+    }
+
+    const pitchAmount =
+      note.semitonesFromF < 0 ? note.semitonesFromF / 5 : note.semitonesFromF / 7;
+    state.scalePresetNote = note.label;
+    state.morphController.setEar("left", pitchAmount);
+    state.morphController.setEar("right", 0);
+
+    const leftEar = state.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
+    const rightEar = state.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
+    if (leftEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(leftEar, pitchAmount);
+    }
+    if (rightEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(rightEar, 0);
+    }
   }
 
   spawnDefaultInstrumentPreview() {
@@ -1293,23 +1812,42 @@ export class InstrumentController {
       return;
     }
 
-    const instrument = this.createSpawnedInstrument();
+    const instrument = this.createSpawnedComponent("honk");
+    if (!instrument) {
+      return;
+    }
     this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE);
     instrument.position.y -= 0.38;
     instrument.scale.setScalar(INSTRUMENT_BASE_SCALE);
   }
 
   createSpawnedInstrument() {
-    const instrument = cloneSkeletonAware(this.instrumentTemplate);
-    instrument.name = `FaceInstrument_${this.instrumentStates.length + 1}`;
+    return this.createSpawnedComponent("honk");
+  }
+
+  createSpawnedComponent(componentId) {
+    const componentOption = this.componentTemplates.get(componentId) || this.componentTemplates.get("honk");
+    if (!componentOption?.template) {
+      return null;
+    }
+
+    const instrument = cloneSkeletonAware(componentOption.template);
+    instrument.name = `${componentOption.label || "Component"}_${this.instrumentStates.length + 1}`;
     instrument.visible = true;
+    instrument.userData.componentId = componentOption.id;
     instrument.traverse((object) => {
       delete object.userData.instrumentState;
     });
     this.scene.add(instrument);
 
     const state = this.createInstrumentState(instrument);
-    this.initializeInstrumentState(state);
+    state.componentId = componentOption.id;
+    state.componentLabel = componentOption.label;
+    state.interactive = componentOption.interactive;
+    state.pitchSnap = componentOption.pitchSnap || null;
+    if (state.interactive) {
+      this.initializeInstrumentState(state);
+    }
     this.instrumentStates.push(state);
     this.activeInstrumentState = state;
 

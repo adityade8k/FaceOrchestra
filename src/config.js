@@ -1,9 +1,11 @@
-export const MODEL_PATH = "./model/horn_gltf.glb";
+export const MODEL_PATH = "./model/honk/horn_gltf.glb";
+export const LOOPER_MODEL_PATH = "./model/looper/looper.glb";
 
 export const DEBUG_SHOW_COLLIDERS = false;
 export const DEBUG_SHOW_BOUNDING_BOXES = false;
 export const DEBUG_SHOW_RAYS = true;
-export const DEBUG_LOG_MORPHS = true;
+export const DEBUG_LOG_RAYCAST = false;
+export const DEBUG_LOG_MORPHS = false;
 
 export const MORPH_TARGET_NAMES = {
   bendRight: "bend_R_geo",
@@ -54,11 +56,34 @@ export const CHORD_BOX_SCALE = {
   z: 0.55,
 };
 
-export const INSTRUMENT_BASE_SCALE = 3.5;
+export const INSTRUMENT_BASE_SCALE = 2.5;
 export const SPAWN_DISTANCE = 0.75;
 export const DEFAULT_INSTRUMENT_DISTANCE = 1.05;
 export const SPAWN_Y_OFFSET = -0.12;
 export const SHOW_INSTRUCTION_PANEL = true;
+
+export const SPAWN_COMPONENT_OPTIONS = [
+  {
+    id: "honk",
+    label: "Honk",
+    modelPath: MODEL_PATH,
+    color: 0xf7d04a,
+  },
+  {
+    id: "honk-cmajor",
+    label: "Honk C",
+    modelPath: MODEL_PATH,
+    color: 0x72d572,
+    variantOf: "honk",
+    preset: "cMajorScale",
+  },
+  {
+    id: "looper",
+    label: "Looper",
+    modelPath: LOOPER_MODEL_PATH,
+    color: 0x45f6ff,
+  },
+];
 
 export const XR_BUTTONS = {
   trigger: 0,
@@ -69,9 +94,9 @@ export const XR_BUTTONS = {
 export const XR_OPTIONAL_FEATURES = ["local-floor", "bounded-floor", "dom-overlay"];
 
 export const INSTRUMENT_TEXTURE_PATHS = {
-  baseMap: "./model/clown_horn_diffuse_map.png",
-  normalMap: "./model/Clay001_2K-JPG_NormalGL.jpg",
-  roughnessMap: "./model/Clay001_2K-JPG_Roughness_curves.png",
+  baseMap: "./model/honk/clown_horn_diffuse_map.png",
+  normalMap: "./model/honk/Clay001_2K-JPG_NormalGL.jpg",
+  roughnessMap: "./model/honk/Clay001_2K-JPG_Roughness_curves.png",
 };
 
 export const INTERACTION_COLLIDERS = [
