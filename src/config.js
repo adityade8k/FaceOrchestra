@@ -2,7 +2,7 @@ export const MODEL_PATH = "./model/honk/horn_gltf.glb";
 export const LOOPER_MODEL_PATH = "./model/looper/looper.glb";
 
 export const DEBUG_SHOW_COLLIDERS = false;
-export const DEBUG_SHOW_BOUNDING_BOXES = false;
+export const DEBUG_SHOW_BOUNDING_BOXES = true;
 export const DEBUG_SHOW_RAYS = true;
 export const DEBUG_LOG_RAYCAST = false;
 export const DEBUG_LOG_MORPHS = false;
@@ -41,6 +41,7 @@ export const BEND_SMOOTHING = 0.18;
 export const BEND_COLLIDER_ROTATION_DEGREES = -18;
 export const MAX_PITCH_BEND_SEMITONES = 4;
 export const SQUEEZE_SENSITIVITY = 0.18;
+export const SQUEEZE_COLLIDER_MIN_OVERLAP = 0.50;
 export const EAR_DRAG_SENSITIVITY = 1.8;
 export const NOSE_DRAG_SENSITIVITY = 1.8;
 
@@ -57,10 +58,27 @@ export const CHORD_BOX_SCALE = {
 };
 
 export const INSTRUMENT_BASE_SCALE = 2.5;
+export const INSTRUMENT_SCALE_STEP = 0.25;
+export const INSTRUMENT_MIN_SCALE = 0.5;
+export const INSTRUMENT_MAX_SCALE = 8;
+export const SCALE_JOYSTICK_DEADZONE = 0.45;
 export const SPAWN_DISTANCE = 0.75;
 export const DEFAULT_INSTRUMENT_DISTANCE = 1.05;
 export const SPAWN_Y_OFFSET = -0.12;
 export const SHOW_INSTRUCTION_PANEL = false;
+
+export const NOTE_LABEL_SETTINGS = {
+  enabled: true,
+  fontUrl: "https://unpkg.com/three@0.164.1/examples/fonts/helvetiker_regular.typeface.json",
+  color: 0xf7efe2,
+  size: 0.05,
+  depth: 0.008,
+  curveSegments: 4,
+  showOctave: true,
+  position: { x: 0, y: 0.23, z: 0 },
+  rotationDegrees: { x: -18, y: 0, z: 0 },
+  scale: { x: 1, y: 1, z: 1 },
+};
 
 export const SPAWN_COMPONENT_OPTIONS = [
   {
@@ -89,6 +107,12 @@ export const XR_BUTTONS = {
   trigger: 0,
   grip: 1,
   primary: 4,
+  secondary: 5,
+};
+
+export const XR_AXES = {
+  thumbstickX: 2,
+  thumbstickY: 3,
 };
 
 export const XR_OPTIONAL_FEATURES = ["local-floor", "bounded-floor", "dom-overlay"];

@@ -1,5 +1,7 @@
 import * as THREE from "three";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import { clone as cloneSkeletonAware } from "three/addons/utils/SkeletonUtils.js";
 import {
   BEND_COLLIDER_ROTATION_DEGREES,
@@ -13,23 +15,29 @@ import {
   DEFAULT_INSTRUMENT_DISTANCE,
   EAR_DRAG_SENSITIVITY,
   INSTRUMENT_BASE_SCALE,
+  INSTRUMENT_MAX_SCALE,
+  INSTRUMENT_MIN_SCALE,
+  INSTRUMENT_SCALE_STEP,
   INSTRUMENT_TEXTURE_PATHS,
   INTERACTION_COLLIDERS,
   INTERACTION_TARGET_NAMES,
   MAX_PITCH_BEND_SEMITONES,
   MODEL_PATH,
   MORPH_TARGET_NAMES,
+  NOTE_LABEL_SETTINGS,
   NOSE_DRAG_SENSITIVITY,
+  SCALE_JOYSTICK_DEADZONE,
   SHOW_INSTRUCTION_PANEL,
   SPATIAL_AUDIO_SETTINGS,
   SPAWN_COMPONENT_OPTIONS,
   SPAWN_DISTANCE,
   SPAWN_Y_OFFSET,
+  SQUEEZE_COLLIDER_MIN_OVERLAP,
   SQUEEZE_SENSITIVITY,
+  XR_AXES,
   XR_BUTTONS,
 } from "../config.js";
 import { DebugVisuals } from "../debug/DebugVisuals.js";
-import { setChordBounds } from "./ChordBounds.js";
 import { MorphTargetController } from "./MorphTargetController.js";
 
 export const DEBUG_SHOW_HIT_TARGETS = DEBUG_SHOW_COLLIDERS;
@@ -116,6 +124,11 @@ const C_MAJOR_SCALE_PRESET = [
   { label: "C", semitonesFromF: 7 },
 ];
 const SCALE_PRESET_SPACING = 0.32;
+const CHROMATIC_NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const F4_MIDI_NOTE = 65;
+const PITCH_SNAP_STEPS = {
+  cMajor: C_MAJOR_SCALE_PRESET.map((note) => note.semitonesFromF),
+};
 const tempMatrix = new THREE.Matrix4();
 const tempVector = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
@@ -249,14 +262,18 @@ export class InstrumentController {
     this.renderer = renderer;
     this.synth = synth;
     this.loader = new GLTFLoader();
+    this.fontLoader = new FontLoader();
     this.textureLoader = new THREE.TextureLoader();
     this.raycaster = new THREE.Raycaster();
     this.raycastTargets = [];
     this.raycastIntersections = [];
+    this.lockedBoxIntersections = [];
 
     this.instrumentTemplate = null;
     this.componentTemplates = new Map();
     this.instrumentMaterialTextures = null;
+    this.noteFont = null;
+    this.noteFontLoadPromise = null;
     this.nextInstrumentId = 1;
     this.instrumentStates = [];
     this.activeInstrumentState = null;
@@ -278,6 +295,7 @@ export class InstrumentController {
     this.setupControllers();
     this.createInstructionPanel();
     await this.loadInstrument();
+    await this.loadNoteFont();
   }
 
   setupControllers() {
@@ -305,7 +323,9 @@ export class InstrumentController {
         trigger: false,
         grip: false,
         a: false,
+        b: false,
         x: false,
+        thumbstickScaleDirection: 0,
         hoveredTarget: null,
         activeTriggerInteraction: null,
         gripHeld: false,
@@ -557,6 +577,22 @@ export class InstrumentController {
     );
   }
 
+  async loadNoteFont() {
+    if (!NOTE_LABEL_SETTINGS.enabled || !NOTE_LABEL_SETTINGS.fontUrl) {
+      return null;
+    }
+
+    if (!this.noteFontLoadPromise) {
+      this.noteFontLoadPromise = this.fontLoader.loadAsync(NOTE_LABEL_SETTINGS.fontUrl).catch((error) => {
+        console.warn("Could not load note label font:", error);
+        return null;
+      });
+    }
+
+    this.noteFont = await this.noteFontLoadPromise;
+    return this.noteFont;
+  }
+
   async loadStaticComponentTemplate(option) {
     const gltf = await this.loader.loadAsync(option.modelPath);
     const template = gltf.scene;
@@ -591,9 +627,14 @@ export class InstrumentController {
       currentVowelLetter: "neutral",
       hornHolders: new Set(),
       hornSqueezeValue: 0,
+      baseScale: this.getRootUniformScale(root),
+      locked: false,
       bendValue: 0,
       targetBendValue: 0,
       activeBends: new Map(),
+      noteLabelGroup: null,
+      noteLabelMesh: null,
+      noteLabelTextValue: null,
     };
     state.bendAlignedColliderGroup = root.getObjectByName(BEND_ALIGNED_COLLIDER_GROUP_NAME) || null;
     state.morphController = new MorphTargetController(root, {
@@ -774,7 +815,9 @@ export class InstrumentController {
       state.trigger = false;
       state.grip = false;
       state.a = false;
+      state.b = false;
       state.x = false;
+      state.thumbstickScaleDirection = 0;
       state.hoveredTarget = null;
       state.activeTriggerInteraction = null;
       state.gripHeld = false;
@@ -866,14 +909,19 @@ export class InstrumentController {
       trigger: Boolean(gamepad.buttons[XR_BUTTONS.trigger]?.pressed),
       grip: Boolean(gamepad.buttons[XR_BUTTONS.grip]?.pressed),
       a: Boolean(gamepad.buttons[XR_BUTTONS.primary]?.pressed),
+      b: Boolean(gamepad.buttons[XR_BUTTONS.secondary]?.pressed),
       x: Boolean(gamepad.buttons[XR_BUTTONS.primary]?.pressed),
     };
+    const thumbstickScaleDirection = this.getThumbstickScaleDirection(gamepad);
 
     if (controller.userData.handedness === "right" && next.a && !state.a) {
-      this.handleAPress(controller);
+      this.handleAPress(controller, next.grip);
     }
     if (controller.userData.handedness === "right" && !next.a && state.a) {
       this.handleARelease(controller);
+    }
+    if (controller.userData.handedness === "right" && next.b && !state.b) {
+      this.handleBPress(controller);
     }
     if (controller.userData.handedness === "left" && next.x && !state.x) {
       this.handleDeletePress(controller);
@@ -892,6 +940,7 @@ export class InstrumentController {
     if (!next.grip && state.grip) {
       this.handleGripRelease(controller);
     }
+    this.handleGripScaleThumbstick(controller, thumbstickScaleDirection);
 
     Object.assign(state, next);
   }
@@ -907,6 +956,21 @@ export class InstrumentController {
     return null;
   }
 
+  getThumbstickScaleDirection(gamepad) {
+    const axes = gamepad?.axes || [];
+    const configuredY = axes[XR_AXES.thumbstickY];
+    const fallbackY = axes[1];
+    const y = Number.isFinite(configuredY) ? configuredY : Number.isFinite(fallbackY) ? fallbackY : 0;
+
+    if (y < -SCALE_JOYSTICK_DEADZONE) {
+      return 1;
+    }
+    if (y > SCALE_JOYSTICK_DEADZONE) {
+      return -1;
+    }
+    return 0;
+  }
+
   getRightController() {
     return this.controllers.find((controller) => controller.userData.handedness === "right") || this.controllers[1];
   }
@@ -919,8 +983,22 @@ export class InstrumentController {
     return `${controllerVoiceId}:instrument-${instrumentState.id}`;
   }
 
-  handleAPress(controller) {
+  handleAPress(controller, gripPressed = false) {
     if (!this.instructionPanelClosed) {
+      return;
+    }
+
+    const controllerState = this.controllerStates.get(controller);
+    if (
+      controllerState?.gripHeld &&
+      controllerState.gripInstrumentState?.root?.visible &&
+      this.getPointedInstrumentState(controller) === controllerState.gripInstrumentState
+    ) {
+      this.duplicateInstrumentForGrip(controller, controllerState.gripInstrumentState);
+      return;
+    }
+
+    if (gripPressed || controllerState?.grip) {
       return;
     }
 
@@ -987,6 +1065,16 @@ export class InstrumentController {
     }
 
     this.deleteInstrument(instrumentState);
+  }
+
+  handleBPress(controller) {
+    const instrumentState = this.getPointedInstrumentState(controller);
+    if (!instrumentState?.interactive || !instrumentState.root?.visible) {
+      return;
+    }
+
+    instrumentState.locked = !instrumentState.locked;
+    this.updateLockVisual(instrumentState);
   }
 
   updateRadialMenus() {
@@ -1110,6 +1198,10 @@ export class InstrumentController {
         material.dispose();
         disposedMaterials.add(material);
       }
+
+      if (object.geometry?.userData.disposeOnInstrumentDelete) {
+        object.geometry.dispose();
+      }
     });
 
     instrumentState.hornHolders.clear();
@@ -1137,6 +1229,14 @@ export class InstrumentController {
 
     if (hit?.object?.userData.isCloseButton) {
       this.closeInstructionPanel();
+      return;
+    }
+
+    const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
+    if (lockedInstrumentState?.interactive) {
+      controllerState.activeTriggerInteraction = null;
+      controllerState.raySqueezeInstrumentState = lockedInstrumentState;
+      this.activeInstrumentState = lockedInstrumentState;
       return;
     }
 
@@ -1274,6 +1374,7 @@ export class InstrumentController {
   applyInteractionValue(interaction, value) {
     if (interaction.dragType === "ear") {
       interaction.instrumentState.morphController.setEar(interaction.side, value);
+      this.updateNoteLabel(interaction.instrumentState);
       return;
     }
 
@@ -1339,6 +1440,137 @@ export class InstrumentController {
     const controllerState = this.controllerStates.get(controller);
     controllerState.gripHeld = false;
     controllerState.gripInstrumentState = null;
+    controllerState.thumbstickScaleDirection = 0;
+  }
+
+  handleGripScaleThumbstick(controller, direction) {
+    const controllerState = this.controllerStates.get(controller);
+    if (!controllerState?.gripHeld || !controllerState.gripInstrumentState?.root?.visible) {
+      if (controllerState) {
+        controllerState.thumbstickScaleDirection = 0;
+      }
+      return;
+    }
+
+    if (direction === 0) {
+      controllerState.thumbstickScaleDirection = 0;
+      return;
+    }
+
+    const pointedState = this.getPointedInstrumentState(controller);
+    if (pointedState !== controllerState.gripInstrumentState) {
+      return;
+    }
+
+    if (direction === controllerState.thumbstickScaleDirection) {
+      return;
+    }
+
+    controllerState.thumbstickScaleDirection = direction;
+    this.adjustInstrumentBaseScale(pointedState, direction * INSTRUMENT_SCALE_STEP);
+  }
+
+  adjustInstrumentBaseScale(state, delta) {
+    if (!state?.root) {
+      return;
+    }
+
+    this.setInstrumentBaseScale(state, state.baseScale + delta);
+  }
+
+  setInstrumentBaseScale(state, scale) {
+    if (!state?.root) {
+      return;
+    }
+
+    state.baseScale = THREE.MathUtils.clamp(scale, INSTRUMENT_MIN_SCALE, INSTRUMENT_MAX_SCALE);
+    this.applyInstrumentVisualScale(state);
+  }
+
+  duplicateInstrumentForGrip(controller, sourceState) {
+    if (!sourceState?.root?.visible) {
+      return;
+    }
+
+    const componentId = sourceState.componentId || "honk";
+    const duplicateRoot = this.createSpawnedComponent(componentId);
+    const duplicateState = this.activeInstrumentState;
+    if (!duplicateRoot || !duplicateState) {
+      return;
+    }
+
+    duplicateRoot.position.copy(sourceState.root.position);
+    duplicateRoot.quaternion.copy(sourceState.root.quaternion);
+    this.setInstrumentBaseScale(duplicateState, sourceState.baseScale);
+    duplicateState.pitchSnap = sourceState.pitchSnap || null;
+    duplicateState.scalePresetNote = sourceState.scalePresetNote || null;
+
+    if (duplicateState.interactive) {
+      this.copyInstrumentMorphState(sourceState, duplicateState);
+    }
+
+    const controllerState = this.controllerStates.get(controller);
+    if (!controllerState) {
+      return;
+    }
+
+    controllerState.gripHeld = true;
+    controllerState.gripInstrumentState = duplicateState;
+    controller.updateMatrixWorld(true);
+    duplicateRoot.updateMatrixWorld(true);
+    controllerState.gripOffsetMatrix.copy(controller.matrixWorld).invert().multiply(duplicateRoot.matrixWorld);
+  }
+
+  copyInstrumentMorphState(sourceState, targetState) {
+    const vowelLetter = sourceState.currentVowelLetter === "neutral" ? null : sourceState.currentVowelLetter;
+    targetState.morphController.setVowel(vowelLetter);
+    targetState.currentVowelIndex = sourceState.currentVowelIndex;
+    targetState.currentVowelLetter = sourceState.currentVowelLetter;
+
+    const leftEar = sourceState.morphController.getEarAmount("left");
+    const rightEar = sourceState.morphController.getEarAmount("right");
+    const nose = sourceState.morphController.getValue(MORPH_TARGET_NAMES.nose);
+    targetState.morphController.setEar("left", leftEar);
+    targetState.morphController.setEar("right", rightEar);
+    targetState.morphController.setNose(nose);
+
+    const targetLeftEar = targetState.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
+    const targetRightEar = targetState.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
+    const targetNose = targetState.hitTargets[INTERACTION_TARGET_NAMES.nose];
+    if (targetLeftEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(targetLeftEar, leftEar);
+    }
+    if (targetRightEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(targetRightEar, rightEar);
+    }
+    if (targetNose?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromMorph(targetNose, nose);
+    }
+
+    targetState.hornSqueezeValue = 0;
+    targetState.bendValue = 0;
+    targetState.targetBendValue = 0;
+    targetState.morphController.setSqueeze(0);
+    targetState.morphController.setBend(0);
+    this.updateBendAlignedColliders(targetState);
+    this.updateNoteLabel(targetState);
+  }
+
+  applyInstrumentVisualScale(state, pulse = state.hornSqueezeValue ? 1 + state.hornSqueezeValue * 0.035 : 1) {
+    if (!state?.root) {
+      return;
+    }
+
+    state.root.scale.setScalar(state.baseScale * pulse);
+  }
+
+  getRootUniformScale(root) {
+    if (!root) {
+      return INSTRUMENT_BASE_SCALE;
+    }
+
+    const scale = root.scale;
+    return Math.max((Math.abs(scale.x) + Math.abs(scale.y) + Math.abs(scale.z)) / 3, 0.0001);
   }
 
   updateGripTransform() {
@@ -1353,7 +1585,6 @@ export class InstrumentController {
       tempMatrix.decompose(tempVector, tempQuaternion, tempScale);
       controllerState.gripInstrumentState.root.position.copy(tempVector);
       controllerState.gripInstrumentState.root.quaternion.copy(tempQuaternion);
-      controllerState.gripInstrumentState.root.scale.copy(tempScale);
     }
   }
 
@@ -1374,8 +1605,7 @@ export class InstrumentController {
       }
       if (
         controllerState?.trigger &&
-        interaction?.type !== "verticalDragMorph" &&
-        !controllerState.gripHeld
+        interaction?.type !== "verticalDragMorph"
       ) {
         const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState);
         if (raySqueezeInteraction) {
@@ -1438,7 +1668,7 @@ export class InstrumentController {
       this.updateBendAlignedColliders(state);
 
       const pulse = 1 + state.hornSqueezeValue * 0.035;
-      state.root.scale.setScalar(INSTRUMENT_BASE_SCALE * pulse);
+      this.applyInstrumentVisualScale(state, pulse);
       state.debugVisuals?.update();
     }
 
@@ -1464,11 +1694,41 @@ export class InstrumentController {
   }
 
   getRaySqueezeInteraction(controller, controllerState) {
+    const gripInstrumentState =
+      controllerState.gripHeld &&
+      controllerState.gripInstrumentState?.interactive &&
+      controllerState.gripInstrumentState.root?.visible
+        ? controllerState.gripInstrumentState
+        : null;
+
+    if (gripInstrumentState) {
+      if (controllerState.raySqueezeInstrumentState !== gripInstrumentState) {
+        this.resetRaySqueezeReference(controller, controllerState);
+      }
+      controllerState.raySqueezeInstrumentState = gripInstrumentState;
+      this.activeInstrumentState = gripInstrumentState;
+    }
+
+    const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
+    if (!gripInstrumentState && lockedInstrumentState?.interactive && lockedInstrumentState.root?.visible) {
+      if (controllerState.raySqueezeInstrumentState !== lockedInstrumentState) {
+        this.resetRaySqueezeReference(controller, controllerState);
+      }
+      controllerState.raySqueezeInstrumentState = lockedInstrumentState;
+      this.activeInstrumentState = lockedInstrumentState;
+    }
+
     const hit = this.getCurrentHit(controller);
     const targetName = hit?.object?.name;
     const config = INTERACTION_MAP[targetName];
     const hitInstrumentState = hit?.object?.userData.instrumentState;
-    if (config?.type === "holdSqueeze" && hitInstrumentState?.interactive && hitInstrumentState.root?.visible) {
+    if (
+      !gripInstrumentState &&
+      !lockedInstrumentState &&
+      config?.type === "holdSqueeze" &&
+      hitInstrumentState?.interactive &&
+      hitInstrumentState.root?.visible
+    ) {
       if (controllerState.raySqueezeInstrumentState !== hitInstrumentState) {
         this.resetRaySqueezeReference(controller, controllerState);
       }
@@ -1598,12 +1858,46 @@ export class InstrumentController {
   }
 
   areInstrumentBodyCollidersTouching(firstState, secondState) {
-    setChordBounds(firstState.root, tempBoxA);
-    setChordBounds(secondState.root, tempBoxB);
+    this.setSqueezeColliderBounds(firstState, tempBoxA);
+    this.setSqueezeColliderBounds(secondState, tempBoxB);
     if (tempBoxA.isEmpty() || tempBoxB.isEmpty()) {
       return false;
     }
-    return tempBoxA.intersectsBox(tempBoxB);
+
+    tempBox.copy(tempBoxA).intersect(tempBoxB);
+    if (tempBox.isEmpty()) {
+      return false;
+    }
+
+    const overlapVolume = this.getBoxVolume(tempBox);
+    const smallerColliderVolume = Math.min(this.getBoxVolume(tempBoxA), this.getBoxVolume(tempBoxB));
+    if (smallerColliderVolume <= 0) {
+      return false;
+    }
+
+    const requiredOverlap = THREE.MathUtils.clamp(SQUEEZE_COLLIDER_MIN_OVERLAP, 0, 1);
+    return overlapVolume / smallerColliderVolume >= requiredOverlap;
+  }
+
+  getBoxVolume(box) {
+    if (!box || box.isEmpty()) {
+      return 0;
+    }
+
+    box.getSize(tempBoxSize);
+    return Math.max(tempBoxSize.x, 0) * Math.max(tempBoxSize.y, 0) * Math.max(tempBoxSize.z, 0);
+  }
+
+  setSqueezeColliderBounds(state, targetBox) {
+    targetBox.makeEmpty();
+    const squeezeCollider = state?.hitTargets?.[INTERACTION_TARGET_NAMES.horn];
+    if (!squeezeCollider) {
+      return targetBox;
+    }
+
+    squeezeCollider.updateWorldMatrix(true, false);
+    targetBox.setFromObject(squeezeCollider);
+    return targetBox;
   }
 
   updateRaycastHover() {
@@ -1638,7 +1932,58 @@ export class InstrumentController {
     target.material.opacity = HIT_MARKER_OPACITY;
     target.material.transparent = true;
     target.material.depthWrite = false;
+    if (target.name === INTERACTION_TARGET_NAMES.body && target.userData.instrumentState?.locked) {
+      target.material.color.setHex(0x45f6ff);
+      target.material.opacity = Math.max(HIT_MARKER_OPACITY, 0.08);
+      return;
+    }
     target.material.color.setHex(getHitTargetColor(target.name));
+  }
+
+  getPointedInstrumentState(controller) {
+    const hit = this.getCurrentHit(controller);
+    const instrumentState = hit?.object?.userData.instrumentState;
+    if (instrumentState?.root?.visible) {
+      return instrumentState;
+    }
+
+    return this.getLockedInstrumentStateFromRay(controller);
+  }
+
+  getLockedInstrumentStateFromRay(controller) {
+    if (!controller) {
+      return null;
+    }
+
+    this.setRaycasterFromController(controller);
+
+    const lockedBodyTargets = this.raycastTargets;
+    lockedBodyTargets.length = 0;
+    for (const state of this.instrumentStates) {
+      const bodyTarget = state.hitTargets?.[INTERACTION_TARGET_NAMES.body];
+      if (state.locked && state.interactive && state.root.visible && bodyTarget) {
+        lockedBodyTargets.push(bodyTarget);
+      }
+    }
+
+    if (lockedBodyTargets.length === 0) {
+      return null;
+    }
+
+    const intersections = this.lockedBoxIntersections;
+    intersections.length = 0;
+    this.raycaster.intersectObjects(lockedBodyTargets, false, intersections);
+    return intersections[0]?.object?.userData.instrumentState || null;
+  }
+
+  updateLockVisual(instrumentState) {
+    const bodyTarget = instrumentState?.hitTargets?.[INTERACTION_TARGET_NAMES.body];
+    if (!bodyTarget?.material) {
+      return;
+    }
+
+    bodyTarget.material.color.setHex(instrumentState.locked ? 0x45f6ff : getHitTargetColor(bodyTarget.name));
+    bodyTarget.material.opacity = Math.max(HIT_MARKER_OPACITY, instrumentState.locked ? 0.08 : 0);
   }
 
   getCurrentHit(controller) {
@@ -1646,9 +1991,7 @@ export class InstrumentController {
       return null;
     }
 
-    tempMatrix.identity().extractRotation(controller.matrixWorld);
-    this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-    this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+    this.setRaycasterFromController(controller);
 
     const targets = this.raycastTargets;
     targets.length = 0;
@@ -1679,6 +2022,13 @@ export class InstrumentController {
     return hit;
   }
 
+  setRaycasterFromController(controller) {
+    controller.updateMatrixWorld(true);
+    tempMatrix.identity().extractRotation(controller.matrixWorld);
+    this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+  }
+
   getMorphValue(morphName, state = this.activeInstrumentState) {
     if (!state) {
       return 0;
@@ -1691,6 +2041,118 @@ export class InstrumentController {
       return;
     }
     state.morphController.setMorph(morphName, value);
+  }
+
+  createNoteLabel(state) {
+    if (!NOTE_LABEL_SETTINGS.enabled || !this.noteFont || !state?.interactive) {
+      return;
+    }
+
+    const group = new THREE.Group();
+    group.name = "NOTE_label";
+    group.userData.isNoteLabel = true;
+    this.applyNoteLabelTransform(group);
+    state.root.add(group);
+    state.noteLabelGroup = group;
+    this.updateNoteLabel(state);
+  }
+
+  applyNoteLabelTransform(group) {
+    const position = NOTE_LABEL_SETTINGS.position || {};
+    const rotationDegrees = NOTE_LABEL_SETTINGS.rotationDegrees || {};
+    const scale = NOTE_LABEL_SETTINGS.scale || {};
+
+    group.position.set(position.x ?? 0, position.y ?? 0, position.z ?? 0);
+    group.rotation.set(
+      THREE.MathUtils.degToRad(rotationDegrees.x ?? 0),
+      THREE.MathUtils.degToRad(rotationDegrees.y ?? 0),
+      THREE.MathUtils.degToRad(rotationDegrees.z ?? 0),
+    );
+    group.scale.set(scale.x ?? 1, scale.y ?? 1, scale.z ?? 1);
+  }
+
+  updateNoteLabel(state) {
+    if (!NOTE_LABEL_SETTINGS.enabled || !this.noteFont || !state?.noteLabelGroup) {
+      return;
+    }
+
+    const labelText = this.getNoteLabelText(state);
+    if (labelText === state.noteLabelTextValue) {
+      return;
+    }
+
+    if (state.noteLabelMesh) {
+      this.disposeNoteLabelMesh(state.noteLabelMesh);
+      state.noteLabelMesh = null;
+    }
+
+    const geometry = new TextGeometry(labelText, {
+      font: this.noteFont,
+      size: NOTE_LABEL_SETTINGS.size,
+      depth: NOTE_LABEL_SETTINGS.depth,
+      curveSegments: NOTE_LABEL_SETTINGS.curveSegments,
+    });
+    geometry.computeBoundingBox();
+    const bounds = geometry.boundingBox;
+    if (bounds) {
+      const centerX = (bounds.min.x + bounds.max.x) * 0.5;
+      const centerY = (bounds.min.y + bounds.max.y) * 0.5;
+      geometry.translate(-centerX, -centerY, 0);
+    }
+    geometry.userData.disposeOnInstrumentDelete = true;
+
+    const material = new THREE.MeshStandardMaterial({
+      color: NOTE_LABEL_SETTINGS.color,
+      roughness: 0.36,
+      metalness: 0.02,
+      side: THREE.DoubleSide,
+    });
+    material.userData.disposeOnInstrumentDelete = true;
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = "NOTE_label_text";
+    mesh.userData.isNoteLabel = true;
+    mesh.castShadow = true;
+    mesh.renderOrder = 30;
+    state.noteLabelGroup.add(mesh);
+    state.noteLabelMesh = mesh;
+    state.noteLabelTextValue = labelText;
+  }
+
+  disposeNoteLabelMesh(mesh) {
+    mesh.removeFromParent();
+    mesh.geometry?.dispose?.();
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of materials) {
+      material?.dispose?.();
+    }
+  }
+
+  getNoteLabelText(state) {
+    const leftEar = state.morphController.getEarAmount("left");
+    const rightEar = state.morphController.getEarAmount("right");
+    const pitchSemitones = this.getPitchSemitonesFromLeftEar(leftEar, state.pitchSnap);
+    const octave = THREE.MathUtils.mapLinear(THREE.MathUtils.clamp(rightEar, -1, 1), -1, 1, 2, 6);
+    const midi = Math.round(F4_MIDI_NOTE + pitchSemitones + (octave - 4) * 12);
+    const noteIndex = THREE.MathUtils.euclideanModulo(midi, CHROMATIC_NOTE_NAMES.length);
+    const octaveNumber = Math.floor(midi / 12) - 1;
+    const noteName = CHROMATIC_NOTE_NAMES[noteIndex];
+    return NOTE_LABEL_SETTINGS.showOctave ? `${noteName}${octaveNumber}` : noteName;
+  }
+
+  getPitchSemitonesFromLeftEar(leftEar, pitchSnap = null) {
+    const pitchControl = THREE.MathUtils.clamp(leftEar, -1, 1);
+    const rawPitchSemitones =
+      pitchControl < 0
+        ? THREE.MathUtils.mapLinear(pitchControl, -1, 0, -5, 0)
+        : THREE.MathUtils.mapLinear(pitchControl, 0, 1, 0, 7);
+    const snapSteps = PITCH_SNAP_STEPS[pitchSnap];
+    if (!snapSteps) {
+      return rawPitchSemitones;
+    }
+    return snapSteps.reduce((closest, step) =>
+      Math.abs(step - rawPitchSemitones) < Math.abs(closest - rawPitchSemitones) ? step : closest,
+    snapSteps[0]);
   }
 
   setVowel(vowelMorphName, state = this.activeInstrumentState) {
@@ -1739,7 +2201,7 @@ export class InstrumentController {
     }
 
     this.positionObjectInFrontOfCamera(component, SPAWN_DISTANCE);
-    component.scale.setScalar(INSTRUMENT_BASE_SCALE);
+    this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
   }
 
   spawnCMajorScalePreset() {
@@ -1776,7 +2238,7 @@ export class InstrumentController {
 
       instrument.name = `Honk_${note.label}_${index + 1}`;
       instrument.position.copy(rowCenter).addScaledVector(tempSpawnRight, firstOffset + index * SCALE_PRESET_SPACING);
-      instrument.scale.setScalar(INSTRUMENT_BASE_SCALE);
+      this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
 
       tempSpawnTarget.copy(tempVector);
       tempSpawnTarget.y = instrument.position.y;
@@ -1805,6 +2267,7 @@ export class InstrumentController {
     if (rightEar?.userData.isProceduralMorphTarget) {
       this.setSpherePositionFromSignedValue(rightEar, 0);
     }
+    this.updateNoteLabel(state);
   }
 
   spawnDefaultInstrumentPreview() {
@@ -1818,7 +2281,7 @@ export class InstrumentController {
     }
     this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE);
     instrument.position.y -= 0.38;
-    instrument.scale.setScalar(INSTRUMENT_BASE_SCALE);
+    this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
   }
 
   createSpawnedInstrument() {
@@ -1847,9 +2310,11 @@ export class InstrumentController {
     state.pitchSnap = componentOption.pitchSnap || null;
     if (state.interactive) {
       this.initializeInstrumentState(state);
+      this.createNoteLabel(state);
     }
     this.instrumentStates.push(state);
     this.activeInstrumentState = state;
+    this.setInstrumentBaseScale(state, INSTRUMENT_BASE_SCALE);
 
     return instrument;
   }
