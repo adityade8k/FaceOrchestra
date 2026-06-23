@@ -15,6 +15,8 @@ export const VOWEL_ROUNDNESS = {
 };
 
 const F4_FREQUENCY = 349.23;
+const C_MAJOR_PITCH_STEPS_FROM_F = [-5, -3, -1, 0, 2, 4, 6, 7];
+const RELEASE_FADE_SECONDS = 0.12;
 
 export class VowelSynth {
   constructor() {
@@ -104,6 +106,7 @@ export class VowelSynth {
     const voice = {
       source,
       vibrato,
+      vibratoGain,
       master,
       output,
       panner,
@@ -137,12 +140,9 @@ export class VowelSynth {
     }
 
     for (const nodeSet of oldNodes) {
-      try {
-        nodeSet.filter.disconnect();
-        nodeSet.gain.disconnect();
-      } catch {
-        // Already disconnected.
-      }
+      this.disconnectNode(voice.source, nodeSet.filter);
+      this.disconnectNode(nodeSet.filter);
+      this.disconnectNode(nodeSet.gain);
     }
 
     const formants = FORMANTS[vowel] || FORMANTS.A;
@@ -206,6 +206,7 @@ export class VowelSynth {
     nose,
     vowel,
     pitchBendSemitones = null,
+    pitchSnap = null,
   }) {
     this.setVowel(vowel, voiceId);
 
@@ -219,10 +220,12 @@ export class VowelSynth {
     const octaveControl = THREE.MathUtils.clamp(rightEar, -1, 1);
     const nasalAmount = THREE.MathUtils.clamp(nose, 0, 1);
     const octave = THREE.MathUtils.mapLinear(octaveControl, -1, 1, 2, 6);
-    const pitchSemitones =
+    const rawPitchSemitones =
       pitchControl < 0
         ? THREE.MathUtils.mapLinear(pitchControl, -1, 0, -5, 0)
         : THREE.MathUtils.mapLinear(pitchControl, 0, 1, 0, 7);
+    const pitchSemitones =
+      pitchSnap === "cMajor" ? this.snapToPitchSteps(rawPitchSemitones, C_MAJOR_PITCH_STEPS_FROM_F) : rawPitchSemitones;
     const frequency = F4_FREQUENCY * 2 ** (pitchSemitones / 12) * 2 ** (octave - 4);
     if (pitchBendSemitones !== null) {
       voice.pitchBendSemitones = pitchBendSemitones;
@@ -309,6 +312,12 @@ export class VowelSynth {
     }
   }
 
+  snapToPitchSteps(value, steps) {
+    return steps.reduce((closest, step) =>
+      Math.abs(step - value) < Math.abs(closest - value) ? step : closest,
+    steps[0]);
+  }
+
   release(voiceId = "main") {
     const voice = this.voices.get(voiceId);
     if (!voice || !this.audioCtx) {
@@ -317,6 +326,86 @@ export class VowelSynth {
 
     const now = this.audioCtx.currentTime;
     voice.pitchBendSemitones = 0;
-    voice.master.gain.setTargetAtTime(0.0001, now, 0.06);
+    voice.master.gain.cancelScheduledValues(now);
+    voice.master.gain.setTargetAtTime(0.0001, now, 0.04);
+    this.stopVoice(voiceId, RELEASE_FADE_SECONDS);
+  }
+
+  releaseMatchingVoiceIds(predicate) {
+    for (const voiceId of [...this.voices.keys()]) {
+      if (predicate(voiceId)) {
+        this.release(voiceId);
+      }
+    }
+  }
+
+  releaseAll() {
+    for (const voiceId of [...this.voices.keys()]) {
+      this.release(voiceId);
+    }
+  }
+
+  stopVoice(voiceId, fadeSeconds = RELEASE_FADE_SECONDS) {
+    const voice = this.voices.get(voiceId);
+    if (!voice || !this.audioCtx) {
+      return;
+    }
+
+    const stopAt = this.audioCtx.currentTime + Math.max(fadeSeconds, 0.01);
+    voice.source.onended = () => {
+      this.disconnectVoice(voice);
+    };
+    this.voices.delete(voiceId);
+    this.startingVoices.delete(voiceId);
+
+    try {
+      voice.source.stop(stopAt);
+    } catch {
+      this.disconnectVoice(voice);
+    }
+    try {
+      voice.vibrato.stop(stopAt);
+    } catch {
+      // Source cleanup above is enough if vibrato was already stopped.
+    }
+  }
+
+  disconnectVoice(voice) {
+    const formantNodes = [...voice.formantNodes];
+    if (voice.roundnessNode) {
+      formantNodes.push(voice.roundnessNode);
+    }
+
+    for (const nodeSet of formantNodes) {
+      this.disconnectNode(voice.source, nodeSet.filter);
+      this.disconnectNode(nodeSet.filter);
+      this.disconnectNode(nodeSet.gain);
+    }
+
+    this.disconnectNode(voice.source);
+    this.disconnectNode(voice.vibrato);
+    this.disconnectNode(voice.vibratoGain);
+    this.disconnectNode(voice.nasalLow);
+    this.disconnectNode(voice.nasalLowGain);
+    this.disconnectNode(voice.nasalHigh);
+    this.disconnectNode(voice.nasalHighGain);
+    this.disconnectNode(voice.oralMix);
+    this.disconnectNode(voice.master);
+    this.disconnectNode(voice.output);
+    this.disconnectNode(voice.panner);
+    voice.formantNodes.length = 0;
+    voice.roundnessNode = null;
+  }
+
+  disconnectNode(node, destination = undefined) {
+    try {
+      if (destination) {
+        node?.disconnect?.(destination);
+      } else {
+        node?.disconnect?.();
+      }
+    } catch {
+      // Already disconnected.
+    }
   }
 }

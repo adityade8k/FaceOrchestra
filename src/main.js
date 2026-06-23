@@ -41,7 +41,7 @@ setupXRButton();
 instrumentController
   .init()
   .then(() => {
-    status.textContent = "Enter AR/VR, then press A on the right controller to spawn.";
+    status.textContent = "Enter AR/VR, hold A for the spawn menu, rotate your wrist, then release A.";
   })
   .catch((error) => {
     console.error(error);
@@ -56,12 +56,13 @@ renderer.xr.addEventListener("sessionstart", () => {
   scene.background = isPassthroughLike ? null : new THREE.Color(0x202124);
   setFallbackWorldVisible(!isPassthroughLike);
   instrumentController.onXRSessionStart();
-  status.textContent = "XR session active. Press A on the right controller to spawn or reposition.";
+  status.textContent = "XR session active. Hold A for the spawn menu. Release A to spawn, or press grip to cancel.";
 });
 
 renderer.xr.addEventListener("sessionend", () => {
   scene.background = new THREE.Color(0x202124);
   setFallbackWorldVisible(true);
+  instrumentController.onXRSessionEnd();
   status.textContent = "XR session ended. Enter AR/VR to continue.";
 });
 

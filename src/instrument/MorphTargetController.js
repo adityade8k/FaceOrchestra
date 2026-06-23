@@ -2,12 +2,13 @@ import * as THREE from "three";
 import { DEBUG_LOG_MORPHS, MORPH_TARGET_NAMES } from "../config.js";
 
 export class MorphTargetController {
-  constructor(root) {
+  constructor(root, { warnMissingExpectedMorphs = true } = {}) {
     this.root = root;
     this.meshes = [];
     this.missingMorphWarnings = new Set();
     this.currentVowelIndex = -1;
     this.currentVowelLetter = "neutral";
+    this.warnMissingExpectedMorphs = warnMissingExpectedMorphs;
 
     this.root.traverse((object) => {
       if (object.isMesh && object.morphTargetDictionary) {
@@ -29,9 +30,11 @@ export class MorphTargetController {
       console.log("Morph targets found:", [...morphNames].sort());
     }
 
-    for (const morphName of this.getExpectedMorphNames()) {
-      if (!morphNames.has(morphName)) {
-        console.warn(`Expected morph target missing: ${morphName}`);
+    if (this.warnMissingExpectedMorphs) {
+      for (const morphName of this.getExpectedMorphNames()) {
+        if (!morphNames.has(morphName)) {
+          console.warn(`Expected morph target missing: ${morphName}`);
+        }
       }
     }
   }
