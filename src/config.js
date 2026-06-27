@@ -1,5 +1,95 @@
 export const MODEL_PATH = "./model/honk/horn_gltf.glb";
-export const LOOPER_MODEL_PATH = "./model/looper/looper.glb";
+export const LOOPER_MODEL_PATH = "./model/looper/recorder.glb";
+export const LOOPER_TEXTURE_PATHS = {
+  baseMap: "./model/looper/recorder2_lambert1SG_BaseColor.png",
+  normalMap: "./model/looper/recorder2_lambert1SG_Normal.png",
+  metalnessMap: "./model/looper/recorder2_lambert1SG_Metallic.png",
+  roughnessMap: "./model/looper/recorder2_lambert1SG_Roughness.png",
+};
+export const LOOPER_MORPH_TARGET_NAMES = {
+  buttonRecord: "button_record",
+  buttonStop: "button_stop_recording",
+  buttonPlay: "button_play",
+  buttonPause: "button_pause",
+  bottomHandleDown: "bottom_handle_down",
+  bottomHandleUp: "bottom_handle_up",
+  rightHandleDown: "Right_handle_down",
+  rightHandleUp: "Right_handle_up",
+  leftHandleUp: "Left_handle_up",
+  leftHandleDown: "Left_handle_down",
+  playingHead: "playing_looper_head",
+};
+export const LOOPER_BUTTON_MORPH_TARGETS = {
+  record: LOOPER_MORPH_TARGET_NAMES.buttonRecord,
+  stop: LOOPER_MORPH_TARGET_NAMES.buttonStop,
+  play: LOOPER_MORPH_TARGET_NAMES.buttonPlay,
+  pause: LOOPER_MORPH_TARGET_NAMES.buttonPause,
+};
+export const LOOPER_CONTROL_MORPH_TARGETS = {
+  volume: {
+    down: LOOPER_MORPH_TARGET_NAMES.leftHandleDown,
+    up: LOOPER_MORPH_TARGET_NAMES.leftHandleUp,
+  },
+  gap: {
+    down: LOOPER_MORPH_TARGET_NAMES.bottomHandleDown,
+    up: LOOPER_MORPH_TARGET_NAMES.bottomHandleUp,
+  },
+  speed: {
+    down: LOOPER_MORPH_TARGET_NAMES.rightHandleDown,
+    up: LOOPER_MORPH_TARGET_NAMES.rightHandleUp,
+  },
+};
+export const LOOPER_MORPH_SETTINGS = {
+  buttonPressDurationMs: 140,
+  playingHead: {
+    min: 0.08,
+    max: 1,
+    changeIntervalMs: 120,
+    smoothing: 0.22,
+  },
+};
+export const LOOPER_BUTTON_COLLIDERS = {
+  play: {
+    x: -0.27,
+    y: 0.34,
+    morphTarget: LOOPER_BUTTON_MORPH_TARGETS.play,
+  },
+  pause: {
+    x: -0.09,
+    y: 0.34,
+    morphTarget: LOOPER_BUTTON_MORPH_TARGETS.pause,
+  },
+  record: {
+    x: 0.09,
+    y: 0.34,
+    morphTarget: LOOPER_BUTTON_MORPH_TARGETS.record,
+  },
+  stop: {
+    x: 0.27,
+    y: 0.34,
+    morphTarget: LOOPER_BUTTON_MORPH_TARGETS.stop,
+  },
+};
+export const LOOPER_CONTROL_COLLIDERS = {
+  volume: {
+    x: -0.62,
+    y: -0.08,
+    movementRange: 0.24,
+    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.volume,
+  },
+  gap: {
+    x: 0,
+    y: -0.08,
+    movementRange: 0.24,
+    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.gap,
+  },
+  speed: {
+    x: 0.62,
+    y: -0.08,
+    movementRange: 0.24,
+    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.speed,
+  },
+};
 
 export const DEBUG_SHOW_COLLIDERS = false;
 export const DEBUG_SHOW_BOUNDING_BOXES = true;
@@ -108,12 +198,6 @@ export const SPAWN_COMPONENT_OPTIONS = [
     label: "Looper",
     modelPath: LOOPER_MODEL_PATH,
     color: 0x45f6ff,
-  },
-  {
-    id: "recorder",
-    label: "Recorder",
-    modelPath: LOOPER_MODEL_PATH,
-    color: 0xff8a3d,
   },
 ];
 

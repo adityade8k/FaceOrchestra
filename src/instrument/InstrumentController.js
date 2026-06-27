@@ -19,6 +19,13 @@ import {
   INSTRUMENT_MIN_SCALE,
   INSTRUMENT_SCALE_STEP,
   INSTRUMENT_TEXTURE_PATHS,
+  LOOPER_BUTTON_MORPH_TARGETS,
+  LOOPER_BUTTON_COLLIDERS,
+  LOOPER_CONTROL_COLLIDERS,
+  LOOPER_CONTROL_MORPH_TARGETS,
+  LOOPER_MORPH_SETTINGS,
+  LOOPER_MORPH_TARGET_NAMES,
+  LOOPER_TEXTURE_PATHS,
   INTERACTION_COLLIDERS,
   INTERACTION_TARGET_NAMES,
   MAX_PITCH_BEND_SEMITONES,
@@ -106,7 +113,8 @@ const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
 const LOOPER_COMPONENT_ID = "looper";
-const RECORDER_COMPONENT_ID = "recorder";
+const LEGACY_LOOPER_COMPONENT_ID = "__legacy_looper";
+const RECORDER_COMPONENT_ID = LOOPER_COMPONENT_ID;
 const HONK_CONNECTION_TARGET_NAME = "HIT_honkConnection";
 const LOOPER_PAD_COUNT = 8;
 const RECORDER_CHANNEL_COUNT = 8;
@@ -298,11 +306,12 @@ export function applyStandardInstrumentMaterials(root, textures = {}) {
 function makeStandardInstrumentMaterial(sourceMaterial, textures = {}) {
   return new THREE.MeshStandardMaterial({
     color: 0xffffff,
-    map: textures.baseMap ?? null,
-    normalMap: textures.normalMap ?? null,
-    roughnessMap: textures.roughnessMap ?? null,
+    map: textures.baseMap ?? sourceMaterial?.map ?? null,
+    normalMap: textures.normalMap ?? sourceMaterial?.normalMap ?? null,
+    roughnessMap: textures.roughnessMap ?? sourceMaterial?.roughnessMap ?? null,
+    metalnessMap: textures.metalnessMap ?? sourceMaterial?.metalnessMap ?? null,
     roughness: textures.roughnessMap ? 1 : sourceMaterial?.roughness ?? 0.48,
-    metalness: sourceMaterial?.metalness ?? 0.02,
+    metalness: textures.metalnessMap ? 1 : sourceMaterial?.metalness ?? 0.02,
     side: THREE.DoubleSide,
   });
 }
@@ -323,6 +332,25 @@ async function loadInstrumentMaterialTextures(textureLoader) {
   }
 
   return { baseMap, normalMap, roughnessMap };
+}
+
+async function loadLooperMaterialTextures(textureLoader) {
+  const [baseMap, normalMap, metalnessMap, roughnessMap] = await Promise.all([
+    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.baseMap),
+    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.normalMap),
+    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.metalnessMap),
+    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.roughnessMap),
+  ]);
+
+  baseMap.colorSpace = THREE.SRGBColorSpace;
+
+  for (const texture of [baseMap, normalMap, metalnessMap, roughnessMap]) {
+    texture.flipY = false;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+  }
+
+  return { baseMap, normalMap, metalnessMap, roughnessMap };
 }
 
 function makeHitTargetMaterial(name, color = null, opacity = HIT_MARKER_OPACITY) {
@@ -400,6 +428,8 @@ export class InstrumentController {
     this.instrumentTemplate = null;
     this.componentTemplates = new Map();
     this.instrumentMaterialTextures = null;
+    this.looperMaterialTextures = null;
+    this.looperMaterialTexturePromise = null;
     this.noteFont = null;
     this.noteFontLoadPromise = null;
     this.nextInstrumentId = 1;
@@ -599,7 +629,7 @@ export class InstrumentController {
     const lines = [
       "Close this panel to spawn the first face instrument.",
       "After closing, hold A to open the spawn menu.",
-      "Rotate your wrist to highlight Honk, Honk C, Honk Fm, Looper, or Recorder, then release A.",
+      "Rotate your wrist to highlight Honk, Honk C, Honk Fm, or Looper, then release A.",
       "Press grip while the menu is open to cancel.",
       "Aim at the mouth and press trigger to cycle vowels.",
       "Aim at the horn and hold trigger to squeeze and play sound.",
@@ -729,10 +759,11 @@ export class InstrumentController {
     template.visible = false;
 
     const templateHitTargets = collectHitTargets(template);
-    if (option.id === LOOPER_COMPONENT_ID) {
-      this.createLooperColliders(template, templateHitTargets);
-    } else if (option.id === RECORDER_COMPONENT_ID) {
+    if (option.id === RECORDER_COMPONENT_ID) {
+      applyStandardInstrumentMaterials(template, await this.loadLooperMaterialTextures());
       this.createRecorderColliders(template, templateHitTargets);
+    } else if (option.id === LEGACY_LOOPER_COMPONENT_ID) {
+      this.createLooperColliders(template, templateHitTargets);
     }
     this.createBodyGripTarget(template, templateHitTargets);
     this.createInstrumentState(template, findMorphMesh(template), templateHitTargets, false);
@@ -742,6 +773,14 @@ export class InstrumentController {
       template,
       interactive: false,
     });
+  }
+
+  async loadLooperMaterialTextures() {
+    if (!this.looperMaterialTexturePromise) {
+      this.looperMaterialTexturePromise = loadLooperMaterialTextures(this.textureLoader);
+    }
+    this.looperMaterialTextures = await this.looperMaterialTexturePromise;
+    return this.looperMaterialTextures;
   }
 
   createInstrumentState(
@@ -1041,18 +1080,22 @@ export class InstrumentController {
       hitTargets[name] = mesh;
     };
 
-    const buttonY = tempBoxCenter.y + tempBoxSize.y * 0.34;
-    const buttonXs = [-0.27, -0.09, 0.09, 0.27];
-    for (const [index, action] of LOOPER_BUTTON_ACTIONS.entries()) {
+    for (const action of LOOPER_BUTTON_ACTIONS) {
+      const buttonConfig = LOOPER_BUTTON_COLLIDERS[action];
       const button = new THREE.Mesh(
         buttonGeometry.clone(),
         makeHitTargetMaterial(getRecorderButtonName(action), LOOPER_DEBUG_COLORS.button[action], LOOPER_COLLIDER_OPACITY),
       );
       button.geometry.userData.disposeOnInstrumentDelete = true;
-      button.position.set(tempBoxCenter.x + tempBoxSize.x * buttonXs[index], buttonY, panelZ);
+      button.position.set(
+        tempBoxCenter.x + tempBoxSize.x * buttonConfig.x,
+        tempBoxCenter.y + tempBoxSize.y * buttonConfig.y,
+        panelZ,
+      );
       addCollider(button, getRecorderButtonName(action), LOOPER_DEBUG_COLORS.button[action], {
         isRecorderButton: true,
         recorderButtonAction: action,
+        looperMorphName: buttonConfig.morphTarget,
       });
     }
 
@@ -1076,22 +1119,25 @@ export class InstrumentController {
       });
     }
 
-    const controlY = tempBoxCenter.y - tempBoxSize.y * 0.08;
-    const controlTravel = tempBoxSize.y * 0.24;
-    for (const [control, xMultiplier, color] of [
-      ["volume", -0.62, LOOPER_DEBUG_COLORS.controlVolume],
-      ["gap", 0, LOOPER_DEBUG_COLORS.controlGap],
-      ["speed", 0.62, LOOPER_DEBUG_COLORS.controlSpeed],
-    ]) {
+    const controlColors = {
+      volume: LOOPER_DEBUG_COLORS.controlVolume,
+      gap: LOOPER_DEBUG_COLORS.controlGap,
+      speed: LOOPER_DEBUG_COLORS.controlSpeed,
+    };
+    for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
+      const color = controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
+      const controlY = tempBoxCenter.y + tempBoxSize.y * controlConfig.y;
+      const controlTravel = tempBoxSize.y * controlConfig.movementRange;
       const controlSphere = new THREE.Mesh(
         controlGeometry.clone(),
         makeHitTargetMaterial(getRecorderControlName(control), color, LOOPER_COLLIDER_OPACITY),
       );
       controlSphere.geometry.userData.disposeOnInstrumentDelete = true;
-      controlSphere.position.set(tempBoxCenter.x + tempBoxSize.x * xMultiplier, controlY, panelZ);
+      controlSphere.position.set(tempBoxCenter.x + tempBoxSize.x * controlConfig.x, controlY, panelZ);
       addCollider(controlSphere, getRecorderControlName(control), color, {
         isRecorderControl: true,
         recorderControl: control,
+        looperMorphTargets: controlConfig.morphTargets,
         neutralY: controlY,
         minY: controlY - controlTravel,
         maxY: controlY + controlTravel,
@@ -1187,6 +1233,10 @@ export class InstrumentController {
       lastPlaybackUpdateMs: 0,
       activeRecordings: new Map(),
       activePlaybackEvents: new Map(),
+      buttonMorphReleaseTimes: new Map(),
+      playingHeadMorphValue: 0,
+      playingHeadMorphTarget: 0,
+      nextPlayingHeadMorphChangeMs: 0,
       volumeControlValue: 0,
       speedControlValue: 0,
       gapControlValue: -1,
@@ -1329,6 +1379,7 @@ export class InstrumentController {
     this.updateRecorderRecordings();
     this.updateLooperPlayback();
     this.updateRecorderPlayback();
+    this.updateRecorderMorphAnimations();
     this.updateLooperWires();
     this.updateRecorderWires();
     this.updateAllLooperVisuals();
@@ -2010,6 +2061,8 @@ export class InstrumentController {
       return;
     }
 
+    this.triggerRecorderButtonMorph(recorderState, action);
+
     if (action === "record") {
       this.startRecorderRecording(recorderState);
       this.updateRecorderVisuals(recorderState);
@@ -2586,12 +2639,99 @@ export class InstrumentController {
       data.volume = this.getLooperVolumeFromControl(clamped);
     }
 
+    this.applyRecorderControlMorphValue(recorderState, control, clamped);
+
     if (updateSphere) {
       const sphere = recorderState.hitTargets[getRecorderControlName(control)];
       if (sphere?.userData.isRecorderControl) {
         sphere.position.y = THREE.MathUtils.mapLinear(clamped, -1, 1, sphere.userData.minY, sphere.userData.maxY);
       }
     }
+  }
+
+  applyRecorderControlMorphValue(recorderState, control, value) {
+    const morphTargets = LOOPER_CONTROL_MORPH_TARGETS[control];
+    if (!recorderState?.isRecorder || !morphTargets) {
+      return;
+    }
+
+    const clamped = THREE.MathUtils.clamp(value, -1, 1);
+    this.setMorph(morphTargets.up, Math.max(clamped, 0), recorderState);
+    this.setMorph(morphTargets.down, Math.max(-clamped, 0), recorderState);
+  }
+
+  triggerRecorderButtonMorph(recorderState, action, now = performance.now()) {
+    const data = recorderState?.recorderData;
+    const morphName = LOOPER_BUTTON_MORPH_TARGETS[action];
+    if (!data || !morphName) {
+      return;
+    }
+
+    if (!data.buttonMorphReleaseTimes) {
+      data.buttonMorphReleaseTimes = new Map();
+    }
+    this.setMorph(morphName, 1, recorderState);
+    data.buttonMorphReleaseTimes.set(action, now + LOOPER_MORPH_SETTINGS.buttonPressDurationMs);
+  }
+
+  updateRecorderMorphAnimations(now = performance.now()) {
+    for (const recorderState of this.instrumentStates) {
+      const data = recorderState.recorderData;
+      if (!data || !recorderState.root?.visible) {
+        continue;
+      }
+
+      this.updateRecorderButtonMorphs(recorderState, now);
+      this.updateRecorderPlayingMorph(recorderState, now);
+    }
+  }
+
+  updateRecorderButtonMorphs(recorderState, now) {
+    const data = recorderState?.recorderData;
+    if (!data?.buttonMorphReleaseTimes) {
+      return;
+    }
+
+    for (const [action, releaseTimeMs] of data.buttonMorphReleaseTimes) {
+      if (now < releaseTimeMs) {
+        continue;
+      }
+
+      const morphName = LOOPER_BUTTON_MORPH_TARGETS[action];
+      if (morphName) {
+        this.setMorph(morphName, 0, recorderState);
+      }
+      data.buttonMorphReleaseTimes.delete(action);
+    }
+  }
+
+  updateRecorderPlayingMorph(recorderState, now) {
+    const data = recorderState?.recorderData;
+    if (!data) {
+      return;
+    }
+
+    const settings = LOOPER_MORPH_SETTINGS.playingHead;
+    if (data.playing && !data.paused) {
+      if (now >= data.nextPlayingHeadMorphChangeMs) {
+        data.playingHeadMorphTarget = THREE.MathUtils.lerp(settings.min, settings.max, Math.random());
+        data.nextPlayingHeadMorphChangeMs = now + settings.changeIntervalMs * THREE.MathUtils.lerp(0.65, 1.35, Math.random());
+      }
+    } else {
+      data.playingHeadMorphTarget = 0;
+      data.nextPlayingHeadMorphChangeMs = now;
+    }
+
+    data.playingHeadMorphValue = THREE.MathUtils.lerp(
+      data.playingHeadMorphValue,
+      data.playingHeadMorphTarget,
+      settings.smoothing,
+    );
+    if (Math.abs(data.playingHeadMorphValue) < 0.001 && data.playingHeadMorphTarget === 0) {
+      data.playingHeadMorphValue = 0;
+    }
+
+    this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, data.playingHeadMorphValue, recorderState);
   }
 
   getRecorderLoopGapFromControl(value) {
@@ -2632,6 +2772,14 @@ export class InstrumentController {
     data.lastPlaybackUpdateMs = 0;
     data.activeRecordings.clear();
     data.activePlaybackEvents.clear();
+    data.buttonMorphReleaseTimes?.clear();
+    for (const morphName of Object.values(LOOPER_BUTTON_MORPH_TARGETS)) {
+      this.setMorph(morphName, 0, recorderState);
+    }
+    data.playingHeadMorphValue = 0;
+    data.playingHeadMorphTarget = 0;
+    data.nextPlayingHeadMorphChangeMs = 0;
+    this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, 0, recorderState);
   }
 
   applyInstrumentVisualScale(state, pulse = state.hornSqueezeValue ? 1 + state.hornSqueezeValue * 0.035 : 1) {
@@ -4387,18 +4535,14 @@ export class InstrumentController {
       return;
     }
 
-    const defaultComponentId = this.componentTemplates.has(RECORDER_COMPONENT_ID)
-      ? RECORDER_COMPONENT_ID
-      : this.componentTemplates.has(LOOPER_COMPONENT_ID)
-        ? LOOPER_COMPONENT_ID
-        : "honk";
+    const defaultComponentId = this.componentTemplates.has(LOOPER_COMPONENT_ID) ? LOOPER_COMPONENT_ID : "honk";
     const instrument = this.createSpawnedComponent(defaultComponentId);
     if (!instrument) {
       return;
     }
     this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE);
     instrument.position.y -=
-      defaultComponentId === LOOPER_COMPONENT_ID || defaultComponentId === RECORDER_COMPONENT_ID ? 0.18 : 0.38;
+      defaultComponentId === LOOPER_COMPONENT_ID || defaultComponentId === LEGACY_LOOPER_COMPONENT_ID ? 0.18 : 0.38;
     this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
   }
 
@@ -4430,10 +4574,10 @@ export class InstrumentController {
       this.initializeInstrumentState(state);
       this.createNoteLabel(state);
     }
-    if (componentOption.id === LOOPER_COMPONENT_ID) {
-      this.initializeLooperState(state);
-    } else if (componentOption.id === RECORDER_COMPONENT_ID) {
+    if (componentOption.id === RECORDER_COMPONENT_ID) {
       this.initializeRecorderState(state);
+    } else if (componentOption.id === LEGACY_LOOPER_COMPONENT_ID) {
+      this.initializeLooperState(state);
     }
     this.instrumentStates.push(state);
     this.activeInstrumentState = state;
