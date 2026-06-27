@@ -16,6 +16,11 @@ export const VOWEL_ROUNDNESS = {
 
 const F4_FREQUENCY = 349.23;
 const C_MAJOR_PITCH_STEPS_FROM_F = [-5, -3, -1, 0, 2, 4, 6, 7];
+const F_NATURAL_MINOR_PITCH_STEPS_FROM_F = [-5, -4, -2, 0, 2, 3, 5, 7];
+const PITCH_SNAP_STEPS = {
+  cMajor: C_MAJOR_PITCH_STEPS_FROM_F,
+  fNaturalMinor: F_NATURAL_MINOR_PITCH_STEPS_FROM_F,
+};
 const RELEASE_FADE_SECONDS = 0.12;
 
 export class VowelSynth {
@@ -77,10 +82,10 @@ export class VowelSynth {
     panner.connect(this.audioCtx.destination);
 
     panner.panningModel = "HRTF";
-    panner.distanceModel = "inverse";
-    panner.refDistance = 0.35;
-    panner.maxDistance = 5;
-    panner.rolloffFactor = 1.7;
+    panner.distanceModel = "linear";
+    panner.refDistance = 1;
+    panner.maxDistance = 10000;
+    panner.rolloffFactor = 0;
     panner.coneInnerAngle = 90;
     panner.coneOuterAngle = 220;
     panner.coneOuterGain = 0.22;
@@ -199,7 +204,6 @@ export class VowelSynth {
   update({
     voiceId = "main",
     hornAmount,
-    spatialGain = 1,
     masterGain = 1,
     leftEar,
     rightEar,
@@ -224,17 +228,14 @@ export class VowelSynth {
       pitchControl < 0
         ? THREE.MathUtils.mapLinear(pitchControl, -1, 0, -5, 0)
         : THREE.MathUtils.mapLinear(pitchControl, 0, 1, 0, 7);
-    const pitchSemitones =
-      pitchSnap === "cMajor" ? this.snapToPitchSteps(rawPitchSemitones, C_MAJOR_PITCH_STEPS_FROM_F) : rawPitchSemitones;
+    const snapSteps = PITCH_SNAP_STEPS[pitchSnap];
+    const pitchSemitones = snapSteps ? this.snapToPitchSteps(rawPitchSemitones, snapSteps) : rawPitchSemitones;
     const frequency = F4_FREQUENCY * 2 ** (pitchSemitones / 12) * 2 ** (octave - 4);
     if (pitchBendSemitones !== null) {
       voice.pitchBendSemitones = pitchBendSemitones;
     }
     const detune = voice.pitchBendSemitones * 100;
-    const gain = Math.max(
-      0.0001,
-      hornAmount * 0.72 * THREE.MathUtils.clamp(spatialGain, 0, 1) * Math.max(masterGain, 0),
-    );
+    const gain = Math.max(0.0001, hornAmount * 0.72 * Math.max(masterGain, 0));
 
     voice.source.frequency.setTargetAtTime(frequency, now, 0.035);
     voice.source.detune.setTargetAtTime(detune, now, 0.045);
@@ -280,13 +281,12 @@ export class VowelSynth {
 
     const now = this.audioCtx.currentTime;
     const panner = voice.panner;
-    const distance = settings?.distanceFalloff || {};
     const directional = settings?.directionalFalloff || {};
 
-    panner.distanceModel = distance.model || "inverse";
-    panner.refDistance = distance.refDistance ?? 0.35;
-    panner.maxDistance = distance.maxDistance ?? 5;
-    panner.rolloffFactor = distance.rolloffFactor ?? 1.7;
+    panner.distanceModel = "linear";
+    panner.refDistance = 1;
+    panner.maxDistance = 10000;
+    panner.rolloffFactor = 0;
     panner.coneInnerAngle = directional.coneInnerAngle ?? 90;
     panner.coneOuterAngle = directional.coneOuterAngle ?? 220;
     panner.coneOuterGain = directional.coneOuterGain ?? 0.22;

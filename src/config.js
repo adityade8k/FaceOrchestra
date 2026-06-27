@@ -96,10 +96,24 @@ export const SPAWN_COMPONENT_OPTIONS = [
     preset: "cMajorScale",
   },
   {
+    id: "honk-fminor",
+    label: "Honk Fm",
+    modelPath: MODEL_PATH,
+    color: 0xb78cff,
+    variantOf: "honk",
+    preset: "fNaturalMinorScale",
+  },
+  {
     id: "looper",
     label: "Looper",
     modelPath: LOOPER_MODEL_PATH,
     color: 0x45f6ff,
+  },
+  {
+    id: "recorder",
+    label: "Recorder",
+    modelPath: LOOPER_MODEL_PATH,
+    color: 0xff8a3d,
   },
 ];
 
@@ -181,13 +195,7 @@ export const INTERACTION_COLLIDERS = [
 ];
 
 export const SPATIAL_AUDIO_SETTINGS = {
-  masterGain: 5.0,
-  distanceFalloff: {
-    model: "inverse",
-    refDistance: 0.12,
-    maxDistance: 2.2,
-    rolloffFactor: 6,
-  },
+  masterGain: 2.0,
   directionalFalloff: {
     coneInnerAngle: 35,
     coneOuterAngle: 110,
