@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CHORD_BOX_SCALE } from "../config.js";
+import { CHORD_BOX_SCALE } from "../config/honk.js";
 
 const tempBox = new THREE.Box3();
 const tempCenter = new THREE.Vector3();

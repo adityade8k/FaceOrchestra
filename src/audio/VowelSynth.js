@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { NASALITY_SETTINGS } from "../config.js";
+import { NASALITY_SETTINGS } from "../config/audio.js";
 
 export const FORMANTS = {
   A: { freq: [800, 1300, 2500], gain: [1.0, 0.62, 0.28], q: [10, 16, 18] },

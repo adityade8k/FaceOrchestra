@@ -5,6 +5,7 @@ import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import { clone as cloneSkeletonAware } from "three/addons/utils/SkeletonUtils.js";
 import {
   BEND_COLLIDER_ROTATION_DEGREES,
+  BEND_ALIGNED_COLLIDER_GROUP_NAME,
   BEND_SENSITIVITY,
   BEND_SMOOTHING,
   DEBUG_LOG_MORPHS,
@@ -17,35 +18,78 @@ import {
   INSTRUMENT_BASE_SCALE,
   INSTRUMENT_MAX_SCALE,
   INSTRUMENT_MIN_SCALE,
-  INSTRUMENT_SCALE_STEP,
   INSTRUMENT_TEXTURE_PATHS,
+  HONK_CONNECTION_TARGET_NAME,
+  LEGACY_LOOPER_COMPONENT_ID,
   LOOPER_BUTTON_MORPH_TARGETS,
-  LOOPER_BUTTON_COLLIDERS,
-  LOOPER_CONTROL_COLLIDERS,
+  LOOPER_BUTTON_ACTIONS,
+  LOOPER_COLLIDER_OPACITY,
   LOOPER_CONTROL_MORPH_TARGETS,
+  LOOPER_COMPONENT_ID,
+  LOOPER_DEBUG_COLORS,
+  LOOPER_MIN_CLIP_DURATION_MS,
   LOOPER_MORPH_SETTINGS,
   LOOPER_MORPH_TARGET_NAMES,
+  LOOPER_PAD_COUNT,
   LOOPER_TEXTURE_PATHS,
-  INTERACTION_COLLIDERS,
+  LOOPER_WIRE_COLORS,
+  LOOPER_WIRE_RADIUS,
+  LOOPER_WIRE_SEGMENTS,
   INTERACTION_TARGET_NAMES,
   MAX_PITCH_BEND_SEMITONES,
   MODEL_PATH,
   MORPH_TARGET_NAMES,
   NOTE_LABEL_SETTINGS,
   NOSE_DRAG_SENSITIVITY,
-  SCALE_JOYSTICK_DEADZONE,
   SHOW_INSTRUCTION_PANEL,
   SPATIAL_AUDIO_SETTINGS,
   SPAWN_COMPONENT_OPTIONS,
   SPAWN_DISTANCE,
   SPAWN_Y_OFFSET,
+  RECORDER_CHANNEL_COUNT,
+  RECORDER_COMPONENT_ID,
+  RECORDER_MIN_EVENT_DURATION_MS,
   SQUEEZE_COLLIDER_MIN_OVERLAP,
   SQUEEZE_SENSITIVITY,
-  XR_AXES,
-  XR_BUTTONS,
 } from "../config.js";
+import { LooperAudioEngine } from "../audio/LooperAudioEngine.js";
 import { DebugVisuals } from "../debug/DebugVisuals.js";
+import { XRControllerManager } from "../input/XRControllerManager.js";
+import { GripTransformSystem } from "../interaction/GripTransformSystem.js";
+import { RaycastInteractionSystem } from "../interaction/RaycastInteractionSystem.js";
+import {
+  createBodyGripTarget as createBodyGripTargetObject,
+  createHonkConnectionTarget as createHonkConnectionTargetObject,
+  createLooperColliders as createLooperColliderTargets,
+  createMorphTargetSpheres as createMorphTargetSphereColliders,
+  createRecorderColliders as createRecorderColliderTargets,
+} from "../instruments/colliderBuilders.js";
+import { createInstrumentObject } from "../instruments/instrumentFactory.js";
+import {
+  getLooperButtonName,
+  getLooperControlName,
+  getLooperNodeName,
+  getLooperPadName,
+  getRecorderButtonName,
+  getRecorderControlName,
+  getRecorderNodeName,
+} from "../instruments/looperNames.js";
+import { InstructionPanel } from "../ui/InstructionPanel.js";
+import { RadialSpawnMenu } from "../ui/RadialSpawnMenu.js";
+import {
+  applyStandardInstrumentMaterials,
+  loadMaterialTextureSet,
+} from "../utils/materialUtils.js";
+import { findMorphMesh } from "../utils/morphUtils.js";
+import {
+  createWireMaterial,
+  disposeWireMesh as disposeWireMeshUtility,
+  updateWireMeshGeometry as updateWireMeshGeometryUtility,
+} from "../utils/wireUtils.js";
 import { MorphTargetController } from "./MorphTargetController.js";
+
+export { applyStandardInstrumentMaterials } from "../utils/materialUtils.js";
+export { findMorphMesh } from "../utils/morphUtils.js";
 
 export const DEBUG_SHOW_HIT_TARGETS = DEBUG_SHOW_COLLIDERS;
 export const DEBUG_RAYCAST = DEBUG_LOG_RAYCAST;
@@ -112,54 +156,6 @@ const VOWEL_LETTERS_BY_MORPH = {
 const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
-const LOOPER_COMPONENT_ID = "looper";
-const LEGACY_LOOPER_COMPONENT_ID = "__legacy_looper";
-const RECORDER_COMPONENT_ID = LOOPER_COMPONENT_ID;
-const HONK_CONNECTION_TARGET_NAME = "HIT_honkConnection";
-const LOOPER_PAD_COUNT = 8;
-const RECORDER_CHANNEL_COUNT = 8;
-const LOOPER_COLLIDER_OPACITY = 0.34;
-const HONK_CONNECTION_COLLIDER_OPACITY = 0.32;
-const LOOPER_WIRE_RADIUS = 0.008;
-const LOOPER_WIRE_SEGMENTS = 36;
-const LOOPER_MIN_CLIP_DURATION_MS = 80;
-const RECORDER_MIN_EVENT_DURATION_MS = 24;
-const RECORDER_LOOP_GAP_RANGE_MS = { min: 0, max: 4000 };
-const LOOPER_VOLUME_RANGE = { min: 0.12, max: 1.25 };
-const LOOPER_SPEED_RANGE = { min: 0.45, max: 2.0 };
-const LOOPER_BUTTON_ACTIONS = ["play", "pause", "record", "stop"];
-const LOOPER_WIRE_COLORS = [0x2f80ff, 0xff4f5e];
-const LOOPER_DEBUG_COLORS = {
-  honkConnection: 0xff6bd6,
-  button: {
-    play: 0x5ee67c,
-    pause: 0xf7d04a,
-    record: 0xff4f5e,
-    stop: 0xff8a3d,
-  },
-  buttonActive: 0xffffff,
-  padEmpty: 0x33495f,
-  padRecorded: 0x65d66e,
-  padSilent: 0x8f7cff,
-  padRecording: 0xff4f5e,
-  padPlaying: 0xf7d04a,
-  nodeOpen: 0x45f6ff,
-  recorderNodeOpen: 0xffb15c,
-  recorderRecording: 0xff4f5e,
-  recorderRecorded: 0x65d66e,
-  recorderPlaying: 0xf7d04a,
-  controlVolume: 0x9e8cff,
-  controlSpeed: 0xf0a23c,
-  controlGap: 0x5ac8fa,
-};
-const BEND_ALIGNED_COLLIDER_GROUP_NAME = "BEND_aligned_interaction_colliders";
-const RADIAL_MENU_RADIUS = 0.18;
-const RADIAL_MENU_INNER_RADIUS = 0.035;
-const RADIAL_MENU_DISTANCE = 0.22;
-const RADIAL_MENU_ROLL_STEP = THREE.MathUtils.degToRad(32);
-const RADIAL_MENU_ROLL_DEADZONE = THREE.MathUtils.degToRad(9);
-const RADIAL_MENU_BASE_OPACITY = 0.38;
-const RADIAL_MENU_HIGHLIGHT_OPACITY = 0.88;
 const C_MAJOR_SCALE_PRESET = [
   { label: "C", semitonesFromF: -5 },
   { label: "D", semitonesFromF: -3 },
@@ -188,22 +184,17 @@ const PITCH_SNAP_STEPS = {
   cMajor: C_MAJOR_SCALE_PRESET.map((note) => note.semitonesFromF),
   fNaturalMinor: F_NATURAL_MINOR_SNAP_STEPS_FROM_F,
 };
-const tempMatrix = new THREE.Matrix4();
 const tempVector = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
-const tempRadialQuaternion = new THREE.Quaternion();
-const tempRadialEuler = new THREE.Euler();
 const tempBendQuaternion = new THREE.Quaternion();
 const tempBendEuler = new THREE.Euler();
 const tempScale = new THREE.Vector3();
-const tempPanelTarget = new THREE.Vector3();
 const tempSpawnForward = new THREE.Vector3();
 const tempSpawnRight = new THREE.Vector3();
 const tempSpawnTarget = new THREE.Vector3();
 const tempBox = new THREE.Box3();
 const tempBoxA = new THREE.Box3();
 const tempBoxB = new THREE.Box3();
-const tempBoxCenter = new THREE.Vector3();
 const tempBoxSize = new THREE.Vector3();
 const tempAudioPosition = new THREE.Vector3();
 const tempAudioForward = new THREE.Vector3();
@@ -215,50 +206,7 @@ const tempLooperCurrentQuaternion = new THREE.Quaternion();
 const tempLooperPreviousQuaternion = new THREE.Quaternion();
 const tempWireStart = new THREE.Vector3();
 const tempWireEnd = new THREE.Vector3();
-const tempWireMidA = new THREE.Vector3();
-const tempWireMidB = new THREE.Vector3();
-const tempWireMid = new THREE.Vector3();
-const tempWireLift = new THREE.Vector3();
-
-const PROCEDURAL_MORPH_TARGET_SPHERES = INTERACTION_COLLIDERS;
-
-function getLooperButtonName(action) {
-  return `HIT_looper_${action}`;
-}
-
-function getLooperPadName(index) {
-  return `HIT_looper_pad_${index}`;
-}
-
-function getLooperNodeName(index) {
-  return `HIT_looper_node_${index}`;
-}
-
-function getLooperControlName(control) {
-  return `HIT_looper_${control}`;
-}
-
-function getRecorderButtonName(action) {
-  return `HIT_recorder_${action}`;
-}
-
-function getRecorderNodeName(index) {
-  return `HIT_recorder_node_${index}`;
-}
-
-function getRecorderControlName(control) {
-  return `HIT_recorder_${control}`;
-}
-
-export function findMorphMesh(root) {
-  const meshes = [];
-  root.traverse((object) => {
-    if (object.isMesh && object.morphTargetDictionary) {
-      meshes.push(object);
-    }
-  });
-  return meshes;
-}
+const tempControlDragPosition = new THREE.Vector3();
 
 export function collectHitTargets(root) {
   const hitTargets = {};
@@ -291,66 +239,14 @@ export function collectHitTargets(root) {
   return hitTargets;
 }
 
-export function applyStandardInstrumentMaterials(root, textures = {}) {
+function collectGripRaycastTargets(root) {
+  const targets = [];
   root.traverse((object) => {
-    if (!object.isMesh || object.userData.isHitTarget) {
-      return;
+    if (object.isMesh && !object.userData.isHitTarget) {
+      targets.push(object);
     }
-
-    object.material = makeStandardInstrumentMaterial(object.material, textures);
-    object.castShadow = true;
-    object.receiveShadow = true;
   });
-}
-
-function makeStandardInstrumentMaterial(sourceMaterial, textures = {}) {
-  return new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    map: textures.baseMap ?? sourceMaterial?.map ?? null,
-    normalMap: textures.normalMap ?? sourceMaterial?.normalMap ?? null,
-    roughnessMap: textures.roughnessMap ?? sourceMaterial?.roughnessMap ?? null,
-    metalnessMap: textures.metalnessMap ?? sourceMaterial?.metalnessMap ?? null,
-    roughness: textures.roughnessMap ? 1 : sourceMaterial?.roughness ?? 0.48,
-    metalness: textures.metalnessMap ? 1 : sourceMaterial?.metalness ?? 0.02,
-    side: THREE.DoubleSide,
-  });
-}
-
-async function loadInstrumentMaterialTextures(textureLoader) {
-  const [baseMap, normalMap, roughnessMap] = await Promise.all([
-    textureLoader.loadAsync(INSTRUMENT_TEXTURE_PATHS.baseMap),
-    textureLoader.loadAsync(INSTRUMENT_TEXTURE_PATHS.normalMap),
-    textureLoader.loadAsync(INSTRUMENT_TEXTURE_PATHS.roughnessMap),
-  ]);
-
-  baseMap.colorSpace = THREE.SRGBColorSpace;
-
-  for (const texture of [baseMap, normalMap, roughnessMap]) {
-    texture.flipY = false;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  }
-
-  return { baseMap, normalMap, roughnessMap };
-}
-
-async function loadLooperMaterialTextures(textureLoader) {
-  const [baseMap, normalMap, metalnessMap, roughnessMap] = await Promise.all([
-    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.baseMap),
-    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.normalMap),
-    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.metalnessMap),
-    textureLoader.loadAsync(LOOPER_TEXTURE_PATHS.roughnessMap),
-  ]);
-
-  baseMap.colorSpace = THREE.SRGBColorSpace;
-
-  for (const texture of [baseMap, normalMap, metalnessMap, roughnessMap]) {
-    texture.flipY = false;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  }
-
-  return { baseMap, normalMap, metalnessMap, roughnessMap };
+  return targets;
 }
 
 function makeHitTargetMaterial(name, color = null, opacity = HIT_MARKER_OPACITY) {
@@ -424,6 +320,19 @@ export class InstrumentController {
     this.raycastTargets = [];
     this.raycastIntersections = [];
     this.lockedBoxIntersections = [];
+    this.raycastSystem = new RaycastInteractionSystem({
+      raycaster: this.raycaster,
+      targets: this.raycastTargets,
+      intersections: this.raycastIntersections,
+      lockedIntersections: this.lockedBoxIntersections,
+      getInstrumentStates: () => this.instrumentStates,
+      getCloseButton: () => this.closeButton,
+      isPanelVisible: () => this.panelVisible,
+      isSequencerColliderTarget: (target) => this.isSequencerColliderTarget(target),
+      debugRaycast: DEBUG_RAYCAST,
+    });
+    this.radialSpawnMenu = new RadialSpawnMenu();
+    this.instructionPanelView = null;
 
     this.instrumentTemplate = null;
     this.componentTemplates = new Map();
@@ -438,6 +347,26 @@ export class InstrumentController {
 
     this.controllers = [];
     this.controllerStates = new Map();
+    this.gripTransformSystem = null;
+    this.controllerManager = new XRControllerManager({
+      renderer: this.renderer,
+      scene: this.scene,
+      createRayLine: () => this.createRayLine(),
+      createRadialMenu: () => this.createRadialMenu(),
+      handlers: {
+        onAPress: (controller, gripPressed) => this.handleAPress(controller, gripPressed),
+        onARelease: (controller) => this.handleARelease(controller),
+        onBPress: (controller) => this.handleBPress(controller),
+        onDeletePress: (controller) => this.handleDeletePress(controller),
+        onDisconnectPress: (controller) => this.handleDisconnectPress(controller),
+        onTriggerPress: (controller) => this.handleTriggerPress(controller),
+        onTriggerRelease: (controller) => this.handleTriggerRelease(controller),
+        onRadialMenuCancel: (controller) => this.cancelRadialMenu(controller),
+        onGripPress: (controller) => this.handleGripPress(controller),
+        onGripRelease: (controller) => this.handleGripRelease(controller),
+        onGripScaleThumbstick: (controller, direction) => this.handleGripScaleThumbstick(controller, direction),
+      },
+    });
 
     this.currentVowelIndex = -1;
     this.currentVowelLetter = "neutral";
@@ -457,53 +386,15 @@ export class InstrumentController {
   }
 
   setupControllers() {
-    for (let i = 0; i < 2; i += 1) {
-      const controller = this.renderer.xr.getController(i);
-      controller.userData.index = i;
-      controller.userData.handedness = i === 1 ? "right" : "left";
-      controller.addEventListener("connected", (event) => {
-        controller.userData.handedness = event.data.handedness || controller.userData.handedness;
-        controller.userData.gamepad = event.data.gamepad || null;
-      });
-      controller.addEventListener("disconnected", () => {
-        controller.userData.gamepad = null;
-      });
-
-      const rayLine = this.createRayLine();
-      controller.add(rayLine);
-      controller.userData.rayLine = rayLine;
-      const radialMenu = this.createRadialMenu();
-      controller.add(radialMenu);
-      controller.userData.radialMenu = radialMenu;
-
-      this.controllers.push(controller);
-      this.controllerStates.set(controller, {
-        trigger: false,
-        grip: false,
-        a: false,
-        b: false,
-        x: false,
-        thumbstickScaleDirection: 0,
-        hoveredTarget: null,
-        activeTriggerInteraction: null,
-        gripHeld: false,
-        gripInstrumentState: null,
-        gripOffsetMatrix: new THREE.Matrix4(),
-        raySqueezeVoiceId: null,
-        raySqueezeActiveVoiceIds: new Set(),
-        raySqueezeInstrumentState: null,
-        raySqueezeStartQuaternion: new THREE.Quaternion(),
-        raySqueezeStartInverseQuaternion: new THREE.Quaternion(),
-        radialMenuOpen: false,
-        radialMenuCancelled: false,
-        radialMenuSelectedIndex: 0,
-        radialMenuStartQuaternion: new THREE.Quaternion(),
-      });
-      this.scene.add(controller);
-
-      const grip = this.renderer.xr.getControllerGrip(i);
-      this.scene.add(grip);
-    }
+    this.controllerManager.setup();
+    this.controllers = this.controllerManager.controllers;
+    this.controllerStates = this.controllerManager.controllerStates;
+    this.gripTransformSystem = new GripTransformSystem({
+      controllers: this.controllers,
+      controllerStates: this.controllerStates,
+      getPointedInstrumentState: (controller) => this.getPointedInstrumentState(controller),
+      adjustInstrumentBaseScale: (state, delta) => this.adjustInstrumentBaseScale(state, delta),
+    });
   }
 
   createRayLine() {
@@ -526,176 +417,20 @@ export class InstrumentController {
   }
 
   createRadialMenu() {
-    const group = new THREE.Group();
-    group.name = "SpawnRadialMenu";
-    group.position.set(0, 0, -RADIAL_MENU_DISTANCE);
-    group.visible = false;
-    group.renderOrder = 1100;
-    group.userData.segments = [];
-
-    const optionCount = Math.max(SPAWN_COMPONENT_OPTIONS.length, 1);
-    const arc = (Math.PI * 2) / optionCount;
-    const startOffset = Math.PI / 2;
-
-    SPAWN_COMPONENT_OPTIONS.forEach((option, index) => {
-      const startAngle = startOffset - index * arc;
-      const endAngle = startAngle - arc;
-      const segment = new THREE.Mesh(
-        this.createRadialSegmentGeometry(startAngle, endAngle),
-        new THREE.MeshBasicMaterial({
-          color: option.color,
-          transparent: true,
-          opacity: RADIAL_MENU_BASE_OPACITY,
-          side: THREE.DoubleSide,
-          depthTest: false,
-          depthWrite: false,
-        }),
-      );
-      segment.name = `SpawnRadialSegment_${option.id}`;
-      segment.renderOrder = 1100;
-      group.add(segment);
-      group.userData.segments.push(segment);
-
-      const label = this.createRadialMenuLabel(option.label);
-      const midAngle = (startAngle + endAngle) * 0.5;
-      const labelRadius = RADIAL_MENU_RADIUS * 0.64;
-      label.position.set(Math.cos(midAngle) * labelRadius, Math.sin(midAngle) * labelRadius, 0.006);
-      group.add(label);
-    });
-
-    return group;
-  }
-
-  createRadialSegmentGeometry(startAngle, endAngle) {
-    const shape = new THREE.Shape();
-    shape.moveTo(Math.cos(startAngle) * RADIAL_MENU_INNER_RADIUS, Math.sin(startAngle) * RADIAL_MENU_INNER_RADIUS);
-    shape.lineTo(Math.cos(startAngle) * RADIAL_MENU_RADIUS, Math.sin(startAngle) * RADIAL_MENU_RADIUS);
-    shape.absarc(0, 0, RADIAL_MENU_RADIUS, startAngle, endAngle, true);
-    shape.lineTo(Math.cos(endAngle) * RADIAL_MENU_INNER_RADIUS, Math.sin(endAngle) * RADIAL_MENU_INNER_RADIUS);
-    shape.absarc(0, 0, RADIAL_MENU_INNER_RADIUS, endAngle, startAngle, false);
-    shape.closePath();
-    return new THREE.ShapeGeometry(shape, 36);
-  }
-
-  createRadialMenuLabel(labelText) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 96;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#10100e";
-    ctx.font = "700 34px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(labelText, canvas.width / 2, canvas.height / 2);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-    });
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.042), material);
-    label.name = `SpawnRadialLabel_${labelText}`;
-    label.renderOrder = 1110;
-    return label;
+    return this.radialSpawnMenu.create();
   }
 
   createInstructionPanel() {
-    const panelGroup = new THREE.Group();
-    panelGroup.name = "InstructionPanel";
-
-    const canvas = document.createElement("canvas");
-    canvas.width = 1200;
-    canvas.height = 720;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "rgba(20, 20, 18, 0.92)";
-    roundRect(ctx, 0, 0, canvas.width, canvas.height, 36);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
-    ctx.lineWidth = 5;
-    ctx.stroke();
-
-    ctx.fillStyle = "#f7efe2";
-    ctx.font = "700 58px Arial";
-    ctx.fillText("Face Orchestra XR", 72, 100);
-
-    ctx.font = "38px Arial";
-    ctx.fillStyle = "rgba(247, 239, 226, 0.92)";
-    const lines = [
-      "Close this panel to spawn the first face instrument.",
-      "After closing, hold A to open the spawn menu.",
-      "Rotate your wrist to highlight Honk, Honk C, Honk Fm, or Looper, then release A.",
-      "Press grip while the menu is open to cancel.",
-      "Aim at the mouth and press trigger to cycle vowels.",
-      "Aim at the horn and hold trigger to squeeze and play sound.",
-      "Aim at ears or nose and hold trigger, then move up/down.",
-      "Hold grip on the instrument to move and rotate it.",
-    ];
-    lines.forEach((line, index) => {
-      ctx.fillText(line, 72, 176 + index * 70);
-    });
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    const panel = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.45, 0.87),
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide,
-      }),
-    );
-    panelGroup.add(panel);
-
-    const closeButton = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.12, 0.12),
-      new THREE.MeshBasicMaterial({
-        color: 0x2a2925,
-        transparent: true,
-        opacity: 0.95,
-        side: THREE.DoubleSide,
-      }),
-    );
-    closeButton.name = "PANEL_CLOSE";
-    closeButton.position.set(0.635, 0.355, 0.004);
-    closeButton.userData.isCloseButton = true;
-    panelGroup.add(closeButton);
-
-    const xCanvas = document.createElement("canvas");
-    xCanvas.width = 256;
-    xCanvas.height = 256;
-    const xCtx = xCanvas.getContext("2d");
-    xCtx.fillStyle = "#f7efe2";
-    xCtx.font = "700 170px Arial";
-    xCtx.textAlign = "center";
-    xCtx.textBaseline = "middle";
-    xCtx.fillText("X", 128, 134);
-    const xTexture = new THREE.CanvasTexture(xCanvas);
-    xTexture.colorSpace = THREE.SRGBColorSpace;
-    const xLabel = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.12, 0.12),
-      new THREE.MeshBasicMaterial({ map: xTexture, transparent: true, side: THREE.DoubleSide }),
-    );
-    xLabel.name = "PANEL_CLOSE";
-    xLabel.userData.isCloseButton = true;
-    xLabel.position.z = 0.006;
-    closeButton.add(xLabel);
-
-    panelGroup.visible = false;
-    this.instructionPanel = panelGroup;
-    this.closeButton = closeButton;
-    this.scene.add(panelGroup);
+    this.instructionPanelView = new InstructionPanel();
+    this.instructionPanelView.attachTo(this.scene);
+    this.instructionPanel = this.instructionPanelView.group;
+    this.closeButton = this.instructionPanelView.closeButton;
   }
 
   async loadInstrument() {
     const honkOption = SPAWN_COMPONENT_OPTIONS.find((option) => option.id === "honk") || SPAWN_COMPONENT_OPTIONS[0];
     const gltf = await this.loader.loadAsync(honkOption.modelPath || MODEL_PATH);
-    this.instrumentMaterialTextures = await loadInstrumentMaterialTextures(this.textureLoader);
+    this.instrumentMaterialTextures = await loadMaterialTextureSet(this.textureLoader, INSTRUMENT_TEXTURE_PATHS);
     this.instrumentTemplate = gltf.scene;
     this.instrumentTemplate.name = "FaceInstrumentTemplate";
     this.instrumentTemplate.visible = false;
@@ -777,7 +512,7 @@ export class InstrumentController {
 
   async loadLooperMaterialTextures() {
     if (!this.looperMaterialTexturePromise) {
-      this.looperMaterialTexturePromise = loadLooperMaterialTextures(this.textureLoader);
+      this.looperMaterialTexturePromise = loadMaterialTextureSet(this.textureLoader, LOOPER_TEXTURE_PATHS);
     }
     this.looperMaterialTextures = await this.looperMaterialTexturePromise;
     return this.looperMaterialTextures;
@@ -795,11 +530,13 @@ export class InstrumentController {
       morphMeshes,
       hitTargets,
       hitTargetList: Object.values(hitTargets),
+      gripTargetList: collectGripRaycastTargets(root),
       missingMorphWarnings: new Set(),
       currentVowelIndex: -1,
       currentVowelLetter: "neutral",
       hornHolders: new Set(),
       hornSqueezeValue: 0,
+      sequencerSqueezeValue: 0,
       baseScale: this.getRootUniformScale(root),
       locked: false,
       bendValue: 0,
@@ -817,8 +554,9 @@ export class InstrumentController {
     this.nextInstrumentId += 1;
 
     if (attachToHitTargets) {
+      const gripTargetSet = new Set(state.gripTargetList);
       root.traverse((object) => {
-        if (object.userData.isHitTarget) {
+        if (object.userData.isHitTarget || gripTargetSet.has(object)) {
           object.userData.instrumentState = state;
         }
       });
@@ -832,321 +570,34 @@ export class InstrumentController {
   }
 
   createBodyGripTarget(root, hitTargets) {
-    const bodyBox = new THREE.Box3();
-    let hasVisibleMesh = false;
-    root.traverse((object) => {
-      if (object.isMesh && !object.userData.isHitTarget) {
-        object.updateWorldMatrix(true, false);
-        bodyBox.expandByObject(object);
-        hasVisibleMesh = true;
-      }
+    createBodyGripTargetObject(root, hitTargets, {
+      makeHitTargetMaterial,
+      hitMarkerOpacity: HIT_MARKER_OPACITY,
     });
-
-    if (!hasVisibleMesh || bodyBox.isEmpty()) {
-      return;
-    }
-
-    bodyBox.getCenter(tempBoxCenter);
-    bodyBox.getSize(tempBoxSize);
-    const bodyTarget = new THREE.Mesh(
-      new THREE.BoxGeometry(tempBoxSize.x * 1.12, tempBoxSize.y * 1.12, tempBoxSize.z * 1.12),
-      makeHitTargetMaterial("HIT_body"),
-    );
-    bodyTarget.name = "HIT_body";
-    bodyTarget.position.copy(tempBoxCenter);
-    bodyTarget.userData.isHitTarget = true;
-    bodyTarget.userData.isBodyGripTarget = true;
-    bodyTarget.userData.baseHitOpacity = HIT_MARKER_OPACITY;
-    bodyTarget.material.opacity = bodyTarget.userData.baseHitOpacity;
-    bodyTarget.renderOrder = 5;
-
-    root.add(bodyTarget);
-    hitTargets.HIT_body = bodyTarget;
   }
 
   createMorphTargetSpheres(root, hitTargets) {
-    tempBox.setFromObject(root);
-    tempBox.getCenter(tempBoxCenter);
-    tempBox.getSize(tempBoxSize);
-
-    const maxSize = Math.max(tempBoxSize.x, tempBoxSize.y, tempBoxSize.z);
-    const bendAlignedGroup = new THREE.Group();
-    bendAlignedGroup.name = BEND_ALIGNED_COLLIDER_GROUP_NAME;
-    bendAlignedGroup.position.copy(tempBoxCenter);
-    root.add(bendAlignedGroup);
-
-    for (const target of PROCEDURAL_MORPH_TARGET_SPHERES) {
-      const parent = this.isBendAlignedTarget(target) ? bendAlignedGroup : root;
-      const radius = maxSize * target.size;
-      const travel = tempBoxSize.y * target.movementRange;
-      const neutralY = tempBoxCenter.y + target.y * tempBoxSize.y;
-      const parentOffsetY = parent === bendAlignedGroup ? bendAlignedGroup.position.y : 0;
-      const sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(radius, 24, 16),
-        new THREE.MeshBasicMaterial({
-          color: target.color,
-          transparent: true,
-          opacity: HIT_MARKER_OPACITY,
-          depthWrite: false,
-        }),
-      );
-
-      sphere.name = target.name;
-      sphere.userData.isHitTarget = true;
-      sphere.userData.isProceduralMorphTarget = true;
-      sphere.userData.baseHitOpacity = HIT_MARKER_OPACITY;
-      sphere.userData.interactionType = target.type;
-      sphere.userData.side = target.side;
-      sphere.userData.morphName = target.type === "nose" ? MORPH_TARGET_NAMES.nose : null;
-      sphere.userData.invertVerticalMorph = Boolean(target.invertVerticalMorph);
-      sphere.material.wireframe = DEBUG_SHOW_COLLIDERS;
-      sphere.renderOrder = 20;
-      sphere.userData.neutralY = neutralY - parentOffsetY;
-      sphere.userData.minY = neutralY - travel - parentOffsetY;
-      sphere.userData.maxY = neutralY + travel - parentOffsetY;
-      sphere.position.set(
-        tempBoxCenter.x + target.x * tempBoxSize.x - (parent === bendAlignedGroup ? bendAlignedGroup.position.x : 0),
-        neutralY - parentOffsetY,
-        tempBoxCenter.z + target.z * tempBoxSize.z - (parent === bendAlignedGroup ? bendAlignedGroup.position.z : 0),
-      );
-
-      parent.add(sphere);
-      hitTargets[target.name] = sphere;
-    }
-
-    console.log(
-      "Procedural morph target spheres:",
-      PROCEDURAL_MORPH_TARGET_SPHERES.map((target) => target.name),
-    );
+    createMorphTargetSphereColliders(root, hitTargets, {
+      hitMarkerOpacity: HIT_MARKER_OPACITY,
+    });
   }
 
   createHonkConnectionTarget(root, hitTargets) {
-    if (hitTargets[HONK_CONNECTION_TARGET_NAME]) {
-      return;
-    }
-
-    tempBox.setFromObject(root);
-    tempBox.getCenter(tempBoxCenter);
-    tempBox.getSize(tempBoxSize);
-
-    const maxSize = Math.max(tempBoxSize.x, tempBoxSize.y, tempBoxSize.z, 0.1);
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(maxSize * 0.055, 24, 16),
-      makeHitTargetMaterial(
-        HONK_CONNECTION_TARGET_NAME,
-        LOOPER_DEBUG_COLORS.honkConnection,
-        HONK_CONNECTION_COLLIDER_OPACITY,
-      ),
-    );
-
-    sphere.name = HONK_CONNECTION_TARGET_NAME;
-    sphere.userData.isHitTarget = true;
-    sphere.userData.isHonkConnectionTarget = true;
-    sphere.userData.baseHitOpacity = HONK_CONNECTION_COLLIDER_OPACITY;
-    sphere.userData.hitColor = LOOPER_DEBUG_COLORS.honkConnection;
-    sphere.renderOrder = 22;
-    sphere.position.set(
-      tempBoxCenter.x,
-      tempBoxCenter.y + tempBoxSize.y * 0.04,
-      tempBoxCenter.z - tempBoxSize.z * 0.32,
-    );
-
-    root.add(sphere);
-    hitTargets[HONK_CONNECTION_TARGET_NAME] = sphere;
+    createHonkConnectionTargetObject(root, hitTargets, {
+      makeHitTargetMaterial,
+    });
   }
 
   createLooperColliders(root, hitTargets) {
-    tempBox.setFromObject(root);
-    tempBox.getCenter(tempBoxCenter);
-    tempBox.getSize(tempBoxSize);
-
-    const maxSize = Math.max(tempBoxSize.x, tempBoxSize.y, tempBoxSize.z, 0.1);
-    const panelZ = tempBoxCenter.z + tempBoxSize.z * 0.56;
-    const buttonGeometry = new THREE.BoxGeometry(maxSize * 0.09, maxSize * 0.045, maxSize * 0.026);
-    buttonGeometry.userData.disposeOnInstrumentDelete = true;
-    const padGeometry = new THREE.BoxGeometry(maxSize * 0.13, maxSize * 0.075, maxSize * 0.026);
-    padGeometry.userData.disposeOnInstrumentDelete = true;
-    const nodeGeometry = new THREE.SphereGeometry(maxSize * 0.036, 20, 12);
-    nodeGeometry.userData.disposeOnInstrumentDelete = true;
-    const controlGeometry = new THREE.SphereGeometry(maxSize * 0.044, 24, 16);
-    controlGeometry.userData.disposeOnInstrumentDelete = true;
-
-    const addCollider = (mesh, name, color, userData = {}) => {
-      mesh.name = name;
-      mesh.userData.isHitTarget = true;
-      mesh.userData.isLooperCollider = true;
-      mesh.userData.baseHitOpacity = LOOPER_COLLIDER_OPACITY;
-      mesh.userData.hitColor = color;
-      mesh.userData.currentHitColor = color;
-      Object.assign(mesh.userData, userData);
-      mesh.renderOrder = 24;
-      root.add(mesh);
-      hitTargets[name] = mesh;
-    };
-
-    const buttonY = tempBoxCenter.y + tempBoxSize.y * 0.34;
-    const buttonXs = [-0.27, -0.09, 0.09, 0.27];
-    for (const [index, action] of LOOPER_BUTTON_ACTIONS.entries()) {
-      const button = new THREE.Mesh(
-        buttonGeometry.clone(),
-        makeHitTargetMaterial(getLooperButtonName(action), LOOPER_DEBUG_COLORS.button[action], LOOPER_COLLIDER_OPACITY),
-      );
-      button.geometry.userData.disposeOnInstrumentDelete = true;
-      button.position.set(tempBoxCenter.x + tempBoxSize.x * buttonXs[index], buttonY, panelZ);
-      addCollider(button, getLooperButtonName(action), LOOPER_DEBUG_COLORS.button[action], {
-        isLooperButton: true,
-        looperButtonAction: action,
-      });
-    }
-
-    const padColumns = [-0.18, 0.18];
-    const nodeDirectionByColumn = [-1, 1];
-    for (let index = 0; index < LOOPER_PAD_COUNT; index += 1) {
-      const column = index % 2;
-      const row = Math.floor(index / 2);
-      const padX = tempBoxCenter.x + tempBoxSize.x * padColumns[column];
-      const padY = tempBoxCenter.y + tempBoxSize.y * (0.12 - row * 0.15);
-      const nodeX = padX + tempBoxSize.x * 0.15 * nodeDirectionByColumn[column];
-
-      const pad = new THREE.Mesh(
-        padGeometry.clone(),
-        makeHitTargetMaterial(getLooperPadName(index), LOOPER_DEBUG_COLORS.padEmpty, LOOPER_COLLIDER_OPACITY),
-      );
-      pad.geometry.userData.disposeOnInstrumentDelete = true;
-      pad.position.set(padX, padY, panelZ);
-      addCollider(pad, getLooperPadName(index), LOOPER_DEBUG_COLORS.padEmpty, {
-        isLooperPad: true,
-        looperPadIndex: index,
-      });
-
-      const node = new THREE.Mesh(
-        nodeGeometry.clone(),
-        makeHitTargetMaterial(getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, LOOPER_COLLIDER_OPACITY),
-      );
-      node.geometry.userData.disposeOnInstrumentDelete = true;
-      node.position.set(nodeX, padY, panelZ + maxSize * 0.018);
-      addCollider(node, getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, {
-        isLooperNode: true,
-        looperPadIndex: index,
-      });
-    }
-
-    const controlY = tempBoxCenter.y - tempBoxSize.y * 0.08;
-    const controlTravel = tempBoxSize.y * 0.24;
-    for (const [control, xMultiplier, color] of [
-      ["volume", -0.55, LOOPER_DEBUG_COLORS.controlVolume],
-      ["speed", 0.55, LOOPER_DEBUG_COLORS.controlSpeed],
-    ]) {
-      const controlSphere = new THREE.Mesh(
-        controlGeometry.clone(),
-        makeHitTargetMaterial(getLooperControlName(control), color, LOOPER_COLLIDER_OPACITY),
-      );
-      controlSphere.geometry.userData.disposeOnInstrumentDelete = true;
-      controlSphere.position.set(tempBoxCenter.x + tempBoxSize.x * xMultiplier, controlY, panelZ);
-      addCollider(controlSphere, getLooperControlName(control), color, {
-        isLooperControl: true,
-        looperControl: control,
-        neutralY: controlY,
-        minY: controlY - controlTravel,
-        maxY: controlY + controlTravel,
-      });
-    }
+    createLooperColliderTargets(root, hitTargets, {
+      makeHitTargetMaterial,
+    });
   }
 
   createRecorderColliders(root, hitTargets) {
-    tempBox.setFromObject(root);
-    tempBox.getCenter(tempBoxCenter);
-    tempBox.getSize(tempBoxSize);
-
-    const maxSize = Math.max(tempBoxSize.x, tempBoxSize.y, tempBoxSize.z, 0.1);
-    const panelZ = tempBoxCenter.z + tempBoxSize.z * 0.56;
-    const buttonGeometry = new THREE.BoxGeometry(maxSize * 0.09, maxSize * 0.045, maxSize * 0.026);
-    buttonGeometry.userData.disposeOnInstrumentDelete = true;
-    const nodeGeometry = new THREE.SphereGeometry(maxSize * 0.046, 24, 16);
-    nodeGeometry.userData.disposeOnInstrumentDelete = true;
-    const controlGeometry = new THREE.SphereGeometry(maxSize * 0.044, 24, 16);
-    controlGeometry.userData.disposeOnInstrumentDelete = true;
-
-    const addCollider = (mesh, name, color, userData = {}) => {
-      mesh.name = name;
-      mesh.userData.isHitTarget = true;
-      mesh.userData.isRecorderCollider = true;
-      mesh.userData.baseHitOpacity = LOOPER_COLLIDER_OPACITY;
-      mesh.userData.hitColor = color;
-      mesh.userData.currentHitColor = color;
-      Object.assign(mesh.userData, userData);
-      mesh.renderOrder = 24;
-      root.add(mesh);
-      hitTargets[name] = mesh;
-    };
-
-    for (const action of LOOPER_BUTTON_ACTIONS) {
-      const buttonConfig = LOOPER_BUTTON_COLLIDERS[action];
-      const button = new THREE.Mesh(
-        buttonGeometry.clone(),
-        makeHitTargetMaterial(getRecorderButtonName(action), LOOPER_DEBUG_COLORS.button[action], LOOPER_COLLIDER_OPACITY),
-      );
-      button.geometry.userData.disposeOnInstrumentDelete = true;
-      button.position.set(
-        tempBoxCenter.x + tempBoxSize.x * buttonConfig.x,
-        tempBoxCenter.y + tempBoxSize.y * buttonConfig.y,
-        panelZ,
-      );
-      addCollider(button, getRecorderButtonName(action), LOOPER_DEBUG_COLORS.button[action], {
-        isRecorderButton: true,
-        recorderButtonAction: action,
-        looperMorphName: buttonConfig.morphTarget,
-      });
-    }
-
-    const nodeColumns = [-0.22, 0.22];
-    for (let index = 0; index < RECORDER_CHANNEL_COUNT; index += 1) {
-      const column = index % 2;
-      const row = Math.floor(index / 2);
-      const node = new THREE.Mesh(
-        nodeGeometry.clone(),
-        makeHitTargetMaterial(getRecorderNodeName(index), LOOPER_DEBUG_COLORS.recorderNodeOpen, LOOPER_COLLIDER_OPACITY),
-      );
-      node.geometry.userData.disposeOnInstrumentDelete = true;
-      node.position.set(
-        tempBoxCenter.x + tempBoxSize.x * nodeColumns[column],
-        tempBoxCenter.y + tempBoxSize.y * (0.12 - row * 0.15),
-        panelZ + maxSize * 0.018,
-      );
-      addCollider(node, getRecorderNodeName(index), LOOPER_DEBUG_COLORS.recorderNodeOpen, {
-        isRecorderNode: true,
-        recorderChannelIndex: index,
-      });
-    }
-
-    const controlColors = {
-      volume: LOOPER_DEBUG_COLORS.controlVolume,
-      gap: LOOPER_DEBUG_COLORS.controlGap,
-      speed: LOOPER_DEBUG_COLORS.controlSpeed,
-    };
-    for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
-      const color = controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
-      const controlY = tempBoxCenter.y + tempBoxSize.y * controlConfig.y;
-      const controlTravel = tempBoxSize.y * controlConfig.movementRange;
-      const controlSphere = new THREE.Mesh(
-        controlGeometry.clone(),
-        makeHitTargetMaterial(getRecorderControlName(control), color, LOOPER_COLLIDER_OPACITY),
-      );
-      controlSphere.geometry.userData.disposeOnInstrumentDelete = true;
-      controlSphere.position.set(tempBoxCenter.x + tempBoxSize.x * controlConfig.x, controlY, panelZ);
-      addCollider(controlSphere, getRecorderControlName(control), color, {
-        isRecorderControl: true,
-        recorderControl: control,
-        looperMorphTargets: controlConfig.morphTargets,
-        neutralY: controlY,
-        minY: controlY - controlTravel,
-        maxY: controlY + controlTravel,
-      });
-    }
-  }
-
-  isBendAlignedTarget(target) {
-    return target.type === "ear" || target.type === "nose";
+    createRecorderColliderTargets(root, hitTargets, {
+      makeHitTargetMaterial,
+    });
   }
 
   initializeInstrumentState(state) {
@@ -1236,6 +687,8 @@ export class InstrumentController {
       buttonMorphReleaseTimes: new Map(),
       playingHeadMorphValue: 0,
       playingHeadMorphTarget: 0,
+      playingHeadMorphPhase: 0,
+      lastPlayingHeadMorphUpdateMs: 0,
       nextPlayingHeadMorphChangeMs: 0,
       volumeControlValue: 0,
       speedControlValue: 0,
@@ -1315,6 +768,7 @@ export class InstrumentController {
       state.a = false;
       state.b = false;
       state.x = false;
+      state.y = false;
       state.thumbstickScaleDirection = 0;
       state.hoveredTarget = null;
       state.activeTriggerInteraction = null;
@@ -1343,7 +797,7 @@ export class InstrumentController {
       return;
     }
 
-    this.instructionPanel.visible = true;
+    this.instructionPanelView?.show();
     this.panelVisible = true;
     this.pendingPanelPlacementFrames = 4;
   }
@@ -1353,7 +807,7 @@ export class InstrumentController {
       return;
     }
 
-    this.instructionPanel.visible = false;
+    this.instructionPanelView?.hide();
     this.panelVisible = false;
   }
 
@@ -1366,7 +820,8 @@ export class InstrumentController {
     }
   }
 
-  update() {
+  update(delta = 0, time = performance.now()) {
+    this.updateSceneObjects(delta, time);
     this.updatePendingPanelPlacement();
     this.pollControllers();
     this.updateRadialMenus();
@@ -1379,6 +834,7 @@ export class InstrumentController {
     this.updateRecorderRecordings();
     this.updateLooperPlayback();
     this.updateRecorderPlayback();
+    this.updateSequencerPlaybackSqueezeVisuals();
     this.updateRecorderMorphAnimations();
     this.updateLooperWires();
     this.updateRecorderWires();
@@ -1386,101 +842,41 @@ export class InstrumentController {
     this.updateAllRecorderVisuals();
   }
 
+  updateSceneObjects(delta, time) {
+    for (const state of this.instrumentStates) {
+      if (state.root?.visible) {
+        state.sceneObject?.update(delta, time);
+      }
+    }
+  }
+
   updatePendingPanelPlacement() {
     if (!this.pendingPanelPlacementFrames || !this.instructionPanel?.visible) {
       return;
     }
 
-    this.positionPanelInFrontOfCamera(this.instructionPanel, 1.15);
+    this.instructionPanelView?.positionInFrontOfCamera(this.getUserCamera(), 1.15);
     this.pendingPanelPlacementFrames -= 1;
   }
 
   pollControllers() {
-    for (const controller of this.controllers) {
-      this.pollController(controller);
-    }
+    this.controllerManager.pollControllers();
   }
 
   pollController(controller) {
-    const state = this.controllerStates.get(controller);
-    if (!state) {
-      return;
-    }
-
-    const gamepad = controller.userData.gamepad || this.findGamepad(controller.userData.handedness);
-    if (!gamepad) {
-      return;
-    }
-
-    controller.userData.gamepad = gamepad;
-    const next = {
-      trigger: Boolean(gamepad.buttons[XR_BUTTONS.trigger]?.pressed),
-      grip: Boolean(gamepad.buttons[XR_BUTTONS.grip]?.pressed),
-      a: Boolean(gamepad.buttons[XR_BUTTONS.primary]?.pressed),
-      b: Boolean(gamepad.buttons[XR_BUTTONS.secondary]?.pressed),
-      x: Boolean(gamepad.buttons[XR_BUTTONS.primary]?.pressed),
-    };
-    const thumbstickScaleDirection = this.getThumbstickScaleDirection(gamepad);
-
-    if (controller.userData.handedness === "right" && next.a && !state.a) {
-      this.handleAPress(controller, next.grip);
-    }
-    if (controller.userData.handedness === "right" && !next.a && state.a) {
-      this.handleARelease(controller);
-    }
-    if (controller.userData.handedness === "right" && next.b && !state.b) {
-      this.handleBPress(controller);
-    }
-    if (controller.userData.handedness === "left" && next.x && !state.x) {
-      this.handleDeletePress(controller);
-    }
-    if (next.trigger && !state.trigger) {
-      this.handleTriggerPress(controller);
-    }
-    if (!next.trigger && state.trigger) {
-      this.handleTriggerRelease(controller);
-    }
-    if (next.grip && !state.grip && state.radialMenuOpen) {
-      this.cancelRadialMenu(controller);
-    } else if (next.grip && !state.grip) {
-      this.handleGripPress(controller);
-    }
-    if (!next.grip && state.grip) {
-      this.handleGripRelease(controller);
-    }
-    this.handleGripScaleThumbstick(controller, thumbstickScaleDirection);
-
-    Object.assign(state, next);
+    this.controllerManager.pollController(controller);
   }
 
   findGamepad(handedness) {
-    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    for (let i = 0; i < gamepads.length; i += 1) {
-      const gamepad = gamepads[i];
-      if (gamepad?.hand === handedness) {
-        return gamepad;
-      }
-    }
-    return null;
+    return this.controllerManager.findGamepad(handedness);
   }
 
   getThumbstickScaleDirection(gamepad) {
-    const axes = gamepad?.axes || [];
-    const configuredY = axes[XR_AXES.thumbstickY];
-    const fallbackY = axes[1];
-    const y = Number.isFinite(configuredY) ? configuredY : Number.isFinite(fallbackY) ? fallbackY : 0;
-
-    if (y < -SCALE_JOYSTICK_DEADZONE) {
-      return 1;
-    }
-    if (y > SCALE_JOYSTICK_DEADZONE) {
-      return -1;
-    }
-    return 0;
+    return this.controllerManager.getThumbstickScaleDirection(gamepad);
   }
 
   getRightController() {
-    return this.controllers.find((controller) => controller.userData.handedness === "right") || this.controllers[1];
+    return this.controllerManager.getRightController();
   }
 
   getControllerVoiceId(controller) {
@@ -1531,41 +927,29 @@ export class InstrumentController {
 
   openRadialMenu(controller) {
     const state = this.controllerStates.get(controller);
-    if (!state) {
-      return;
-    }
-
-    controller.updateMatrixWorld(true);
-    controller.getWorldQuaternion(state.radialMenuStartQuaternion);
-    state.radialMenuOpen = true;
-    state.radialMenuCancelled = false;
-    state.radialMenuSelectedIndex = 0;
-    controller.userData.radialMenu.visible = true;
-    this.updateRadialMenuVisuals(controller);
+    this.radialSpawnMenu.open(controller, state);
   }
 
   closeRadialMenu(controller) {
     const state = this.controllerStates.get(controller);
-    if (state) {
-      state.radialMenuOpen = false;
-      state.radialMenuCancelled = false;
-    }
-    if (controller?.userData.radialMenu) {
-      controller.userData.radialMenu.visible = false;
-    }
+    this.radialSpawnMenu.close(controller, state);
   }
 
   cancelRadialMenu(controller) {
     const state = this.controllerStates.get(controller);
-    if (!state?.radialMenuOpen) {
-      return;
-    }
-
-    state.radialMenuCancelled = true;
-    this.closeRadialMenu(controller);
+    this.radialSpawnMenu.cancel(controller, state);
   }
 
   handleDeletePress(controller) {
+    const instrumentState = this.getPointedInstrumentState(controller);
+    if (!instrumentState) {
+      return;
+    }
+
+    this.deleteInstrument(instrumentState);
+  }
+
+  handleDisconnectPress(controller) {
     const hit = this.getCurrentHit(controller);
     if (hit?.object?.userData.isLooperNode) {
       const looperState = hit.object.userData.instrumentState;
@@ -1577,13 +961,6 @@ export class InstrumentController {
       this.disconnectRecorderChannel(recorderState, hit.object.userData.recorderChannelIndex);
       return;
     }
-
-    const instrumentState = hit?.object?.userData.instrumentState;
-    if (!instrumentState) {
-      return;
-    }
-
-    this.deleteInstrument(instrumentState);
   }
 
   handleBPress(controller) {
@@ -1603,47 +980,17 @@ export class InstrumentController {
         continue;
       }
 
-      state.radialMenuSelectedIndex = this.getRadialMenuSelectedIndex(controller, state);
-      this.updateRadialMenuVisuals(controller);
+      this.radialSpawnMenu.update(controller, state);
     }
   }
 
   getRadialMenuSelectedIndex(controller, state) {
-    const optionCount = SPAWN_COMPONENT_OPTIONS.length;
-    if (optionCount <= 1) {
-      return 0;
-    }
-
-    controller.updateMatrixWorld(true);
-    controller.getWorldQuaternion(tempRadialQuaternion);
-    tempQuaternion.copy(state.radialMenuStartQuaternion).invert();
-    tempRadialQuaternion.premultiply(tempQuaternion);
-    tempRadialEuler.setFromQuaternion(tempRadialQuaternion, "XYZ");
-
-    const roll = tempRadialEuler.z;
-    if (Math.abs(roll) < RADIAL_MENU_ROLL_DEADZONE) {
-      return 0;
-    }
-
-    if (roll > 0) {
-      return 0;
-    }
-
-    return THREE.MathUtils.clamp(Math.ceil(Math.abs(roll) / RADIAL_MENU_ROLL_STEP), 1, optionCount - 1);
+    return this.radialSpawnMenu.getSelectedIndex(controller, state);
   }
 
   updateRadialMenuVisuals(controller) {
-    const menu = controller?.userData.radialMenu;
     const state = this.controllerStates.get(controller);
-    if (!menu || !state) {
-      return;
-    }
-
-    for (const [index, segment] of menu.userData.segments.entries()) {
-      const selected = index === state.radialMenuSelectedIndex;
-      segment.material.opacity = selected ? RADIAL_MENU_HIGHLIGHT_OPACITY : RADIAL_MENU_BASE_OPACITY;
-      segment.scale.setScalar(selected ? 1.08 : 1);
-    }
+    this.radialSpawnMenu.updateVisuals(controller, state);
   }
 
   deleteInstrument(instrumentState) {
@@ -1692,9 +1039,13 @@ export class InstrumentController {
     }
 
     this.synth.releaseMatchingVoiceIds((voiceId) => voiceId.endsWith(instrumentVoiceSuffix));
-    instrumentState.debugVisuals?.dispose();
-    this.disposeInstrumentResources(instrumentState);
-    instrumentState.root.removeFromParent();
+    if (instrumentState.sceneObject) {
+      instrumentState.sceneObject.dispose();
+    } else {
+      instrumentState.debugVisuals?.dispose();
+      this.disposeInstrumentResources(instrumentState);
+      instrumentState.root.removeFromParent();
+    }
     this.instrumentStates = this.instrumentStates.filter((state) => state !== instrumentState);
 
     if (this.activeInstrumentState === instrumentState) {
@@ -1902,8 +1253,10 @@ export class InstrumentController {
         type: "looperControlDrag",
         looperState,
         control: target.userData.looperControl,
+        morphTargets: target.userData.looperMorphTargets || null,
         sphere: target,
         dragStartY: controller.position.y,
+        dragStartLocalPosition: this.getControllerLocalPosition(controller, looperState).clone(),
         dragStartValue: this.getLooperControlValue(looperState, target.userData.looperControl),
         dragStartSphereY: target.position.y,
       };
@@ -2000,16 +1353,13 @@ export class InstrumentController {
     }
 
     const deltaY = controller.position.y - interaction.dragStartY;
-    const localDeltaY = deltaY / this.getInstrumentWorldScaleY(looperState);
-    const nextY = THREE.MathUtils.clamp(
-      interaction.dragStartSphereY + localDeltaY,
-      sphere.userData.minY,
-      sphere.userData.maxY,
-    );
-    const nextValue = THREE.MathUtils.mapLinear(nextY, sphere.userData.minY, sphere.userData.maxY, -1, 1);
+    const dragDelta = sphere.userData.movementMode === "arc"
+      ? this.getArcControlDragDelta(controller, looperState, sphere, interaction)
+      : deltaY / this.getInstrumentWorldScaleY(looperState);
+    const nextValue = this.getControlValueFromDrag(sphere, interaction, dragDelta);
 
-    sphere.position.y = nextY;
-    this.setLooperControlValue(looperState, interaction.control, nextValue, false);
+    this.positionControlColliderFromValue(sphere, nextValue);
+    this.setLooperControlValue(looperState, interaction.control, nextValue, false, interaction.morphTargets);
   }
 
   handleRecorderTriggerPress(controller, hit) {
@@ -2027,7 +1377,7 @@ export class InstrumentController {
     this.activeInstrumentState = recorderState;
 
     if (target.userData.isRecorderButton) {
-      this.pressRecorderButton(recorderState, target.userData.recorderButtonAction);
+      this.pressRecorderButton(recorderState, target.userData.recorderButtonAction, target.userData.looperMorphName);
       controllerState.activeTriggerInteraction = null;
       return true;
     }
@@ -2045,8 +1395,10 @@ export class InstrumentController {
         type: "recorderControlDrag",
         recorderState,
         control: target.userData.recorderControl,
+        morphTargets: target.userData.looperMorphTargets || null,
         sphere: target,
         dragStartY: controller.position.y,
+        dragStartLocalPosition: this.getControllerLocalPosition(controller, recorderState).clone(),
         dragStartValue: this.getRecorderControlValue(recorderState, target.userData.recorderControl),
         dragStartSphereY: target.position.y,
       };
@@ -2056,20 +1408,23 @@ export class InstrumentController {
     return false;
   }
 
-  pressRecorderButton(recorderState, action) {
+  pressRecorderButton(recorderState, action, morphName = null) {
     if (!recorderState?.isRecorder) {
       return;
     }
 
-    this.triggerRecorderButtonMorph(recorderState, action);
-
     if (action === "record") {
+      this.setRecorderButtonMorph(recorderState, "record", 1, morphName);
+      this.setRecorderButtonMorph(recorderState, "play", 0);
       this.startRecorderRecording(recorderState);
       this.updateRecorderVisuals(recorderState);
       return;
     }
 
     if (action === "stop") {
+      this.triggerRecorderButtonMorph(recorderState, "stop", performance.now(), morphName);
+      this.setRecorderButtonMorph(recorderState, "record", 0);
+      this.setRecorderButtonMorph(recorderState, "play", 0);
       this.stopRecorderRecording(recorderState);
       this.stopRecorderPlayback(recorderState);
       this.updateRecorderVisuals(recorderState);
@@ -2077,12 +1432,16 @@ export class InstrumentController {
     }
 
     if (action === "play") {
+      this.setRecorderButtonMorph(recorderState, "play", 1, morphName);
+      this.setRecorderButtonMorph(recorderState, "record", 0);
       this.startRecorderPlayback(recorderState);
       this.updateRecorderVisuals(recorderState);
       return;
     }
 
     if (action === "pause") {
+      this.triggerRecorderButtonMorph(recorderState, "pause", performance.now(), morphName);
+      this.setRecorderButtonMorph(recorderState, "play", 0);
       this.pauseRecorderPlayback(recorderState);
       this.updateRecorderVisuals(recorderState);
     }
@@ -2145,16 +1504,91 @@ export class InstrumentController {
     }
 
     const deltaY = controller.position.y - interaction.dragStartY;
-    const localDeltaY = deltaY / this.getInstrumentWorldScaleY(recorderState);
+    const dragDelta = sphere.userData.movementMode === "arc"
+      ? this.getArcControlDragDelta(controller, recorderState, sphere, interaction)
+      : deltaY / this.getInstrumentWorldScaleY(recorderState);
+    const nextValue = this.getControlValueFromDrag(sphere, interaction, dragDelta);
+
+    this.positionControlColliderFromValue(sphere, nextValue);
+    this.setRecorderControlValue(recorderState, interaction.control, nextValue, false, interaction.morphTargets);
+  }
+
+  getControlValueFromDrag(sphere, interaction, dragDelta) {
+    const scaledDragDelta = dragDelta * (sphere.userData.dragSensitivity ?? 1);
+    if (sphere.userData.movementMode === "arc") {
+      const dragRange = Math.max(Math.abs(sphere.userData.dragRange || sphere.userData.maxY - sphere.userData.minY), 0.0001);
+      return THREE.MathUtils.clamp(interaction.dragStartValue + scaledDragDelta / dragRange, -1, 1);
+    }
+
     const nextY = THREE.MathUtils.clamp(
-      interaction.dragStartSphereY + localDeltaY,
+      interaction.dragStartSphereY + scaledDragDelta,
       sphere.userData.minY,
       sphere.userData.maxY,
     );
-    const nextValue = THREE.MathUtils.mapLinear(nextY, sphere.userData.minY, sphere.userData.maxY, -1, 1);
+    return THREE.MathUtils.mapLinear(nextY, sphere.userData.minY, sphere.userData.maxY, -1, 1);
+  }
 
-    sphere.position.y = nextY;
-    this.setRecorderControlValue(recorderState, interaction.control, nextValue, false);
+  getControllerLocalPosition(controller, instrumentState) {
+    controller.updateMatrixWorld(true);
+    instrumentState.root.updateMatrixWorld(true);
+    controller.getWorldPosition(tempControlDragPosition);
+    instrumentState.root.worldToLocal(tempControlDragPosition);
+    return tempControlDragPosition;
+  }
+
+  getArcControlDragDelta(controller, instrumentState, sphere, interaction) {
+    const startPosition = interaction.dragStartLocalPosition;
+    if (!startPosition) {
+      return (controller.position.y - interaction.dragStartY) / this.getInstrumentWorldScaleY(instrumentState);
+    }
+
+    const currentPosition = this.getControllerLocalPosition(controller, instrumentState);
+    const midpointAngle = THREE.MathUtils.lerp(sphere.userData.arcMinAngle, sphere.userData.arcMaxAngle, 0.5);
+    const localAxisX = sphere.userData.arcSide * Math.sin(midpointAngle);
+    const localAxisY = Math.cos(midpointAngle);
+    const rotationZ = sphere.userData.arcRotationZ || 0;
+    const rotationCos = Math.cos(rotationZ);
+    const rotationSin = Math.sin(rotationZ);
+    const axisX = localAxisX * rotationCos - localAxisY * rotationSin;
+    const axisY = localAxisX * rotationSin + localAxisY * rotationCos;
+    const axisLength = Math.hypot(axisX, axisY) || 1;
+    const deltaX = currentPosition.x - startPosition.x;
+    const deltaY = currentPosition.y - startPosition.y;
+
+    return (deltaX * axisX + deltaY * axisY) / axisLength;
+  }
+
+  positionControlColliderFromValue(sphere, value) {
+    if (!sphere) {
+      return;
+    }
+
+    const clamped = THREE.MathUtils.clamp(value, -1, 1);
+    if (sphere.userData.movementMode === "arc") {
+      const angle = THREE.MathUtils.mapLinear(
+        clamped,
+        -1,
+        1,
+        sphere.userData.arcMinAngle,
+        sphere.userData.arcMaxAngle,
+      );
+      const midpointAngle = THREE.MathUtils.lerp(sphere.userData.arcMinAngle, sphere.userData.arcMaxAngle, 0.5);
+      const midpointX = -sphere.userData.arcSide * Math.cos(midpointAngle) * sphere.userData.arcRadius;
+      const midpointY = Math.sin(midpointAngle) * sphere.userData.arcRadius;
+      const localX = -sphere.userData.arcSide * Math.cos(angle) * sphere.userData.arcRadius - midpointX;
+      const localY = Math.sin(angle) * sphere.userData.arcRadius - midpointY;
+      const rotationZ = sphere.userData.arcRotationZ || 0;
+      const rotationCos = Math.cos(rotationZ);
+      const rotationSin = Math.sin(rotationZ);
+      sphere.position.set(
+        sphere.userData.neutralX + localX * rotationCos - localY * rotationSin,
+        sphere.userData.neutralY + localX * rotationSin + localY * rotationCos,
+        sphere.userData.neutralZ,
+      );
+      return;
+    }
+
+    sphere.position.y = THREE.MathUtils.mapLinear(clamped, -1, 1, sphere.userData.minY, sphere.userData.maxY);
   }
 
   initializeRaySqueeze(controller) {
@@ -2311,52 +1745,16 @@ export class InstrumentController {
   }
 
   handleGripPress(controller) {
-    const controllerState = this.controllerStates.get(controller);
-    const hit = this.getCurrentHit(controller);
-    const instrumentState = hit?.object?.userData.instrumentState;
-    if (!instrumentState?.root || !instrumentState.root.visible || !hit?.object?.userData.isHitTarget) {
-      return;
-    }
-
-    controllerState.gripHeld = true;
-    controllerState.gripInstrumentState = instrumentState;
-    controller.updateMatrixWorld(true);
-    instrumentState.root.updateMatrixWorld(true);
-    controllerState.gripOffsetMatrix.copy(controller.matrixWorld).invert().multiply(instrumentState.root.matrixWorld);
+    const hit = this.getGripHit(controller);
+    this.gripTransformSystem?.begin(controller, hit);
   }
 
   handleGripRelease(controller) {
-    const controllerState = this.controllerStates.get(controller);
-    controllerState.gripHeld = false;
-    controllerState.gripInstrumentState = null;
-    controllerState.thumbstickScaleDirection = 0;
+    this.gripTransformSystem?.release(controller);
   }
 
   handleGripScaleThumbstick(controller, direction) {
-    const controllerState = this.controllerStates.get(controller);
-    if (!controllerState?.gripHeld || !controllerState.gripInstrumentState?.root?.visible) {
-      if (controllerState) {
-        controllerState.thumbstickScaleDirection = 0;
-      }
-      return;
-    }
-
-    if (direction === 0) {
-      controllerState.thumbstickScaleDirection = 0;
-      return;
-    }
-
-    const pointedState = this.getPointedInstrumentState(controller);
-    if (pointedState !== controllerState.gripInstrumentState) {
-      return;
-    }
-
-    if (direction === controllerState.thumbstickScaleDirection) {
-      return;
-    }
-
-    controllerState.thumbstickScaleDirection = direction;
-    this.adjustInstrumentBaseScale(pointedState, direction * INSTRUMENT_SCALE_STEP);
+    this.gripTransformSystem?.handleScaleThumbstick(controller, direction);
   }
 
   adjustInstrumentBaseScale(state, delta) {
@@ -2484,15 +1882,7 @@ export class InstrumentController {
   }
 
   cloneLooperClip(clip) {
-    if (!clip) {
-      return null;
-    }
-
-    return {
-      silent: Boolean(clip.silent),
-      durationMs: clip.durationMs,
-      note: clip.note ? { ...clip.note } : null,
-    };
+    return LooperAudioEngine.cloneClip(clip);
   }
 
   getLooperPad(looperState, padIndex) {
@@ -2515,7 +1905,7 @@ export class InstrumentController {
     return control === "speed" ? looperState.looperData.speedControlValue : looperState.looperData.volumeControlValue;
   }
 
-  setLooperControlValue(looperState, control, value, updateSphere = true) {
+  setLooperControlValue(looperState, control, value, updateSphere = true, morphTargetsOverride = null) {
     const data = looperState?.looperData;
     if (!data) {
       return;
@@ -2530,32 +1920,33 @@ export class InstrumentController {
       data.volume = this.getLooperVolumeFromControl(clamped);
     }
 
+    this.applyLooperControlMorphValue(looperState, control, clamped, morphTargetsOverride);
+
     if (updateSphere) {
       const sphere = looperState.hitTargets[getLooperControlName(control)];
       if (sphere?.userData.isLooperControl) {
-        sphere.position.y = THREE.MathUtils.mapLinear(clamped, -1, 1, sphere.userData.minY, sphere.userData.maxY);
+        this.positionControlColliderFromValue(sphere, clamped);
       }
     }
   }
 
   getLooperVolumeFromControl(value) {
-    return THREE.MathUtils.mapLinear(
-      THREE.MathUtils.clamp(value, -1, 1),
-      -1,
-      1,
-      LOOPER_VOLUME_RANGE.min,
-      LOOPER_VOLUME_RANGE.max,
-    );
+    return LooperAudioEngine.getVolumeFromControl(value);
   }
 
   getLooperSpeedFromControl(value) {
-    return THREE.MathUtils.mapLinear(
-      THREE.MathUtils.clamp(value, -1, 1),
-      -1,
-      1,
-      LOOPER_SPEED_RANGE.min,
-      LOOPER_SPEED_RANGE.max,
-    );
+    return LooperAudioEngine.getSpeedFromControl(value);
+  }
+
+  applyLooperControlMorphValue(looperState, control, value, morphTargetsOverride = null) {
+    const morphTargets = morphTargetsOverride || looperState?.hitTargets?.[getLooperControlName(control)]?.userData.looperMorphTargets || LOOPER_CONTROL_MORPH_TARGETS[control];
+    if (!looperState?.isLooper || !morphTargets) {
+      return;
+    }
+
+    const clamped = THREE.MathUtils.clamp(value, -1, 1);
+    this.setMorph(morphTargets.up, Math.max(clamped, 0), looperState);
+    this.setMorph(morphTargets.down, Math.max(-clamped, 0), looperState);
   }
 
   copyRecorderState(sourceState, targetState) {
@@ -2587,13 +1978,7 @@ export class InstrumentController {
   }
 
   cloneRecorderEvent(event) {
-    return {
-      id: event.id,
-      channelIndex: event.channelIndex,
-      startMs: event.startMs,
-      durationMs: event.durationMs,
-      samples: event.samples.map((sample) => ({ ...sample })),
-    };
+    return LooperAudioEngine.cloneRecorderEvent(event);
   }
 
   getRecorderChannel(recorderState, channelIndex) {
@@ -2618,7 +2003,7 @@ export class InstrumentController {
     return recorderState.recorderData.volumeControlValue;
   }
 
-  setRecorderControlValue(recorderState, control, value, updateSphere = true) {
+  setRecorderControlValue(recorderState, control, value, updateSphere = true, morphTargetsOverride = null) {
     const data = recorderState?.recorderData;
     if (!data) {
       return;
@@ -2639,18 +2024,18 @@ export class InstrumentController {
       data.volume = this.getLooperVolumeFromControl(clamped);
     }
 
-    this.applyRecorderControlMorphValue(recorderState, control, clamped);
+    this.applyRecorderControlMorphValue(recorderState, control, clamped, morphTargetsOverride);
 
     if (updateSphere) {
       const sphere = recorderState.hitTargets[getRecorderControlName(control)];
       if (sphere?.userData.isRecorderControl) {
-        sphere.position.y = THREE.MathUtils.mapLinear(clamped, -1, 1, sphere.userData.minY, sphere.userData.maxY);
+        this.positionControlColliderFromValue(sphere, clamped);
       }
     }
   }
 
-  applyRecorderControlMorphValue(recorderState, control, value) {
-    const morphTargets = LOOPER_CONTROL_MORPH_TARGETS[control];
+  applyRecorderControlMorphValue(recorderState, control, value, morphTargetsOverride = null) {
+    const morphTargets = morphTargetsOverride || recorderState?.hitTargets?.[getRecorderControlName(control)]?.userData.looperMorphTargets || LOOPER_CONTROL_MORPH_TARGETS[control];
     if (!recorderState?.isRecorder || !morphTargets) {
       return;
     }
@@ -2660,9 +2045,30 @@ export class InstrumentController {
     this.setMorph(morphTargets.down, Math.max(-clamped, 0), recorderState);
   }
 
-  triggerRecorderButtonMorph(recorderState, action, now = performance.now()) {
+  setRecorderButtonMorph(recorderState, action, value, morphNameOverride = null) {
     const data = recorderState?.recorderData;
-    const morphName = LOOPER_BUTTON_MORPH_TARGETS[action];
+    const morphName = this.getRecorderButtonMorphName(recorderState, action, morphNameOverride);
+    if (!data || !morphName) {
+      return;
+    }
+
+    this.setMorph(morphName, value, recorderState);
+    if (value <= 0) {
+      data.buttonMorphReleaseTimes?.delete(action);
+    }
+  }
+
+  getRecorderButtonMorphName(recorderState, action, morphNameOverride = null) {
+    return (
+      morphNameOverride ||
+      recorderState?.hitTargets?.[getRecorderButtonName(action)]?.userData.looperMorphName ||
+      LOOPER_BUTTON_MORPH_TARGETS[action]
+    );
+  }
+
+  triggerRecorderButtonMorph(recorderState, action, now = performance.now(), morphNameOverride = null) {
+    const data = recorderState?.recorderData;
+    const morphName = this.getRecorderButtonMorphName(recorderState, action, morphNameOverride);
     if (!data || !morphName) {
       return;
     }
@@ -2671,7 +2077,10 @@ export class InstrumentController {
       data.buttonMorphReleaseTimes = new Map();
     }
     this.setMorph(morphName, 1, recorderState);
-    data.buttonMorphReleaseTimes.set(action, now + LOOPER_MORPH_SETTINGS.buttonPressDurationMs);
+    data.buttonMorphReleaseTimes.set(action, {
+      releaseTimeMs: now + LOOPER_MORPH_SETTINGS.buttonPressDurationMs,
+      morphName,
+    });
   }
 
   updateRecorderMorphAnimations(now = performance.now()) {
@@ -2692,12 +2101,15 @@ export class InstrumentController {
       return;
     }
 
-    for (const [action, releaseTimeMs] of data.buttonMorphReleaseTimes) {
+    for (const [action, releaseEntry] of data.buttonMorphReleaseTimes) {
+      const releaseTimeMs =
+        typeof releaseEntry === "number" ? releaseEntry : releaseEntry?.releaseTimeMs;
       if (now < releaseTimeMs) {
         continue;
       }
 
-      const morphName = LOOPER_BUTTON_MORPH_TARGETS[action];
+      const morphName =
+        typeof releaseEntry === "number" ? LOOPER_BUTTON_MORPH_TARGETS[action] : releaseEntry?.morphName;
       if (morphName) {
         this.setMorph(morphName, 0, recorderState);
       }
@@ -2712,36 +2124,39 @@ export class InstrumentController {
     }
 
     const settings = LOOPER_MORPH_SETTINGS.playingHead;
+    const min = settings.min ?? 0;
+    const max = settings.max ?? 1;
     if (data.playing && !data.paused) {
-      if (now >= data.nextPlayingHeadMorphChangeMs) {
-        data.playingHeadMorphTarget = THREE.MathUtils.lerp(settings.min, settings.max, Math.random());
-        data.nextPlayingHeadMorphChangeMs = now + settings.changeIntervalMs * THREE.MathUtils.lerp(0.65, 1.35, Math.random());
-      }
+      const previousUpdateMs = data.lastPlayingHeadMorphUpdateMs || now;
+      const deltaMs = Math.max(now - previousUpdateMs, 0);
+      const averageIncrement = Math.max(
+        ((settings.minIncrement ?? 0.06) + (settings.maxIncrement ?? 0.18)) * 0.5,
+        0.0001,
+      );
+      const cycleMs = Math.max((settings.changeIntervalMs ?? 90) / averageIncrement, 1);
+      data.playingHeadMorphPhase =
+        (data.playingHeadMorphPhase || 0) + (deltaMs / cycleMs) * Math.PI * 2;
+      data.playingHeadMorphTarget = THREE.MathUtils.lerp(
+        min,
+        max,
+        0.5 - Math.cos(data.playingHeadMorphPhase) * 0.5,
+      );
+      data.playingHeadMorphValue = THREE.MathUtils.lerp(
+        data.playingHeadMorphValue ?? min,
+        data.playingHeadMorphTarget,
+        0.24,
+      );
+      data.lastPlayingHeadMorphUpdateMs = now;
     } else {
-      data.playingHeadMorphTarget = 0;
-      data.nextPlayingHeadMorphChangeMs = now;
-    }
-
-    data.playingHeadMorphValue = THREE.MathUtils.lerp(
-      data.playingHeadMorphValue,
-      data.playingHeadMorphTarget,
-      settings.smoothing,
-    );
-    if (Math.abs(data.playingHeadMorphValue) < 0.001 && data.playingHeadMorphTarget === 0) {
-      data.playingHeadMorphValue = 0;
+      data.playingHeadMorphTarget = data.playingHeadMorphValue ?? min;
+      data.lastPlayingHeadMorphUpdateMs = now;
     }
 
     this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, data.playingHeadMorphValue, recorderState);
   }
 
   getRecorderLoopGapFromControl(value) {
-    return THREE.MathUtils.mapLinear(
-      THREE.MathUtils.clamp(value, -1, 1),
-      -1,
-      1,
-      RECORDER_LOOP_GAP_RANGE_MS.min,
-      RECORDER_LOOP_GAP_RANGE_MS.max,
-    );
+    return LooperAudioEngine.getRecorderLoopGapFromControl(value);
   }
 
   getRecorderLoopDuration(data) {
@@ -2778,6 +2193,8 @@ export class InstrumentController {
     }
     data.playingHeadMorphValue = 0;
     data.playingHeadMorphTarget = 0;
+    data.playingHeadMorphPhase = 0;
+    data.lastPlayingHeadMorphUpdateMs = 0;
     data.nextPlayingHeadMorphChangeMs = 0;
     this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, 0, recorderState);
   }
@@ -2800,18 +2217,7 @@ export class InstrumentController {
   }
 
   updateGripTransform() {
-    for (const controller of this.controllers) {
-      const controllerState = this.controllerStates.get(controller);
-      if (!controllerState?.gripHeld || !controllerState.gripInstrumentState?.root) {
-        continue;
-      }
-
-      controller.updateMatrixWorld(true);
-      tempMatrix.multiplyMatrices(controller.matrixWorld, controllerState.gripOffsetMatrix);
-      tempMatrix.decompose(tempVector, tempQuaternion, tempScale);
-      controllerState.gripInstrumentState.root.position.copy(tempVector);
-      controllerState.gripInstrumentState.root.quaternion.copy(tempQuaternion);
-    }
+    this.gripTransformSystem?.update();
   }
 
   updateLooperFollowerTransforms() {
@@ -3268,7 +2674,93 @@ export class InstrumentController {
     });
 
     const spatialState = pad.connectedHonkState?.root?.visible ? pad.connectedHonkState : looperState;
+    if (spatialState !== looperState) {
+      this.applySequencerPlaybackToHonk(spatialState, data.activeVoiceId, note);
+    }
     this.updateInstrumentSpatialVoice(data.activeVoiceId, spatialState);
+  }
+
+  updateSequencerPlaybackSqueezeVisuals() {
+    const activePlaybackHonks = this.getActiveSequencerPlaybackHonks();
+
+    for (const state of this.instrumentStates) {
+      if (!state.interactive || !state.root?.visible) {
+        continue;
+      }
+
+      const hasSequencerPlayback = activePlaybackHonks.has(state) || this.hasSequencerPlaybackHolder(state);
+      if (!hasSequencerPlayback) {
+        continue;
+      }
+
+      const target = 1;
+      state.sequencerSqueezeValue = THREE.MathUtils.lerp(
+        state.sequencerSqueezeValue || 0,
+        target,
+        SQUEEZE_SENSITIVITY,
+      );
+      if (target === 0 && state.sequencerSqueezeValue < 0.001) {
+        state.sequencerSqueezeValue = 0;
+      }
+
+      const visualSqueeze = Math.max(state.hornSqueezeValue || 0, state.sequencerSqueezeValue);
+      state.morphController.setSqueeze(visualSqueeze);
+
+      let bendSum = 0;
+      for (const value of state.activeBends.values()) {
+        bendSum += value;
+      }
+      state.targetBendValue = state.hornHolders.size > 0 ? THREE.MathUtils.clamp(bendSum, -1, 1) : 0;
+      state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
+      state.morphController.setBend(state.bendValue);
+      this.updateBendAlignedColliders(state);
+
+      this.applyInstrumentVisualScale(state, 1 + visualSqueeze * 0.035);
+      state.debugVisuals?.update();
+    }
+  }
+
+  hasSequencerPlaybackHolder(state) {
+    for (const voiceId of state?.hornHolders || []) {
+      if (String(voiceId).startsWith("recorder-") || String(voiceId).startsWith("looper-")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getActiveSequencerPlaybackHonks() {
+    const activeHonks = new Set();
+
+    for (const looperState of this.instrumentStates) {
+      const data = looperState.looperData;
+      if (!data?.playing || data.paused || !looperState.root?.visible) {
+        continue;
+      }
+
+      for (const pad of data.pads) {
+        const honkState = pad.connectedHonkState;
+        if (pad.isPlaying && !pad.clip?.silent && honkState?.interactive && honkState.root?.visible) {
+          activeHonks.add(honkState);
+        }
+      }
+    }
+
+    for (const recorderState of this.instrumentStates) {
+      const data = recorderState.recorderData;
+      if (!data?.playing || data.paused || !recorderState.root?.visible) {
+        continue;
+      }
+
+      for (const channel of data.channels) {
+        const honkState = channel.connectedHonkState;
+        if (channel.isPlaying && honkState?.interactive && honkState.root?.visible) {
+          activeHonks.add(honkState);
+        }
+      }
+    }
+
+    return activeHonks;
   }
 
   releaseLooperActiveVoice(data) {
@@ -3511,41 +3003,99 @@ export class InstrumentController {
         channel.isPlaying = true;
       }
 
-      let voiceId = data.activePlaybackEvents.get(event.id);
-      if (!voiceId) {
-        voiceId = this.getRecorderVoiceId(recorderState, event.id);
-        data.activePlaybackEvents.set(event.id, voiceId);
-        this.synth.start(voiceId);
-      }
-
       const sample = this.getRecorderSampleAt(event, elapsedMs - event.startMs);
       if (!sample) {
         continue;
       }
 
-      this.synth.update({
-        voiceId,
-        hornAmount: 1,
-        masterGain: SPATIAL_AUDIO_SETTINGS.masterGain * data.volume,
-        leftEar: sample.leftEar,
-        rightEar: sample.rightEar,
-        nose: sample.nose,
-        vowel: sample.vowel || "A",
-        pitchBendSemitones: sample.pitchBendSemitones || 0,
-        pitchSnap: sample.pitchSnap,
-      });
-
-      const spatialState = channel?.connectedHonkState?.root?.visible ? channel.connectedHonkState : recorderState;
-      this.updateInstrumentSpatialVoice(voiceId, spatialState);
+      this.updateRecorderPlaybackEventVoices(recorderState, event, channel, sample);
     }
 
-    for (const [eventId, voiceId] of data.activePlaybackEvents) {
+    for (const [eventId, voiceIds] of data.activePlaybackEvents) {
       if (!activeEventIds.has(eventId)) {
-        this.synth.resetPitchBend(voiceId);
-        this.synth.release(voiceId);
+        this.releaseRecorderPlaybackVoiceIds(voiceIds);
         data.activePlaybackEvents.delete(eventId);
       }
     }
+  }
+
+  updateRecorderPlaybackEventVoices(recorderState, event, channel, sample) {
+    const data = recorderState?.recorderData;
+    if (!data) {
+      return;
+    }
+
+    const previousVoiceIds = data.activePlaybackEvents.get(event.id);
+    const activeVoiceIds = previousVoiceIds instanceof Set
+      ? previousVoiceIds
+      : new Set(previousVoiceIds ? [previousVoiceIds] : []);
+    const desiredVoiceIds = new Set();
+    const connectedHonkState =
+      channel?.connectedHonkState?.interactive && channel.connectedHonkState.root?.visible
+        ? channel.connectedHonkState
+        : null;
+    const playbackChain = connectedHonkState
+      ? this.getTouchingInstrumentChain(connectedHonkState).filter((state) => state.interactive)
+      : [];
+
+    if (playbackChain.length === 0) {
+      const voiceId = this.getRecorderVoiceId(recorderState, event.id);
+      desiredVoiceIds.add(voiceId);
+      this.synth.start(voiceId);
+      this.updateRecorderPlaybackVoice(voiceId, sample, recorderState, sample.pitchSnap, data.volume);
+    } else {
+      for (const synthState of playbackChain) {
+        const voiceId = this.getRecorderVoiceId(recorderState, event.id, synthState);
+        desiredVoiceIds.add(voiceId);
+        this.synth.start(voiceId);
+        this.applySequencerPlaybackToHonk(synthState, voiceId, sample);
+        this.updateRecorderPlaybackVoice(
+          voiceId,
+          sample,
+          synthState,
+          synthState.pitchSnap || sample.pitchSnap,
+          data.volume,
+        );
+      }
+    }
+
+    for (const voiceId of activeVoiceIds) {
+      if (!desiredVoiceIds.has(voiceId)) {
+        this.releaseSynthVoice(voiceId);
+      }
+    }
+
+    data.activePlaybackEvents.set(event.id, desiredVoiceIds);
+  }
+
+  updateRecorderPlaybackVoice(voiceId, sample, spatialState, pitchSnap, volume) {
+    this.synth.update({
+      voiceId,
+      hornAmount: 1,
+      masterGain: SPATIAL_AUDIO_SETTINGS.masterGain * volume,
+      leftEar: sample.leftEar,
+      rightEar: sample.rightEar,
+      nose: sample.nose,
+      vowel: sample.vowel || "A",
+      pitchBendSemitones: sample.pitchBendSemitones || 0,
+      pitchSnap,
+    });
+
+    this.updateInstrumentSpatialVoice(voiceId, spatialState);
+  }
+
+  applySequencerPlaybackToHonk(honkState, voiceId, sample) {
+    if (!honkState?.interactive) {
+      return;
+    }
+
+    const bendAmount = THREE.MathUtils.clamp(
+      (sample.pitchBendSemitones || 0) / Math.max(MAX_PITCH_BEND_SEMITONES, 0.0001),
+      -1,
+      1,
+    );
+    honkState.hornHolders.add(voiceId);
+    honkState.activeBends.set(voiceId, bendAmount);
   }
 
   getRecorderSampleAt(event, offsetMs) {
@@ -3564,9 +3114,8 @@ export class InstrumentController {
       return;
     }
 
-    for (const voiceId of data.activePlaybackEvents.values()) {
-      this.synth.resetPitchBend(voiceId);
-      this.synth.release(voiceId);
+    for (const voiceIds of data.activePlaybackEvents.values()) {
+      this.releaseRecorderPlaybackVoiceIds(voiceIds);
     }
     data.activePlaybackEvents.clear();
     for (const channel of data.channels || []) {
@@ -3574,8 +3123,27 @@ export class InstrumentController {
     }
   }
 
-  getRecorderVoiceId(recorderState, eventId) {
-    return `recorder-${recorderState.id}:event-${eventId}`;
+  releaseRecorderPlaybackVoiceIds(voiceIds) {
+    if (voiceIds instanceof Set) {
+      for (const voiceId of voiceIds) {
+        this.releaseSynthVoice(voiceId);
+      }
+      return;
+    }
+
+    if (voiceIds) {
+      this.releaseSynthVoice(voiceIds);
+    }
+  }
+
+  releaseSynthVoice(voiceId) {
+    this.synth.resetPitchBend(voiceId);
+    this.synth.release(voiceId);
+  }
+
+  getRecorderVoiceId(recorderState, eventId, instrumentState = null) {
+    const instrumentSuffix = instrumentState ? `:instrument-${instrumentState.id}` : "";
+    return `recorder-${recorderState.id}:event-${eventId}${instrumentSuffix}`;
   }
 
   connectLooperPadToHonk(looperState, padIndex, honkState) {
@@ -3717,55 +3285,18 @@ export class InstrumentController {
   }
 
   createLooperWireMaterial(color) {
-    const material = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.92,
-      metalness: 0.01,
-      normalMap: this.instrumentMaterialTextures?.normalMap || null,
-      roughnessMap: this.instrumentMaterialTextures?.roughnessMap || null,
-    });
-    material.userData.disposeOnInstrumentDelete = true;
-    return material;
+    return createWireMaterial(color, this.instrumentMaterialTextures);
   }
 
   updateWireMeshGeometry(wireMesh, start, end) {
-    if (!wireMesh || start.distanceToSquared(end) < 0.00001) {
-      return;
-    }
-
-    const curve = this.createWireCurve(start, end);
-    const geometry = new THREE.TubeGeometry(curve, LOOPER_WIRE_SEGMENTS, LOOPER_WIRE_RADIUS, 8, false);
-    geometry.userData.disposeOnInstrumentDelete = true;
-    wireMesh.geometry?.dispose?.();
-    wireMesh.geometry = geometry;
-  }
-
-  createWireCurve(start, end) {
-    const distance = start.distanceTo(end);
-    tempWireLift.set(0, Math.min(Math.max(distance * 0.28, 0.045), 0.22), 0);
-    tempWireMid.copy(start).lerp(end, 0.5).addScaledVector(tempWireLift, 1.15);
-    tempWireMidA.copy(start).lerp(end, 0.25).addScaledVector(tempWireLift, 0.75);
-    tempWireMidB.copy(start).lerp(end, 0.75).addScaledVector(tempWireLift, 0.75);
-
-    return new THREE.CatmullRomCurve3(
-      [start.clone(), tempWireMidA.clone(), tempWireMid.clone(), tempWireMidB.clone(), end.clone()],
-      false,
-      "catmullrom",
-      0.35,
-    );
+    updateWireMeshGeometryUtility(wireMesh, start, end, {
+      segments: LOOPER_WIRE_SEGMENTS,
+      radius: LOOPER_WIRE_RADIUS,
+    });
   }
 
   disposeWireMesh(wireMesh) {
-    if (!wireMesh) {
-      return;
-    }
-
-    wireMesh.removeFromParent();
-    wireMesh.geometry?.dispose?.();
-    const materials = Array.isArray(wireMesh.material) ? wireMesh.material : [wireMesh.material];
-    for (const material of materials) {
-      material?.dispose?.();
-    }
+    disposeWireMeshUtility(wireMesh);
   }
 
   cleanupLooperReferencesForDeletedInstrument(instrumentState) {
@@ -4190,7 +3721,7 @@ export class InstrumentController {
   }
 
   getPointedInstrumentState(controller) {
-    const hit = this.getCurrentHit(controller);
+    const hit = this.getGripHit(controller) || this.getCurrentHit(controller);
     const instrumentState = hit?.object?.userData.instrumentState;
     if (instrumentState?.root?.visible) {
       return instrumentState;
@@ -4200,29 +3731,11 @@ export class InstrumentController {
   }
 
   getLockedInstrumentStateFromRay(controller) {
-    if (!controller) {
-      return null;
-    }
+    return this.raycastSystem.getLockedInstrumentStateFromRay(controller);
+  }
 
-    this.setRaycasterFromController(controller);
-
-    const lockedBodyTargets = this.raycastTargets;
-    lockedBodyTargets.length = 0;
-    for (const state of this.instrumentStates) {
-      const bodyTarget = state.hitTargets?.[INTERACTION_TARGET_NAMES.body];
-      if (state.locked && state.interactive && state.root.visible && bodyTarget) {
-        lockedBodyTargets.push(bodyTarget);
-      }
-    }
-
-    if (lockedBodyTargets.length === 0) {
-      return null;
-    }
-
-    const intersections = this.lockedBoxIntersections;
-    intersections.length = 0;
-    this.raycaster.intersectObjects(lockedBodyTargets, false, intersections);
-    return intersections[0]?.object?.userData.instrumentState || null;
+  getGripHit(controller) {
+    return this.raycastSystem.getGripHit(controller);
   }
 
   updateLockVisual(instrumentState) {
@@ -4236,52 +3749,11 @@ export class InstrumentController {
   }
 
   getCurrentHit(controller) {
-    if (!controller) {
-      return null;
-    }
-
-    this.setRaycasterFromController(controller);
-
-    const targets = this.raycastTargets;
-    targets.length = 0;
-    if (this.panelVisible && this.closeButton) {
-      targets.push(this.closeButton);
-    }
-    for (const state of this.instrumentStates) {
-      if (state.root.visible) {
-        for (const target of state.hitTargetList) {
-          targets.push(target);
-        }
-      }
-    }
-
-    const intersections = this.raycastIntersections;
-    intersections.length = 0;
-    this.raycaster.intersectObjects(targets, true, intersections);
-    const nearestHit = intersections[0] || null;
-    const priorityHit =
-      nearestHit?.object.userData.isCloseButton || this.isSequencerColliderTarget(nearestHit?.object) ? nearestHit : null;
-    const hit =
-      priorityHit ||
-      intersections.find((intersection) => intersection.object.userData.isHonkConnectionTarget) ||
-      intersections.find((intersection) => this.isSequencerColliderTarget(intersection.object)) ||
-      intersections.find((intersection) => intersection.object.userData.isProceduralMorphTarget) ||
-      intersections.find((intersection) => intersection.object.name !== "HIT_body") ||
-      intersections[0] ||
-      null;
-
-    if (DEBUG_RAYCAST && hit) {
-      console.log("Ray hit:", hit.object.name);
-    }
-
-    return hit;
+    return this.raycastSystem.getCurrentHit(controller);
   }
 
   setRaycasterFromController(controller) {
-    controller.updateMatrixWorld(true);
-    tempMatrix.identity().extractRotation(controller.matrixWorld);
-    this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-    this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+    this.raycastSystem.setFromController(controller);
   }
 
   getMorphValue(morphName, state = this.activeInstrumentState) {
@@ -4570,9 +4042,18 @@ export class InstrumentController {
     state.componentLabel = componentOption.label;
     state.interactive = componentOption.interactive;
     state.pitchSnap = componentOption.pitchSnap || null;
+    const sceneObject = createInstrumentObject({
+      root: instrument,
+      state,
+      componentOption,
+      synth: this.synth,
+      disposeResources: (instrumentState) => this.disposeInstrumentResources(instrumentState),
+    });
+    sceneObject.attachTo(this.scene);
     if (state.interactive) {
       this.initializeInstrumentState(state);
       this.createNoteLabel(state);
+      sceneObject.registerStateColliders();
     }
     if (componentOption.id === RECORDER_COMPONENT_ID) {
       this.initializeRecorderState(state);
@@ -4607,34 +4088,10 @@ export class InstrumentController {
     object.lookAt(tempSpawnTarget);
   }
 
-  positionPanelInFrontOfCamera(object, distance) {
-    const userCamera = this.getUserCamera();
-    userCamera.updateMatrixWorld(true);
-    userCamera.getWorldPosition(tempVector);
-    userCamera.getWorldDirection(tempScale);
-
-    object.position.copy(tempVector).addScaledVector(tempScale, distance);
-    object.position.y = tempVector.y - 0.02;
-
-    tempPanelTarget.copy(tempVector);
-    tempPanelTarget.y = object.position.y;
-    object.lookAt(tempPanelTarget);
-  }
-
   getUserCamera() {
     if (this.renderer.xr.isPresenting) {
       return this.renderer.xr.getCamera(this.camera);
     }
     return this.camera;
   }
-}
-
-function roundRect(ctx, x, y, width, height, radius) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + width, y, x + width, y + height, radius);
-  ctx.arcTo(x + width, y + height, x, y + height, radius);
-  ctx.arcTo(x, y + height, x, y, radius);
-  ctx.arcTo(x, y, x + width, y, radius);
-  ctx.closePath();
 }
