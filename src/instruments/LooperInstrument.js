@@ -7,6 +7,6 @@ export class LooperInstrument extends BaseInstrument {
   }
 
   hasRuntimeData() {
-    return Boolean(this.state?.looperData || this.state?.recorderData);
+    return Boolean(this.state?.looperData);
   }
 }

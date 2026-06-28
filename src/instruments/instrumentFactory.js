@@ -2,7 +2,6 @@ import { BaseInstrument } from "./BaseInstrument.js";
 import { ChordInstrument } from "./ChordInstrument.js";
 import { HonkInstrument } from "./HonkInstrument.js";
 import { LooperInstrument } from "./LooperInstrument.js";
-import { RecorderInstrument } from "./RecorderInstrument.js";
 
 export function createInstrumentObject(options = {}) {
   const id = options.componentOption?.id;
@@ -21,9 +20,6 @@ function getInstrumentClass(id, preset) {
     return HonkInstrument;
   }
   if (id === "looper") {
-    return RecorderInstrument;
-  }
-  if (id === "__legacy_looper") {
     return LooperInstrument;
   }
   return BaseInstrument;

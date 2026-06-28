@@ -12,7 +12,7 @@ export class RaycastInteractionSystem {
     getInstrumentStates,
     getCloseButton,
     isPanelVisible,
-    isSequencerColliderTarget,
+    isLooperColliderTarget,
     debugRaycast = false,
   }) {
     this.raycaster = raycaster;
@@ -22,7 +22,7 @@ export class RaycastInteractionSystem {
     this.getInstrumentStates = getInstrumentStates;
     this.getCloseButton = getCloseButton;
     this.isPanelVisible = isPanelVisible;
-    this.isSequencerColliderTarget = isSequencerColliderTarget;
+    this.isLooperColliderTarget = isLooperColliderTarget;
     this.debugRaycast = debugRaycast;
   }
 
@@ -56,13 +56,13 @@ export class RaycastInteractionSystem {
     this.raycaster.intersectObjects(targets, true, intersections);
     const nearestHit = intersections[0] || null;
     const priorityHit =
-      nearestHit?.object.userData.isCloseButton || this.isSequencerColliderTarget(nearestHit?.object)
+      nearestHit?.object.userData.isCloseButton || this.isLooperColliderTarget(nearestHit?.object)
         ? nearestHit
         : null;
     const hit =
       priorityHit ||
       intersections.find((intersection) => intersection.object.userData.isHonkConnectionTarget) ||
-      intersections.find((intersection) => this.isSequencerColliderTarget(intersection.object)) ||
+      intersections.find((intersection) => this.isLooperColliderTarget(intersection.object)) ||
       intersections.find((intersection) => intersection.object.userData.isProceduralMorphTarget) ||
       intersections.find((intersection) => intersection.object.name !== INTERACTION_TARGET_NAMES.body) ||
       intersections[0] ||

@@ -7,26 +7,19 @@ import {
   MORPH_TARGET_NAMES,
 } from "../config/honk.js";
 import {
-  LOOPER_BUTTON_COLLIDERS,
-  LOOPER_CONTROL_COLLIDERS,
-} from "../config/looper.js";
-import {
   HONK_CONNECTION_COLLIDER_OPACITY,
   HONK_CONNECTION_TARGET_NAME,
+  LOOPER_BUTTON_COLLIDERS,
   LOOPER_BUTTON_ACTIONS,
   LOOPER_COLLIDER_OPACITY,
+  LOOPER_CONTROL_COLLIDERS,
   LOOPER_DEBUG_COLORS,
-  LOOPER_PAD_COUNT,
-  RECORDER_CHANNEL_COUNT,
-} from "../config/sequencer.js";
+  LOOPER_TRACK_COUNT,
+} from "../config/looper.js";
 import {
   getLooperButtonName,
   getLooperControlName,
   getLooperNodeName,
-  getLooperPadName,
-  getRecorderButtonName,
-  getRecorderControlName,
-  getRecorderNodeName,
 } from "./looperNames.js";
 
 const tempBox = new THREE.Box3();
@@ -161,9 +154,7 @@ export function createLooperColliders(root, hitTargets, { makeHitTargetMaterial 
   const maxSize = Math.max(tempBoxSize.x, tempBoxSize.y, tempBoxSize.z, 0.1);
   const buttonGeometry = new THREE.BoxGeometry(maxSize * 0.09, maxSize * 0.045, maxSize * 0.026);
   buttonGeometry.userData.disposeOnInstrumentDelete = true;
-  const padGeometry = new THREE.BoxGeometry(maxSize * 0.13, maxSize * 0.075, maxSize * 0.026);
-  padGeometry.userData.disposeOnInstrumentDelete = true;
-  const nodeGeometry = new THREE.SphereGeometry(maxSize * 0.036, 20, 12);
+  const nodeGeometry = new THREE.SphereGeometry(maxSize * 0.046, 24, 16);
   nodeGeometry.userData.disposeOnInstrumentDelete = true;
   const controlGeometry = new THREE.SphereGeometry(maxSize * 0.044, 24, 16);
   controlGeometry.userData.disposeOnInstrumentDelete = true;
@@ -181,142 +172,29 @@ export function createLooperColliders(root, hitTargets, { makeHitTargetMaterial 
     hitTargets[name] = mesh;
   };
 
-  for (const [index, action] of LOOPER_BUTTON_ACTIONS.entries()) {
+  for (const action of LOOPER_BUTTON_ACTIONS) {
     const buttonConfig = LOOPER_BUTTON_COLLIDERS[action];
     const button = new THREE.Mesh(
       buttonGeometry.clone(),
       makeHitTargetMaterial(getLooperButtonName(action), LOOPER_DEBUG_COLORS.button[action], LOOPER_COLLIDER_OPACITY),
     );
     button.geometry.userData.disposeOnInstrumentDelete = true;
-    applyConfiguredColliderTransform(button, buttonConfig, {
-      x: [-0.27, -0.09, 0.09, 0.27][index],
-      y: 0.34,
-      z: 0.56,
-    });
+    applyConfiguredColliderTransform(button, buttonConfig, { x: 0, y: 0.34, z: 0.56 });
     addCollider(button, getLooperButtonName(action), LOOPER_DEBUG_COLORS.button[action], {
       isLooperButton: true,
       looperButtonAction: action,
-      looperMorphName: buttonConfig?.morphTarget || null,
+      looperMorphName: buttonConfig.morphTarget,
     });
     createColliderTransformDebug(button, getLooperButtonName(action), maxSize * 0.07);
   }
 
-  const padColumns = [-0.18, 0.18];
-  const nodeDirectionByColumn = [-1, 1];
-  const panelZ = tempBoxCenter.z + tempBoxSize.z * 0.56;
-  for (let index = 0; index < LOOPER_PAD_COUNT; index += 1) {
+  const nodeColumns = [-0.22, 0.22];
+  for (let index = 0; index < LOOPER_TRACK_COUNT; index += 1) {
     const column = index % 2;
     const row = Math.floor(index / 2);
-    const padX = tempBoxCenter.x + tempBoxSize.x * padColumns[column];
-    const padY = tempBoxCenter.y + tempBoxSize.y * (0.12 - row * 0.15);
-    const nodeX = padX + tempBoxSize.x * 0.15 * nodeDirectionByColumn[column];
-
-    const pad = new THREE.Mesh(
-      padGeometry.clone(),
-      makeHitTargetMaterial(getLooperPadName(index), LOOPER_DEBUG_COLORS.padEmpty, LOOPER_COLLIDER_OPACITY),
-    );
-    pad.geometry.userData.disposeOnInstrumentDelete = true;
-    pad.position.set(padX, padY, panelZ);
-    addCollider(pad, getLooperPadName(index), LOOPER_DEBUG_COLORS.padEmpty, {
-      isLooperPad: true,
-      looperPadIndex: index,
-    });
-
     const node = new THREE.Mesh(
       nodeGeometry.clone(),
       makeHitTargetMaterial(getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, LOOPER_COLLIDER_OPACITY),
-    );
-    node.geometry.userData.disposeOnInstrumentDelete = true;
-    node.position.set(nodeX, padY, panelZ + maxSize * 0.018);
-    addCollider(node, getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, {
-      isLooperNode: true,
-      looperPadIndex: index,
-    });
-  }
-
-  for (const [control, xMultiplier, color] of [
-    ["volume", -0.55, LOOPER_DEBUG_COLORS.controlVolume],
-    ["speed", 0.55, LOOPER_DEBUG_COLORS.controlSpeed],
-  ]) {
-    const controlConfig = LOOPER_CONTROL_COLLIDERS[control];
-    const controlSphere = new THREE.Mesh(
-      controlGeometry.clone(),
-      makeHitTargetMaterial(getLooperControlName(control), color, LOOPER_COLLIDER_OPACITY),
-    );
-    controlSphere.geometry.userData.disposeOnInstrumentDelete = true;
-    const controlPosition = applyConfiguredColliderTransform(controlSphere, controlConfig, {
-      x: xMultiplier,
-      y: -0.08,
-      z: 0.56,
-    });
-    configureControlMotion(controlSphere, controlConfig, {
-      neutralX: controlPosition.x,
-      neutralY: controlPosition.y,
-      neutralZ: controlPosition.z,
-      size: tempBoxSize,
-    });
-    addCollider(controlSphere, getLooperControlName(control), color, {
-      isLooperControl: true,
-      looperControl: control,
-      looperMorphTargets: controlConfig?.morphTargets || null,
-      neutralY: controlPosition.y,
-      minY: controlPosition.y - tempBoxSize.y * (controlConfig?.movementRange ?? 0.24),
-      maxY: controlPosition.y + tempBoxSize.y * (controlConfig?.movementRange ?? 0.24),
-    });
-    createControlArcDebug(root, getLooperControlName(control), color, controlSphere.userData);
-    createColliderTransformDebug(controlSphere, getLooperControlName(control), maxSize * 0.065);
-  }
-}
-
-export function createRecorderColliders(root, hitTargets, { makeHitTargetMaterial }) {
-  tempBox.setFromObject(root);
-  tempBox.getCenter(tempBoxCenter);
-  tempBox.getSize(tempBoxSize);
-
-  const maxSize = Math.max(tempBoxSize.x, tempBoxSize.y, tempBoxSize.z, 0.1);
-  const buttonGeometry = new THREE.BoxGeometry(maxSize * 0.09, maxSize * 0.045, maxSize * 0.026);
-  buttonGeometry.userData.disposeOnInstrumentDelete = true;
-  const nodeGeometry = new THREE.SphereGeometry(maxSize * 0.046, 24, 16);
-  nodeGeometry.userData.disposeOnInstrumentDelete = true;
-  const controlGeometry = new THREE.SphereGeometry(maxSize * 0.044, 24, 16);
-  controlGeometry.userData.disposeOnInstrumentDelete = true;
-
-  const addCollider = (mesh, name, color, userData = {}) => {
-    mesh.name = name;
-    mesh.userData.isHitTarget = true;
-    mesh.userData.isRecorderCollider = true;
-    mesh.userData.baseHitOpacity = LOOPER_COLLIDER_OPACITY;
-    mesh.userData.hitColor = color;
-    mesh.userData.currentHitColor = color;
-    Object.assign(mesh.userData, userData);
-    mesh.renderOrder = 24;
-    root.add(mesh);
-    hitTargets[name] = mesh;
-  };
-
-  for (const action of LOOPER_BUTTON_ACTIONS) {
-    const buttonConfig = LOOPER_BUTTON_COLLIDERS[action];
-    const button = new THREE.Mesh(
-      buttonGeometry.clone(),
-      makeHitTargetMaterial(getRecorderButtonName(action), LOOPER_DEBUG_COLORS.button[action], LOOPER_COLLIDER_OPACITY),
-    );
-    button.geometry.userData.disposeOnInstrumentDelete = true;
-    applyConfiguredColliderTransform(button, buttonConfig, { x: 0, y: 0.34, z: 0.56 });
-    addCollider(button, getRecorderButtonName(action), LOOPER_DEBUG_COLORS.button[action], {
-      isRecorderButton: true,
-      recorderButtonAction: action,
-      looperMorphName: buttonConfig.morphTarget,
-    });
-    createColliderTransformDebug(button, getRecorderButtonName(action), maxSize * 0.07);
-  }
-
-  const nodeColumns = [-0.22, 0.22];
-  for (let index = 0; index < RECORDER_CHANNEL_COUNT; index += 1) {
-    const column = index % 2;
-    const row = Math.floor(index / 2);
-    const node = new THREE.Mesh(
-      nodeGeometry.clone(),
-      makeHitTargetMaterial(getRecorderNodeName(index), LOOPER_DEBUG_COLORS.recorderNodeOpen, LOOPER_COLLIDER_OPACITY),
     );
     node.geometry.userData.disposeOnInstrumentDelete = true;
     node.position.set(
@@ -324,22 +202,21 @@ export function createRecorderColliders(root, hitTargets, { makeHitTargetMateria
       tempBoxCenter.y + tempBoxSize.y * (0.12 - row * 0.15),
         tempBoxCenter.z + tempBoxSize.z * 0.56 + maxSize * 0.018,
     );
-    addCollider(node, getRecorderNodeName(index), LOOPER_DEBUG_COLORS.recorderNodeOpen, {
-      isRecorderNode: true,
-      recorderChannelIndex: index,
+    addCollider(node, getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, {
+      isLooperNode: true,
+      looperTrackIndex: index,
     });
   }
 
   const controlColors = {
     volume: LOOPER_DEBUG_COLORS.controlVolume,
-    gap: LOOPER_DEBUG_COLORS.controlGap,
     speed: LOOPER_DEBUG_COLORS.controlSpeed,
   };
   for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
     const color = controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
     const controlSphere = new THREE.Mesh(
       controlGeometry.clone(),
-      makeHitTargetMaterial(getRecorderControlName(control), color, LOOPER_COLLIDER_OPACITY),
+      makeHitTargetMaterial(getLooperControlName(control), color, LOOPER_COLLIDER_OPACITY),
     );
     controlSphere.geometry.userData.disposeOnInstrumentDelete = true;
     const controlPosition = applyConfiguredColliderTransform(controlSphere, controlConfig, {
@@ -353,16 +230,16 @@ export function createRecorderColliders(root, hitTargets, { makeHitTargetMateria
       neutralZ: controlPosition.z,
       size: tempBoxSize,
     });
-    addCollider(controlSphere, getRecorderControlName(control), color, {
-      isRecorderControl: true,
-      recorderControl: control,
+    addCollider(controlSphere, getLooperControlName(control), color, {
+      isLooperControl: true,
+      looperControl: control,
       looperMorphTargets: controlConfig.morphTargets,
       neutralY: controlPosition.y,
       minY: controlPosition.y - tempBoxSize.y * (controlConfig.movementRange ?? 0.24),
       maxY: controlPosition.y + tempBoxSize.y * (controlConfig.movementRange ?? 0.24),
     });
-    createControlArcDebug(root, getRecorderControlName(control), color, controlSphere.userData);
-    createColliderTransformDebug(controlSphere, getRecorderControlName(control), maxSize * 0.065);
+    createControlArcDebug(root, getLooperControlName(control), color, controlSphere.userData);
+    createColliderTransformDebug(controlSphere, getLooperControlName(control), maxSize * 0.065);
   }
 }
 

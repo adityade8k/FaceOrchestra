@@ -20,18 +20,18 @@ import {
   INSTRUMENT_MIN_SCALE,
   INSTRUMENT_TEXTURE_PATHS,
   HONK_CONNECTION_TARGET_NAME,
-  LEGACY_LOOPER_COMPONENT_ID,
   LOOPER_BUTTON_MORPH_TARGETS,
   LOOPER_BUTTON_ACTIONS,
   LOOPER_COLLIDER_OPACITY,
   LOOPER_CONTROL_MORPH_TARGETS,
   LOOPER_COMPONENT_ID,
   LOOPER_DEBUG_COLORS,
-  LOOPER_MIN_CLIP_DURATION_MS,
+  LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
+  LOOPER_MIN_NOTE_DURATION_MS,
   LOOPER_MORPH_SETTINGS,
   LOOPER_MORPH_TARGET_NAMES,
-  LOOPER_PAD_COUNT,
   LOOPER_TEXTURE_PATHS,
+  LOOPER_TRACK_COUNT,
   LOOPER_WIRE_COLORS,
   LOOPER_WIRE_RADIUS,
   LOOPER_WIRE_SEGMENTS,
@@ -46,9 +46,6 @@ import {
   SPAWN_COMPONENT_OPTIONS,
   SPAWN_DISTANCE,
   SPAWN_Y_OFFSET,
-  RECORDER_CHANNEL_COUNT,
-  RECORDER_COMPONENT_ID,
-  RECORDER_MIN_EVENT_DURATION_MS,
   SQUEEZE_COLLIDER_MIN_OVERLAP,
   SQUEEZE_SENSITIVITY,
 } from "../config.js";
@@ -62,18 +59,15 @@ import {
   createHonkConnectionTarget as createHonkConnectionTargetObject,
   createLooperColliders as createLooperColliderTargets,
   createMorphTargetSpheres as createMorphTargetSphereColliders,
-  createRecorderColliders as createRecorderColliderTargets,
 } from "../instruments/colliderBuilders.js";
 import { createInstrumentObject } from "../instruments/instrumentFactory.js";
 import {
   getLooperButtonName,
   getLooperControlName,
   getLooperNodeName,
-  getLooperPadName,
-  getRecorderButtonName,
-  getRecorderControlName,
-  getRecorderNodeName,
 } from "../instruments/looperNames.js";
+import { LooperPlaybackEngine } from "../instruments/LooperPlaybackEngine.js";
+import { LooperTimeline } from "../instruments/LooperTimeline.js";
 import { InstructionPanel } from "../ui/InstructionPanel.js";
 import { RadialSpawnMenu } from "../ui/RadialSpawnMenu.js";
 import {
@@ -274,14 +268,8 @@ function getHitTargetColor(targetOrName) {
   if (name === HONK_CONNECTION_TARGET_NAME) {
     return LOOPER_DEBUG_COLORS.honkConnection;
   }
-  if (name?.startsWith("HIT_looper_pad_")) {
-    return LOOPER_DEBUG_COLORS.padEmpty;
-  }
   if (name?.startsWith("HIT_looper_node_")) {
     return LOOPER_DEBUG_COLORS.nodeOpen;
-  }
-  if (name?.startsWith("HIT_recorder_node_")) {
-    return LOOPER_DEBUG_COLORS.recorderNodeOpen;
   }
 
   return {
@@ -297,13 +285,6 @@ function getHitTargetColor(targetOrName) {
     [getLooperButtonName("stop")]: LOOPER_DEBUG_COLORS.button.stop,
     [getLooperControlName("volume")]: LOOPER_DEBUG_COLORS.controlVolume,
     [getLooperControlName("speed")]: LOOPER_DEBUG_COLORS.controlSpeed,
-    [getRecorderButtonName("play")]: LOOPER_DEBUG_COLORS.button.play,
-    [getRecorderButtonName("pause")]: LOOPER_DEBUG_COLORS.button.pause,
-    [getRecorderButtonName("record")]: LOOPER_DEBUG_COLORS.button.record,
-    [getRecorderButtonName("stop")]: LOOPER_DEBUG_COLORS.button.stop,
-    [getRecorderControlName("volume")]: LOOPER_DEBUG_COLORS.controlVolume,
-    [getRecorderControlName("speed")]: LOOPER_DEBUG_COLORS.controlSpeed,
-    [getRecorderControlName("gap")]: LOOPER_DEBUG_COLORS.controlGap,
   }[name] || 0xffffff;
 }
 
@@ -328,7 +309,7 @@ export class InstrumentController {
       getInstrumentStates: () => this.instrumentStates,
       getCloseButton: () => this.closeButton,
       isPanelVisible: () => this.panelVisible,
-      isSequencerColliderTarget: (target) => this.isSequencerColliderTarget(target),
+      isLooperColliderTarget: (target) => this.isLooperColliderTarget(target),
       debugRaycast: DEBUG_RAYCAST,
     });
     this.radialSpawnMenu = new RadialSpawnMenu();
@@ -494,10 +475,8 @@ export class InstrumentController {
     template.visible = false;
 
     const templateHitTargets = collectHitTargets(template);
-    if (option.id === RECORDER_COMPONENT_ID) {
+    if (option.id === LOOPER_COMPONENT_ID) {
       applyStandardInstrumentMaterials(template, await this.loadLooperMaterialTextures());
-      this.createRecorderColliders(template, templateHitTargets);
-    } else if (option.id === LEGACY_LOOPER_COMPONENT_ID) {
       this.createLooperColliders(template, templateHitTargets);
     }
     this.createBodyGripTarget(template, templateHitTargets);
@@ -536,7 +515,6 @@ export class InstrumentController {
       currentVowelLetter: "neutral",
       hornHolders: new Set(),
       hornSqueezeValue: 0,
-      sequencerSqueezeValue: 0,
       baseScale: this.getRootUniformScale(root),
       locked: false,
       bendValue: 0,
@@ -594,12 +572,6 @@ export class InstrumentController {
     });
   }
 
-  createRecorderColliders(root, hitTargets) {
-    createRecorderColliderTargets(root, hitTargets, {
-      makeHitTargetMaterial,
-    });
-  }
-
   initializeInstrumentState(state) {
     state.morphController.resetAll();
     this.setVowel(null, state);
@@ -609,40 +581,53 @@ export class InstrumentController {
   }
 
   initializeLooperState(state) {
-    const pads = [];
-    for (let index = 0; index < LOOPER_PAD_COUNT; index += 1) {
-      const padTarget = state.hitTargets[getLooperPadName(index)] || null;
-      const nodeTarget = state.hitTargets[getLooperNodeName(index)] || null;
-      pads.push({
+    const tracks = [];
+    for (let index = 0; index < LOOPER_TRACK_COUNT; index += 1) {
+      tracks.push({
         index,
-        padTarget,
-        nodeTarget,
+        nodeTarget: state.hitTargets[getLooperNodeName(index)] || null,
         connectedHonkState: null,
-        clip: null,
         wireMesh: null,
         isRecording: false,
         isPlaying: false,
+        lastGestureSample: null,
+        lastGestureSampleAtMs: -Infinity,
       });
     }
 
     state.isLooper = true;
     state.looperData = {
-      pads,
+      tracks,
+      timeline: new LooperTimeline(),
+      playbackEngine: new LooperPlaybackEngine(),
       recording: false,
       playing: false,
       paused: false,
-      activePadIndex: null,
-      activeVoiceId: null,
-      nextPlaybackPadIndex: 0,
-      activeClipElapsedMs: 0,
-      lastPlaybackUpdateMs: 0,
+      hasRecording: false,
+      durationMs: 0,
       activeRecordings: new Map(),
+      activePlaybackVoices: new Map(),
+      playbackTouchedHonks: new Set(),
+      prePlaybackMorphStates: new Map(),
+      buttonMorphReleaseTimes: new Map(),
+      playingHeadMorphValue: 0,
+      playingHeadMorphTarget: 0,
+      playingHeadMorphPhase: 0,
+      lastPlayingHeadMorphUpdateMs: 0,
+      lastPlaybackUpdateMs: 0,
       volumeControlValue: 0,
       speedControlValue: 0,
       volume: this.getLooperVolumeFromControl(0),
       speed: this.getLooperSpeedFromControl(0),
       lastPosition: new THREE.Vector3(),
       lastQuaternion: new THREE.Quaternion(),
+    };
+    state.looperData.playbackHandlers = {
+      onNoteOn: (event) => this.handleLooperPlaybackNoteOn(state, event),
+      onNoteOff: (event) => this.handleLooperPlaybackNoteOff(state, event),
+      onReleaseNote: (activeNote) => this.releaseLooperPlaybackNote(state.looperData, activeNote.noteId),
+      onGesture: (event) => this.handleLooperPlaybackGesture(state, event),
+      onLoopBoundary: () => this.handleLooperLoopBoundary(state),
     };
 
     state.root.updateMatrixWorld(true);
@@ -652,62 +637,6 @@ export class InstrumentController {
     this.setLooperControlValue(state, "volume", 0);
     this.setLooperControlValue(state, "speed", 0);
     this.updateLooperVisuals(state);
-  }
-
-  initializeRecorderState(state) {
-    const channels = [];
-    for (let index = 0; index < RECORDER_CHANNEL_COUNT; index += 1) {
-      channels.push({
-        index,
-        nodeTarget: state.hitTargets[getRecorderNodeName(index)] || null,
-        connectedHonkState: null,
-        wireMesh: null,
-        isRecording: false,
-        isPlaying: false,
-      });
-    }
-
-    state.isRecorder = true;
-    state.recorderData = {
-      channels,
-      events: [],
-      nextEventId: 1,
-      recording: false,
-      recordingStarted: false,
-      playing: false,
-      paused: false,
-      hasRecording: false,
-      durationMs: 0,
-      timelineStartMs: 0,
-      lastRecordedEventEndMs: 0,
-      playbackElapsedMs: 0,
-      lastPlaybackUpdateMs: 0,
-      activeRecordings: new Map(),
-      activePlaybackEvents: new Map(),
-      buttonMorphReleaseTimes: new Map(),
-      playingHeadMorphValue: 0,
-      playingHeadMorphTarget: 0,
-      playingHeadMorphPhase: 0,
-      lastPlayingHeadMorphUpdateMs: 0,
-      nextPlayingHeadMorphChangeMs: 0,
-      volumeControlValue: 0,
-      speedControlValue: 0,
-      gapControlValue: -1,
-      volume: this.getLooperVolumeFromControl(0),
-      speed: this.getLooperSpeedFromControl(0),
-      loopGapMs: this.getRecorderLoopGapFromControl(-1),
-      lastPosition: new THREE.Vector3(),
-      lastQuaternion: new THREE.Quaternion(),
-    };
-
-    state.root.updateMatrixWorld(true);
-    state.root.getWorldPosition(state.recorderData.lastPosition);
-    state.root.getWorldQuaternion(state.recorderData.lastQuaternion);
-
-    this.setRecorderControlValue(state, "volume", 0);
-    this.setRecorderControlValue(state, "speed", 0);
-    this.setRecorderControlValue(state, "gap", -1);
-    this.updateRecorderVisuals(state);
   }
 
   logModelDiagnostics(state) {
@@ -829,17 +758,10 @@ export class InstrumentController {
     this.updateTriggerInteraction();
     this.updateGripTransform();
     this.updateLooperFollowerTransforms();
-    this.updateHorn();
+    this.updateHorn(time);
     this.updateLooperRecordings();
-    this.updateRecorderRecordings();
-    this.updateLooperPlayback();
-    this.updateRecorderPlayback();
-    this.updateSequencerPlaybackSqueezeVisuals();
-    this.updateRecorderMorphAnimations();
+    this.updateLooperMorphAnimations();
     this.updateLooperWires();
-    this.updateRecorderWires();
-    this.updateAllLooperVisuals();
-    this.updateAllRecorderVisuals();
   }
 
   updateSceneObjects(delta, time) {
@@ -953,12 +875,7 @@ export class InstrumentController {
     const hit = this.getCurrentHit(controller);
     if (hit?.object?.userData.isLooperNode) {
       const looperState = hit.object.userData.instrumentState;
-      this.disconnectLooperPad(looperState, hit.object.userData.looperPadIndex);
-      return;
-    }
-    if (hit?.object?.userData.isRecorderNode) {
-      const recorderState = hit.object.userData.instrumentState;
-      this.disconnectRecorderChannel(recorderState, hit.object.userData.recorderChannelIndex);
+      this.disconnectLooperTrack(looperState, hit.object.userData.looperTrackIndex);
       return;
     }
   }
@@ -1106,9 +1023,6 @@ export class InstrumentController {
     if (this.handleLooperTriggerPress(controller, hit)) {
       return;
     }
-    if (this.handleRecorderTriggerPress(controller, hit)) {
-      return;
-    }
 
     const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
     if (lockedInstrumentState?.interactive) {
@@ -1167,24 +1081,7 @@ export class InstrumentController {
       return;
     }
 
-    if (interaction?.type === "looperSilentPad") {
-      this.finishLooperPadRecording(interaction.looperState, interaction.pad, performance.now());
-      controllerState.activeTriggerInteraction = null;
-      return;
-    }
-
     if (interaction?.type === "looperControlDrag") {
-      controllerState.activeTriggerInteraction = null;
-      return;
-    }
-
-    if (interaction?.type === "recorderWire") {
-      this.finishRecorderWireInteraction(controller, interaction);
-      controllerState.activeTriggerInteraction = null;
-      return;
-    }
-
-    if (interaction?.type === "recorderControlDrag") {
       controllerState.activeTriggerInteraction = null;
       return;
     }
@@ -1215,35 +1112,15 @@ export class InstrumentController {
     this.activeInstrumentState = looperState;
 
     if (target.userData.isLooperButton) {
-      this.pressLooperButton(looperState, target.userData.looperButtonAction);
+      this.pressLooperButton(looperState, target.userData.looperButtonAction, target.userData.looperMorphName);
       controllerState.activeTriggerInteraction = null;
       return true;
     }
 
     if (target.userData.isLooperNode) {
-      const pad = this.getLooperPad(looperState, target.userData.looperPadIndex);
-      if (pad) {
-        controllerState.activeTriggerInteraction = this.startLooperWireInteraction(controller, looperState, pad);
-      }
-      return true;
-    }
-
-    if (target.userData.isLooperPad) {
-      const pad = this.getLooperPad(looperState, target.userData.looperPadIndex);
-      if (pad && looperState.looperData.recording && !pad.connectedHonkState) {
-        this.beginLooperPadRecording(looperState, pad, {
-          silent: true,
-          startedAtMs: performance.now(),
-          note: null,
-          honkState: null,
-        });
-        controllerState.activeTriggerInteraction = {
-          type: "looperSilentPad",
-          looperState,
-          pad,
-        };
-      } else {
-        controllerState.activeTriggerInteraction = null;
+      const track = this.getLooperTrack(looperState, target.userData.looperTrackIndex);
+      if (track) {
+        controllerState.activeTriggerInteraction = this.startLooperWireInteraction(controller, looperState, track);
       }
       return true;
     }
@@ -1266,50 +1143,67 @@ export class InstrumentController {
     return false;
   }
 
-  pressLooperButton(looperState, action) {
+  pressLooperButton(looperState, action, morphName = null) {
     if (!looperState?.isLooper) {
       return;
     }
 
     if (action === "record") {
-      looperState.looperData.recording = true;
+      this.setLooperButtonMorph(looperState, "record", 1, morphName);
+      this.setLooperButtonMorph(looperState, "play", 0);
+      this.startRecording(looperState);
       this.updateLooperVisuals(looperState);
       return;
     }
 
     if (action === "stop") {
-      this.stopLooperRecording(looperState);
-      this.stopLooperPlayback(looperState);
+      const wasIdle =
+        !looperState.looperData.recording &&
+        !looperState.looperData.playing &&
+        !looperState.looperData.paused;
+      this.triggerLooperButtonMorph(looperState, "stop", performance.now(), morphName);
+      this.setLooperButtonMorph(looperState, "record", 0);
+      this.setLooperButtonMorph(looperState, "play", 0);
+      if (wasIdle) {
+        this.clearRecording(looperState);
+      } else {
+        this.stopRecording(looperState);
+        this.stopPlayback(looperState);
+      }
       this.updateLooperVisuals(looperState);
       return;
     }
 
     if (action === "play") {
-      this.startLooperPlayback(looperState);
+      this.setLooperButtonMorph(looperState, "play", 1, morphName);
+      this.setLooperButtonMorph(looperState, "record", 0);
+      this.startPlayback(looperState);
       this.updateLooperVisuals(looperState);
       return;
     }
 
     if (action === "pause") {
-      this.pauseLooperPlayback(looperState);
+      this.triggerLooperButtonMorph(looperState, "pause", performance.now(), morphName);
+      this.setLooperButtonMorph(looperState, "play", 0);
+      this.pausePlayback(looperState);
       this.updateLooperVisuals(looperState);
     }
   }
 
-  startLooperWireInteraction(controller, looperState, pad) {
-    const wireColor = this.getLooperWireColor(pad.index);
+  startLooperWireInteraction(controller, looperState, track) {
+    const wireColor = this.getLooperWireColor(track.index);
     const wireMesh = new THREE.Mesh(
       new THREE.BufferGeometry(),
       this.createLooperWireMaterial(wireColor),
     );
-    wireMesh.name = `LOOPER_wire_preview_${looperState.id}_${pad.index}`;
+    wireMesh.name = `LOOPER_wire_preview_${looperState.id}_${track.index}`;
     wireMesh.renderOrder = 15;
     this.scene.add(wireMesh);
 
     const interaction = {
       type: "looperWire",
       looperState,
-      pad,
+      track,
       wireMesh,
     };
     this.updateActiveLooperWire(controller, interaction);
@@ -1317,11 +1211,11 @@ export class InstrumentController {
   }
 
   updateActiveLooperWire(controller, interaction) {
-    if (!interaction?.wireMesh || !interaction.pad?.nodeTarget) {
+    if (!interaction?.wireMesh || !interaction.track?.nodeTarget) {
       return;
     }
 
-    interaction.pad.nodeTarget.getWorldPosition(tempWireStart);
+    interaction.track.nodeTarget.getWorldPosition(tempWireStart);
     this.setRaycasterFromController(controller);
 
     const hit = this.getCurrentHit(controller);
@@ -1338,7 +1232,7 @@ export class InstrumentController {
     const hit = this.getCurrentHit(controller);
     const honkState = hit?.object?.userData.isHonkConnectionTarget ? hit.object.userData.instrumentState : null;
     if (honkState?.interactive && honkState.root?.visible) {
-      this.connectLooperPadToHonk(interaction.looperState, interaction.pad.index, honkState);
+      this.connectLooperTrackToHonk(interaction.looperState, interaction.track.index, honkState);
     }
 
     this.disposeWireMesh(interaction.wireMesh);
@@ -1360,157 +1254,6 @@ export class InstrumentController {
 
     this.positionControlColliderFromValue(sphere, nextValue);
     this.setLooperControlValue(looperState, interaction.control, nextValue, false, interaction.morphTargets);
-  }
-
-  handleRecorderTriggerPress(controller, hit) {
-    const target = hit?.object;
-    if (!target?.userData?.isRecorderCollider) {
-      return false;
-    }
-
-    const controllerState = this.controllerStates.get(controller);
-    const recorderState = target.userData.instrumentState;
-    if (!controllerState || !recorderState?.isRecorder || !recorderState.root?.visible) {
-      return false;
-    }
-
-    this.activeInstrumentState = recorderState;
-
-    if (target.userData.isRecorderButton) {
-      this.pressRecorderButton(recorderState, target.userData.recorderButtonAction, target.userData.looperMorphName);
-      controllerState.activeTriggerInteraction = null;
-      return true;
-    }
-
-    if (target.userData.isRecorderNode) {
-      const channel = this.getRecorderChannel(recorderState, target.userData.recorderChannelIndex);
-      if (channel) {
-        controllerState.activeTriggerInteraction = this.startRecorderWireInteraction(controller, recorderState, channel);
-      }
-      return true;
-    }
-
-    if (target.userData.isRecorderControl) {
-      controllerState.activeTriggerInteraction = {
-        type: "recorderControlDrag",
-        recorderState,
-        control: target.userData.recorderControl,
-        morphTargets: target.userData.looperMorphTargets || null,
-        sphere: target,
-        dragStartY: controller.position.y,
-        dragStartLocalPosition: this.getControllerLocalPosition(controller, recorderState).clone(),
-        dragStartValue: this.getRecorderControlValue(recorderState, target.userData.recorderControl),
-        dragStartSphereY: target.position.y,
-      };
-      return true;
-    }
-
-    return false;
-  }
-
-  pressRecorderButton(recorderState, action, morphName = null) {
-    if (!recorderState?.isRecorder) {
-      return;
-    }
-
-    if (action === "record") {
-      this.setRecorderButtonMorph(recorderState, "record", 1, morphName);
-      this.setRecorderButtonMorph(recorderState, "play", 0);
-      this.startRecorderRecording(recorderState);
-      this.updateRecorderVisuals(recorderState);
-      return;
-    }
-
-    if (action === "stop") {
-      this.triggerRecorderButtonMorph(recorderState, "stop", performance.now(), morphName);
-      this.setRecorderButtonMorph(recorderState, "record", 0);
-      this.setRecorderButtonMorph(recorderState, "play", 0);
-      this.stopRecorderRecording(recorderState);
-      this.stopRecorderPlayback(recorderState);
-      this.updateRecorderVisuals(recorderState);
-      return;
-    }
-
-    if (action === "play") {
-      this.setRecorderButtonMorph(recorderState, "play", 1, morphName);
-      this.setRecorderButtonMorph(recorderState, "record", 0);
-      this.startRecorderPlayback(recorderState);
-      this.updateRecorderVisuals(recorderState);
-      return;
-    }
-
-    if (action === "pause") {
-      this.triggerRecorderButtonMorph(recorderState, "pause", performance.now(), morphName);
-      this.setRecorderButtonMorph(recorderState, "play", 0);
-      this.pauseRecorderPlayback(recorderState);
-      this.updateRecorderVisuals(recorderState);
-    }
-  }
-
-  startRecorderWireInteraction(controller, recorderState, channel) {
-    const wireColor = this.getLooperWireColor(channel.index);
-    const wireMesh = new THREE.Mesh(
-      new THREE.BufferGeometry(),
-      this.createLooperWireMaterial(wireColor),
-    );
-    wireMesh.name = `RECORDER_wire_preview_${recorderState.id}_${channel.index}`;
-    wireMesh.renderOrder = 15;
-    this.scene.add(wireMesh);
-
-    const interaction = {
-      type: "recorderWire",
-      recorderState,
-      channel,
-      wireMesh,
-    };
-    this.updateActiveRecorderWire(controller, interaction);
-    return interaction;
-  }
-
-  updateActiveRecorderWire(controller, interaction) {
-    if (!interaction?.wireMesh || !interaction.channel?.nodeTarget) {
-      return;
-    }
-
-    interaction.channel.nodeTarget.getWorldPosition(tempWireStart);
-    this.setRaycasterFromController(controller);
-
-    const hit = this.getCurrentHit(controller);
-    if (hit?.object?.userData.isHonkConnectionTarget) {
-      tempWireEnd.copy(hit.point);
-    } else {
-      tempWireEnd.copy(this.raycaster.ray.origin).addScaledVector(this.raycaster.ray.direction, 0.85);
-    }
-
-    this.updateWireMeshGeometry(interaction.wireMesh, tempWireStart, tempWireEnd);
-  }
-
-  finishRecorderWireInteraction(controller, interaction) {
-    const hit = this.getCurrentHit(controller);
-    const honkState = hit?.object?.userData.isHonkConnectionTarget ? hit.object.userData.instrumentState : null;
-    if (honkState?.interactive && honkState.root?.visible) {
-      this.connectRecorderChannelToHonk(interaction.recorderState, interaction.channel.index, honkState);
-    }
-
-    this.disposeWireMesh(interaction.wireMesh);
-    interaction.wireMesh = null;
-  }
-
-  updateRecorderControlDrag(controller, interaction) {
-    const sphere = interaction.sphere;
-    const recorderState = interaction.recorderState;
-    if (!sphere || !recorderState?.isRecorder) {
-      return;
-    }
-
-    const deltaY = controller.position.y - interaction.dragStartY;
-    const dragDelta = sphere.userData.movementMode === "arc"
-      ? this.getArcControlDragDelta(controller, recorderState, sphere, interaction)
-      : deltaY / this.getInstrumentWorldScaleY(recorderState);
-    const nextValue = this.getControlValueFromDrag(sphere, interaction, dragDelta);
-
-    this.positionControlColliderFromValue(sphere, nextValue);
-    this.setRecorderControlValue(recorderState, interaction.control, nextValue, false, interaction.morphTargets);
   }
 
   getControlValueFromDrag(sphere, interaction, dragDelta) {
@@ -1635,16 +1378,6 @@ export class InstrumentController {
 
       if (interaction.type === "looperControlDrag") {
         this.updateLooperControlDrag(controller, interaction);
-        continue;
-      }
-
-      if (interaction.type === "recorderWire") {
-        this.updateActiveRecorderWire(controller, interaction);
-        continue;
-      }
-
-      if (interaction.type === "recorderControlDrag") {
-        this.updateRecorderControlDrag(controller, interaction);
         continue;
       }
 
@@ -1798,9 +1531,6 @@ export class InstrumentController {
     if (sourceState.isLooper && duplicateState.isLooper) {
       this.copyLooperState(sourceState, duplicateState);
     }
-    if (sourceState.isRecorder && duplicateState.isRecorder) {
-      this.copyRecorderState(sourceState, duplicateState);
-    }
 
     const controllerState = this.controllerStates.get(controller);
     if (!controllerState) {
@@ -1856,24 +1586,19 @@ export class InstrumentController {
 
     const sourceData = sourceState.looperData;
     const targetData = targetState.looperData;
-    targetData.recording = false;
-    targetData.playing = false;
-    targetData.paused = false;
-    targetData.activePadIndex = null;
-    targetData.activeVoiceId = null;
-    targetData.nextPlaybackPadIndex = 0;
-    targetData.activeClipElapsedMs = 0;
-    targetData.lastPlaybackUpdateMs = 0;
-    targetData.activeRecordings.clear();
+    this.clearLooperRuntimeState(targetState);
+    targetData.timeline = sourceData.timeline?.clone?.() || new LooperTimeline();
+    targetData.hasRecording = targetData.timeline.hasRecording();
+    targetData.durationMs = targetData.timeline.durationMs;
 
-    for (const targetPad of targetData.pads) {
-      const sourcePad = sourceData.pads[targetPad.index];
-      targetPad.connectedHonkState = null;
-      targetPad.clip = this.cloneLooperClip(sourcePad?.clip);
-      targetPad.isRecording = false;
-      targetPad.isPlaying = false;
-      this.disposeWireMesh(targetPad.wireMesh);
-      targetPad.wireMesh = null;
+    for (const targetTrack of targetData.tracks) {
+      targetTrack.connectedHonkState = null;
+      targetTrack.isRecording = false;
+      targetTrack.isPlaying = false;
+      targetTrack.lastGestureSample = null;
+      targetTrack.lastGestureSampleAtMs = -Infinity;
+      this.disposeWireMesh(targetTrack.wireMesh);
+      targetTrack.wireMesh = null;
     }
 
     this.setLooperControlValue(targetState, "volume", sourceData.volumeControlValue);
@@ -1881,16 +1606,12 @@ export class InstrumentController {
     this.updateLooperVisuals(targetState);
   }
 
-  cloneLooperClip(clip) {
-    return LooperAudioEngine.cloneClip(clip);
-  }
-
-  getLooperPad(looperState, padIndex) {
+  getLooperTrack(looperState, trackIndex) {
     if (!looperState?.looperData) {
       return null;
     }
 
-    return looperState.looperData.pads[padIndex] || null;
+    return looperState.looperData.tracks[trackIndex] || null;
   }
 
   getLooperWireColor(padIndex) {
@@ -1949,176 +1670,72 @@ export class InstrumentController {
     this.setMorph(morphTargets.down, Math.max(-clamped, 0), looperState);
   }
 
-  copyRecorderState(sourceState, targetState) {
-    if (!sourceState?.recorderData || !targetState?.recorderData) {
-      return;
-    }
-
-    const sourceData = sourceState.recorderData;
-    const targetData = targetState.recorderData;
-    this.clearRecorderRuntimeState(targetState);
-    targetData.events = sourceData.events.map((event) => this.cloneRecorderEvent(event));
-    targetData.nextEventId = Math.max(1, sourceData.nextEventId);
-    targetData.hasRecording = sourceData.hasRecording;
-    targetData.durationMs = sourceData.durationMs;
-    targetData.lastRecordedEventEndMs = sourceData.lastRecordedEventEndMs;
-
-    for (const targetChannel of targetData.channels) {
-      targetChannel.connectedHonkState = null;
-      targetChannel.isRecording = false;
-      targetChannel.isPlaying = false;
-      this.disposeWireMesh(targetChannel.wireMesh);
-      targetChannel.wireMesh = null;
-    }
-
-    this.setRecorderControlValue(targetState, "volume", sourceData.volumeControlValue);
-    this.setRecorderControlValue(targetState, "speed", sourceData.speedControlValue);
-    this.setRecorderControlValue(targetState, "gap", sourceData.gapControlValue);
-    this.updateRecorderVisuals(targetState);
-  }
-
-  cloneRecorderEvent(event) {
-    return LooperAudioEngine.cloneRecorderEvent(event);
-  }
-
-  getRecorderChannel(recorderState, channelIndex) {
-    if (!recorderState?.recorderData) {
-      return null;
-    }
-
-    return recorderState.recorderData.channels[channelIndex] || null;
-  }
-
-  getRecorderControlValue(recorderState, control) {
-    if (!recorderState?.recorderData) {
-      return 0;
-    }
-
-    if (control === "speed") {
-      return recorderState.recorderData.speedControlValue;
-    }
-    if (control === "gap") {
-      return recorderState.recorderData.gapControlValue;
-    }
-    return recorderState.recorderData.volumeControlValue;
-  }
-
-  setRecorderControlValue(recorderState, control, value, updateSphere = true, morphTargetsOverride = null) {
-    const data = recorderState?.recorderData;
-    if (!data) {
-      return;
-    }
-
-    const clamped = THREE.MathUtils.clamp(value, -1, 1);
-    if (control === "speed") {
-      data.speedControlValue = clamped;
-      data.speed = this.getLooperSpeedFromControl(clamped);
-    } else if (control === "gap") {
-      data.gapControlValue = clamped;
-      data.loopGapMs = this.getRecorderLoopGapFromControl(clamped);
-      if (!data.recording && data.hasRecording) {
-        data.durationMs = this.getRecorderLoopDuration(data);
-      }
-    } else {
-      data.volumeControlValue = clamped;
-      data.volume = this.getLooperVolumeFromControl(clamped);
-    }
-
-    this.applyRecorderControlMorphValue(recorderState, control, clamped, morphTargetsOverride);
-
-    if (updateSphere) {
-      const sphere = recorderState.hitTargets[getRecorderControlName(control)];
-      if (sphere?.userData.isRecorderControl) {
-        this.positionControlColliderFromValue(sphere, clamped);
-      }
-    }
-  }
-
-  applyRecorderControlMorphValue(recorderState, control, value, morphTargetsOverride = null) {
-    const morphTargets = morphTargetsOverride || recorderState?.hitTargets?.[getRecorderControlName(control)]?.userData.looperMorphTargets || LOOPER_CONTROL_MORPH_TARGETS[control];
-    if (!recorderState?.isRecorder || !morphTargets) {
-      return;
-    }
-
-    const clamped = THREE.MathUtils.clamp(value, -1, 1);
-    this.setMorph(morphTargets.up, Math.max(clamped, 0), recorderState);
-    this.setMorph(morphTargets.down, Math.max(-clamped, 0), recorderState);
-  }
-
-  setRecorderButtonMorph(recorderState, action, value, morphNameOverride = null) {
-    const data = recorderState?.recorderData;
-    const morphName = this.getRecorderButtonMorphName(recorderState, action, morphNameOverride);
+  setLooperButtonMorph(looperState, action, value, morphNameOverride = null) {
+    const data = looperState?.looperData;
+    const morphName = this.getLooperButtonMorphName(looperState, action, morphNameOverride);
     if (!data || !morphName) {
       return;
     }
 
-    this.setMorph(morphName, value, recorderState);
+    this.setMorph(morphName, value, looperState);
     if (value <= 0) {
       data.buttonMorphReleaseTimes?.delete(action);
     }
   }
 
-  getRecorderButtonMorphName(recorderState, action, morphNameOverride = null) {
+  getLooperButtonMorphName(looperState, action, morphNameOverride = null) {
     return (
       morphNameOverride ||
-      recorderState?.hitTargets?.[getRecorderButtonName(action)]?.userData.looperMorphName ||
+      looperState?.hitTargets?.[getLooperButtonName(action)]?.userData.looperMorphName ||
       LOOPER_BUTTON_MORPH_TARGETS[action]
     );
   }
 
-  triggerRecorderButtonMorph(recorderState, action, now = performance.now(), morphNameOverride = null) {
-    const data = recorderState?.recorderData;
-    const morphName = this.getRecorderButtonMorphName(recorderState, action, morphNameOverride);
+  triggerLooperButtonMorph(looperState, action, now = performance.now(), morphNameOverride = null) {
+    const data = looperState?.looperData;
+    const morphName = this.getLooperButtonMorphName(looperState, action, morphNameOverride);
     if (!data || !morphName) {
       return;
     }
 
-    if (!data.buttonMorphReleaseTimes) {
-      data.buttonMorphReleaseTimes = new Map();
-    }
-    this.setMorph(morphName, 1, recorderState);
+    this.setMorph(morphName, 1, looperState);
     data.buttonMorphReleaseTimes.set(action, {
       releaseTimeMs: now + LOOPER_MORPH_SETTINGS.buttonPressDurationMs,
       morphName,
     });
   }
 
-  updateRecorderMorphAnimations(now = performance.now()) {
-    for (const recorderState of this.instrumentStates) {
-      const data = recorderState.recorderData;
-      if (!data || !recorderState.root?.visible) {
+  updateLooperMorphAnimations(now = performance.now()) {
+    for (const looperState of this.instrumentStates) {
+      const data = looperState.looperData;
+      if (!data || !looperState.root?.visible) {
         continue;
       }
 
-      this.updateRecorderButtonMorphs(recorderState, now);
-      this.updateRecorderPlayingMorph(recorderState, now);
+      this.updateLooperButtonMorphs(looperState, now);
+      this.updateLooperPlayingMorph(looperState, now);
     }
   }
 
-  updateRecorderButtonMorphs(recorderState, now) {
-    const data = recorderState?.recorderData;
+  updateLooperButtonMorphs(looperState, now) {
+    const data = looperState?.looperData;
     if (!data?.buttonMorphReleaseTimes) {
       return;
     }
 
     for (const [action, releaseEntry] of data.buttonMorphReleaseTimes) {
-      const releaseTimeMs =
-        typeof releaseEntry === "number" ? releaseEntry : releaseEntry?.releaseTimeMs;
-      if (now < releaseTimeMs) {
+      if (now < releaseEntry.releaseTimeMs) {
         continue;
       }
-
-      const morphName =
-        typeof releaseEntry === "number" ? LOOPER_BUTTON_MORPH_TARGETS[action] : releaseEntry?.morphName;
-      if (morphName) {
-        this.setMorph(morphName, 0, recorderState);
+      if (releaseEntry.morphName) {
+        this.setMorph(releaseEntry.morphName, 0, looperState);
       }
       data.buttonMorphReleaseTimes.delete(action);
     }
   }
 
-  updateRecorderPlayingMorph(recorderState, now) {
-    const data = recorderState?.recorderData;
+  updateLooperPlayingMorph(looperState, now) {
+    const data = looperState?.looperData;
     if (!data) {
       return;
     }
@@ -2148,55 +1765,39 @@ export class InstrumentController {
       );
       data.lastPlayingHeadMorphUpdateMs = now;
     } else {
-      data.playingHeadMorphTarget = data.playingHeadMorphValue ?? min;
+      data.playingHeadMorphValue = THREE.MathUtils.lerp(data.playingHeadMorphValue ?? min, min, 0.24);
       data.lastPlayingHeadMorphUpdateMs = now;
     }
 
-    this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, data.playingHeadMorphValue, recorderState);
+    this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, data.playingHeadMorphValue, looperState);
   }
 
-  getRecorderLoopGapFromControl(value) {
-    return LooperAudioEngine.getRecorderLoopGapFromControl(value);
-  }
-
-  getRecorderLoopDuration(data) {
-    if (!data?.events?.length) {
-      return 0;
-    }
-
-    return Math.max(data.lastRecordedEventEndMs + data.loopGapMs, RECORDER_MIN_EVENT_DURATION_MS);
-  }
-
-  clearRecorderRuntimeState(recorderState) {
-    const data = recorderState?.recorderData;
+  clearLooperRuntimeState(looperState) {
+    const data = looperState?.looperData;
     if (!data) {
       return;
     }
 
-    this.releaseRecorderPlaybackVoices(data);
-    for (const channel of data.channels) {
-      channel.isRecording = false;
-      channel.isPlaying = false;
-    }
+    this.stopPlayback(looperState);
+    data.activeRecordings.clear();
     data.recording = false;
-    data.recordingStarted = false;
     data.playing = false;
     data.paused = false;
-    data.timelineStartMs = 0;
-    data.playbackElapsedMs = 0;
-    data.lastPlaybackUpdateMs = 0;
-    data.activeRecordings.clear();
-    data.activePlaybackEvents.clear();
-    data.buttonMorphReleaseTimes?.clear();
+    data.buttonMorphReleaseTimes.clear();
+    for (const track of data.tracks) {
+      track.isRecording = false;
+      track.isPlaying = false;
+      track.lastGestureSample = null;
+      track.lastGestureSampleAtMs = -Infinity;
+    }
     for (const morphName of Object.values(LOOPER_BUTTON_MORPH_TARGETS)) {
-      this.setMorph(morphName, 0, recorderState);
+      this.setMorph(morphName, 0, looperState);
     }
     data.playingHeadMorphValue = 0;
     data.playingHeadMorphTarget = 0;
     data.playingHeadMorphPhase = 0;
     data.lastPlayingHeadMorphUpdateMs = 0;
-    data.nextPlayingHeadMorphChangeMs = 0;
-    this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, 0, recorderState);
+    this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, 0, looperState);
   }
 
   applyInstrumentVisualScale(state, pulse = state.hornSqueezeValue ? 1 + state.hornSqueezeValue * 0.035 : 1) {
@@ -2222,7 +1823,7 @@ export class InstrumentController {
 
   updateLooperFollowerTransforms() {
     for (const looperState of this.instrumentStates) {
-      const data = looperState.looperData || looperState.recorderData;
+      const data = looperState.looperData;
       if (!data || !looperState.root?.visible) {
         continue;
       }
@@ -2239,7 +1840,7 @@ export class InstrumentController {
       const rotationChanged = Math.abs(tempLooperDeltaQuaternion.w) < 0.999999;
       if (positionChanged || rotationChanged) {
         const connectedHonks = new Set();
-        for (const connection of data.pads || data.channels || []) {
+        for (const connection of data.tracks || []) {
           if (connection.connectedHonkState?.root?.visible) {
             connectedHonks.add(connection.connectedHonkState);
           }
@@ -2272,7 +1873,7 @@ export class InstrumentController {
     return false;
   }
 
-  updateHorn() {
+  updateHorn(now = performance.now()) {
     this.updateAudioListener();
 
     for (const state of this.instrumentStates) {
@@ -2287,22 +1888,19 @@ export class InstrumentController {
       if (interaction?.type === "holdSqueeze" && interaction.instrumentState?.root?.visible) {
         activeHoldInteractions.push({ interaction, controller });
       }
-      const sequencerInteractionActive =
+      const looperInteractionActive =
         interaction?.type === "looperWire" ||
-        interaction?.type === "looperSilentPad" ||
-        interaction?.type === "looperControlDrag" ||
-        interaction?.type === "recorderWire" ||
-        interaction?.type === "recorderControlDrag";
-      const triggerBlockedBySequencer =
-        controllerState?.trigger && this.isSequencerColliderTarget(this.getCurrentHit(controller)?.object);
-      if (controllerState?.trigger && (sequencerInteractionActive || triggerBlockedBySequencer)) {
+        interaction?.type === "looperControlDrag";
+      const triggerBlockedByLooper =
+        controllerState?.trigger && this.isLooperColliderTarget(this.getCurrentHit(controller)?.object);
+      if (controllerState?.trigger && (looperInteractionActive || triggerBlockedByLooper)) {
         this.releaseRaySqueeze(controllerState);
       }
       if (
         controllerState?.trigger &&
         interaction?.type !== "verticalDragMorph" &&
-        !sequencerInteractionActive &&
-        !triggerBlockedBySequencer
+        !looperInteractionActive &&
+        !triggerBlockedByLooper
       ) {
         const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState);
         if (raySqueezeInteraction) {
@@ -2342,6 +1940,8 @@ export class InstrumentController {
       }
       interaction.activeChain = playableChain;
     }
+
+    this.updateLooperPlayback(now);
 
     for (const state of this.instrumentStates) {
       if (!state.interactive) {
@@ -2387,6 +1987,137 @@ export class InstrumentController {
         this.updateInstrumentSpatialVoice(voiceId, synthState);
       }
     }
+
+    this.updateLooperPlaybackAudio();
+  }
+
+  startRecording(looperState, now = performance.now()) {
+    const data = looperState?.looperData;
+    if (!data) {
+      return;
+    }
+
+    this.stopPlayback(looperState);
+    data.timeline = new LooperTimeline();
+    data.activeRecordings.clear();
+    data.hasRecording = false;
+    data.durationMs = 0;
+    data.recording = true;
+    data.playing = false;
+    data.paused = false;
+
+    const baselines = [];
+    for (const track of data.tracks) {
+      track.isRecording = false;
+      track.isPlaying = false;
+      track.lastGestureSample = null;
+      track.lastGestureSampleAtMs = -Infinity;
+      const sample = this.captureLooperSampleFromHonk(track.connectedHonkState);
+      if (sample) {
+        baselines.push({ trackIndex: track.index, sample });
+        track.lastGestureSample = { ...sample };
+        track.lastGestureSampleAtMs = 0;
+      }
+    }
+
+    data.timeline.startRecording(now, baselines);
+    this.updateLooperVisuals(looperState);
+  }
+
+  stopRecording(looperState, now = performance.now()) {
+    const data = looperState?.looperData;
+    if (!data?.recording) {
+      return;
+    }
+
+    for (const track of data.tracks) {
+      if (data.activeRecordings.has(track.index)) {
+        this.finishLooperNoteRecording(looperState, track, now);
+      }
+      track.isRecording = false;
+    }
+
+    data.recording = false;
+    data.hasRecording = data.timeline.stopRecording(now, LOOPER_MIN_NOTE_DURATION_MS);
+    data.durationMs = data.timeline.durationMs;
+    this.updateLooperVisuals(looperState);
+  }
+
+  clearRecording(looperState) {
+    const data = looperState?.looperData;
+    if (!data) {
+      return;
+    }
+
+    this.stopPlayback(looperState);
+    data.timeline.clearRecording();
+    data.activeRecordings.clear();
+    data.hasRecording = false;
+    data.durationMs = 0;
+    data.recording = false;
+    data.paused = false;
+    for (const track of data.tracks) {
+      track.isRecording = false;
+      track.isPlaying = false;
+      track.lastGestureSample = null;
+      track.lastGestureSampleAtMs = -Infinity;
+    }
+    this.updateLooperVisuals(looperState);
+  }
+
+  startPlayback(looperState, now = performance.now()) {
+    const data = looperState?.looperData;
+    if (!data?.timeline?.hasRecording() || data.recording) {
+      return;
+    }
+
+    this.synth.ensureAudio();
+    this.releaseLooperPlaybackVoices(data);
+    data.playbackEngine.stop(data.playbackHandlers);
+    this.resetLooperPlaybackMorphState(data, { restoreOriginal: true });
+
+    data.playing = true;
+    data.paused = false;
+    data.lastPlaybackUpdateMs = now;
+    data.playbackEngine.start(now);
+    this.applyLooperTimelineBaselines(looperState);
+  }
+
+  pausePlayback(looperState) {
+    const data = looperState?.looperData;
+    if (!data?.playing || data.paused) {
+      return;
+    }
+
+    data.playbackEngine.pause(data.playbackHandlers);
+    this.releaseLooperPlaybackVoices(data);
+    data.playing = false;
+    data.paused = true;
+    for (const track of data.tracks) {
+      track.isPlaying = false;
+    }
+  }
+
+  stopPlayback(looperState) {
+    const data = looperState?.looperData;
+    if (!data) {
+      return;
+    }
+
+    data.playbackEngine.stop(data.playbackHandlers);
+    this.releaseLooperPlaybackVoices(data);
+    data.playing = false;
+    data.paused = false;
+    data.lastPlaybackUpdateMs = 0;
+    for (const track of data.tracks) {
+      track.isPlaying = false;
+    }
+    this.resetLooperPlaybackMorphState(data, { restoreOriginal: true });
+  }
+
+  updatePlayback(delta = 0, time = performance.now()) {
+    this.updateLooperPlayback(time);
+    this.updateLooperPlaybackAudio();
   }
 
   updateLooperRecordings(now = performance.now()) {
@@ -2396,78 +2127,80 @@ export class InstrumentController {
         continue;
       }
 
-      for (const pad of data.pads) {
-        const honkState = pad.connectedHonkState;
-        if (!honkState?.root?.visible) {
-          if (data.activeRecordings.has(pad.index)) {
-            this.finishLooperPadRecording(looperState, pad, now);
+      const elapsedMs = data.timeline.getElapsedMs(now);
+      for (const track of data.tracks) {
+        const honkState = track.connectedHonkState;
+        const sample = this.captureLooperSampleFromHonk(honkState);
+        const honkActive = this.hasLiveHonkHolder(honkState);
+        const activeRecording = data.activeRecordings.get(track.index);
+
+        if (!sample) {
+          if (activeRecording) {
+            this.finishLooperNoteRecording(looperState, track, now);
           }
           continue;
         }
 
-        const honkActive = honkState.hornHolders.size > 0;
-        const activeRecording = data.activeRecordings.get(pad.index);
+        if (this.shouldRecordLooperGestureSample(track, sample, elapsedMs)) {
+          data.timeline.addGesture(track.index, elapsedMs, sample, activeRecording?.noteId ?? null);
+          track.lastGestureSample = { ...sample };
+          track.lastGestureSampleAtMs = elapsedMs;
+        }
+
         if (honkActive && !activeRecording) {
-          this.beginLooperPadRecording(looperState, pad, {
-            silent: false,
-            startedAtMs: now,
-            note: this.captureLooperNoteFromHonk(honkState),
-            honkState,
-          });
-        } else if (!honkActive && activeRecording && !activeRecording.silent) {
-          this.finishLooperPadRecording(looperState, pad, now);
+          this.beginLooperNoteRecording(looperState, track, now, sample);
+        } else if (!honkActive && activeRecording) {
+          this.finishLooperNoteRecording(looperState, track, now);
         }
       }
     }
   }
 
-  beginLooperPadRecording(looperState, pad, recording) {
-    const data = looperState?.looperData;
-    if (!data || !pad) {
-      return;
+  hasLiveHonkHolder(honkState) {
+    if (!honkState?.interactive || !honkState.root?.visible) {
+      return false;
     }
-
-    data.activeRecordings.set(pad.index, recording);
-    pad.isRecording = true;
-    this.updateLooperVisuals(looperState);
-  }
-
-  finishLooperPadRecording(looperState, pad, now = performance.now()) {
-    const data = looperState?.looperData;
-    const recording = data?.activeRecordings.get(pad?.index);
-    if (!data || !pad || !recording) {
-      return;
-    }
-
-    const durationMs = Math.max(now - recording.startedAtMs, LOOPER_MIN_CLIP_DURATION_MS);
-    pad.clip = {
-      silent: Boolean(recording.silent),
-      durationMs,
-      note: recording.silent ? null : recording.note || this.captureLooperNoteFromHonk(recording.honkState),
-    };
-    pad.isRecording = false;
-    data.activeRecordings.delete(pad.index);
-    this.updateLooperVisuals(looperState);
-  }
-
-  stopLooperRecording(looperState) {
-    const data = looperState?.looperData;
-    if (!data) {
-      return;
-    }
-
-    const now = performance.now();
-    for (const pad of data.pads) {
-      if (data.activeRecordings.has(pad.index)) {
-        this.finishLooperPadRecording(looperState, pad, now);
+    for (const voiceId of honkState.hornHolders) {
+      if (!String(voiceId).startsWith("looper-")) {
+        return true;
       }
-      pad.isRecording = false;
     }
-    data.recording = false;
+    return false;
   }
 
-  captureLooperNoteFromHonk(honkState) {
-    if (!honkState?.interactive) {
+  beginLooperNoteRecording(looperState, track, now, sample) {
+    const data = looperState?.looperData;
+    if (!data || !track || !sample) {
+      return;
+    }
+
+    const elapsedMs = data.timeline.getElapsedMs(now);
+    const noteId = data.timeline.addNoteOn(track.index, elapsedMs, sample);
+    data.activeRecordings.set(track.index, {
+      noteId,
+      startedAtMs: now,
+    });
+    track.isRecording = true;
+    this.updateLooperVisuals(looperState);
+  }
+
+  finishLooperNoteRecording(looperState, track, now = performance.now()) {
+    const data = looperState?.looperData;
+    const recording = data?.activeRecordings.get(track?.index);
+    if (!data || !track || !recording) {
+      return;
+    }
+
+    const elapsedMs = data.timeline.getElapsedMs(now);
+    const minEndMs = data.timeline.getElapsedMs(recording.startedAtMs) + LOOPER_MIN_NOTE_DURATION_MS;
+    data.timeline.addNoteOff(track.index, Math.max(elapsedMs, minEndMs), recording.noteId);
+    data.activeRecordings.delete(track.index);
+    track.isRecording = false;
+    this.updateLooperVisuals(looperState);
+  }
+
+  captureLooperSampleFromHonk(honkState) {
+    if (!honkState?.interactive || !honkState.root?.visible) {
       return null;
     }
 
@@ -2475,69 +2208,34 @@ export class InstrumentController {
       leftEar: honkState.morphController.getEarAmount("left"),
       rightEar: honkState.morphController.getEarAmount("right"),
       nose: honkState.morphController.getValue(MORPH_TARGET_NAMES.nose),
-      vowel: honkState.currentVowelLetter === "neutral" ? "A" : honkState.currentVowelLetter,
+      vowel: honkState.currentVowelLetter || "neutral",
       pitchBendSemitones: honkState.targetBendValue * MAX_PITCH_BEND_SEMITONES,
       pitchSnap: honkState.pitchSnap,
     };
   }
 
-  startLooperPlayback(looperState) {
-    const data = looperState?.looperData;
-    if (!data || !this.hasLooperClips(data)) {
-      return;
+  shouldRecordLooperGestureSample(track, sample, elapsedMs) {
+    if (!track.lastGestureSample) {
+      return true;
     }
-
-    this.synth.ensureAudio();
-
-    if (data.paused && data.activePadIndex !== null) {
-      data.paused = false;
-      data.playing = true;
-      data.lastPlaybackUpdateMs = performance.now();
-      this.restartActiveLooperVoice(looperState);
-      return;
+    if (elapsedMs - track.lastGestureSampleAtMs < LOOPER_GESTURE_SAMPLE_INTERVAL_MS) {
+      return false;
     }
-
-    if (!data.playing) {
-      data.playing = true;
-      data.paused = false;
-      data.activePadIndex = null;
-      data.activeVoiceId = null;
-      data.activeClipElapsedMs = 0;
-      data.nextPlaybackPadIndex = 0;
-      data.lastPlaybackUpdateMs = performance.now();
-    }
+    return this.looperSamplesDiffer(track.lastGestureSample, sample);
   }
 
-  pauseLooperPlayback(looperState) {
-    const data = looperState?.looperData;
-    if (!data?.playing || data.paused) {
-      return;
+  looperSamplesDiffer(first, second) {
+    if (!first || !second) {
+      return true;
     }
-
-    this.releaseLooperActiveVoice(data);
-    data.paused = true;
-    data.playing = false;
-  }
-
-  stopLooperPlayback(looperState) {
-    const data = looperState?.looperData;
-    if (!data) {
-      return;
-    }
-
-    this.releaseLooperActiveVoice(data);
-    if (data.activePadIndex !== null) {
-      const pad = data.pads[data.activePadIndex];
-      if (pad) {
-        pad.isPlaying = false;
-      }
-    }
-    data.playing = false;
-    data.paused = false;
-    data.activePadIndex = null;
-    data.activeVoiceId = null;
-    data.activeClipElapsedMs = 0;
-    data.nextPlaybackPadIndex = 0;
+    return (
+      Math.abs(first.leftEar - second.leftEar) > 0.015 ||
+      Math.abs(first.rightEar - second.rightEar) > 0.015 ||
+      Math.abs(first.nose - second.nose) > 0.015 ||
+      Math.abs((first.pitchBendSemitones || 0) - (second.pitchBendSemitones || 0)) > 0.08 ||
+      first.vowel !== second.vowel ||
+      first.pitchSnap !== second.pitchSnap
+    );
   }
 
   updateLooperPlayback(now = performance.now()) {
@@ -2547,528 +2245,132 @@ export class InstrumentController {
         continue;
       }
 
-      if (!this.hasLooperClips(data)) {
-        this.stopLooperPlayback(looperState);
+      if (!data.timeline?.hasRecording()) {
+        this.stopPlayback(looperState);
         continue;
       }
 
-      if (data.activePadIndex === null) {
-        this.startNextLooperClip(looperState, now);
-        continue;
-      }
-
-      const pad = data.pads[data.activePadIndex];
-      const clip = pad?.clip;
-      if (!clip) {
-        this.startNextLooperClip(looperState, now);
-        continue;
-      }
-
-      const deltaMs = Math.max(now - data.lastPlaybackUpdateMs, 0);
-      data.lastPlaybackUpdateMs = now;
-      data.activeClipElapsedMs += deltaMs * data.speed;
-
-      if (data.activeClipElapsedMs >= clip.durationMs) {
-        this.finishActiveLooperClip(looperState);
-        data.nextPlaybackPadIndex = (pad.index + 1) % data.pads.length;
-        this.startNextLooperClip(looperState, now);
-        continue;
-      }
-
-      this.updateLooperActiveVoice(looperState);
+      data.playbackEngine.update(now, data.timeline, data.speed, data.playbackHandlers);
+      this.applyLooperPlaybackHolders(looperState);
     }
   }
 
-  hasLooperClips(data) {
-    return Boolean(data?.pads.some((pad) => pad.clip));
-  }
-
-  startNextLooperClip(looperState, now = performance.now()) {
+  handleLooperPlaybackNoteOn(looperState, event) {
     const data = looperState?.looperData;
-    const nextIndex = this.findNextLooperClipIndex(data, data?.nextPlaybackPadIndex ?? 0);
-    if (nextIndex === null) {
-      this.stopLooperPlayback(looperState);
+    const track = data?.tracks[event.trackIndex];
+    const sample = event.sample || data?.playbackEngine.getTrackSample(event.trackIndex);
+    if (!data || !track || !sample) {
       return;
     }
 
-    this.finishActiveLooperClip(looperState);
-    const pad = data.pads[nextIndex];
-    pad.isPlaying = true;
-    data.activePadIndex = nextIndex;
-    data.activeClipElapsedMs = 0;
-    data.lastPlaybackUpdateMs = now;
-    data.nextPlaybackPadIndex = (nextIndex + 1) % data.pads.length;
+    track.isPlaying = true;
+    this.applyLooperGestureSampleToTrack(looperState, track, sample);
 
-    if (!pad.clip.silent) {
-      data.activeVoiceId = this.getLooperVoiceId(looperState, pad.index);
-      this.synth.start(data.activeVoiceId);
-      this.updateLooperActiveVoice(looperState);
-    } else {
-      data.activeVoiceId = null;
+    const voiceTargets = this.getLooperPlaybackVoiceTargets(looperState, track);
+    const voiceMap = new Map();
+    for (const targetState of voiceTargets) {
+      const voiceId = this.getLooperVoiceId(looperState, event.noteId, targetState);
+      voiceMap.set(voiceId, targetState);
+      this.synth.start(voiceId);
     }
+    data.activePlaybackVoices.set(event.noteId, voiceMap);
+    this.updateLooperVisuals(looperState);
   }
 
-  findNextLooperClipIndex(data, startIndex) {
-    if (!data?.pads.length) {
-      return null;
-    }
-
-    for (let offset = 0; offset < data.pads.length; offset += 1) {
-      const index = (startIndex + offset) % data.pads.length;
-      if (data.pads[index].clip) {
-        return index;
-      }
-    }
-    return null;
-  }
-
-  finishActiveLooperClip(looperState) {
+  handleLooperPlaybackNoteOff(looperState, event) {
     const data = looperState?.looperData;
     if (!data) {
       return;
     }
 
-    this.releaseLooperActiveVoice(data);
-    if (data.activePadIndex !== null) {
-      const pad = data.pads[data.activePadIndex];
-      if (pad) {
-        pad.isPlaying = false;
-      }
+    this.releaseLooperPlaybackNote(data, event.noteId);
+    const track = data.tracks[event.trackIndex];
+    if (track) {
+      track.isPlaying = this.hasActiveLooperTrackNote(data, track.index, event.noteId);
     }
-    data.activePadIndex = null;
-    data.activeVoiceId = null;
-    data.activeClipElapsedMs = 0;
+    this.updateLooperVisuals(looperState);
   }
 
-  restartActiveLooperVoice(looperState) {
+  handleLooperPlaybackGesture(looperState, event) {
     const data = looperState?.looperData;
-    const pad = data && data.activePadIndex !== null ? data.pads[data.activePadIndex] : null;
-    if (!pad?.clip || pad.clip.silent) {
+    const track = data?.tracks[event.trackIndex];
+    if (!data || !track || !event.sample) {
       return;
     }
 
-    data.activeVoiceId = this.getLooperVoiceId(looperState, pad.index);
-    this.synth.start(data.activeVoiceId);
-    this.updateLooperActiveVoice(looperState);
+    this.applyLooperGestureSampleToTrack(looperState, track, event.sample);
   }
 
-  updateLooperActiveVoice(looperState) {
+  handleLooperLoopBoundary(looperState) {
     const data = looperState?.looperData;
-    const pad = data && data.activePadIndex !== null ? data.pads[data.activePadIndex] : null;
-    const clip = pad?.clip;
-    const note = clip?.note;
-    if (!data?.activeVoiceId || !note || clip.silent) {
+    if (!data) {
       return;
     }
 
-    this.synth.update({
-      voiceId: data.activeVoiceId,
-      hornAmount: 1,
-      masterGain: SPATIAL_AUDIO_SETTINGS.masterGain * data.volume,
-      leftEar: note.leftEar,
-      rightEar: note.rightEar,
-      nose: note.nose,
-      vowel: note.vowel || "A",
-      pitchBendSemitones: note.pitchBendSemitones || 0,
-      pitchSnap: note.pitchSnap,
-    });
-
-    const spatialState = pad.connectedHonkState?.root?.visible ? pad.connectedHonkState : looperState;
-    if (spatialState !== looperState) {
-      this.applySequencerPlaybackToHonk(spatialState, data.activeVoiceId, note);
+    this.releaseLooperPlaybackVoices(data);
+    for (const track of data.tracks) {
+      track.isPlaying = false;
     }
-    this.updateInstrumentSpatialVoice(data.activeVoiceId, spatialState);
+    this.applyLooperTimelineBaselines(looperState);
+    this.updateLooperVisuals(looperState);
   }
 
-  updateSequencerPlaybackSqueezeVisuals() {
-    const activePlaybackHonks = this.getActiveSequencerPlaybackHonks();
+  getLooperPlaybackVoiceTargets(looperState, track) {
+    const connectedHonkState =
+      track.connectedHonkState?.interactive && track.connectedHonkState.root?.visible
+        ? track.connectedHonkState
+        : null;
+    if (!connectedHonkState) {
+      return [looperState];
+    }
 
-    for (const state of this.instrumentStates) {
-      if (!state.interactive || !state.root?.visible) {
+    const chain = this.getTouchingInstrumentChain(connectedHonkState).filter((state) => state.interactive);
+    return chain.length > 0 ? chain : [connectedHonkState];
+  }
+
+  applyLooperPlaybackHolders(looperState) {
+    const data = looperState?.looperData;
+    if (!data?.playbackEngine) {
+      return;
+    }
+
+    for (const activeNote of data.playbackEngine.getActiveNotes()) {
+      const sample = activeNote.sample || data.playbackEngine.getTrackSample(activeNote.trackIndex);
+      const voiceMap = data.activePlaybackVoices.get(activeNote.noteId);
+      if (!sample || !voiceMap) {
         continue;
       }
 
-      const hasSequencerPlayback = activePlaybackHonks.has(state) || this.hasSequencerPlaybackHolder(state);
-      if (!hasSequencerPlayback) {
-        continue;
+      for (const [voiceId, targetState] of voiceMap) {
+        if (targetState !== looperState) {
+          this.applyLooperPlaybackToHonk(targetState, voiceId, sample);
+        }
       }
-
-      const target = 1;
-      state.sequencerSqueezeValue = THREE.MathUtils.lerp(
-        state.sequencerSqueezeValue || 0,
-        target,
-        SQUEEZE_SENSITIVITY,
-      );
-      if (target === 0 && state.sequencerSqueezeValue < 0.001) {
-        state.sequencerSqueezeValue = 0;
-      }
-
-      const visualSqueeze = Math.max(state.hornSqueezeValue || 0, state.sequencerSqueezeValue);
-      state.morphController.setSqueeze(visualSqueeze);
-
-      let bendSum = 0;
-      for (const value of state.activeBends.values()) {
-        bendSum += value;
-      }
-      state.targetBendValue = state.hornHolders.size > 0 ? THREE.MathUtils.clamp(bendSum, -1, 1) : 0;
-      state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
-      state.morphController.setBend(state.bendValue);
-      this.updateBendAlignedColliders(state);
-
-      this.applyInstrumentVisualScale(state, 1 + visualSqueeze * 0.035);
-      state.debugVisuals?.update();
     }
   }
 
-  hasSequencerPlaybackHolder(state) {
-    for (const voiceId of state?.hornHolders || []) {
-      if (String(voiceId).startsWith("recorder-") || String(voiceId).startsWith("looper-")) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  getActiveSequencerPlaybackHonks() {
-    const activeHonks = new Set();
-
+  updateLooperPlaybackAudio() {
     for (const looperState of this.instrumentStates) {
       const data = looperState.looperData;
       if (!data?.playing || data.paused || !looperState.root?.visible) {
         continue;
       }
 
-      for (const pad of data.pads) {
-        const honkState = pad.connectedHonkState;
-        if (pad.isPlaying && !pad.clip?.silent && honkState?.interactive && honkState.root?.visible) {
-          activeHonks.add(honkState);
-        }
-      }
-    }
-
-    for (const recorderState of this.instrumentStates) {
-      const data = recorderState.recorderData;
-      if (!data?.playing || data.paused || !recorderState.root?.visible) {
-        continue;
-      }
-
-      for (const channel of data.channels) {
-        const honkState = channel.connectedHonkState;
-        if (channel.isPlaying && honkState?.interactive && honkState.root?.visible) {
-          activeHonks.add(honkState);
-        }
-      }
-    }
-
-    return activeHonks;
-  }
-
-  releaseLooperActiveVoice(data) {
-    if (!data?.activeVoiceId) {
-      return;
-    }
-
-    this.synth.resetPitchBend(data.activeVoiceId);
-    this.synth.release(data.activeVoiceId);
-    data.activeVoiceId = null;
-  }
-
-  getLooperVoiceId(looperState, padIndex) {
-    return `looper-${looperState.id}:pad-${padIndex}`;
-  }
-
-  startRecorderRecording(recorderState) {
-    const data = recorderState?.recorderData;
-    if (!data) {
-      return;
-    }
-
-    this.stopRecorderPlayback(recorderState);
-    data.events.length = 0;
-    data.nextEventId = 1;
-    data.recording = true;
-    data.recordingStarted = false;
-    data.hasRecording = false;
-    data.durationMs = 0;
-    data.timelineStartMs = 0;
-    data.lastRecordedEventEndMs = 0;
-    data.playbackElapsedMs = 0;
-    data.activeRecordings.clear();
-    for (const channel of data.channels) {
-      channel.isRecording = false;
-      channel.isPlaying = false;
-    }
-  }
-
-  updateRecorderRecordings(now = performance.now()) {
-    for (const recorderState of this.instrumentStates) {
-      const data = recorderState.recorderData;
-      if (!data?.recording || !recorderState.root?.visible) {
-        continue;
-      }
-
-      for (const channel of data.channels) {
-        const honkState = channel.connectedHonkState;
-        const activeRecording = data.activeRecordings.get(channel.index);
-        const honkActive = Boolean(honkState?.root?.visible && honkState.hornHolders.size > 0);
-
-        if (!honkActive) {
-          if (activeRecording) {
-            this.finishRecorderChannelRecording(recorderState, channel, now);
-          }
+      for (const activeNote of data.playbackEngine.getActiveNotes()) {
+        const sample = activeNote.sample || data.playbackEngine.getTrackSample(activeNote.trackIndex);
+        const voiceMap = data.activePlaybackVoices.get(activeNote.noteId);
+        if (!sample || !voiceMap) {
           continue;
         }
 
-        if (!activeRecording) {
-          this.beginRecorderChannelRecording(recorderState, channel, honkState, now);
-        } else {
-          this.sampleRecorderChannelRecording(activeRecording, now);
+        for (const [voiceId, spatialState] of voiceMap) {
+          this.updateLooperPlaybackVoice(voiceId, sample, spatialState, data.volume);
         }
       }
     }
   }
 
-  beginRecorderChannelRecording(recorderState, channel, honkState, now) {
-    const data = recorderState?.recorderData;
-    if (!data || !channel || !honkState) {
-      return;
-    }
-
-    if (!data.recordingStarted) {
-      data.recordingStarted = true;
-      data.timelineStartMs = now;
-    }
-
-    const event = {
-      id: data.nextEventId,
-      channelIndex: channel.index,
-      startMs: Math.max(now - data.timelineStartMs, 0),
-      durationMs: 0,
-      samples: [],
-    };
-    data.nextEventId += 1;
-    data.events.push(event);
-
-    const recording = {
-      startedAtMs: now,
-      event,
-      honkState,
-    };
-    data.activeRecordings.set(channel.index, recording);
-    channel.isRecording = true;
-    this.sampleRecorderChannelRecording(recording, now);
-  }
-
-  sampleRecorderChannelRecording(recording, now) {
-    if (!recording?.event || !recording.honkState?.root?.visible) {
-      return;
-    }
-
-    recording.event.samples.push(
-      this.captureRecorderSampleFromHonk(recording.honkState, Math.max(now - recording.startedAtMs, 0)),
-    );
-  }
-
-  finishRecorderChannelRecording(recorderState, channel, now = performance.now()) {
-    const data = recorderState?.recorderData;
-    const recording = data?.activeRecordings.get(channel?.index);
-    if (!data || !channel || !recording) {
-      return;
-    }
-
-    this.sampleRecorderChannelRecording(recording, now);
-    const durationMs = Math.max(now - recording.startedAtMs, RECORDER_MIN_EVENT_DURATION_MS);
-    recording.event.durationMs = durationMs;
-    data.lastRecordedEventEndMs = Math.max(data.lastRecordedEventEndMs, recording.event.startMs + durationMs);
-    data.durationMs = this.getRecorderLoopDuration(data);
-    data.hasRecording = data.events.length > 0 && data.durationMs > 0;
-    data.activeRecordings.delete(channel.index);
-    channel.isRecording = false;
-  }
-
-  stopRecorderRecording(recorderState) {
-    const data = recorderState?.recorderData;
-    if (!data?.recording) {
-      return;
-    }
-
-    const now = performance.now();
-    for (const channel of data.channels) {
-      if (data.activeRecordings.has(channel.index)) {
-        this.finishRecorderChannelRecording(recorderState, channel, now);
-      }
-      channel.isRecording = false;
-    }
-
-    data.recording = false;
-    data.recordingStarted = false;
-    data.durationMs = this.getRecorderLoopDuration(data);
-    data.hasRecording = data.events.length > 0 && data.durationMs > 0;
-    data.playbackElapsedMs = 0;
-    data.paused = false;
-  }
-
-  captureRecorderSampleFromHonk(honkState, offsetMs) {
-    return {
-      offsetMs,
-      leftEar: honkState.morphController.getEarAmount("left"),
-      rightEar: honkState.morphController.getEarAmount("right"),
-      nose: honkState.morphController.getValue(MORPH_TARGET_NAMES.nose),
-      vowel: honkState.currentVowelLetter === "neutral" ? "A" : honkState.currentVowelLetter,
-      pitchBendSemitones: honkState.targetBendValue * MAX_PITCH_BEND_SEMITONES,
-      pitchSnap: honkState.pitchSnap,
-    };
-  }
-
-  startRecorderPlayback(recorderState) {
-    const data = recorderState?.recorderData;
-    if (!data?.hasRecording || data.recording || data.durationMs <= 0) {
-      return;
-    }
-
-    this.synth.ensureAudio();
-
-    if (!data.paused) {
-      this.releaseRecorderPlaybackVoices(data);
-      data.playbackElapsedMs = 0;
-    }
-
-    data.playing = true;
-    data.paused = false;
-    data.lastPlaybackUpdateMs = performance.now();
-  }
-
-  pauseRecorderPlayback(recorderState) {
-    const data = recorderState?.recorderData;
-    if (!data?.playing || data.paused) {
-      return;
-    }
-
-    this.releaseRecorderPlaybackVoices(data);
-    data.playing = false;
-    data.paused = true;
-  }
-
-  stopRecorderPlayback(recorderState) {
-    const data = recorderState?.recorderData;
-    if (!data) {
-      return;
-    }
-
-    this.releaseRecorderPlaybackVoices(data);
-    data.playing = false;
-    data.paused = false;
-    data.playbackElapsedMs = 0;
-    data.lastPlaybackUpdateMs = 0;
-  }
-
-  updateRecorderPlayback(now = performance.now()) {
-    for (const recorderState of this.instrumentStates) {
-      const data = recorderState.recorderData;
-      if (!data?.playing || data.paused || !data.hasRecording || data.durationMs <= 0 || !recorderState.root?.visible) {
-        continue;
-      }
-
-      const deltaMs = Math.max(now - data.lastPlaybackUpdateMs, 0);
-      data.lastPlaybackUpdateMs = now;
-      let nextElapsedMs = data.playbackElapsedMs + deltaMs * data.speed;
-      if (nextElapsedMs >= data.durationMs) {
-        nextElapsedMs %= data.durationMs;
-        this.releaseRecorderPlaybackVoices(data);
-      }
-      data.playbackElapsedMs = nextElapsedMs;
-      this.updateRecorderPlaybackEvents(recorderState, nextElapsedMs);
-    }
-  }
-
-  updateRecorderPlaybackEvents(recorderState, elapsedMs) {
-    const data = recorderState?.recorderData;
-    if (!data) {
-      return;
-    }
-
-    for (const channel of data.channels) {
-      channel.isPlaying = false;
-    }
-
-    const activeEventIds = new Set();
-    for (const event of data.events) {
-      if (elapsedMs < event.startMs || elapsedMs >= event.startMs + event.durationMs) {
-        continue;
-      }
-
-      activeEventIds.add(event.id);
-      const channel = data.channels[event.channelIndex];
-      if (channel) {
-        channel.isPlaying = true;
-      }
-
-      const sample = this.getRecorderSampleAt(event, elapsedMs - event.startMs);
-      if (!sample) {
-        continue;
-      }
-
-      this.updateRecorderPlaybackEventVoices(recorderState, event, channel, sample);
-    }
-
-    for (const [eventId, voiceIds] of data.activePlaybackEvents) {
-      if (!activeEventIds.has(eventId)) {
-        this.releaseRecorderPlaybackVoiceIds(voiceIds);
-        data.activePlaybackEvents.delete(eventId);
-      }
-    }
-  }
-
-  updateRecorderPlaybackEventVoices(recorderState, event, channel, sample) {
-    const data = recorderState?.recorderData;
-    if (!data) {
-      return;
-    }
-
-    const previousVoiceIds = data.activePlaybackEvents.get(event.id);
-    const activeVoiceIds = previousVoiceIds instanceof Set
-      ? previousVoiceIds
-      : new Set(previousVoiceIds ? [previousVoiceIds] : []);
-    const desiredVoiceIds = new Set();
-    const connectedHonkState =
-      channel?.connectedHonkState?.interactive && channel.connectedHonkState.root?.visible
-        ? channel.connectedHonkState
-        : null;
-    const playbackChain = connectedHonkState
-      ? this.getTouchingInstrumentChain(connectedHonkState).filter((state) => state.interactive)
-      : [];
-
-    if (playbackChain.length === 0) {
-      const voiceId = this.getRecorderVoiceId(recorderState, event.id);
-      desiredVoiceIds.add(voiceId);
-      this.synth.start(voiceId);
-      this.updateRecorderPlaybackVoice(voiceId, sample, recorderState, sample.pitchSnap, data.volume);
-    } else {
-      for (const synthState of playbackChain) {
-        const voiceId = this.getRecorderVoiceId(recorderState, event.id, synthState);
-        desiredVoiceIds.add(voiceId);
-        this.synth.start(voiceId);
-        this.applySequencerPlaybackToHonk(synthState, voiceId, sample);
-        this.updateRecorderPlaybackVoice(
-          voiceId,
-          sample,
-          synthState,
-          synthState.pitchSnap || sample.pitchSnap,
-          data.volume,
-        );
-      }
-    }
-
-    for (const voiceId of activeVoiceIds) {
-      if (!desiredVoiceIds.has(voiceId)) {
-        this.releaseSynthVoice(voiceId);
-      }
-    }
-
-    data.activePlaybackEvents.set(event.id, desiredVoiceIds);
-  }
-
-  updateRecorderPlaybackVoice(voiceId, sample, spatialState, pitchSnap, volume) {
+  updateLooperPlaybackVoice(voiceId, sample, spatialState, volume) {
     this.synth.update({
       voiceId,
       hornAmount: 1,
@@ -3076,15 +2378,15 @@ export class InstrumentController {
       leftEar: sample.leftEar,
       rightEar: sample.rightEar,
       nose: sample.nose,
-      vowel: sample.vowel || "A",
+      vowel: sample.vowel === "neutral" ? "A" : sample.vowel || "A",
       pitchBendSemitones: sample.pitchBendSemitones || 0,
-      pitchSnap,
+      pitchSnap: spatialState?.pitchSnap || sample.pitchSnap,
     });
 
     this.updateInstrumentSpatialVoice(voiceId, spatialState);
   }
 
-  applySequencerPlaybackToHonk(honkState, voiceId, sample) {
+  applyLooperPlaybackToHonk(honkState, voiceId, sample) {
     if (!honkState?.interactive) {
       return;
     }
@@ -3098,42 +2400,129 @@ export class InstrumentController {
     honkState.activeBends.set(voiceId, bendAmount);
   }
 
-  getRecorderSampleAt(event, offsetMs) {
-    let selected = event.samples[0] || null;
-    for (const sample of event.samples) {
-      if (sample.offsetMs > offsetMs) {
-        break;
-      }
-      selected = sample;
+  applyLooperGestureSampleToTrack(looperState, track, sample) {
+    const honkState = track.connectedHonkState;
+    if (!honkState?.interactive || !honkState.root?.visible) {
+      return;
     }
-    return selected;
+
+    this.storePrePlaybackMorphState(looperState.looperData, honkState);
+    honkState.morphController.setEar("left", sample.leftEar);
+    honkState.morphController.setEar("right", sample.rightEar);
+    honkState.morphController.setNose(sample.nose);
+    this.setVowelByLetter(sample.vowel, honkState);
+
+    const leftEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
+    const rightEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
+    const nose = honkState.hitTargets[INTERACTION_TARGET_NAMES.nose];
+    if (leftEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(leftEar, sample.leftEar);
+    }
+    if (rightEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(rightEar, sample.rightEar);
+    }
+    if (nose?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromMorph(nose, sample.nose);
+    }
+    this.updateNoteLabel(honkState);
+    looperState.looperData.playbackTouchedHonks.add(honkState);
   }
 
-  releaseRecorderPlaybackVoices(data) {
+  applyLooperTimelineBaselines(looperState) {
+    const data = looperState?.looperData;
+    if (!data?.timeline) {
+      return;
+    }
+
+    for (const [trackIndex, sample] of data.timeline.trackBaselines) {
+      const track = data.tracks[trackIndex];
+      if (track) {
+        this.applyLooperGestureSampleToTrack(looperState, track, sample);
+      }
+    }
+  }
+
+  storePrePlaybackMorphState(data, honkState) {
+    if (!data || !honkState || data.prePlaybackMorphStates.has(honkState)) {
+      return;
+    }
+
+    data.prePlaybackMorphStates.set(honkState, this.captureLooperSampleFromHonk(honkState));
+  }
+
+  resetLooperPlaybackMorphState(data, { restoreOriginal = false } = {}) {
     if (!data) {
       return;
     }
 
-    for (const voiceIds of data.activePlaybackEvents.values()) {
-      this.releaseRecorderPlaybackVoiceIds(voiceIds);
+    if (restoreOriginal) {
+      for (const [honkState, sample] of data.prePlaybackMorphStates) {
+        if (!sample || !honkState?.interactive || !honkState.root?.visible) {
+          continue;
+        }
+        this.restoreHonkMorphSample(honkState, sample);
+      }
     }
-    data.activePlaybackEvents.clear();
-    for (const channel of data.channels || []) {
-      channel.isPlaying = false;
-    }
+
+    data.prePlaybackMorphStates.clear();
+    data.playbackTouchedHonks.clear();
   }
 
-  releaseRecorderPlaybackVoiceIds(voiceIds) {
-    if (voiceIds instanceof Set) {
-      for (const voiceId of voiceIds) {
-        this.releaseSynthVoice(voiceId);
+  restoreHonkMorphSample(honkState, sample) {
+    honkState.morphController.setEar("left", sample.leftEar);
+    honkState.morphController.setEar("right", sample.rightEar);
+    honkState.morphController.setNose(sample.nose);
+    this.setVowelByLetter(sample.vowel, honkState);
+
+    const leftEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
+    const rightEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
+    const nose = honkState.hitTargets[INTERACTION_TARGET_NAMES.nose];
+    if (leftEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(leftEar, sample.leftEar);
+    }
+    if (rightEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(rightEar, sample.rightEar);
+    }
+    if (nose?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromMorph(nose, sample.nose);
+    }
+    this.updateNoteLabel(honkState);
+  }
+
+  hasActiveLooperTrackNote(data, trackIndex, exceptNoteId = null) {
+    for (const activeNote of data.playbackEngine.getActiveNotes()) {
+      if (activeNote.trackIndex === trackIndex && activeNote.noteId !== exceptNoteId) {
+        return true;
       }
+    }
+    return false;
+  }
+
+  releaseLooperPlaybackVoices(data) {
+    if (!data) {
       return;
     }
 
-    if (voiceIds) {
-      this.releaseSynthVoice(voiceIds);
+    for (const noteId of [...data.activePlaybackVoices.keys()]) {
+      this.releaseLooperPlaybackNote(data, noteId);
     }
+  }
+
+  releaseLooperPlaybackNote(data, noteId) {
+    const voiceMap = data.activePlaybackVoices.get(noteId);
+    if (!voiceMap) {
+      return;
+    }
+
+    for (const voiceId of voiceMap.keys()) {
+      this.releaseSynthVoice(voiceId);
+    }
+    data.activePlaybackVoices.delete(noteId);
+  }
+
+  getLooperVoiceId(looperState, noteId, instrumentState = null) {
+    const instrumentSuffix = instrumentState ? `:instrument-${instrumentState.id}` : "";
+    return `looper-${looperState.id}:note-${noteId}${instrumentSuffix}`;
   }
 
   releaseSynthVoice(voiceId) {
@@ -3141,61 +2530,32 @@ export class InstrumentController {
     this.synth.release(voiceId);
   }
 
-  getRecorderVoiceId(recorderState, eventId, instrumentState = null) {
-    const instrumentSuffix = instrumentState ? `:instrument-${instrumentState.id}` : "";
-    return `recorder-${recorderState.id}:event-${eventId}${instrumentSuffix}`;
-  }
-
-  connectLooperPadToHonk(looperState, padIndex, honkState) {
-    const pad = this.getLooperPad(looperState, padIndex);
-    if (!pad || !honkState?.interactive) {
+  connectLooperTrackToHonk(looperState, trackIndex, honkState) {
+    const track = this.getLooperTrack(looperState, trackIndex);
+    if (!track || !honkState?.interactive) {
       return;
     }
 
-    pad.connectedHonkState = honkState;
-    this.updateLooperWireForPad(looperState, pad);
+    track.connectedHonkState = honkState;
+    this.updateLooperWireForTrack(looperState, track);
     this.updateLooperVisuals(looperState);
   }
 
-  disconnectLooperPad(looperState, padIndex) {
-    const pad = this.getLooperPad(looperState, padIndex);
-    if (!pad) {
+  disconnectLooperTrack(looperState, trackIndex) {
+    const track = this.getLooperTrack(looperState, trackIndex);
+    if (!track) {
       return;
     }
 
-    pad.connectedHonkState = null;
-    pad.isRecording = false;
-    looperState.looperData?.activeRecordings.delete(pad.index);
-    this.disposeWireMesh(pad.wireMesh);
-    pad.wireMesh = null;
+    if (looperState.looperData?.activeRecordings.has(track.index)) {
+      this.finishLooperNoteRecording(looperState, track, performance.now());
+    }
+    track.connectedHonkState = null;
+    track.isRecording = false;
+    track.isPlaying = false;
+    this.disposeWireMesh(track.wireMesh);
+    track.wireMesh = null;
     this.updateLooperVisuals(looperState);
-  }
-
-  connectRecorderChannelToHonk(recorderState, channelIndex, honkState) {
-    const channel = this.getRecorderChannel(recorderState, channelIndex);
-    if (!channel || !honkState?.interactive) {
-      return;
-    }
-
-    channel.connectedHonkState = honkState;
-    this.updateRecorderWireForChannel(recorderState, channel);
-    this.updateRecorderVisuals(recorderState);
-  }
-
-  disconnectRecorderChannel(recorderState, channelIndex) {
-    const channel = this.getRecorderChannel(recorderState, channelIndex);
-    if (!channel) {
-      return;
-    }
-
-    if (recorderState.recorderData?.activeRecordings.has(channel.index)) {
-      this.finishRecorderChannelRecording(recorderState, channel, performance.now());
-    }
-    channel.connectedHonkState = null;
-    channel.isRecording = false;
-    this.disposeWireMesh(channel.wireMesh);
-    channel.wireMesh = null;
-    this.updateRecorderVisuals(recorderState);
   }
 
   updateLooperWires() {
@@ -3205,83 +2565,40 @@ export class InstrumentController {
         continue;
       }
 
-      for (const pad of data.pads) {
-        if (!pad.connectedHonkState?.root?.visible) {
-          if (pad.wireMesh) {
-            this.disposeWireMesh(pad.wireMesh);
-            pad.wireMesh = null;
+      for (const track of data.tracks) {
+        if (!track.connectedHonkState?.root?.visible) {
+          if (track.wireMesh) {
+            this.disposeWireMesh(track.wireMesh);
+            track.wireMesh = null;
           }
           continue;
         }
-        this.updateLooperWireForPad(looperState, pad);
+        this.updateLooperWireForTrack(looperState, track);
       }
     }
   }
 
-  updateLooperWireForPad(looperState, pad) {
-    if (!pad?.nodeTarget || !pad.connectedHonkState?.root?.visible) {
+  updateLooperWireForTrack(looperState, track) {
+    if (!track?.nodeTarget || !track.connectedHonkState?.root?.visible) {
       return;
     }
 
-    const honkTarget = pad.connectedHonkState.hitTargets?.[HONK_CONNECTION_TARGET_NAME];
+    const honkTarget = track.connectedHonkState.hitTargets?.[HONK_CONNECTION_TARGET_NAME];
     if (!honkTarget) {
       return;
     }
 
-    if (!pad.wireMesh) {
-      const color = this.getLooperWireColor(pad.index);
-      pad.wireMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.createLooperWireMaterial(color));
-      pad.wireMesh.name = `LOOPER_wire_${looperState.id}_${pad.index}`;
-      pad.wireMesh.renderOrder = 14;
-      this.scene.add(pad.wireMesh);
+    if (!track.wireMesh) {
+      const color = this.getLooperWireColor(track.index);
+      track.wireMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.createLooperWireMaterial(color));
+      track.wireMesh.name = `LOOPER_wire_${looperState.id}_${track.index}`;
+      track.wireMesh.renderOrder = 14;
+      this.scene.add(track.wireMesh);
     }
 
-    pad.nodeTarget.getWorldPosition(tempWireStart);
+    track.nodeTarget.getWorldPosition(tempWireStart);
     honkTarget.getWorldPosition(tempWireEnd);
-    this.updateWireMeshGeometry(pad.wireMesh, tempWireStart, tempWireEnd);
-  }
-
-  updateRecorderWires() {
-    for (const recorderState of this.instrumentStates) {
-      const data = recorderState.recorderData;
-      if (!data || !recorderState.root?.visible) {
-        continue;
-      }
-
-      for (const channel of data.channels) {
-        if (!channel.connectedHonkState?.root?.visible) {
-          if (channel.wireMesh) {
-            this.disposeWireMesh(channel.wireMesh);
-            channel.wireMesh = null;
-          }
-          continue;
-        }
-        this.updateRecorderWireForChannel(recorderState, channel);
-      }
-    }
-  }
-
-  updateRecorderWireForChannel(recorderState, channel) {
-    if (!channel?.nodeTarget || !channel.connectedHonkState?.root?.visible) {
-      return;
-    }
-
-    const honkTarget = channel.connectedHonkState.hitTargets?.[HONK_CONNECTION_TARGET_NAME];
-    if (!honkTarget) {
-      return;
-    }
-
-    if (!channel.wireMesh) {
-      const color = this.getLooperWireColor(channel.index);
-      channel.wireMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.createLooperWireMaterial(color));
-      channel.wireMesh.name = `RECORDER_wire_${recorderState.id}_${channel.index}`;
-      channel.wireMesh.renderOrder = 14;
-      this.scene.add(channel.wireMesh);
-    }
-
-    channel.nodeTarget.getWorldPosition(tempWireStart);
-    honkTarget.getWorldPosition(tempWireEnd);
-    this.updateWireMeshGeometry(channel.wireMesh, tempWireStart, tempWireEnd);
+    this.updateWireMeshGeometry(track.wireMesh, tempWireStart, tempWireEnd);
   }
 
   createLooperWireMaterial(color) {
@@ -3308,33 +2625,16 @@ export class InstrumentController {
         }
         controllerState.activeTriggerInteraction = null;
       }
-      if (interaction?.recorderState === instrumentState) {
-        if (interaction.type === "recorderWire") {
-          this.disposeWireMesh(interaction.wireMesh);
-        }
-        controllerState.activeTriggerInteraction = null;
-      }
     }
 
     if (instrumentState?.isLooper) {
-      this.stopLooperRecording(instrumentState);
-      this.stopLooperPlayback(instrumentState);
-      for (const pad of instrumentState.looperData?.pads || []) {
-        this.disposeWireMesh(pad.wireMesh);
-        pad.wireMesh = null;
+      this.stopRecording(instrumentState);
+      this.stopPlayback(instrumentState);
+      for (const track of instrumentState.looperData?.tracks || []) {
+        this.disposeWireMesh(track.wireMesh);
+        track.wireMesh = null;
       }
       this.synth.releaseMatchingVoiceIds((voiceId) => voiceId.startsWith(`looper-${instrumentState.id}:`));
-      return;
-    }
-
-    if (instrumentState?.isRecorder) {
-      this.stopRecorderRecording(instrumentState);
-      this.stopRecorderPlayback(instrumentState);
-      for (const channel of instrumentState.recorderData?.channels || []) {
-        this.disposeWireMesh(channel.wireMesh);
-        channel.wireMesh = null;
-      }
-      this.synth.releaseMatchingVoiceIds((voiceId) => voiceId.startsWith(`recorder-${instrumentState.id}:`));
       return;
     }
 
@@ -3344,22 +2644,9 @@ export class InstrumentController {
         continue;
       }
 
-      for (const pad of data.pads) {
-        if (pad.connectedHonkState === instrumentState) {
-          this.disconnectLooperPad(looperState, pad.index);
-        }
-      }
-    }
-
-    for (const recorderState of this.instrumentStates) {
-      const data = recorderState.recorderData;
-      if (!data || recorderState === instrumentState) {
-        continue;
-      }
-
-      for (const channel of data.channels) {
-        if (channel.connectedHonkState === instrumentState) {
-          this.disconnectRecorderChannel(recorderState, channel.index);
+      for (const track of data.tracks) {
+        if (track.connectedHonkState === instrumentState) {
+          this.disconnectLooperTrack(looperState, track.index);
         }
       }
     }
@@ -3393,22 +2680,20 @@ export class InstrumentController {
       );
     }
 
-    for (const pad of data.pads) {
-      let padColor = LOOPER_DEBUG_COLORS.padEmpty;
-      if (pad.isRecording) {
-        padColor = LOOPER_DEBUG_COLORS.padRecording;
-      } else if (pad.isPlaying) {
-        padColor = LOOPER_DEBUG_COLORS.padPlaying;
-      } else if (pad.clip?.silent) {
-        padColor = LOOPER_DEBUG_COLORS.padSilent;
-      } else if (pad.clip) {
-        padColor = LOOPER_DEBUG_COLORS.padRecorded;
+    for (const track of data.tracks) {
+      let nodeColor = track.connectedHonkState ? this.getLooperWireColor(track.index) : LOOPER_DEBUG_COLORS.nodeOpen;
+      let opacity = track.connectedHonkState ? 0.5 : LOOPER_COLLIDER_OPACITY;
+      if (track.isRecording) {
+        nodeColor = LOOPER_DEBUG_COLORS.recording;
+        opacity = 0.58;
+      } else if (track.isPlaying) {
+        nodeColor = LOOPER_DEBUG_COLORS.playing;
+        opacity = 0.58;
+      } else if (data.hasRecording && track.connectedHonkState) {
+        nodeColor = LOOPER_DEBUG_COLORS.recorded;
+        opacity = 0.5;
       }
-
-      this.setHitTargetDebugColor(pad.padTarget, padColor, pad.isRecording || pad.isPlaying ? 0.55 : LOOPER_COLLIDER_OPACITY);
-
-      const nodeColor = pad.connectedHonkState ? this.getLooperWireColor(pad.index) : LOOPER_DEBUG_COLORS.nodeOpen;
-      this.setHitTargetDebugColor(pad.nodeTarget, nodeColor, pad.connectedHonkState ? 0.5 : LOOPER_COLLIDER_OPACITY);
+      this.setHitTargetDebugColor(track.nodeTarget, nodeColor, opacity);
     }
 
     this.setHitTargetDebugColor(
@@ -3418,67 +2703,6 @@ export class InstrumentController {
     );
     this.setHitTargetDebugColor(
       looperState.hitTargets[getLooperControlName("speed")],
-      LOOPER_DEBUG_COLORS.controlSpeed,
-      LOOPER_COLLIDER_OPACITY,
-    );
-  }
-
-  updateAllRecorderVisuals() {
-    for (const state of this.instrumentStates) {
-      if (state.isRecorder) {
-        this.updateRecorderVisuals(state);
-      }
-    }
-  }
-
-  updateRecorderVisuals(recorderState) {
-    const data = recorderState?.recorderData;
-    if (!data) {
-      return;
-    }
-
-    for (const action of LOOPER_BUTTON_ACTIONS) {
-      const target = recorderState.hitTargets[getRecorderButtonName(action)];
-      const active =
-        (action === "record" && data.recording) ||
-        (action === "play" && data.playing && !data.paused) ||
-        (action === "pause" && data.paused) ||
-        (action === "stop" && !data.playing && !data.paused && !data.recording);
-      this.setHitTargetDebugColor(
-        target,
-        active ? LOOPER_DEBUG_COLORS.buttonActive : LOOPER_DEBUG_COLORS.button[action],
-        active ? 0.48 : LOOPER_COLLIDER_OPACITY,
-      );
-    }
-
-    for (const channel of data.channels) {
-      let nodeColor = channel.connectedHonkState ? this.getLooperWireColor(channel.index) : LOOPER_DEBUG_COLORS.recorderNodeOpen;
-      let opacity = channel.connectedHonkState ? 0.5 : LOOPER_COLLIDER_OPACITY;
-      if (channel.isRecording) {
-        nodeColor = LOOPER_DEBUG_COLORS.recorderRecording;
-        opacity = 0.58;
-      } else if (channel.isPlaying) {
-        nodeColor = LOOPER_DEBUG_COLORS.recorderPlaying;
-        opacity = 0.58;
-      } else if (data.hasRecording && channel.connectedHonkState) {
-        nodeColor = LOOPER_DEBUG_COLORS.recorderRecorded;
-        opacity = 0.5;
-      }
-      this.setHitTargetDebugColor(channel.nodeTarget, nodeColor, opacity);
-    }
-
-    this.setHitTargetDebugColor(
-      recorderState.hitTargets[getRecorderControlName("volume")],
-      LOOPER_DEBUG_COLORS.controlVolume,
-      LOOPER_COLLIDER_OPACITY,
-    );
-    this.setHitTargetDebugColor(
-      recorderState.hitTargets[getRecorderControlName("gap")],
-      LOOPER_DEBUG_COLORS.controlGap,
-      LOOPER_COLLIDER_OPACITY,
-    );
-    this.setHitTargetDebugColor(
-      recorderState.hitTargets[getRecorderControlName("speed")],
       LOOPER_DEBUG_COLORS.controlSpeed,
       LOOPER_COLLIDER_OPACITY,
     );
@@ -3690,7 +2914,7 @@ export class InstrumentController {
         controller.userData.rayLine.material.color.setHex(
           nextTarget?.userData.isProceduralMorphTarget ||
             nextTarget?.userData.isHonkConnectionTarget ||
-            this.isSequencerColliderTarget(nextTarget)
+            this.isLooperColliderTarget(nextTarget)
             ? RAY_COLOR_SPHERE_HOVER
             : RAY_COLOR_DEFAULT,
         );
@@ -3716,8 +2940,8 @@ export class InstrumentController {
     target.material.color.setHex(highlighted ? 0xffffff : getHitTargetColor(target));
   }
 
-  isSequencerColliderTarget(target) {
-    return Boolean(target?.userData.isLooperCollider || target?.userData.isRecorderCollider);
+  isLooperColliderTarget(target) {
+    return Boolean(target?.userData.isLooperCollider);
   }
 
   getPointedInstrumentState(controller) {
@@ -3897,6 +3121,23 @@ export class InstrumentController {
     this.synth.setVowel(state.currentVowelLetter === "neutral" ? "A" : state.currentVowelLetter);
   }
 
+  setVowelByLetter(vowelLetter, state = this.activeInstrumentState) {
+    if (!state) {
+      return;
+    }
+
+    const normalized = vowelLetter && vowelLetter !== "neutral" ? vowelLetter : null;
+    const vowelMorphName = normalized ? MORPH_TARGET_NAMES.vowels[normalized] : null;
+    state.morphController.setVowel(normalized);
+    state.currentVowelIndex = vowelMorphName ? VOWEL_MORPHS.indexOf(vowelMorphName) : -1;
+    state.currentVowelLetter = normalized || "neutral";
+    if (state === this.activeInstrumentState) {
+      this.currentVowelIndex = state.currentVowelIndex;
+      this.currentVowelLetter = state.currentVowelLetter;
+    }
+    this.synth.setVowel(normalized || "A");
+  }
+
   cycleVowel(state = this.activeInstrumentState) {
     if (!state) {
       return;
@@ -4013,8 +3254,7 @@ export class InstrumentController {
       return;
     }
     this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE);
-    instrument.position.y -=
-      defaultComponentId === LOOPER_COMPONENT_ID || defaultComponentId === LEGACY_LOOPER_COMPONENT_ID ? 0.18 : 0.38;
+    instrument.position.y -= defaultComponentId === LOOPER_COMPONENT_ID ? 0.18 : 0.38;
     this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
   }
 
@@ -4055,9 +3295,7 @@ export class InstrumentController {
       this.createNoteLabel(state);
       sceneObject.registerStateColliders();
     }
-    if (componentOption.id === RECORDER_COMPONENT_ID) {
-      this.initializeRecorderState(state);
-    } else if (componentOption.id === LEGACY_LOOPER_COMPONENT_ID) {
+    if (componentOption.id === LOOPER_COMPONENT_ID) {
       this.initializeLooperState(state);
     }
     this.instrumentStates.push(state);

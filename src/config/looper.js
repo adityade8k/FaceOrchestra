@@ -1,3 +1,33 @@
+export const LOOPER_COMPONENT_ID = "looper";
+export const HONK_CONNECTION_TARGET_NAME = "HIT_honkConnection";
+
+export const LOOPER_TRACK_COUNT = 8;
+export const LOOPER_COLLIDER_OPACITY = 0.34;
+export const HONK_CONNECTION_COLLIDER_OPACITY = 0.32;
+export const LOOPER_WIRE_RADIUS = 0.008;
+export const LOOPER_WIRE_SEGMENTS = 36;
+export const LOOPER_MIN_NOTE_DURATION_MS = 24;
+export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 33;
+export const LOOPER_BUTTON_ACTIONS = ["play", "pause", "record", "stop"];
+export const LOOPER_WIRE_COLORS = [0x2f80ff, 0xff4f5e];
+
+export const LOOPER_DEBUG_COLORS = {
+  honkConnection: 0xff6bd6,
+  button: {
+    play: 0x5ee67c,
+    pause: 0xf7d04a,
+    record: 0xff4f5e,
+    stop: 0xff8a3d,
+  },
+  buttonActive: 0xffffff,
+  nodeOpen: 0x45f6ff,
+  recording: 0xff4f5e,
+  recorded: 0x65d66e,
+  playing: 0xf7d04a,
+  controlVolume: 0x9e8cff,
+  controlSpeed: 0xf0a23c,
+};
+
 export const LOOPER_MORPH_TARGET_NAMES = {
   buttonRecord: "button_record",
   buttonStop: "button_stop_recording",
@@ -23,10 +53,6 @@ export const LOOPER_CONTROL_MORPH_TARGETS = {
   volume: {
     down: LOOPER_MORPH_TARGET_NAMES.leftHandleDown,
     up: LOOPER_MORPH_TARGET_NAMES.leftHandleUp,
-  },
-  gap: {
-    down: LOOPER_MORPH_TARGET_NAMES.bottomHandleDown,
-    up: LOOPER_MORPH_TARGET_NAMES.bottomHandleUp,
   },
   speed: {
     down: LOOPER_MORPH_TARGET_NAMES.rightHandleDown,
@@ -97,16 +123,6 @@ export const LOOPER_CONTROL_COLLIDERS = {
       maxDegrees: 30,
     },
     morphTargets: LOOPER_CONTROL_MORPH_TARGETS.volume,
-  },
-  gap: {
-    x: 0.29,
-    y: -0.27,
-    z: 0,
-    rotationDegrees: { x: 0, y: 0, z: 0 },
-    scale: { x: 0.9, y: 0.9, z: 0.9 },
-    movementRange: 0.065,
-    dragSensitivity: 0.8,
-    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.gap,
   },
   speed: {
     x: 0.18,

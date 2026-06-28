@@ -5,6 +5,8 @@ export class BaseInteractiveObject {
     this.root = root;
     this.root.name = this.root.name || name;
     this.raycastTargets = new Set();
+    this.raycastTargetCache = [];
+    this.raycastTargetsDirty = true;
     this.disposed = false;
   }
 
@@ -49,6 +51,7 @@ export class BaseInteractiveObject {
 
     target.userData.sceneObject = this;
     this.raycastTargets.add(target);
+    this.raycastTargetsDirty = true;
     return target;
   }
 
@@ -61,6 +64,7 @@ export class BaseInteractiveObject {
       delete target.userData.sceneObject;
     }
     this.raycastTargets.delete(target);
+    this.raycastTargetsDirty = true;
   }
 
   registerRaycastTargets(targets = []) {
@@ -76,10 +80,23 @@ export class BaseInteractiveObject {
       }
     }
     this.raycastTargets.clear();
+    this.raycastTargetCache.length = 0;
+    this.raycastTargetsDirty = false;
   }
 
   getRaycastTargets() {
-    return [...this.raycastTargets].filter((target) => target?.visible !== false);
+    if (!this.raycastTargetsDirty) {
+      return this.raycastTargetCache;
+    }
+
+    this.raycastTargetCache.length = 0;
+    for (const target of this.raycastTargets) {
+      if (target?.visible !== false) {
+        this.raycastTargetCache.push(target);
+      }
+    }
+    this.raycastTargetsDirty = false;
+    return this.raycastTargetCache;
   }
 
   duplicate({ cloneRoot = (root) => root.clone(true) } = {}) {
