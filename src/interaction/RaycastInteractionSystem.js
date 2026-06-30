@@ -13,6 +13,7 @@ export class RaycastInteractionSystem {
     getCloseButton,
     isPanelVisible,
     isLooperColliderTarget,
+    isLockableInstrumentState = (state) => Boolean(state?.interactive),
     debugRaycast = false,
   }) {
     this.raycaster = raycaster;
@@ -23,6 +24,7 @@ export class RaycastInteractionSystem {
     this.getCloseButton = getCloseButton;
     this.isPanelVisible = isPanelVisible;
     this.isLooperColliderTarget = isLooperColliderTarget;
+    this.isLockableInstrumentState = isLockableInstrumentState;
     this.debugRaycast = debugRaycast;
   }
 
@@ -86,7 +88,7 @@ export class RaycastInteractionSystem {
     lockedBodyTargets.length = 0;
     for (const state of this.getInstrumentStates()) {
       const bodyTarget = state.hitTargets?.[INTERACTION_TARGET_NAMES.body];
-      if (state.locked && state.interactive && state.root.visible && bodyTarget) {
+      if (state.locked && this.isLockableInstrumentState(state) && state.root.visible && bodyTarget) {
         lockedBodyTargets.push(bodyTarget);
       }
     }

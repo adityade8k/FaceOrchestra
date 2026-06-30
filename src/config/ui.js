@@ -1,8 +1,8 @@
 import { LOOPER_MODEL_PATH, MODEL_PATH } from "./assets.js";
 
 export const SCALE_JOYSTICK_DEADZONE = 0.45;
-export const SPAWN_DISTANCE = 0.75;
-export const DEFAULT_INSTRUMENT_DISTANCE = 1.05;
+export const SPAWN_DISTANCE = 1.5;
+export const DEFAULT_INSTRUMENT_DISTANCE = 1.5;
 export const SPAWN_Y_OFFSET = -0.12;
 export const SHOW_INSTRUCTION_PANEL = false;
 
@@ -41,6 +41,30 @@ export const SPAWN_COMPONENT_OPTIONS = [
     color: 0xb78cff,
     variantOf: "honk",
     preset: "fNaturalMinorScale",
+  },
+  {
+    id: "chord-cmajor",
+    label: "C Maj",
+    modelPath: MODEL_PATH,
+    color: 0x65d66e,
+    variantOf: "honk",
+    preset: "cMajorChord",
+  },
+  {
+    id: "chord-gmajor",
+    label: "G Maj",
+    modelPath: MODEL_PATH,
+    color: 0x5ac8fa,
+    variantOf: "honk",
+    preset: "gMajorChord",
+  },
+  {
+    id: "chord-fmajor",
+    label: "F Maj",
+    modelPath: MODEL_PATH,
+    color: 0xf0a23c,
+    variantOf: "honk",
+    preset: "fMajorChord",
   },
   {
     id: "looper",

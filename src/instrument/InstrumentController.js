@@ -150,6 +150,8 @@ const VOWEL_LETTERS_BY_MORPH = {
 const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
+const LOCK_INDICATOR_COLOR = 0x45f6ff;
+const LOCK_INDICATOR_OPACITY = 0.16;
 const C_MAJOR_SCALE_PRESET = [
   { label: "C", semitonesFromF: -5 },
   { label: "D", semitonesFromF: -3 },
@@ -170,6 +172,28 @@ const F_NATURAL_MINOR_SCALE_PRESET = [
   { label: "Eb", semitonesFromF: -2, octaveOffset: 1 },
   { label: "F", semitonesFromF: 0, octaveOffset: 1 },
 ];
+const C_MAJOR_CHORD_PRESET = [
+  { label: "C", semitonesFromF: -5 },
+  { label: "E", semitonesFromF: -1 },
+  { label: "G", semitonesFromF: 2 },
+];
+const G_MAJOR_CHORD_PRESET = [
+  { label: "G", semitonesFromF: 2 },
+  { label: "B", semitonesFromF: 6 },
+  { label: "D", semitonesFromF: -3, octaveOffset: 1 },
+];
+const F_MAJOR_CHORD_PRESET = [
+  { label: "F", semitonesFromF: 0 },
+  { label: "A", semitonesFromF: 4 },
+  { label: "C", semitonesFromF: -5, octaveOffset: 1 },
+];
+const SPAWN_PRESETS = {
+  cMajorScale: { notes: C_MAJOR_SCALE_PRESET, namePrefix: "Honk" },
+  fNaturalMinorScale: { notes: F_NATURAL_MINOR_SCALE_PRESET, namePrefix: "HonkFm" },
+  cMajorChord: { notes: C_MAJOR_CHORD_PRESET, namePrefix: "CMaj" },
+  gMajorChord: { notes: G_MAJOR_CHORD_PRESET, namePrefix: "GMaj" },
+  fMajorChord: { notes: F_MAJOR_CHORD_PRESET, namePrefix: "FMaj" },
+};
 const F_NATURAL_MINOR_SNAP_STEPS_FROM_F = [-5, -4, -2, 0, 2, 3, 5, 7];
 const SCALE_PRESET_SPACING = 0.32;
 const CHROMATIC_NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -284,6 +308,7 @@ function getHitTargetColor(targetOrName) {
     [getLooperButtonName("record")]: LOOPER_DEBUG_COLORS.button.record,
     [getLooperButtonName("stop")]: LOOPER_DEBUG_COLORS.button.stop,
     [getLooperControlName("volume")]: LOOPER_DEBUG_COLORS.controlVolume,
+    [getLooperControlName("gap")]: LOOPER_DEBUG_COLORS.controlGap,
     [getLooperControlName("speed")]: LOOPER_DEBUG_COLORS.controlSpeed,
   }[name] || 0xffffff;
 }
@@ -310,6 +335,7 @@ export class InstrumentController {
       getCloseButton: () => this.closeButton,
       isPanelVisible: () => this.panelVisible,
       isLooperColliderTarget: (target) => this.isLooperColliderTarget(target),
+      isLockableInstrumentState: (state) => this.isLockableInstrumentState(state),
       debugRaycast: DEBUG_RAYCAST,
     });
     this.radialSpawnMenu = new RadialSpawnMenu();
@@ -616,14 +642,16 @@ export class InstrumentController {
       lastPlayingHeadMorphUpdateMs: 0,
       lastPlaybackUpdateMs: 0,
       volumeControlValue: 0,
+      gapControlValue: -1,
       speedControlValue: 0,
       volume: this.getLooperVolumeFromControl(0),
+      loopGapMs: this.getLooperGapFromControl(-1),
       speed: this.getLooperSpeedFromControl(0),
       lastPosition: new THREE.Vector3(),
       lastQuaternion: new THREE.Quaternion(),
     };
     state.looperData.playbackHandlers = {
-      onNoteOn: (event) => this.handleLooperPlaybackNoteOn(state, event),
+      onNoteOn: (event, activeNote) => this.handleLooperPlaybackNoteOn(state, event, activeNote),
       onNoteOff: (event) => this.handleLooperPlaybackNoteOff(state, event),
       onReleaseNote: (activeNote) => this.releaseLooperPlaybackNote(state.looperData, activeNote.noteId),
       onGesture: (event) => this.handleLooperPlaybackGesture(state, event),
@@ -635,6 +663,7 @@ export class InstrumentController {
     state.root.getWorldQuaternion(state.looperData.lastQuaternion);
 
     this.setLooperControlValue(state, "volume", 0);
+    this.setLooperControlValue(state, "gap", -1);
     this.setLooperControlValue(state, "speed", 0);
     this.updateLooperVisuals(state);
   }
@@ -882,12 +911,19 @@ export class InstrumentController {
 
   handleBPress(controller) {
     const instrumentState = this.getPointedInstrumentState(controller);
-    if (!instrumentState?.interactive || !instrumentState.root?.visible) {
+    if (!this.isLockableInstrumentState(instrumentState)) {
       return;
     }
 
     instrumentState.locked = !instrumentState.locked;
     this.updateLockVisual(instrumentState);
+  }
+
+  isLockableInstrumentState(instrumentState) {
+    return Boolean(
+      instrumentState?.root?.visible &&
+        (instrumentState.interactive || instrumentState.isLooper),
+    );
   }
 
   updateRadialMenus() {
@@ -1020,11 +1056,18 @@ export class InstrumentController {
       return;
     }
 
+    const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
+    if (lockedInstrumentState?.isLooper) {
+      this.toggleLockedLooperPlayback(lockedInstrumentState);
+      controllerState.activeTriggerInteraction = null;
+      this.activeInstrumentState = lockedInstrumentState;
+      return;
+    }
+
     if (this.handleLooperTriggerPress(controller, hit)) {
       return;
     }
 
-    const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
     if (lockedInstrumentState?.interactive) {
       controllerState.activeTriggerInteraction = null;
       controllerState.raySqueezeInstrumentState = lockedInstrumentState;
@@ -1141,6 +1184,28 @@ export class InstrumentController {
     }
 
     return false;
+  }
+
+  toggleLockedLooperPlayback(looperState) {
+    const data = looperState?.looperData;
+    if (!data) {
+      return;
+    }
+
+    if (data.playing && !data.paused) {
+      this.pressLooperButton(
+        looperState,
+        "pause",
+        looperState.hitTargets[getLooperButtonName("pause")]?.userData.looperMorphName,
+      );
+      return;
+    }
+
+    this.pressLooperButton(
+      looperState,
+      "play",
+      looperState.hitTargets[getLooperButtonName("play")]?.userData.looperMorphName,
+    );
   }
 
   pressLooperButton(looperState, action, morphName = null) {
@@ -1495,7 +1560,20 @@ export class InstrumentController {
       return;
     }
 
+    const previousBaseScale = state.baseScale;
+    const followerHonks = state.isLooper ? this.getLooperFollowerHonks(state) : [];
     this.setInstrumentBaseScale(state, state.baseScale + delta);
+    const scaleRatio = previousBaseScale > 0 ? state.baseScale / previousBaseScale : 1;
+    if (!state.isLooper || Math.abs(scaleRatio - 1) < 0.000001) {
+      return;
+    }
+
+    for (const honkState of followerHonks) {
+      if (this.isInstrumentStateCurrentlyGripped(honkState)) {
+        continue;
+      }
+      this.setInstrumentBaseScale(honkState, honkState.baseScale * scaleRatio);
+    }
   }
 
   setInstrumentBaseScale(state, scale) {
@@ -1602,6 +1680,7 @@ export class InstrumentController {
     }
 
     this.setLooperControlValue(targetState, "volume", sourceData.volumeControlValue);
+    this.setLooperControlValue(targetState, "gap", sourceData.gapControlValue);
     this.setLooperControlValue(targetState, "speed", sourceData.speedControlValue);
     this.updateLooperVisuals(targetState);
   }
@@ -1623,7 +1702,13 @@ export class InstrumentController {
       return 0;
     }
 
-    return control === "speed" ? looperState.looperData.speedControlValue : looperState.looperData.volumeControlValue;
+    if (control === "speed") {
+      return looperState.looperData.speedControlValue;
+    }
+    if (control === "gap") {
+      return looperState.looperData.gapControlValue;
+    }
+    return looperState.looperData.volumeControlValue;
   }
 
   setLooperControlValue(looperState, control, value, updateSphere = true, morphTargetsOverride = null) {
@@ -1636,6 +1721,13 @@ export class InstrumentController {
     if (control === "speed") {
       data.speedControlValue = clamped;
       data.speed = this.getLooperSpeedFromControl(clamped);
+    } else if (control === "gap") {
+      data.gapControlValue = clamped;
+      data.loopGapMs = this.getLooperGapFromControl(clamped);
+      if (!data.recording && data.timeline?.hasRecording()) {
+        data.timeline.setLoopGap(data.loopGapMs, LOOPER_MIN_NOTE_DURATION_MS);
+        data.durationMs = data.timeline.durationMs;
+      }
     } else {
       data.volumeControlValue = clamped;
       data.volume = this.getLooperVolumeFromControl(clamped);
@@ -1657,6 +1749,10 @@ export class InstrumentController {
 
   getLooperSpeedFromControl(value) {
     return LooperAudioEngine.getSpeedFromControl(value);
+  }
+
+  getLooperGapFromControl(value) {
+    return LooperAudioEngine.getGapFromControl(value);
   }
 
   applyLooperControlMorphValue(looperState, control, value, morphTargetsOverride = null) {
@@ -1839,14 +1935,9 @@ export class InstrumentController {
       const positionChanged = tempLooperCurrentPosition.distanceToSquared(tempLooperPreviousPosition) > 0.0000001;
       const rotationChanged = Math.abs(tempLooperDeltaQuaternion.w) < 0.999999;
       if (positionChanged || rotationChanged) {
-        const connectedHonks = new Set();
-        for (const connection of data.tracks || []) {
-          if (connection.connectedHonkState?.root?.visible) {
-            connectedHonks.add(connection.connectedHonkState);
-          }
-        }
+        const followerHonks = this.getLooperFollowerHonks(looperState);
 
-        for (const honkState of connectedHonks) {
+        for (const honkState of followerHonks) {
           if (this.isInstrumentStateCurrentlyGripped(honkState)) {
             continue;
           }
@@ -1862,6 +1953,28 @@ export class InstrumentController {
       data.lastPosition.copy(tempLooperCurrentPosition);
       data.lastQuaternion.copy(tempLooperCurrentQuaternion);
     }
+  }
+
+  getLooperFollowerHonks(looperState) {
+    const followerHonks = new Set();
+    for (const connection of looperState?.looperData?.tracks || []) {
+      if (!connection.connectedHonkState?.root?.visible) {
+        continue;
+      }
+      for (const honkState of this.getLooperFollowerHonkChain(connection.connectedHonkState)) {
+        followerHonks.add(honkState);
+      }
+    }
+    return followerHonks;
+  }
+
+  getLooperFollowerHonkChain(connectedHonkState) {
+    if (!connectedHonkState?.interactive || !connectedHonkState.root?.visible) {
+      return [];
+    }
+
+    const chain = this.getTouchingInstrumentChain(connectedHonkState).filter((state) => state.interactive);
+    return chain.length > 0 ? chain : [connectedHonkState];
   }
 
   isInstrumentStateCurrentlyGripped(instrumentState) {
@@ -2038,7 +2151,7 @@ export class InstrumentController {
     }
 
     data.recording = false;
-    data.hasRecording = data.timeline.stopRecording(now, LOOPER_MIN_NOTE_DURATION_MS);
+    data.hasRecording = data.timeline.stopRecording(now, LOOPER_MIN_NOTE_DURATION_MS, data.loopGapMs);
     data.durationMs = data.timeline.durationMs;
     this.updateLooperVisuals(looperState);
   }
@@ -2255,7 +2368,7 @@ export class InstrumentController {
     }
   }
 
-  handleLooperPlaybackNoteOn(looperState, event) {
+  handleLooperPlaybackNoteOn(looperState, event, activeNote = null) {
     const data = looperState?.looperData;
     const track = data?.tracks[event.trackIndex];
     const sample = event.sample || data?.playbackEngine.getTrackSample(event.trackIndex);
@@ -2265,15 +2378,7 @@ export class InstrumentController {
 
     track.isPlaying = true;
     this.applyLooperGestureSampleToTrack(looperState, track, sample);
-
-    const voiceTargets = this.getLooperPlaybackVoiceTargets(looperState, track);
-    const voiceMap = new Map();
-    for (const targetState of voiceTargets) {
-      const voiceId = this.getLooperVoiceId(looperState, event.noteId, targetState);
-      voiceMap.set(voiceId, targetState);
-      this.synth.start(voiceId);
-    }
-    data.activePlaybackVoices.set(event.noteId, voiceMap);
+    this.syncLooperPlaybackVoiceTargets(looperState, activeNote || event);
     this.updateLooperVisuals(looperState);
   }
 
@@ -2328,6 +2433,39 @@ export class InstrumentController {
     return chain.length > 0 ? chain : [connectedHonkState];
   }
 
+  syncLooperPlaybackVoiceTargets(looperState, activeNote) {
+    const data = looperState?.looperData;
+    const track = data?.tracks?.[activeNote?.trackIndex];
+    if (!data || !track || activeNote?.noteId === undefined || activeNote?.noteId === null) {
+      return null;
+    }
+
+    let voiceMap = data.activePlaybackVoices.get(activeNote.noteId);
+    if (!voiceMap) {
+      voiceMap = new Map();
+      data.activePlaybackVoices.set(activeNote.noteId, voiceMap);
+    }
+
+    const desiredVoiceIds = new Set();
+    for (const targetState of this.getLooperPlaybackVoiceTargets(looperState, track)) {
+      const voiceId = this.getLooperVoiceId(looperState, activeNote.noteId, targetState);
+      desiredVoiceIds.add(voiceId);
+      if (!voiceMap.has(voiceId)) {
+        this.synth.start(voiceId);
+      }
+      voiceMap.set(voiceId, targetState);
+    }
+
+    for (const [voiceId] of voiceMap) {
+      if (!desiredVoiceIds.has(voiceId)) {
+        this.releaseSynthVoice(voiceId);
+        voiceMap.delete(voiceId);
+      }
+    }
+
+    return voiceMap;
+  }
+
   applyLooperPlaybackHolders(looperState) {
     const data = looperState?.looperData;
     if (!data?.playbackEngine) {
@@ -2336,14 +2474,20 @@ export class InstrumentController {
 
     for (const activeNote of data.playbackEngine.getActiveNotes()) {
       const sample = activeNote.sample || data.playbackEngine.getTrackSample(activeNote.trackIndex);
-      const voiceMap = data.activePlaybackVoices.get(activeNote.noteId);
+      const voiceMap = this.syncLooperPlaybackVoiceTargets(looperState, activeNote);
       if (!sample || !voiceMap) {
         continue;
       }
 
       for (const [voiceId, targetState] of voiceMap) {
         if (targetState !== looperState) {
-          this.applyLooperPlaybackToHonk(targetState, voiceId, sample);
+          const targetSample = this.getLooperPlaybackSampleForTarget(
+            looperState,
+            activeNote.trackIndex,
+            targetState,
+            sample,
+          );
+          this.applyLooperPlaybackToHonk(targetState, voiceId, targetSample);
         }
       }
     }
@@ -2364,10 +2508,36 @@ export class InstrumentController {
         }
 
         for (const [voiceId, spatialState] of voiceMap) {
-          this.updateLooperPlaybackVoice(voiceId, sample, spatialState, data.volume);
+          const targetSample = this.getLooperPlaybackSampleForTarget(
+            looperState,
+            activeNote.trackIndex,
+            spatialState,
+            sample,
+          );
+          if (!targetSample) {
+            continue;
+          }
+          this.updateLooperPlaybackVoice(voiceId, targetSample, spatialState, data.volume);
         }
       }
     }
+  }
+
+  getLooperPlaybackSampleForTarget(looperState, trackIndex, targetState, recordedSample) {
+    const connectedHonkState = looperState?.looperData?.tracks?.[trackIndex]?.connectedHonkState;
+    if (!targetState || targetState === looperState || targetState === connectedHonkState) {
+      return recordedSample;
+    }
+
+    const liveSample = this.captureLooperSampleFromHonk(targetState);
+    if (!liveSample) {
+      return recordedSample;
+    }
+
+    return {
+      ...liveSample,
+      pitchBendSemitones: recordedSample?.pitchBendSemitones || 0,
+    };
   }
 
   updateLooperPlaybackVoice(voiceId, sample, spatialState, volume) {
@@ -2702,6 +2872,11 @@ export class InstrumentController {
       LOOPER_COLLIDER_OPACITY,
     );
     this.setHitTargetDebugColor(
+      looperState.hitTargets[getLooperControlName("gap")],
+      LOOPER_DEBUG_COLORS.controlGap,
+      LOOPER_COLLIDER_OPACITY,
+    );
+    this.setHitTargetDebugColor(
       looperState.hitTargets[getLooperControlName("speed")],
       LOOPER_DEBUG_COLORS.controlSpeed,
       LOOPER_COLLIDER_OPACITY,
@@ -2716,8 +2891,9 @@ export class InstrumentController {
     target.userData.currentHitColor = color;
     target.material.color.setHex(color);
     if (typeof opacity === "number") {
-      target.userData.baseHitOpacity = opacity;
-      target.material.opacity = opacity;
+      const visibleOpacity = DEBUG_SHOW_COLLIDERS ? opacity : 0;
+      target.userData.baseHitOpacity = visibleOpacity;
+      target.material.opacity = visibleOpacity;
     }
   }
 
@@ -2895,10 +3071,16 @@ export class InstrumentController {
   }
 
   updateRaycastHover() {
+    const lockedIndicatorStates = new Set();
+
     for (const controller of this.controllers) {
       const controllerState = this.controllerStates.get(controller);
       const hit = this.getCurrentHit(controller);
       const nextTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
+      const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
+      if (lockedInstrumentState?.locked) {
+        lockedIndicatorStates.add(lockedInstrumentState);
+      }
 
       if (controllerState.hoveredTarget && controllerState.hoveredTarget !== nextTarget) {
         this.setTargetHighlight(controllerState.hoveredTarget, false);
@@ -2914,10 +3096,17 @@ export class InstrumentController {
         controller.userData.rayLine.material.color.setHex(
           nextTarget?.userData.isProceduralMorphTarget ||
             nextTarget?.userData.isHonkConnectionTarget ||
-            this.isLooperColliderTarget(nextTarget)
+            this.isLooperColliderTarget(nextTarget) ||
+            lockedInstrumentState
             ? RAY_COLOR_SPHERE_HOVER
             : RAY_COLOR_DEFAULT,
         );
+      }
+    }
+
+    for (const instrumentState of this.instrumentStates) {
+      if (instrumentState.locked || instrumentState.hitTargets?.[INTERACTION_TARGET_NAMES.body]?.userData.lockIndicatorVisible) {
+        this.setLockIndicatorVisible(instrumentState, lockedIndicatorStates.has(instrumentState));
       }
     }
   }
@@ -2929,14 +3118,10 @@ export class InstrumentController {
 
     const baseOpacity =
       typeof target.userData.baseHitOpacity === "number" ? target.userData.baseHitOpacity : HIT_MARKER_OPACITY;
-    target.material.opacity = highlighted ? Math.max(baseOpacity, 0.52) : baseOpacity;
+    target.material.opacity =
+      DEBUG_SHOW_COLLIDERS && highlighted ? Math.max(baseOpacity, 0.52) : baseOpacity;
     target.material.transparent = true;
     target.material.depthWrite = false;
-    if (target.name === INTERACTION_TARGET_NAMES.body && target.userData.instrumentState?.locked) {
-      target.material.color.setHex(0x45f6ff);
-      target.material.opacity = Math.max(HIT_MARKER_OPACITY, 0.08);
-      return;
-    }
     target.material.color.setHex(highlighted ? 0xffffff : getHitTargetColor(target));
   }
 
@@ -2963,13 +3148,23 @@ export class InstrumentController {
   }
 
   updateLockVisual(instrumentState) {
+    this.setLockIndicatorVisible(instrumentState, false);
+  }
+
+  setLockIndicatorVisible(instrumentState, visible) {
     const bodyTarget = instrumentState?.hitTargets?.[INTERACTION_TARGET_NAMES.body];
     if (!bodyTarget?.material) {
       return;
     }
 
-    bodyTarget.material.color.setHex(instrumentState.locked ? 0x45f6ff : getHitTargetColor(bodyTarget.name));
-    bodyTarget.material.opacity = Math.max(HIT_MARKER_OPACITY, instrumentState.locked ? 0.08 : 0);
+    const baseOpacity =
+      typeof bodyTarget.userData.baseHitOpacity === "number" ? bodyTarget.userData.baseHitOpacity : HIT_MARKER_OPACITY;
+    const showIndicator = Boolean(instrumentState.locked && visible);
+    bodyTarget.userData.lockIndicatorVisible = showIndicator;
+    bodyTarget.material.color.setHex(showIndicator ? LOCK_INDICATOR_COLOR : getHitTargetColor(bodyTarget));
+    bodyTarget.material.opacity = showIndicator ? Math.max(baseOpacity, LOCK_INDICATOR_OPACITY) : baseOpacity;
+    bodyTarget.material.transparent = true;
+    bodyTarget.material.depthWrite = false;
   }
 
   getCurrentHit(controller) {
@@ -3158,12 +3353,9 @@ export class InstrumentController {
 
   spawnComponentInFrontOfCamera(componentId) {
     const componentOption = this.componentTemplates.get(componentId);
-    if (componentOption?.preset === "cMajorScale") {
-      this.spawnScalePreset(C_MAJOR_SCALE_PRESET, "Honk");
-      return;
-    }
-    if (componentOption?.preset === "fNaturalMinorScale") {
-      this.spawnScalePreset(F_NATURAL_MINOR_SCALE_PRESET, "HonkFm");
+    const preset = SPAWN_PRESETS[componentOption?.preset];
+    if (preset) {
+      this.spawnScalePreset(preset.notes, preset.namePrefix);
       return;
     }
 

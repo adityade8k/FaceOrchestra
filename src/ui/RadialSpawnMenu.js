@@ -6,6 +6,7 @@ const RADIAL_MENU_INNER_RADIUS = 0.035;
 const RADIAL_MENU_DISTANCE = 0.22;
 const RADIAL_MENU_ROLL_STEP = THREE.MathUtils.degToRad(32);
 const RADIAL_MENU_ROLL_DEADZONE = THREE.MathUtils.degToRad(9);
+const RADIAL_MENU_ROLL_DIRECTION = 1;
 const RADIAL_MENU_BASE_OPACITY = 0.38;
 const RADIAL_MENU_HIGHLIGHT_OPACITY = 0.88;
 
@@ -147,7 +148,7 @@ export class RadialSpawnMenu {
     tempControllerQuaternion.premultiply(tempStartInverseQuaternion);
     tempEuler.setFromQuaternion(tempControllerQuaternion, "XYZ");
 
-    const roll = tempEuler.z;
+    const roll = tempEuler.z * RADIAL_MENU_ROLL_DIRECTION;
     if (Math.abs(roll) < RADIAL_MENU_ROLL_DEADZONE) {
       return 0;
     }

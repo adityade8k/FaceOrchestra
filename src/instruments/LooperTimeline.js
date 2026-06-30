@@ -31,6 +31,8 @@ export class LooperTimeline {
     this.events = [];
     this.trackBaselines = new Map();
     this.durationMs = 0;
+    this.contentEndMs = 0;
+    this.loopGapMs = 0;
     this.startedAtMs = 0;
     this.recording = false;
     this.nextEventId = 1;
@@ -48,13 +50,14 @@ export class LooperTimeline {
     }
   }
 
-  stopRecording(now, minDurationMs = 1) {
+  stopRecording(now, minDurationMs = 1, loopGapMs = 0) {
     if (!this.recording) {
       return this.hasRecording();
     }
 
-    this.durationMs = Math.max(now - this.startedAtMs, minDurationMs);
     this.recording = false;
+    this.normalizeToFirstNote();
+    this.setLoopGap(loopGapMs, minDurationMs);
     this.sortEvents();
     return this.hasRecording();
   }
@@ -63,6 +66,8 @@ export class LooperTimeline {
     this.events.length = 0;
     this.trackBaselines.clear();
     this.durationMs = 0;
+    this.contentEndMs = 0;
+    this.loopGapMs = 0;
     this.startedAtMs = 0;
     this.recording = false;
     this.nextEventId = 1;
@@ -126,6 +131,60 @@ export class LooperTimeline {
     this.sorted = false;
   }
 
+  setLoopGap(loopGapMs = 0, minDurationMs = 1) {
+    this.loopGapMs = Math.max(loopGapMs || 0, 0);
+    this.contentEndMs = this.getContentEndMs();
+    this.durationMs = this.events.length > 0
+      ? Math.max(this.contentEndMs + this.loopGapMs, minDurationMs)
+      : 0;
+  }
+
+  normalizeToFirstNote() {
+    const firstNoteMs = this.getFirstNoteStartMs();
+    if (!Number.isFinite(firstNoteMs) || firstNoteMs <= 0) {
+      return;
+    }
+
+    const baselines = new Map(this.trackBaselines);
+    for (const event of this.events) {
+      if (event.type === LooperEventType.Gesture && event.sample && event.timeMs <= firstNoteMs) {
+        baselines.set(event.trackIndex, LooperTimeline.cloneSample(event.sample));
+      }
+    }
+
+    this.trackBaselines = baselines;
+    this.events = this.events.filter(
+      (event) => event.type !== LooperEventType.Gesture || event.timeMs >= firstNoteMs,
+    );
+
+    for (const event of this.events) {
+      event.timeMs = Math.max(event.timeMs - firstNoteMs, 0);
+    }
+    this.sorted = false;
+  }
+
+  getFirstNoteStartMs() {
+    let firstNoteMs = Infinity;
+    for (const event of this.events) {
+      if (event.type === LooperEventType.NoteOn) {
+        firstNoteMs = Math.min(firstNoteMs, event.timeMs);
+      }
+    }
+    return firstNoteMs;
+  }
+
+  getContentEndMs() {
+    let lastNoteEndMs = -Infinity;
+    let lastEventMs = 0;
+    for (const event of this.events) {
+      lastEventMs = Math.max(lastEventMs, event.timeMs);
+      if (event.type === LooperEventType.NoteOff) {
+        lastNoteEndMs = Math.max(lastNoteEndMs, event.timeMs);
+      }
+    }
+    return Number.isFinite(lastNoteEndMs) ? lastNoteEndMs : lastEventMs;
+  }
+
   getSortedEvents() {
     this.sortEvents();
     return this.events;
@@ -158,6 +217,8 @@ export class LooperTimeline {
       ]),
     );
     timeline.durationMs = this.durationMs;
+    timeline.contentEndMs = this.contentEndMs;
+    timeline.loopGapMs = this.loopGapMs;
     timeline.startedAtMs = 0;
     timeline.recording = false;
     timeline.nextEventId = this.nextEventId;

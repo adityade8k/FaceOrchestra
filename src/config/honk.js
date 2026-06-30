@@ -27,6 +27,18 @@ export const INTERACTION_TARGET_NAMES = {
   body: "HIT_body",
 };
 
+export const INTERACTION_TYPES = {
+  ear: "ear",
+  nose: "nose",
+  mouth: "mouth",
+  horn: "horn",
+};
+
+export const BEND_ALIGNED_INTERACTION_TYPES = [
+  INTERACTION_TYPES.ear,
+  INTERACTION_TYPES.nose,
+];
+
 export const BEND_SENSITIVITY = 2.5;
 export const BEND_SMOOTHING = 0.18;
 export const BEND_COLLIDER_ROTATION_DEGREES = -18;
@@ -44,6 +56,27 @@ export const CHORD_BOX_SCALE = {
 
 export const BEND_ALIGNED_COLLIDER_GROUP_NAME = "BEND_aligned_interaction_colliders";
 
+export const GRIP_TRANSFORM_COLLIDER_SETTINGS = {
+  relativeScale: { x: 0.7, y: 0.8, z: 0.8 },
+  defaultRelativeScale: 1,
+  renderOrder: 5,
+};
+
+export const MORPH_TARGET_COLLIDER_SETTINGS = {
+  sphereSegments: 24,
+  sphereRings: 16,
+  renderOrder: 20,
+};
+
+export const HONK_CONNECTION_COLLIDER_SETTINGS = {
+  position: { x: -0.11, y: -0.105, z: 0.001 },
+  scale: 0.04,
+  minModelSize: 0.1,
+  sphereSegments: 24,
+  sphereRings: 16,
+  renderOrder: 22,
+};
+
 export const INSTRUMENT_BASE_SCALE = 2.5;
 export const INSTRUMENT_SCALE_STEP = 0.25;
 export const INSTRUMENT_MIN_SCALE = 0.5;
@@ -52,7 +85,7 @@ export const INSTRUMENT_MAX_SCALE = 8;
 export const INTERACTION_COLLIDERS = [
   {
     name: INTERACTION_TARGET_NAMES.leftEar,
-    type: "ear",
+    type: INTERACTION_TYPES.ear,
     side: "left",
     invertVerticalMorph: false,
     size: 0.045,
@@ -64,7 +97,7 @@ export const INTERACTION_COLLIDERS = [
   },
   {
     name: INTERACTION_TARGET_NAMES.nose,
-    type: "nose",
+    type: INTERACTION_TYPES.nose,
     size: 0.045,
     x: 0,
     y: 0.21,
@@ -74,7 +107,7 @@ export const INTERACTION_COLLIDERS = [
   },
   {
     name: INTERACTION_TARGET_NAMES.rightEar,
-    type: "ear",
+    type: INTERACTION_TYPES.ear,
     side: "right",
     invertVerticalMorph: false,
     size: 0.045,
@@ -86,7 +119,7 @@ export const INTERACTION_COLLIDERS = [
   },
   {
     name: INTERACTION_TARGET_NAMES.mouth,
-    type: "mouth",
+    type: INTERACTION_TYPES.mouth,
     size: 0.03,
     x: 0,
     y: 0.12,
@@ -96,7 +129,7 @@ export const INTERACTION_COLLIDERS = [
   },
   {
     name: INTERACTION_TARGET_NAMES.horn,
-    type: "horn",
+    type: INTERACTION_TYPES.horn,
     size: 0.15,
     x: 0,
     y: -0.26,
