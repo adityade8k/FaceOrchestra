@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { DEBUG_LOG_MORPHS, MORPH_TARGET_NAMES } from "../config.js";
+import { DEBUG_LOG_MORPHS } from "../config/debug.js";
+import { MORPH_TARGET_NAMES } from "../config/honk.js";
 
 export class MorphTargetController {
   constructor(root, { warnMissingExpectedMorphs = true } = {}) {

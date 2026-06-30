@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { ARButton } from "three/addons/webxr/ARButton.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
-import { MODEL_PATH, XR_OPTIONAL_FEATURES } from "./config.js";
+import { MODEL_PATH } from "./config/assets.js";
+import { XR_OPTIONAL_FEATURES } from "./config/xr.js";
 import { InstrumentController } from "./instrument/InstrumentController.js";
 import { VowelSynth } from "./audio/VowelSynth.js";
 

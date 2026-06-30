@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { DEBUG_SHOW_BOUNDING_BOXES } from "../config.js";
+import { DEBUG_SHOW_BOUNDING_BOXES } from "../config/debug.js";
 import { setChordBounds } from "../instrument/ChordBounds.js";
 
 export class DebugVisuals {

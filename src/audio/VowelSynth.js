@@ -1,21 +1,30 @@
 import * as THREE from "three";
-import { NASALITY_SETTINGS } from "../config.js";
+import {
+  AUDIO_MASTER_BUS_SETTINGS,
+  NASALITY_SETTINGS,
+  VOICE_GAIN_SETTINGS,
+} from "../config/audio.js";
 
 export const FORMANTS = {
-  A: { freq: [800, 1300, 2500], gain: [1.0, 0.62, 0.28], q: [10, 16, 18] },
-  E: { freq: [460, 1900, 2600], gain: [0.85, 0.88, 0.32], q: [12, 18, 20] },
-  I: { freq: [300, 2300, 3000], gain: [0.74, 1.0, 0.42], q: [14, 20, 22] },
-  O: { freq: [500, 820, 2350], gain: [1.2, 1.05, 0.18], q: [15, 20, 22] },
-  U: { freq: [310, 720, 2050], gain: [1.12, 1.0, 0.12], q: [17, 22, 24] },
+  A: { freq: [800, 1300, 2500], gain: [0.72, 0.44, 0.16], q: [6, 10, 11] },
+  E: { freq: [460, 1900, 2600], gain: [0.62, 0.65, 0.16], q: [7, 11, 12] },
+  I: { freq: [300, 2300, 3000], gain: [0.52, 0.68, 0.18], q: [8, 12, 12] },
+  O: { freq: [500, 820, 2350], gain: [0.78, 0.68, 0.1], q: [8, 11, 12] },
+  U: { freq: [310, 720, 2050], gain: [0.7, 0.64, 0.08], q: [8, 11, 12] },
 };
 
 export const VOWEL_ROUNDNESS = {
-  O: { freq: 610, gain: 0.34, q: 10 },
-  U: { freq: 420, gain: 0.42, q: 12 },
+  O: { freq: 610, gain: 0.2, q: 7 },
+  U: { freq: 420, gain: 0.24, q: 8 },
 };
 
 const F4_FREQUENCY = 349.23;
 const C_MAJOR_PITCH_STEPS_FROM_F = [-5, -3, -1, 0, 2, 4, 6, 7];
+const F_NATURAL_MINOR_PITCH_STEPS_FROM_F = [-5, -4, -2, 0, 2, 3, 5, 7];
+const PITCH_SNAP_STEPS = {
+  cMajor: C_MAJOR_PITCH_STEPS_FROM_F,
+  fNaturalMinor: F_NATURAL_MINOR_PITCH_STEPS_FROM_F,
+};
 const RELEASE_FADE_SECONDS = 0.12;
 
 export class VowelSynth {
@@ -24,17 +33,45 @@ export class VowelSynth {
     this.voices = new Map();
     this.startingVoices = new Set();
     this.currentVowel = "A";
+    this.masterInput = null;
+    this.masterCompressor = null;
+    this.masterOutput = null;
   }
 
   async ensureAudio() {
     if (!this.audioCtx) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       this.audioCtx = new AudioContextClass();
+      this.setupMasterBus();
     }
 
     if (this.audioCtx.state === "suspended") {
       await this.audioCtx.resume();
     }
+  }
+
+  setupMasterBus() {
+    if (!this.audioCtx || this.masterInput) {
+      return;
+    }
+
+    const settings = AUDIO_MASTER_BUS_SETTINGS;
+    const compressorSettings = settings.compressor || {};
+    this.masterInput = this.audioCtx.createGain();
+    this.masterCompressor = this.audioCtx.createDynamicsCompressor();
+    this.masterOutput = this.audioCtx.createGain();
+
+    this.masterInput.gain.value = settings.inputGain ?? 1;
+    this.masterCompressor.threshold.value = compressorSettings.threshold ?? -18;
+    this.masterCompressor.knee.value = compressorSettings.knee ?? 18;
+    this.masterCompressor.ratio.value = compressorSettings.ratio ?? 8;
+    this.masterCompressor.attack.value = compressorSettings.attack ?? 0.004;
+    this.masterCompressor.release.value = compressorSettings.release ?? 0.18;
+    this.masterOutput.gain.value = settings.outputGain ?? 0.82;
+
+    this.masterInput.connect(this.masterCompressor);
+    this.masterCompressor.connect(this.masterOutput);
+    this.masterOutput.connect(this.audioCtx.destination);
   }
 
   async start(voiceId = "main") {
@@ -47,6 +84,7 @@ export class VowelSynth {
     this.startingVoices.add(voiceId);
     const now = this.audioCtx.currentTime;
     const source = this.audioCtx.createOscillator();
+    const toneFilter = this.audioCtx.createBiquadFilter();
     const vibrato = this.audioCtx.createOscillator();
     const vibratoGain = this.audioCtx.createGain();
     const master = this.audioCtx.createGain();
@@ -60,6 +98,10 @@ export class VowelSynth {
 
     source.type = "sawtooth";
     source.frequency.setValueAtTime(F4_FREQUENCY, now);
+    toneFilter.type = "lowpass";
+    toneFilter.frequency.setValueAtTime(VOICE_GAIN_SETTINGS.toneLowpassFrequency, now);
+    toneFilter.Q.setValueAtTime(VOICE_GAIN_SETTINGS.toneLowpassQ, now);
+    source.connect(toneFilter);
 
     vibrato.type = "sine";
     vibrato.frequency.setValueAtTime(5.2, now);
@@ -68,19 +110,19 @@ export class VowelSynth {
     vibratoGain.connect(source.detune);
 
     master.gain.setValueAtTime(0.0001, now);
-    output.gain.setValueAtTime(5.8, now);
+    output.gain.setValueAtTime(VOICE_GAIN_SETTINGS.outputGain, now);
     oralMix.gain.setValueAtTime(1, now);
 
     oralMix.connect(master);
     master.connect(output);
     output.connect(panner);
-    panner.connect(this.audioCtx.destination);
+    panner.connect(this.masterInput || this.audioCtx.destination);
 
     panner.panningModel = "HRTF";
-    panner.distanceModel = "inverse";
-    panner.refDistance = 0.35;
-    panner.maxDistance = 5;
-    panner.rolloffFactor = 1.7;
+    panner.distanceModel = "linear";
+    panner.refDistance = 1;
+    panner.maxDistance = 10000;
+    panner.rolloffFactor = 0;
     panner.coneInnerAngle = 90;
     panner.coneOuterAngle = 220;
     panner.coneOuterGain = 0.22;
@@ -95,16 +137,17 @@ export class VowelSynth {
     nasalHigh.Q.setValueAtTime(13, now);
     nasalHighGain.gain.setValueAtTime(0.0001, now);
 
-    source.connect(nasalLow);
+    toneFilter.connect(nasalLow);
     nasalLow.connect(nasalLowGain);
     nasalLowGain.connect(master);
 
-    source.connect(nasalHigh);
+    toneFilter.connect(nasalHigh);
     nasalHigh.connect(nasalHighGain);
     nasalHighGain.connect(master);
 
     const voice = {
       source,
+      toneFilter,
       vibrato,
       vibratoGain,
       master,
@@ -140,7 +183,7 @@ export class VowelSynth {
     }
 
     for (const nodeSet of oldNodes) {
-      this.disconnectNode(voice.source, nodeSet.filter);
+      this.disconnectNode(voice.toneFilter, nodeSet.filter);
       this.disconnectNode(nodeSet.filter);
       this.disconnectNode(nodeSet.gain);
     }
@@ -153,7 +196,7 @@ export class VowelSynth {
       filter.frequency.value = frequency;
       filter.Q.value = formants.q[index];
       gain.gain.value = formants.gain[index];
-      voice.source.connect(filter);
+      voice.toneFilter.connect(filter);
       filter.connect(gain);
       gain.connect(voice.oralMix);
       return { filter, gain };
@@ -168,7 +211,7 @@ export class VowelSynth {
       filter.frequency.value = roundness.freq;
       filter.Q.value = roundness.q;
       gain.gain.value = roundness.gain;
-      voice.source.connect(filter);
+      voice.toneFilter.connect(filter);
       filter.connect(gain);
       gain.connect(voice.oralMix);
       voice.roundnessNode = { filter, gain };
@@ -199,7 +242,6 @@ export class VowelSynth {
   update({
     voiceId = "main",
     hornAmount,
-    spatialGain = 1,
     masterGain = 1,
     leftEar,
     rightEar,
@@ -224,16 +266,18 @@ export class VowelSynth {
       pitchControl < 0
         ? THREE.MathUtils.mapLinear(pitchControl, -1, 0, -5, 0)
         : THREE.MathUtils.mapLinear(pitchControl, 0, 1, 0, 7);
-    const pitchSemitones =
-      pitchSnap === "cMajor" ? this.snapToPitchSteps(rawPitchSemitones, C_MAJOR_PITCH_STEPS_FROM_F) : rawPitchSemitones;
+    const snapSteps = PITCH_SNAP_STEPS[pitchSnap];
+    const pitchSemitones = snapSteps ? this.snapToPitchSteps(rawPitchSemitones, snapSteps) : rawPitchSemitones;
     const frequency = F4_FREQUENCY * 2 ** (pitchSemitones / 12) * 2 ** (octave - 4);
     if (pitchBendSemitones !== null) {
       voice.pitchBendSemitones = pitchBendSemitones;
     }
     const detune = voice.pitchBendSemitones * 100;
+    const activeVoiceCount = Math.max(this.voices.size + this.startingVoices.size, 1);
+    const polyphonyScale = 1 / Math.sqrt(activeVoiceCount);
     const gain = Math.max(
       0.0001,
-      hornAmount * 0.72 * THREE.MathUtils.clamp(spatialGain, 0, 1) * Math.max(masterGain, 0),
+      hornAmount * VOICE_GAIN_SETTINGS.baseGain * Math.max(masterGain, 0) * polyphonyScale,
     );
 
     voice.source.frequency.setTargetAtTime(frequency, now, 0.035);
@@ -280,13 +324,12 @@ export class VowelSynth {
 
     const now = this.audioCtx.currentTime;
     const panner = voice.panner;
-    const distance = settings?.distanceFalloff || {};
     const directional = settings?.directionalFalloff || {};
 
-    panner.distanceModel = distance.model || "inverse";
-    panner.refDistance = distance.refDistance ?? 0.35;
-    panner.maxDistance = distance.maxDistance ?? 5;
-    panner.rolloffFactor = distance.rolloffFactor ?? 1.7;
+    panner.distanceModel = "linear";
+    panner.refDistance = 1;
+    panner.maxDistance = 10000;
+    panner.rolloffFactor = 0;
     panner.coneInnerAngle = directional.coneInnerAngle ?? 90;
     panner.coneOuterAngle = directional.coneOuterAngle ?? 220;
     panner.coneOuterGain = directional.coneOuterGain ?? 0.22;
@@ -383,6 +426,7 @@ export class VowelSynth {
     }
 
     this.disconnectNode(voice.source);
+    this.disconnectNode(voice.toneFilter);
     this.disconnectNode(voice.vibrato);
     this.disconnectNode(voice.vibratoGain);
     this.disconnectNode(voice.nasalLow);
