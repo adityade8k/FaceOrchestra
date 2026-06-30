@@ -4,15 +4,15 @@ import { SPAWN_COMPONENT_OPTIONS } from "../config/ui.js";
 const RADIAL_MENU_RADIUS = 0.18;
 const RADIAL_MENU_INNER_RADIUS = 0.035;
 const RADIAL_MENU_DISTANCE = 0.22;
-const RADIAL_MENU_ROLL_STEP = THREE.MathUtils.degToRad(32);
-const RADIAL_MENU_ROLL_DEADZONE = THREE.MathUtils.degToRad(9);
+const RADIAL_MENU_TOP_ANGLE = Math.PI / 2;
+const RADIAL_MENU_ROLL_DEADZONE = THREE.MathUtils.degToRad(3);
+const RADIAL_MENU_DIAL_SPEED = 2.4;
 const RADIAL_MENU_ROLL_DIRECTION = 1;
 const RADIAL_MENU_BASE_OPACITY = 0.38;
 const RADIAL_MENU_HIGHLIGHT_OPACITY = 0.88;
 
 const tempStartInverseQuaternion = new THREE.Quaternion();
 const tempControllerQuaternion = new THREE.Quaternion();
-const tempEuler = new THREE.Euler();
 
 export class RadialSpawnMenu {
   create() {
@@ -23,9 +23,15 @@ export class RadialSpawnMenu {
     group.renderOrder = 1100;
     group.userData.segments = [];
 
+    const dial = new THREE.Group();
+    dial.name = "SpawnRadialDial";
+    dial.renderOrder = 1100;
+    group.add(dial);
+    group.userData.dial = dial;
+
     const optionCount = Math.max(SPAWN_COMPONENT_OPTIONS.length, 1);
     const arc = (Math.PI * 2) / optionCount;
-    const startOffset = Math.PI / 2;
+    const startOffset = RADIAL_MENU_TOP_ANGLE + arc * 0.5;
 
     SPAWN_COMPONENT_OPTIONS.forEach((option, index) => {
       const startAngle = startOffset - index * arc;
@@ -43,14 +49,14 @@ export class RadialSpawnMenu {
       );
       segment.name = `SpawnRadialSegment_${option.id}`;
       segment.renderOrder = 1100;
-      group.add(segment);
+      dial.add(segment);
       group.userData.segments.push(segment);
 
       const label = this.createLabel(option.label);
       const midAngle = (startAngle + endAngle) * 0.5;
       const labelRadius = RADIAL_MENU_RADIUS * 0.64;
       label.position.set(Math.cos(midAngle) * labelRadius, Math.sin(midAngle) * labelRadius, 0.006);
-      group.add(label);
+      dial.add(label);
     });
 
     return group;
@@ -104,6 +110,8 @@ export class RadialSpawnMenu {
     state.radialMenuOpen = true;
     state.radialMenuCancelled = false;
     state.radialMenuSelectedIndex = 0;
+    state.radialMenuControllerRoll = 0;
+    state.radialMenuDialRotation = 0;
     controller.userData.radialMenu.visible = true;
     this.updateVisuals(controller, state);
   }
@@ -142,28 +150,66 @@ export class RadialSpawnMenu {
       return 0;
     }
 
+    const controllerRoll = this.getControllerRoll(controller, state);
+    const dialRotation = this.getDialRotationFromControllerRoll(controllerRoll);
+    state.radialMenuControllerRoll = controllerRoll;
+    state.radialMenuDialRotation = dialRotation;
+    return this.getSelectedIndexForDialRotation(dialRotation, optionCount);
+  }
+
+  getControllerRoll(controller, state) {
+    if (!controller || !state) {
+      return 0;
+    }
+
     controller.updateMatrixWorld(true);
     controller.getWorldQuaternion(tempControllerQuaternion);
     tempStartInverseQuaternion.copy(state.radialMenuStartQuaternion).invert();
     tempControllerQuaternion.premultiply(tempStartInverseQuaternion);
-    tempEuler.setFromQuaternion(tempControllerQuaternion, "XYZ");
 
-    const roll = tempEuler.z * RADIAL_MENU_ROLL_DIRECTION;
-    if (Math.abs(roll) < RADIAL_MENU_ROLL_DEADZONE) {
+    const roll = 2 * Math.atan2(tempControllerQuaternion.z, tempControllerQuaternion.w);
+    return THREE.MathUtils.euclideanModulo(roll + Math.PI, Math.PI * 2) - Math.PI;
+  }
+
+  getDialRotationFromControllerRoll(controllerRoll) {
+    const directedRoll = controllerRoll * RADIAL_MENU_ROLL_DIRECTION;
+    if (Math.abs(directedRoll) < RADIAL_MENU_ROLL_DEADZONE) {
       return 0;
     }
 
-    if (roll > 0) {
+    const rollPastDeadzone = directedRoll - Math.sign(directedRoll) * RADIAL_MENU_ROLL_DEADZONE;
+    return -rollPastDeadzone * RADIAL_MENU_DIAL_SPEED;
+  }
+
+  getSelectedIndexForDialRotation(dialRotation, optionCount) {
+    if (optionCount <= 1) {
       return 0;
     }
 
-    return THREE.MathUtils.clamp(Math.ceil(Math.abs(roll) / RADIAL_MENU_ROLL_STEP), 1, optionCount - 1);
+    const arc = (Math.PI * 2) / optionCount;
+    return THREE.MathUtils.euclideanModulo(Math.round(dialRotation / arc), optionCount);
   }
 
   updateVisuals(controller, state) {
     const menu = controller?.userData.radialMenu;
     if (!menu || !state) {
       return;
+    }
+
+    const controllerRoll = state.radialMenuOpen ? this.getControllerRoll(controller, state) : 0;
+    const dialRotation = state.radialMenuOpen
+      ? this.getDialRotationFromControllerRoll(controllerRoll)
+      : 0;
+    state.radialMenuControllerRoll = controllerRoll;
+    state.radialMenuDialRotation = dialRotation;
+    state.radialMenuSelectedIndex = this.getSelectedIndexForDialRotation(
+      dialRotation,
+      SPAWN_COMPONENT_OPTIONS.length,
+    );
+
+    menu.rotation.z = -controllerRoll;
+    if (menu.userData.dial) {
+      menu.userData.dial.rotation.z = dialRotation;
     }
 
     for (const [index, segment] of menu.userData.segments.entries()) {
