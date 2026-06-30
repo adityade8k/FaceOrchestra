@@ -867,7 +867,8 @@ export class InstrumentController {
       return;
     }
 
-    const selectedOption = SPAWN_COMPONENT_OPTIONS[state.radialMenuSelectedIndex];
+    const selectedIndex = this.radialSpawnMenu.getSelectedIndex(controller, state);
+    const selectedOption = SPAWN_COMPONENT_OPTIONS[selectedIndex];
     const cancelled = state.radialMenuCancelled;
     this.closeRadialMenu(controller);
 

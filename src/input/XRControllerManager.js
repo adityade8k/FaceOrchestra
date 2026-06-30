@@ -164,6 +164,8 @@ function createControllerState() {
     radialMenuOpen: false,
     radialMenuCancelled: false,
     radialMenuSelectedIndex: 0,
+    radialMenuControllerRoll: 0,
+    radialMenuDialRotation: 0,
     radialMenuStartQuaternion: new THREE.Quaternion(),
   };
 }
