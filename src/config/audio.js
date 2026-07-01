@@ -16,7 +16,7 @@ export const SPATIAL_AUDIO_SETTINGS = {
 
 export const AUDIO_MASTER_BUS_SETTINGS = {
   inputGain: 0.9,
-  outputGain: 1.64,
+  outputGain: 6.56,
   compressor: {
     threshold: -18,
     knee: 18,
