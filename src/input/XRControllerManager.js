@@ -153,6 +153,7 @@ function createControllerState() {
     thumbstickScaleDirection: 0,
     hoveredTarget: null,
     activeTriggerInteraction: null,
+    suppressTriggerUntilRelease: false,
     gripHeld: false,
     gripInstrumentState: null,
     gripOffsetMatrix: new THREE.Matrix4(),

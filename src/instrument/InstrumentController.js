@@ -18,6 +18,7 @@ import {
   INSTRUMENT_BASE_SCALE,
   INSTRUMENT_MAX_SCALE,
   INSTRUMENT_MIN_SCALE,
+  INSTRUMENT_SCALE_STEP,
   INSTRUMENT_TEXTURE_PATHS,
   HONK_CONNECTION_TARGET_NAME,
   LOOPER_BUTTON_MORPH_TARGETS,
@@ -152,6 +153,10 @@ const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
 const LOCK_INDICATOR_COLOR = 0x45f6ff;
 const LOCK_INDICATOR_OPACITY = 0.16;
+const PENDING_SPAWN_DISTANCE = SPAWN_DISTANCE;
+const PENDING_SPAWN_GLASS_COLOR = 0xd8f8ff;
+const PENDING_SPAWN_GLASS_OPACITY = 0.34;
+const PENDING_SPAWN_RENDER_ORDER = 60;
 const C_MAJOR_SCALE_PRESET = [
   { label: "C", semitonesFromF: -5 },
   { label: "D", semitonesFromF: -3 },
@@ -313,6 +318,46 @@ function getHitTargetColor(targetOrName) {
   }[name] || 0xffffff;
 }
 
+function makePendingSpawnGlassMaterial(sourceMaterial = null) {
+  const normalScale = sourceMaterial?.normalScale?.clone?.() || new THREE.Vector2(0.18, 0.18);
+  normalScale.multiplyScalar(0.45);
+
+  const material = new THREE.MeshPhysicalMaterial({
+    name: "PendingSpawnGlass",
+    color: PENDING_SPAWN_GLASS_COLOR,
+    metalness: 0,
+    roughness: 0.035,
+    transmission: 0.82,
+    thickness: 0.12,
+    ior: 1.48,
+    attenuationColor: new THREE.Color(0xc6f5ff),
+    attenuationDistance: 0.7,
+    clearcoat: 1,
+    clearcoatRoughness: 0.03,
+    transparent: true,
+    opacity: PENDING_SPAWN_GLASS_OPACITY,
+    side: sourceMaterial?.side ?? THREE.DoubleSide,
+    depthWrite: false,
+    depthTest: true,
+    normalMap: sourceMaterial?.normalMap || null,
+    normalScale,
+    envMapIntensity: 1.25,
+    toneMapped: sourceMaterial?.toneMapped ?? true,
+  });
+  material.userData.disposeOnPendingSpawnRestore = true;
+  material.userData.disposeOnInstrumentDelete = true;
+  return material;
+}
+
+function disposeMaterialOrMaterials(materialOrMaterials) {
+  const materials = Array.isArray(materialOrMaterials) ? materialOrMaterials : [materialOrMaterials];
+  for (const material of materials) {
+    if (material?.userData.disposeOnPendingSpawnRestore) {
+      material.dispose();
+    }
+  }
+}
+
 export class InstrumentController {
   constructor({ scene, camera, renderer, synth }) {
     this.scene = scene;
@@ -351,6 +396,7 @@ export class InstrumentController {
     this.nextInstrumentId = 1;
     this.instrumentStates = [];
     this.activeInstrumentState = null;
+    this.pendingSpawnPlacement = null;
 
     this.controllers = [];
     this.controllerStates = new Map();
@@ -708,6 +754,7 @@ export class InstrumentController {
   onXRSessionEnd() {
     this.hideInstructionPanel();
     this.pendingPanelPlacementFrames = 0;
+    this.deletePendingSpawnPlacement();
 
     for (const controller of this.controllers) {
       const state = this.controllerStates.get(controller);
@@ -730,6 +777,7 @@ export class InstrumentController {
       state.thumbstickScaleDirection = 0;
       state.hoveredTarget = null;
       state.activeTriggerInteraction = null;
+      state.suppressTriggerUntilRelease = false;
       state.gripHeld = false;
       state.gripInstrumentState = null;
       state.raySqueezeVoiceId = null;
@@ -781,7 +829,15 @@ export class InstrumentController {
   update(delta = 0, time = performance.now()) {
     this.updateSceneObjects(delta, time);
     this.updatePendingPanelPlacement();
+    const hadPendingSpawnPlacement = Boolean(this.pendingSpawnPlacement);
     this.pollControllers();
+    if (this.pendingSpawnPlacement) {
+      this.updatePendingSpawnPreview();
+      return;
+    }
+    if (hadPendingSpawnPlacement) {
+      return;
+    }
     this.updateRadialMenus();
     this.updateRaycastHover();
     this.updateTriggerInteraction();
@@ -839,6 +895,10 @@ export class InstrumentController {
   }
 
   handleAPress(controller, gripPressed = false) {
+    if (this.pendingSpawnPlacement) {
+      return;
+    }
+
     if (!this.instructionPanelClosed) {
       return;
     }
@@ -862,6 +922,10 @@ export class InstrumentController {
   }
 
   handleARelease(controller) {
+    if (this.pendingSpawnPlacement) {
+      return;
+    }
+
     const state = this.controllerStates.get(controller);
     if (!state?.radialMenuOpen) {
       return;
@@ -873,7 +937,7 @@ export class InstrumentController {
     this.closeRadialMenu(controller);
 
     if (!cancelled && selectedOption) {
-      this.spawnComponentInFrontOfCamera(selectedOption.id);
+      this.beginPendingSpawnPlacement(controller, selectedOption.id);
     }
   }
 
@@ -892,7 +956,273 @@ export class InstrumentController {
     this.radialSpawnMenu.cancel(controller, state);
   }
 
+  beginPendingSpawnPlacement(controller, componentId) {
+    if (!controller) {
+      return;
+    }
+
+    this.deletePendingSpawnPlacement();
+    const created = this.createPendingSpawnComponents(componentId);
+    if (!created?.states?.length) {
+      return;
+    }
+
+    this.disableInteractionsForPendingSpawn();
+
+    const group = new THREE.Group();
+    group.name = "PendingSpawnPlacement";
+    group.userData.isPendingSpawnPlacement = true;
+    controller.add(group);
+
+    const firstOffset = -((created.states.length - 1) * SCALE_PRESET_SPACING) * 0.5;
+    for (const [index, state] of created.states.entries()) {
+      const root = state.root;
+      if (!root) {
+        continue;
+      }
+
+      group.add(root);
+      root.position.set(firstOffset + index * SCALE_PRESET_SPACING, 0, -PENDING_SPAWN_DISTANCE);
+      root.rotation.set(0, 0, 0);
+      root.updateMatrixWorld(true);
+      root.userData.pendingPlacement = true;
+      state.pendingPlacement = true;
+      state.locked = false;
+      this.applyPendingSpawnVisuals(state);
+    }
+
+    this.pendingSpawnPlacement = {
+      controller,
+      group,
+      states: created.states,
+      thumbstickScaleDirection: 0,
+    };
+  }
+
+  createPendingSpawnComponents(componentId) {
+    const componentOption = this.componentTemplates.get(componentId) || this.componentTemplates.get("honk");
+    const preset = SPAWN_PRESETS[componentOption?.preset];
+    if (preset) {
+      return this.createPendingSpawnScalePreset(preset.notes, preset.namePrefix);
+    }
+
+    const root = this.createSpawnedComponent(componentId);
+    const state = this.activeInstrumentState;
+    if (!root || !state) {
+      return null;
+    }
+
+    this.setInstrumentBaseScale(state, INSTRUMENT_BASE_SCALE);
+    return { states: [state] };
+  }
+
+  createPendingSpawnScalePreset(scalePreset, namePrefix = "Honk") {
+    const states = [];
+    for (const [index, note] of scalePreset.entries()) {
+      const root = this.createSpawnedComponent("honk");
+      const state = this.activeInstrumentState;
+      if (!root || !state) {
+        continue;
+      }
+
+      root.name = `${namePrefix}_${note.label}_${index + 1}`;
+      this.setInstrumentBaseScale(state, INSTRUMENT_BASE_SCALE);
+      this.applyScalePresetNote(state, note);
+      states.push(state);
+    }
+
+    return { states };
+  }
+
+  disableInteractionsForPendingSpawn() {
+    for (const controller of this.controllers) {
+      const controllerState = this.controllerStates.get(controller);
+      if (!controllerState) {
+        continue;
+      }
+
+      if (controllerState.hoveredTarget) {
+        this.setTargetHighlight(controllerState.hoveredTarget, false);
+        controllerState.hoveredTarget = null;
+      }
+
+      const interaction = controllerState.activeTriggerInteraction;
+      if (interaction?.type === "looperWire") {
+        this.disposeWireMesh(interaction.wireMesh);
+        interaction.wireMesh = null;
+      }
+      controllerState.activeTriggerInteraction = null;
+
+      this.releaseRaySqueeze(controllerState);
+      this.gripTransformSystem?.release(controller);
+      this.closeRadialMenu(controller);
+    }
+  }
+
+  updatePendingSpawnPreview() {
+    const pending = this.pendingSpawnPlacement;
+    if (!pending?.controller || !pending.group) {
+      this.deletePendingSpawnPlacement();
+      return;
+    }
+
+    pending.group.visible = true;
+    if (pending.controller.userData.rayLine) {
+      pending.controller.userData.rayLine.visible = DEBUG_SHOW_RAYS && Boolean(this.renderer.xr.isPresenting);
+      pending.controller.userData.rayLine.material.color.setHex(RAY_COLOR_SPHERE_HOVER);
+    }
+  }
+
+  handlePendingSpawnScaleThumbstick(controller, direction) {
+    const pending = this.pendingSpawnPlacement;
+    if (!pending || controller !== pending.controller || controller.userData.handedness !== "right") {
+      return;
+    }
+
+    if (direction === 0) {
+      pending.thumbstickScaleDirection = 0;
+      return;
+    }
+
+    if (direction === pending.thumbstickScaleDirection) {
+      return;
+    }
+
+    pending.thumbstickScaleDirection = direction;
+    for (const state of pending.states) {
+      this.setInstrumentBaseScale(state, state.baseScale + direction * INSTRUMENT_SCALE_STEP);
+    }
+  }
+
+  placePendingSpawnPlacement(controller) {
+    const pending = this.pendingSpawnPlacement;
+    if (!pending || controller !== pending.controller) {
+      return;
+    }
+
+    this.pendingSpawnPlacement = null;
+    const controllerState = this.controllerStates.get(controller);
+    if (controllerState) {
+      controllerState.suppressTriggerUntilRelease = true;
+      controllerState.activeTriggerInteraction = null;
+      this.releaseRaySqueeze(controllerState);
+    }
+
+    this.scene.updateMatrixWorld(true);
+    pending.group.updateMatrixWorld(true);
+
+    for (const state of pending.states) {
+      if (!state?.root) {
+        continue;
+      }
+
+      state.root.updateMatrixWorld(true);
+      this.restorePendingSpawnVisuals(state);
+      this.scene.attach(state.root);
+      state.root.userData.pendingPlacement = false;
+      state.pendingPlacement = false;
+      state.sceneObject.raycastTargetsDirty = true;
+      this.syncLooperTransformReference(state);
+    }
+
+    pending.group.removeFromParent();
+    this.activeInstrumentState = pending.states.at(-1) || this.activeInstrumentState;
+  }
+
+  deletePendingSpawnPlacement() {
+    const pending = this.pendingSpawnPlacement;
+    if (!pending) {
+      return;
+    }
+
+    this.pendingSpawnPlacement = null;
+    for (const state of [...pending.states]) {
+      if (!state) {
+        continue;
+      }
+      state.pendingPlacement = false;
+      if (state.root) {
+        state.root.userData.pendingPlacement = false;
+      }
+      this.deleteInstrument(state);
+    }
+    pending.group?.removeFromParent();
+  }
+
+  applyPendingSpawnVisuals(state) {
+    state.root.traverse((object) => {
+      if (object.userData.isHitTarget) {
+        object.userData.pendingSpawnPreviousVisible = object.visible;
+        object.visible = false;
+        return;
+      }
+
+      if (!object.isMesh || !object.material) {
+        return;
+      }
+
+      object.userData.pendingSpawnOriginalMaterial = object.material;
+      object.userData.pendingSpawnOriginalCastShadow = object.castShadow;
+      object.userData.pendingSpawnOriginalReceiveShadow = object.receiveShadow;
+      object.userData.pendingSpawnOriginalRenderOrder = object.renderOrder;
+      object.material = Array.isArray(object.material)
+        ? object.material.map((material) => makePendingSpawnGlassMaterial(material))
+        : makePendingSpawnGlassMaterial(object.material);
+      object.castShadow = false;
+      object.receiveShadow = false;
+      object.renderOrder = Math.max(object.renderOrder || 0, PENDING_SPAWN_RENDER_ORDER);
+    });
+
+    if (state.sceneObject) {
+      state.sceneObject.raycastTargetsDirty = true;
+    }
+  }
+
+  restorePendingSpawnVisuals(state) {
+    state.root.traverse((object) => {
+      if (Object.prototype.hasOwnProperty.call(object.userData, "pendingSpawnPreviousVisible")) {
+        object.visible = object.userData.pendingSpawnPreviousVisible;
+        delete object.userData.pendingSpawnPreviousVisible;
+      }
+
+      if (!object.isMesh || !Object.prototype.hasOwnProperty.call(object.userData, "pendingSpawnOriginalMaterial")) {
+        return;
+      }
+
+      const previewMaterial = object.material;
+      object.material = object.userData.pendingSpawnOriginalMaterial;
+      disposeMaterialOrMaterials(previewMaterial);
+
+      object.castShadow = object.userData.pendingSpawnOriginalCastShadow;
+      object.receiveShadow = object.userData.pendingSpawnOriginalReceiveShadow;
+      object.renderOrder = object.userData.pendingSpawnOriginalRenderOrder;
+      delete object.userData.pendingSpawnOriginalMaterial;
+      delete object.userData.pendingSpawnOriginalCastShadow;
+      delete object.userData.pendingSpawnOriginalReceiveShadow;
+      delete object.userData.pendingSpawnOriginalRenderOrder;
+    });
+
+    if (state.sceneObject) {
+      state.sceneObject.raycastTargetsDirty = true;
+    }
+  }
+
+  syncLooperTransformReference(state) {
+    const data = state?.looperData;
+    if (!data) {
+      return;
+    }
+
+    state.root.updateMatrixWorld(true);
+    state.root.getWorldPosition(data.lastPosition);
+    state.root.getWorldQuaternion(data.lastQuaternion);
+  }
+
   handleDeletePress(controller) {
+    if (this.pendingSpawnPlacement) {
+      return;
+    }
+
     const instrumentState = this.getPointedInstrumentState(controller);
     if (!instrumentState) {
       return;
@@ -902,6 +1232,10 @@ export class InstrumentController {
   }
 
   handleDisconnectPress(controller) {
+    if (this.pendingSpawnPlacement) {
+      return;
+    }
+
     const hit = this.getCurrentHit(controller);
     if (hit?.object?.userData.isLooperNode) {
       const looperState = hit.object.userData.instrumentState;
@@ -911,6 +1245,10 @@ export class InstrumentController {
   }
 
   handleBPress(controller) {
+    if (this.pendingSpawnPlacement) {
+      return;
+    }
+
     const instrumentState = this.getPointedInstrumentState(controller);
     if (!this.isLockableInstrumentState(instrumentState)) {
       return;
@@ -923,6 +1261,7 @@ export class InstrumentController {
   isLockableInstrumentState(instrumentState) {
     return Boolean(
       instrumentState?.root?.visible &&
+        !instrumentState.pendingPlacement &&
         (instrumentState.interactive || instrumentState.isLooper),
     );
   }
@@ -1047,6 +1386,11 @@ export class InstrumentController {
   }
 
   handleTriggerPress(controller) {
+    if (this.pendingSpawnPlacement) {
+      this.placePendingSpawnPlacement(controller);
+      return;
+    }
+
     this.synth.ensureAudio();
     const controllerState = this.controllerStates.get(controller);
     this.initializeRaySqueeze(controller);
@@ -1116,7 +1460,18 @@ export class InstrumentController {
   }
 
   handleTriggerRelease(controller) {
+    if (this.pendingSpawnPlacement) {
+      return;
+    }
+
     const controllerState = this.controllerStates.get(controller);
+    if (controllerState?.suppressTriggerUntilRelease) {
+      controllerState.suppressTriggerUntilRelease = false;
+      controllerState.activeTriggerInteraction = null;
+      this.releaseRaySqueeze(controllerState);
+      return;
+    }
+
     const interaction = controllerState?.activeTriggerInteraction;
 
     if (interaction?.type === "looperWire") {
@@ -1544,15 +1899,29 @@ export class InstrumentController {
   }
 
   handleGripPress(controller) {
+    if (this.pendingSpawnPlacement) {
+      this.deletePendingSpawnPlacement();
+      return;
+    }
+
     const hit = this.getGripHit(controller);
     this.gripTransformSystem?.begin(controller, hit);
   }
 
   handleGripRelease(controller) {
+    if (this.pendingSpawnPlacement) {
+      return;
+    }
+
     this.gripTransformSystem?.release(controller);
   }
 
   handleGripScaleThumbstick(controller, direction) {
+    if (this.pendingSpawnPlacement) {
+      this.handlePendingSpawnScaleThumbstick(controller, direction);
+      return;
+    }
+
     this.gripTransformSystem?.handleScaleThumbstick(controller, direction);
   }
 
@@ -1998,6 +2367,11 @@ export class InstrumentController {
     const activeHoldInteractions = [];
     for (const controller of this.controllers) {
       const controllerState = this.controllerStates.get(controller);
+      if (controllerState?.suppressTriggerUntilRelease) {
+        this.releaseRaySqueeze(controllerState);
+        continue;
+      }
+
       const interaction = controllerState?.activeTriggerInteraction;
       if (interaction?.type === "holdSqueeze" && interaction.instrumentState?.root?.visible) {
         activeHoldInteractions.push({ interaction, controller });
@@ -3133,7 +3507,7 @@ export class InstrumentController {
   getPointedInstrumentState(controller) {
     const hit = this.getGripHit(controller) || this.getCurrentHit(controller);
     const instrumentState = hit?.object?.userData.instrumentState;
-    if (instrumentState?.root?.visible) {
+    if (instrumentState?.root?.visible && !instrumentState.pendingPlacement) {
       return instrumentState;
     }
 
