@@ -2,6 +2,8 @@ import * as THREE from "three";
 import {
   AUDIO_MASTER_BUS_SETTINGS,
   NASALITY_SETTINGS,
+  STICK_PERCUSSION_SETTINGS,
+  STICK_PERCUSSION_TYPES,
   VOICE_GAIN_SETTINGS,
 } from "../config/audio.js";
 
@@ -89,7 +91,6 @@ export class VowelSynth {
     const vibratoGain = this.audioCtx.createGain();
     const master = this.audioCtx.createGain();
     const output = this.audioCtx.createGain();
-    const panner = this.audioCtx.createPanner();
     const oralMix = this.audioCtx.createGain();
     const nasalLow = this.audioCtx.createBiquadFilter();
     const nasalLowGain = this.audioCtx.createGain();
@@ -115,17 +116,7 @@ export class VowelSynth {
 
     oralMix.connect(master);
     master.connect(output);
-    output.connect(panner);
-    panner.connect(this.masterInput || this.audioCtx.destination);
-
-    panner.panningModel = "HRTF";
-    panner.distanceModel = "linear";
-    panner.refDistance = 1;
-    panner.maxDistance = 10000;
-    panner.rolloffFactor = 0;
-    panner.coneInnerAngle = 90;
-    panner.coneOuterAngle = 220;
-    panner.coneOuterGain = 0.22;
+    output.connect(this.masterInput || this.audioCtx.destination);
 
     nasalLow.type = "bandpass";
     nasalLow.frequency.setValueAtTime(260, now);
@@ -152,7 +143,6 @@ export class VowelSynth {
       vibratoGain,
       master,
       output,
-      panner,
       oralMix,
       nasalLow,
       nasalLowGain,
@@ -290,71 +280,6 @@ export class VowelSynth {
     voice.nasalHighGain.gain.setTargetAtTime(0.0001 + nasalAmount * NASALITY_SETTINGS.highGainAtMax, now, 0.05);
   }
 
-  updateListener({ position, forward, up }) {
-    if (!this.audioCtx) {
-      return;
-    }
-
-    const listener = this.audioCtx.listener;
-    const now = this.audioCtx.currentTime;
-
-    this.setAudioParam(listener.positionX, position.x, now);
-    this.setAudioParam(listener.positionY, position.y, now);
-    this.setAudioParam(listener.positionZ, position.z, now);
-    this.setAudioParam(listener.forwardX, forward.x, now);
-    this.setAudioParam(listener.forwardY, forward.y, now);
-    this.setAudioParam(listener.forwardZ, forward.z, now);
-    this.setAudioParam(listener.upX, up.x, now);
-    this.setAudioParam(listener.upY, up.y, now);
-    this.setAudioParam(listener.upZ, up.z, now);
-
-    if (typeof listener.setPosition === "function") {
-      listener.setPosition(position.x, position.y, position.z);
-    }
-    if (typeof listener.setOrientation === "function") {
-      listener.setOrientation(forward.x, forward.y, forward.z, up.x, up.y, up.z);
-    }
-  }
-
-  updateSpatial(voiceId = "main", { position, orientation, settings }) {
-    const voice = this.voices.get(voiceId);
-    if (!voice || !this.audioCtx) {
-      return;
-    }
-
-    const now = this.audioCtx.currentTime;
-    const panner = voice.panner;
-    const directional = settings?.directionalFalloff || {};
-
-    panner.distanceModel = "linear";
-    panner.refDistance = 1;
-    panner.maxDistance = 10000;
-    panner.rolloffFactor = 0;
-    panner.coneInnerAngle = directional.coneInnerAngle ?? 90;
-    panner.coneOuterAngle = directional.coneOuterAngle ?? 220;
-    panner.coneOuterGain = directional.coneOuterGain ?? 0.22;
-
-    this.setAudioParam(panner.positionX, position.x, now);
-    this.setAudioParam(panner.positionY, position.y, now);
-    this.setAudioParam(panner.positionZ, position.z, now);
-    this.setAudioParam(panner.orientationX, orientation.x, now);
-    this.setAudioParam(panner.orientationY, orientation.y, now);
-    this.setAudioParam(panner.orientationZ, orientation.z, now);
-
-    if (typeof panner.setPosition === "function") {
-      panner.setPosition(position.x, position.y, position.z);
-    }
-    if (typeof panner.setOrientation === "function") {
-      panner.setOrientation(orientation.x, orientation.y, orientation.z);
-    }
-  }
-
-  setAudioParam(param, value, time) {
-    if (param?.setTargetAtTime) {
-      param.setTargetAtTime(value, time, 0.025);
-    }
-  }
-
   snapToPitchSteps(value, steps) {
     return steps.reduce((closest, step) =>
       Math.abs(step - value) < Math.abs(closest - value) ? step : closest,
@@ -386,6 +311,130 @@ export class VowelSynth {
     for (const voiceId of [...this.voices.keys()]) {
       this.release(voiceId);
     }
+  }
+
+  async triggerStickPercussion(type, { volume = 1 } = {}) {
+    await this.ensureAudio();
+
+    if (type === STICK_PERCUSSION_TYPES.hihat) {
+      this.triggerStickHihat(volume);
+      return;
+    }
+
+    this.triggerStickBoink(volume);
+  }
+
+  triggerStickBoink(volume = 1) {
+    if (!this.audioCtx) {
+      return;
+    }
+
+    const settings = STICK_PERCUSSION_SETTINGS.boink;
+    const now = this.audioCtx.currentTime;
+    const output = this.audioCtx.createGain();
+    const body = this.audioCtx.createOscillator();
+    const bodyGain = this.audioCtx.createGain();
+    const click = this.audioCtx.createOscillator();
+    const clickGain = this.audioCtx.createGain();
+    const stopAt = now + settings.bodySeconds + 0.04;
+
+    output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
+    output.connect(this.masterInput || this.audioCtx.destination);
+
+    body.type = "sine";
+    body.frequency.setValueAtTime(settings.startFrequency, now);
+    body.frequency.exponentialRampToValueAtTime(settings.endFrequency, now + settings.pitchDropSeconds);
+    bodyGain.gain.setValueAtTime(0.0001, now);
+    bodyGain.gain.exponentialRampToValueAtTime(1, now + 0.004);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + settings.bodySeconds);
+    body.connect(bodyGain);
+    bodyGain.connect(output);
+
+    click.type = "triangle";
+    click.frequency.setValueAtTime(settings.clickFrequency, now);
+    clickGain.gain.setValueAtTime(settings.clickGain, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, now + settings.clickSeconds);
+    click.connect(clickGain);
+    clickGain.connect(output);
+
+    body.start(now);
+    click.start(now);
+    body.stop(stopAt);
+    click.stop(now + settings.clickSeconds + 0.02);
+    body.onended = () => {
+      this.disconnectNode(body);
+      this.disconnectNode(bodyGain);
+      this.disconnectNode(click);
+      this.disconnectNode(clickGain);
+      this.disconnectNode(output);
+    };
+  }
+
+  triggerStickHihat(volume = 1) {
+    if (!this.audioCtx) {
+      return;
+    }
+
+    const settings = STICK_PERCUSSION_SETTINGS.hihat;
+    const now = this.audioCtx.currentTime;
+    const sampleCount = Math.max(Math.floor(this.audioCtx.sampleRate * settings.noiseSeconds), 1);
+    const noiseBuffer = this.audioCtx.createBuffer(1, sampleCount, this.audioCtx.sampleRate);
+    const samples = noiseBuffer.getChannelData(0);
+    for (let index = 0; index < sampleCount; index += 1) {
+      samples[index] = Math.random() * 2 - 1;
+    }
+
+    const output = this.audioCtx.createGain();
+    const source = this.audioCtx.createBufferSource();
+    const highpass = this.audioCtx.createBiquadFilter();
+    const bandpass = this.audioCtx.createBiquadFilter();
+    const noiseGain = this.audioCtx.createGain();
+    const stopAt = now + settings.noiseSeconds + 0.04;
+
+    output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
+    output.connect(this.masterInput || this.audioCtx.destination);
+
+    source.buffer = noiseBuffer;
+    highpass.type = "highpass";
+    highpass.frequency.setValueAtTime(settings.highpassFrequency, now);
+    bandpass.type = "bandpass";
+    bandpass.frequency.setValueAtTime(settings.bandpassFrequency, now);
+    bandpass.Q.setValueAtTime(settings.bandpassQ, now);
+    noiseGain.gain.setValueAtTime(1, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + settings.noiseSeconds);
+
+    source.connect(highpass);
+    highpass.connect(bandpass);
+    bandpass.connect(noiseGain);
+    noiseGain.connect(output);
+
+    const metallicOscillators = settings.metallicFrequencies.map((frequency) => {
+      const oscillator = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      oscillator.type = "square";
+      oscillator.frequency.setValueAtTime(frequency, now);
+      gain.gain.setValueAtTime(settings.metallicGain, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + settings.noiseSeconds * 0.72);
+      oscillator.connect(gain);
+      gain.connect(output);
+      oscillator.start(now);
+      oscillator.stop(stopAt);
+      return { oscillator, gain };
+    });
+
+    source.start(now);
+    source.stop(stopAt);
+    source.onended = () => {
+      this.disconnectNode(source);
+      this.disconnectNode(highpass);
+      this.disconnectNode(bandpass);
+      this.disconnectNode(noiseGain);
+      for (const { oscillator, gain } of metallicOscillators) {
+        this.disconnectNode(oscillator);
+        this.disconnectNode(gain);
+      }
+      this.disconnectNode(output);
+    };
   }
 
   stopVoice(voiceId, fadeSeconds = RELEASE_FADE_SECONDS) {
@@ -436,7 +485,6 @@ export class VowelSynth {
     this.disconnectNode(voice.oralMix);
     this.disconnectNode(voice.master);
     this.disconnectNode(voice.output);
-    this.disconnectNode(voice.panner);
     voice.formantNodes.length = 0;
     voice.roundnessNode = null;
   }

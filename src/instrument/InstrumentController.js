@@ -42,11 +42,14 @@ import {
   NOTE_LABEL_SETTINGS,
   NOSE_DRAG_SENSITIVITY,
   SHOW_INSTRUCTION_PANEL,
-  SPATIAL_AUDIO_SETTINGS,
+  HONK_MASTER_GAIN,
   SPAWN_COMPONENT_OPTIONS,
   SPAWN_DISTANCE,
   SPAWN_Y_OFFSET,
   SQUEEZE_SENSITIVITY,
+  STICK_SETTINGS,
+  STICK_PERCUSSION_TYPES,
+  STICK_TEXTURE_PATHS,
 } from "../config.js";
 import { LooperAudioEngine } from "../audio/LooperAudioEngine.js";
 import { XRControllerManager } from "../input/XRControllerManager.js";
@@ -146,6 +149,7 @@ const VOWEL_LETTERS_BY_MORPH = {
 };
 
 const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
+const CONTROLLER_RAY_LENGTH = 1.6;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
 const PENDING_SPAWN_DISTANCE = SPAWN_DISTANCE;
@@ -211,9 +215,6 @@ const tempScale = new THREE.Vector3();
 const tempSpawnForward = new THREE.Vector3();
 const tempSpawnRight = new THREE.Vector3();
 const tempSpawnTarget = new THREE.Vector3();
-const tempAudioPosition = new THREE.Vector3();
-const tempAudioForward = new THREE.Vector3();
-const tempAudioUp = new THREE.Vector3();
 const tempLooperPreviousPosition = new THREE.Vector3();
 const tempLooperCurrentPosition = new THREE.Vector3();
 const tempLooperDeltaQuaternion = new THREE.Quaternion();
@@ -233,6 +234,8 @@ const tempSqueezeColliderScale = new THREE.Vector3();
 const tempShakePosition = new THREE.Vector3();
 const tempShakeBounds = new THREE.Box3();
 const tempShakeRange = new THREE.Vector3();
+const tempStickColliderBounds = new THREE.Box3();
+const tempStickTargetBounds = new THREE.Box3();
 
 export function collectHitTargets(root) {
   const hitTargets = {};
@@ -361,6 +364,37 @@ function disposeMaterialOrMaterials(materialOrMaterials) {
   }
 }
 
+function getConfigNumber(value, fallback = 0) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function setScaleFromConfig(targetScale, configValue = 1) {
+  if (typeof configValue === "number") {
+    targetScale.setScalar(configValue);
+    return;
+  }
+
+  targetScale.set(
+    getConfigNumber(configValue?.x, 1),
+    getConfigNumber(configValue?.y, 1),
+    getConfigNumber(configValue?.z, 1),
+  );
+}
+
+function applyLocalTransformFromConfig(object, config = {}) {
+  object.position.set(
+    getConfigNumber(config.position?.x, 0),
+    getConfigNumber(config.position?.y, 0),
+    getConfigNumber(config.position?.z, 0),
+  );
+  object.rotation.set(
+    THREE.MathUtils.degToRad(getConfigNumber(config.rotationDegrees?.x, 0)),
+    THREE.MathUtils.degToRad(getConfigNumber(config.rotationDegrees?.y, 0)),
+    THREE.MathUtils.degToRad(getConfigNumber(config.rotationDegrees?.z, 0)),
+  );
+  setScaleFromConfig(object.scale, config.size ?? config.scale ?? 1);
+}
+
 export class InstrumentController {
   constructor({ scene, camera, renderer, synth }) {
     this.scene = scene;
@@ -371,6 +405,7 @@ export class InstrumentController {
     this.fontLoader = new FontLoader();
     this.textureLoader = new THREE.TextureLoader();
     this.raycaster = new THREE.Raycaster();
+    this.raycaster.far = CONTROLLER_RAY_LENGTH;
     this.raycastTargets = [];
     this.raycastIntersections = [];
     this.lockedBoxIntersections = [];
@@ -406,6 +441,7 @@ export class InstrumentController {
       releaseActionVoice: (voiceId) => this.releaseSynthVoice(voiceId),
       updateActionVoice: (voiceId, honkState, snapshot, volume) =>
         this.updateLooperActionVoice(voiceId, honkState, snapshot, volume),
+      playStickPercussion: (drumType, options) => this.playStickPercussion(drumType, options),
       updateWireForTrack: (looperState, track) => this.updateLooperWireForTrack(looperState, track),
       disposeWireMesh: (wireMesh) => this.disposeWireMesh(wireMesh),
       updateVisuals: (looperState) => this.updateLooperVisuals(looperState),
@@ -413,6 +449,8 @@ export class InstrumentController {
 
     this.instrumentTemplate = null;
     this.componentTemplates = new Map();
+    this.stickTemplate = null;
+    this.stickMaterialTextures = null;
     this.instrumentMaterialTextures = null;
     this.looperMaterialTextures = null;
     this.looperMaterialTexturePromise = null;
@@ -460,6 +498,7 @@ export class InstrumentController {
     this.setupControllers();
     this.createInstructionPanel();
     await this.loadInstrument();
+    await this.loadStick();
     await this.loadNoteFont();
   }
 
@@ -479,7 +518,7 @@ export class InstrumentController {
   createRayLine() {
     const geometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, -1.6),
+      new THREE.Vector3(0, 0, -CONTROLLER_RAY_LENGTH),
     ]);
     const material = new THREE.LineBasicMaterial({
       color: RAY_COLOR_DEFAULT,
@@ -497,6 +536,58 @@ export class InstrumentController {
 
   createRadialMenu() {
     return this.radialSpawnMenu.create();
+  }
+
+  createStickObject() {
+    if (!this.stickTemplate) {
+      return null;
+    }
+
+    const stick = new THREE.Group();
+    stick.name = "HeldStick";
+    stick.visible = false;
+    stick.userData.isHeldStick = true;
+    applyLocalTransformFromConfig(stick, STICK_SETTINGS);
+
+    const model = cloneSkeletonAware(this.stickTemplate);
+    model.name = "HeldStickModel";
+    model.visible = true;
+    stick.add(model);
+
+    const collider = this.createStickCollider();
+    if (collider) {
+      stick.add(collider);
+      stick.userData.stickCollider = collider;
+    }
+
+    return stick;
+  }
+
+  createStickCollider() {
+    const colliderSettings = STICK_SETTINGS.collider;
+    if (!colliderSettings?.enabled) {
+      return null;
+    }
+
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({
+      color: colliderSettings.color ?? 0xf7d04a,
+      transparent: true,
+      opacity: DEBUG_SHOW_COLLIDERS ? colliderSettings.opacity ?? 0.28 : 0,
+      depthWrite: false,
+      wireframe: DEBUG_SHOW_COLLIDERS,
+    });
+    const collider = new THREE.Mesh(geometry, material);
+    collider.name = "STICK_collider";
+    collider.renderOrder = colliderSettings.renderOrder ?? 32;
+    collider.userData.isStickCollider = true;
+    collider.userData.baseHitOpacity = DEBUG_SHOW_COLLIDERS ? colliderSettings.opacity ?? 0.28 : 0;
+    applyLocalTransformFromConfig(collider, {
+      position: colliderSettings.position,
+      rotationDegrees: colliderSettings.rotationDegrees,
+      scale: colliderSettings.scale,
+    });
+    return collider;
   }
 
   createInstructionPanel() {
@@ -548,6 +639,24 @@ export class InstrumentController {
         this.loadStaticComponentTemplate(option),
       ),
     );
+  }
+
+  async loadStick() {
+    if (!STICK_SETTINGS.enabled || !STICK_SETTINGS.modelPath) {
+      return;
+    }
+
+    try {
+      const gltf = await this.loader.loadAsync(STICK_SETTINGS.modelPath);
+      this.stickMaterialTextures = await loadMaterialTextureSet(this.textureLoader, STICK_TEXTURE_PATHS);
+      this.stickTemplate = gltf.scene;
+      this.stickTemplate.name = "StickTemplate";
+      this.stickTemplate.visible = false;
+      applyStandardInstrumentMaterials(this.stickTemplate, this.stickMaterialTextures);
+    } catch (error) {
+      console.warn("Could not load stick model:", error);
+      this.stickTemplate = null;
+    }
   }
 
   async loadNoteFont() {
@@ -762,6 +871,7 @@ export class InstrumentController {
       }
       this.releaseRaySqueeze(state);
       this.closeRadialMenu(controller);
+      this.deactivateStick(controller);
 
       state.trigger = false;
       state.grip = false;
@@ -775,6 +885,9 @@ export class InstrumentController {
       state.suppressTriggerUntilRelease = false;
       state.gripHeld = false;
       state.gripInstrumentState = null;
+      state.stickActive = false;
+      state.stickCollider = null;
+      state.stickContactKeys?.clear();
       state.raySqueezeVoiceId = null;
       state.raySqueezeInstrumentState = null;
       controller.userData.gamepad = null;
@@ -843,6 +956,7 @@ export class InstrumentController {
     this.updateGripTransform();
     this.updateLooperFollowerTransforms();
     this.updateLockedChordFollowerTransforms();
+    this.updateStickPercussionContacts(time);
     this.updateShakeDisconnect(time);
     this.updateHorn(time);
     this.updateLooperRecordings();
@@ -1056,6 +1170,7 @@ export class InstrumentController {
 
       this.releaseRaySqueeze(controllerState);
       this.gripTransformSystem?.release(controller);
+      this.deactivateStick(controller);
       this.closeRadialMenu(controller);
     }
   }
@@ -1395,6 +1510,10 @@ export class InstrumentController {
   handleTriggerPress(controller) {
     if (this.pendingSpawnPlacement) {
       this.placePendingSpawnPlacement(controller);
+      return;
+    }
+
+    if (this.isControllerStickActive(controller)) {
       return;
     }
 
@@ -1916,17 +2035,289 @@ export class InstrumentController {
     );
   }
 
+  getOrCreateControllerStick(controller, controllerState) {
+    if (!controller || !controllerState) {
+      return null;
+    }
+
+    const existingStick = controllerState.stickObject || controller.userData.stickObject;
+    if (existingStick) {
+      controllerState.stickObject = existingStick;
+      controller.userData.stickObject = existingStick;
+      return existingStick;
+    }
+
+    const stick = this.createStickObject();
+    if (!stick) {
+      return null;
+    }
+
+    controllerState.stickObject = stick;
+    controller.userData.stickObject = stick;
+    return stick;
+  }
+
+  clearControllerHover(controllerState) {
+    if (!controllerState?.hoveredTarget) {
+      return;
+    }
+
+    this.setTargetHighlight(controllerState.hoveredTarget, false);
+    controllerState.hoveredTarget = null;
+  }
+
+  clearControllerTriggerInteraction(controllerState) {
+    if (!controllerState) {
+      return;
+    }
+
+    const interaction = controllerState.activeTriggerInteraction;
+    if (interaction?.type === "looperWire") {
+      this.disposeWireMesh(interaction.wireMesh);
+      interaction.wireMesh = null;
+    }
+    if (interaction?.type === "holdSqueeze") {
+      for (const activeVoiceId of interaction.activeVoiceIds || []) {
+        this.synth.resetPitchBend(activeVoiceId);
+        this.synth.release(activeVoiceId);
+      }
+    }
+
+    controllerState.activeTriggerInteraction = null;
+    this.releaseRaySqueeze(controllerState);
+  }
+
+  activateStick(controller) {
+    if (!STICK_SETTINGS.enabled || !this.stickTemplate) {
+      return false;
+    }
+
+    const controllerState = this.controllerStates.get(controller);
+    const stick = this.getOrCreateControllerStick(controller, controllerState);
+    if (!stick) {
+      return false;
+    }
+
+    this.clearControllerHover(controllerState);
+    this.clearControllerTriggerInteraction(controllerState);
+    this.resetShakeDisconnectTracking(controllerState);
+    this.gripTransformSystem?.release(controller);
+    this.closeRadialMenu(controller);
+    this.synth.ensureAudio();
+
+    applyLocalTransformFromConfig(stick, STICK_SETTINGS);
+    if (stick.parent !== controller) {
+      controller.add(stick);
+    }
+    stick.visible = true;
+
+    controllerState.stickActive = true;
+    controllerState.stickCollider = stick.userData.stickCollider || null;
+    controllerState.stickContactKeys?.clear();
+
+    if (controller.userData.rayLine) {
+      controller.userData.rayLine.visible = false;
+    }
+
+    return true;
+  }
+
+  deactivateStick(controller) {
+    const controllerState = this.controllerStates.get(controller);
+    if (!controllerState) {
+      return;
+    }
+
+    if (controllerState.stickObject) {
+      controllerState.stickObject.visible = false;
+    }
+
+    controllerState.stickActive = false;
+    controllerState.stickCollider = null;
+    controllerState.stickContactKeys?.clear();
+  }
+
+  isControllerStickActive(controller) {
+    return Boolean(this.controllerStates.get(controller)?.stickActive);
+  }
+
+  updateStickPercussionContacts(now = performance.now()) {
+    for (const controller of this.controllers) {
+      const controllerState = this.controllerStates.get(controller);
+      if (!controllerState?.stickActive || !controllerState.stickCollider?.visible) {
+        controllerState?.stickContactKeys?.clear();
+        continue;
+      }
+
+      controllerState.stickCollider.updateWorldMatrix(true, false);
+      tempStickColliderBounds.setFromObject(controllerState.stickCollider);
+      if (tempStickColliderBounds.isEmpty()) {
+        controllerState.stickContactKeys?.clear();
+        continue;
+      }
+
+      const previousKeys = controllerState.stickContactKeys || new Set();
+      const nextKeys = new Set();
+      for (const instrumentState of this.instrumentStates) {
+        if (!this.isStickPercussionTargetState(instrumentState)) {
+          continue;
+        }
+
+        const drumType = instrumentState.isLooper
+          ? STICK_PERCUSSION_TYPES.hihat
+          : STICK_PERCUSSION_TYPES.boink;
+        const contactKey = `${drumType}:${instrumentState.id}`;
+        if (!this.doesStickColliderTouchInstrumentMeshes(tempStickColliderBounds, instrumentState)) {
+          continue;
+        }
+
+        nextKeys.add(contactKey);
+        if (!previousKeys.has(contactKey)) {
+          this.handleStickPercussionContactEnter(instrumentState, drumType, now);
+        }
+      }
+
+      previousKeys.clear();
+      for (const key of nextKeys) {
+        previousKeys.add(key);
+      }
+      controllerState.stickContactKeys = previousKeys;
+    }
+  }
+
+  isStickPercussionTargetState(instrumentState) {
+    return Boolean(
+      instrumentState?.root?.visible &&
+        !instrumentState.pendingPlacement &&
+        (instrumentState.interactive || instrumentState.isLooper),
+    );
+  }
+
+  doesStickColliderTouchInstrumentMeshes(stickBounds, instrumentState) {
+    let touched = false;
+    instrumentState.root.updateMatrixWorld(true);
+    instrumentState.root.traverse((object) => {
+      if (touched || !this.isStickPercussionTargetMesh(object)) {
+        return;
+      }
+
+      tempStickTargetBounds.setFromObject(object);
+      if (!tempStickTargetBounds.isEmpty() && stickBounds.intersectsBox(tempStickTargetBounds)) {
+        touched = true;
+      }
+    });
+    return touched;
+  }
+
+  isStickPercussionTargetMesh(object) {
+    if (!object?.isMesh || object.visible === false) {
+      return false;
+    }
+    if (
+      object.userData.isHitTarget ||
+      object.userData.isStickCollider ||
+      object.userData.isNoteLabel ||
+      object.userData.isLooperCollider ||
+      object.name?.startsWith("HIT_") ||
+      object.name?.startsWith("DEBUG_")
+    ) {
+      return false;
+    }
+
+    let parent = object.parent;
+    while (parent) {
+      if (parent.userData.isHitTarget || parent.userData.isNoteLabel) {
+        return false;
+      }
+      parent = parent.parent;
+    }
+    return true;
+  }
+
+  handleStickPercussionContactEnter(instrumentState, drumType, now = performance.now()) {
+    this.playStickPercussion(drumType);
+    this.recordStickPercussionHit(instrumentState, drumType, now);
+  }
+
+  playStickPercussion(drumType, { volume = 1 } = {}) {
+    if (!drumType) {
+      return;
+    }
+
+    const playPromise = this.synth.triggerStickPercussion?.(drumType, { volume });
+    if (playPromise?.catch) {
+      playPromise.catch((error) => {
+        console.warn("Could not play stick percussion:", error);
+      });
+    }
+  }
+
+  recordStickPercussionHit(instrumentState, drumType, now = performance.now()) {
+    if (drumType === STICK_PERCUSSION_TYPES.hihat && instrumentState?.isLooper) {
+      this.looperController.recordSelfDrumHit(instrumentState, drumType, now);
+      return;
+    }
+
+    if (drumType !== STICK_PERCUSSION_TYPES.boink || !instrumentState?.interactive) {
+      return;
+    }
+
+    for (const looperState of this.instrumentStates) {
+      const data = looperState.looperData;
+      if (!data?.recording || !looperState.root?.visible) {
+        continue;
+      }
+
+      const track = data.tracks.find((candidate) => candidate.connectedHonkState === instrumentState);
+      if (track) {
+        this.looperController.recordTrackDrumHit(looperState, track, drumType, now);
+      }
+    }
+  }
+
+  isStickBlockingRayHit(hit, lockedInstrumentState = null) {
+    const target = hit?.object;
+    if (!target) {
+      return false;
+    }
+
+    if (target.userData.isCloseButton || lockedInstrumentState) {
+      return true;
+    }
+    if (
+      target.userData.isProceduralMorphTarget ||
+      target.userData.isHonkConnectionTarget ||
+      this.isLooperColliderTarget(target)
+    ) {
+      return true;
+    }
+
+    const config = INTERACTION_MAP[target.name];
+    return Boolean(config && target.name !== INTERACTION_TARGET_NAMES.body);
+  }
+
   handleGripPress(controller) {
     if (this.pendingSpawnPlacement) {
       this.deletePendingSpawnPlacement();
       return;
     }
 
-    const hit = this.getGripHit(controller);
-    this.gripTransformSystem?.begin(controller, hit);
+    const rayHit = this.getCurrentHit(controller);
+    const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
+    if (!this.isStickBlockingRayHit(rayHit, lockedInstrumentState)) {
+      this.activateStick(controller);
+      return;
+    }
+
+    const gripHit = this.getGripHit(controller);
+    if (gripHit) {
+      this.gripTransformSystem?.begin(controller, gripHit);
+    }
   }
 
   handleGripRelease(controller) {
+    this.deactivateStick(controller);
+
     if (this.pendingSpawnPlacement) {
       return;
     }
@@ -1938,6 +2329,10 @@ export class InstrumentController {
   handleGripScaleThumbstick(controller, direction) {
     if (this.pendingSpawnPlacement) {
       this.handlePendingSpawnScaleThumbstick(controller, direction);
+      return;
+    }
+
+    if (this.isControllerStickActive(controller)) {
       return;
     }
 
@@ -2741,8 +3136,6 @@ export class InstrumentController {
   }
 
   updateHorn(now = performance.now()) {
-    this.updateAudioListener();
-
     for (const state of this.instrumentStates) {
       state.hornHolders.clear();
       state.activeBends.clear();
@@ -2751,6 +3144,11 @@ export class InstrumentController {
     const activeHoldInteractions = [];
     for (const controller of this.controllers) {
       const controllerState = this.controllerStates.get(controller);
+      if (controllerState?.stickActive) {
+        this.clearControllerTriggerInteraction(controllerState);
+        continue;
+      }
+
       if (controllerState?.suppressTriggerUntilRelease) {
         this.releaseRaySqueeze(controllerState);
         continue;
@@ -2867,7 +3265,7 @@ export class InstrumentController {
         this.synth.update({
           voiceId,
           hornAmount: synthState.hornSqueezeValue,
-          masterGain: SPATIAL_AUDIO_SETTINGS.masterGain,
+          masterGain: HONK_MASTER_GAIN,
           leftEar: synthState.morphController.getEarAmount("left"),
           rightEar: synthState.morphController.getEarAmount("right"),
           nose: synthState.morphController.getValue(MORPH_TARGET_NAMES.nose),
@@ -2875,7 +3273,6 @@ export class InstrumentController {
           pitchBendSemitones,
           pitchSnap: synthState.pitchSnap,
         });
-        this.updateInstrumentSpatialVoice(voiceId, synthState);
       }
     }
 
@@ -2972,7 +3369,7 @@ export class InstrumentController {
     this.synth.update({
       voiceId,
       hornAmount: THREE.MathUtils.clamp(snapshot.squeeze || 0, 0, 1),
-      masterGain: SPATIAL_AUDIO_SETTINGS.masterGain * volume,
+      masterGain: HONK_MASTER_GAIN * volume,
       leftEar: honkState.morphController.getEarAmount("left"),
       rightEar: honkState.morphController.getEarAmount("right"),
       nose: honkState.morphController.getValue(MORPH_TARGET_NAMES.nose),
@@ -2980,7 +3377,6 @@ export class InstrumentController {
       pitchBendSemitones: honkState.bendValue * MAX_PITCH_BEND_SEMITONES,
       pitchSnap: honkState.pitchSnap,
     });
-    this.updateInstrumentSpatialVoice(voiceId, honkState);
   }
 
   applyResolvedHonkMorphState(honkState, resolved) {
@@ -3257,32 +3653,6 @@ export class InstrumentController {
     return THREE.MathUtils.clamp(tempBendEuler.z * BEND_SENSITIVITY, -1, 1);
   }
 
-  updateAudioListener() {
-    const userCamera = this.getUserCamera();
-    userCamera.updateMatrixWorld(true);
-    userCamera.getWorldPosition(tempAudioPosition);
-    userCamera.getWorldDirection(tempAudioForward).normalize();
-    tempAudioUp.set(0, 1, 0).applyQuaternion(userCamera.getWorldQuaternion(tempQuaternion)).normalize();
-
-    this.synth.updateListener({
-      position: tempAudioPosition,
-      forward: tempAudioForward,
-      up: tempAudioUp,
-    });
-  }
-
-  updateInstrumentSpatialVoice(voiceId, instrumentState) {
-    instrumentState.root.updateWorldMatrix(true, true);
-    instrumentState.root.getWorldPosition(tempAudioPosition);
-    tempAudioForward.set(0, 0, 1).applyQuaternion(instrumentState.root.getWorldQuaternion(tempQuaternion)).normalize();
-
-    this.synth.updateSpatial(voiceId, {
-      position: tempAudioPosition,
-      orientation: tempAudioForward,
-      settings: SPATIAL_AUDIO_SETTINGS,
-    });
-  }
-
   getTouchingInstrumentChain(startState) {
     const chain = [];
     const visited = new Set();
@@ -3366,6 +3736,14 @@ export class InstrumentController {
   updateRaycastHover() {
     for (const controller of this.controllers) {
       const controllerState = this.controllerStates.get(controller);
+      if (controllerState?.stickActive) {
+        this.clearControllerHover(controllerState);
+        if (controller.userData.rayLine) {
+          controller.userData.rayLine.visible = false;
+        }
+        continue;
+      }
+
       const hit = this.getCurrentHit(controller);
       const nextTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
       const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
@@ -3382,12 +3760,9 @@ export class InstrumentController {
       if (controller.userData.rayLine) {
         controller.userData.rayLine.visible = DEBUG_SHOW_RAYS && Boolean(this.renderer.xr.isPresenting);
         controller.userData.rayLine.material.color.setHex(
-          nextTarget?.userData.isProceduralMorphTarget ||
-            nextTarget?.userData.isHonkConnectionTarget ||
-            this.isLooperColliderTarget(nextTarget) ||
-            lockedInstrumentState
+          this.isStickBlockingRayHit(hit, lockedInstrumentState)
             ? RAY_COLOR_SPHERE_HOVER
-          : RAY_COLOR_DEFAULT,
+            : RAY_COLOR_DEFAULT,
         );
       }
     }
@@ -3422,10 +3797,18 @@ export class InstrumentController {
   }
 
   getLockedInstrumentStateFromRay(controller) {
+    if (this.isControllerStickActive(controller)) {
+      return null;
+    }
+
     return this.raycastSystem.getLockedInstrumentStateFromRay(controller);
   }
 
   getGripHit(controller) {
+    if (this.isControllerStickActive(controller)) {
+      return null;
+    }
+
     return this.raycastSystem.getGripHit(controller);
   }
 
@@ -3509,6 +3892,10 @@ export class InstrumentController {
   }
 
   getCurrentHit(controller) {
+    if (this.isControllerStickActive(controller)) {
+      return null;
+    }
+
     return this.raycastSystem.getCurrentHit(controller);
   }
 

@@ -54,6 +54,7 @@ export class LooperPlaybackEngine {
 
     if (!this.started) {
       this.emitSnapshots(timeline, handlers);
+      this.emitDrumHitEventsAt(timeline, 0, handlers);
       this.started = true;
     }
 
@@ -61,19 +62,48 @@ export class LooperPlaybackEngine {
       return false;
     }
 
-    let nextElapsedMs = this.elapsedMs + deltaMs;
+    let remainingMs = deltaMs;
+    let nextElapsedMs = this.elapsedMs;
     let wrapped = false;
 
-    while (nextElapsedMs >= durationMs) {
-      nextElapsedMs -= durationMs;
-      this.elapsedMs = 0;
-      wrapped = true;
-      handlers.onLoopBoundary?.();
+    while (remainingMs > 0) {
+      const segmentMs = Math.min(remainingMs, durationMs - nextElapsedMs);
+      if (segmentMs <= 0) {
+        nextElapsedMs = 0;
+        wrapped = true;
+        handlers.onLoopBoundary?.();
+        this.emitDrumHitEventsAt(timeline, 0, handlers);
+        continue;
+      }
+      const segmentEndMs = nextElapsedMs + segmentMs;
+      this.emitDrumHitEventsBetween(timeline, nextElapsedMs, segmentEndMs, handlers);
+      remainingMs -= segmentMs;
+
+      if (segmentEndMs >= durationMs) {
+        nextElapsedMs = 0;
+        wrapped = true;
+        handlers.onLoopBoundary?.();
+        this.emitDrumHitEventsAt(timeline, 0, handlers);
+      } else {
+        nextElapsedMs = segmentEndMs;
+      }
     }
 
     this.elapsedMs = nextElapsedMs;
     this.emitSnapshots(timeline, handlers);
     return wrapped;
+  }
+
+  emitDrumHitEventsAt(timeline, timeMs, handlers = {}) {
+    for (const { track, event } of timeline.getDrumHitEventsAt?.(timeMs) || []) {
+      handlers.onDrumHit?.(track, event, timeMs);
+    }
+  }
+
+  emitDrumHitEventsBetween(timeline, startMs, endMs, handlers = {}) {
+    for (const { track, event } of timeline.getDrumHitEventsBetween?.(startMs, endMs) || []) {
+      handlers.onDrumHit?.(track, event, event.timeMs);
+    }
   }
 
   emitSnapshots(timeline, handlers = {}) {

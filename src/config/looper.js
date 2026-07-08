@@ -44,7 +44,7 @@ export const LOOPER_MORPH_TARGET_NAMES = {
   bottomHandleDown: "bottom_handle_down",
   bottomHandleUp: "bottom_handle_up",
   rightHandleDown: "Right_handle_down",
-  rightHandleUp: "Right_handle_up",
+  rightHandleUp: "right_handle_up",
   leftHandleUp: "Left_handle_up",
   leftHandleDown: "Left_handle_down",
   playingHead: "playing_looper_head",

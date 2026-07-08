@@ -133,18 +133,6 @@ function setupNeutralFallbackWorld() {
   grid.name = "FallbackWorld";
   grid.position.y = 0;
   scene.add(grid);
-
-  const ringGeometry = new THREE.TorusGeometry(1.3, 0.006, 8, 96);
-  const ringMaterial = new THREE.MeshBasicMaterial({
-    color: 0xf0d78a,
-    transparent: true,
-    opacity: 0.34,
-  });
-  const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-  ring.name = "FallbackWorld";
-  ring.position.set(0, 1.45, -1.4);
-  ring.rotation.x = Math.PI / 2;
-  scene.add(ring);
 }
 
 function setFallbackWorldVisible(visible) {

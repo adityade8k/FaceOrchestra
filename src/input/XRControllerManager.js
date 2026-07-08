@@ -97,6 +97,7 @@ export class XRControllerManager {
     }
     if (next.grip && !state.grip && state.radialMenuOpen) {
       this.handlers.onRadialMenuCancel?.(controller);
+      this.handlers.onGripPress?.(controller);
     } else if (next.grip && !state.grip) {
       this.handlers.onGripPress?.(controller);
     }
@@ -154,6 +155,10 @@ function createControllerState() {
     gripHeld: false,
     gripInstrumentState: null,
     gripOffsetMatrix: new THREE.Matrix4(),
+    stickActive: false,
+    stickObject: null,
+    stickCollider: null,
+    stickContactKeys: new Set(),
     raySqueezeVoiceId: null,
     raySqueezeActiveVoiceIds: new Set(),
     raySqueezeInstrumentState: null,

@@ -9,6 +9,7 @@ export const LooperActionEventType = {
   EarRight: "earRight",
   MorphSnapshot: "morphSnapshot",
   GestureSnapshot: "gestureSnapshot",
+  DrumHit: "drumHit",
 };
 
 export const ACTION_FIELDS = ["squeeze", "bend", "earLeft", "earRight", "nose", "vowel"];
@@ -99,6 +100,10 @@ function getEventFieldValue(event, field) {
   return undefined;
 }
 
+function isDrumHitEvent(event) {
+  return event?.type === LooperActionEventType.DrumHit;
+}
+
 export class LooperActionEvent {
   constructor({
     id,
@@ -177,6 +182,16 @@ export class LooperTrackTimeline {
     return event;
   }
 
+  addDrumHit(timeMs, drumType) {
+    if (!drumType) {
+      return null;
+    }
+    return this.addEvent(LooperActionEventType.DrumHit, timeMs, {
+      value: drumType,
+      interpolation: "step",
+    });
+  }
+
   markRecordedFields(event) {
     const eventField = EVENT_FIELD_BY_TYPE[event.type];
     if (eventField) {
@@ -226,6 +241,7 @@ export class LooperTrackTimeline {
       [LooperActionEventType.GestureSnapshot]: 4,
       [LooperActionEventType.Vowel]: 5,
       [LooperActionEventType.SqueezeStart]: 6,
+      [LooperActionEventType.DrumHit]: 7,
     };
     this.events.sort((first, second) =>
       first.timeMs - second.timeMs ||
@@ -243,6 +259,33 @@ export class LooperTrackTimeline {
       event.timeMs = Math.max(event.timeMs - offsetMs, 0);
     }
     this.sorted = false;
+  }
+
+  getDrumHitEventsAt(timeMs, epsilon = 0.001) {
+    if (!this.active) {
+      return [];
+    }
+
+    this.sortEvents();
+    return this.events.filter(
+      (event) => isDrumHitEvent(event) && Math.abs(event.timeMs - timeMs) <= epsilon,
+    );
+  }
+
+  getDrumHitEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
+    if (!this.active || endMs < startMs) {
+      return [];
+    }
+
+    this.sortEvents();
+    return this.events.filter((event) => {
+      if (!isDrumHitEvent(event)) {
+        return false;
+      }
+      const afterStart = includeStart ? event.timeMs >= startMs : event.timeMs > startMs;
+      const beforeEnd = includeEnd ? event.timeMs <= endMs : event.timeMs < endMs;
+      return afterStart && beforeEnd;
+    });
   }
 
   sample(timeMs, target, { inLoopGap = false } = {}) {
@@ -443,12 +486,56 @@ export class LooperTimeline {
     }
   }
 
+  getDrumHitEventsAt(timeMs) {
+    const events = [];
+    for (const track of this.tracks.values()) {
+      if (!track.active) {
+        continue;
+      }
+      for (const event of track.getDrumHitEventsAt(timeMs)) {
+        events.push({ track, event });
+      }
+    }
+    return this.sortDrumHitEntries(events);
+  }
+
+  getDrumHitEventsBetween(startMs, endMs, options = {}) {
+    const events = [];
+    for (const track of this.tracks.values()) {
+      if (!track.active) {
+        continue;
+      }
+      for (const event of track.getDrumHitEventsBetween(startMs, endMs, options)) {
+        events.push({ track, event });
+      }
+    }
+    return this.sortDrumHitEntries(events);
+  }
+
+  sortDrumHitEntries(events) {
+    return events.sort((first, second) =>
+      first.event.timeMs - second.event.timeMs ||
+      (first.track.trackIndex ?? Number.MAX_SAFE_INTEGER) -
+        (second.track.trackIndex ?? Number.MAX_SAFE_INTEGER) ||
+      String(first.track.trackId).localeCompare(String(second.track.trackId)) ||
+      first.event.id - second.event.id,
+    );
+  }
+
   addActionEvent(trackId, { nodeId = null, trackIndex = null, type, timeMs, value, values, interpolation } = {}) {
     const track = this.ensureTrack(trackId, { nodeId, trackIndex });
     if (!track || !type) {
       return null;
     }
     return track.addEvent(type, timeMs, { value, values, interpolation });
+  }
+
+  addDrumHitEvent(trackId, { nodeId = null, trackIndex = null, timeMs, drumType } = {}) {
+    const track = this.ensureTrack(trackId, { nodeId, trackIndex });
+    if (!track) {
+      return null;
+    }
+    return track.addDrumHit(timeMs, drumType);
   }
 
   addFieldEvent(trackId, field, timeMs, value, {

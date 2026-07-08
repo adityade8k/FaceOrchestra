@@ -13,6 +13,8 @@ import { LooperGestureApplier } from "./LooperGestureApplier.js";
 import { LooperConnectionManager } from "./LooperConnectionManager.js";
 import { LooperTrack } from "./LooperTrack.js";
 
+const LOOPER_SELF_PERCUSSION_TRACK_ID = "looper-self-percussion";
+
 export class LooperController {
   constructor(adapter = {}) {
     this.adapter = adapter;
@@ -238,6 +240,12 @@ export class LooperController {
           });
         }
       },
+      onDrumHit: (_trackTimeline, event) => {
+        this.adapter.playStickPercussion?.(event.value, {
+          volume: data.volume,
+          looperState,
+        });
+      },
       onReleaseTrack: (trackId) => this.releaseTrackById(looperState, trackId),
       onLoopBoundary: () => this.handleLoopBoundary(looperState),
     });
@@ -272,6 +280,49 @@ export class LooperController {
       );
     }
     return this.connections.disconnect(looperState, trackIndex);
+  }
+
+  recordTrackDrumHit(looperState, track, drumType, now = performance.now()) {
+    const data = looperState?.looperData;
+    if (!data?.recording || !track || !drumType) {
+      return false;
+    }
+
+    const elapsedMs = data.timeline.getElapsedMs(now);
+    const event = data.timeline.addDrumHitEvent(track.trackId, {
+      nodeId: track.nodeId,
+      trackIndex: track.index,
+      timeMs: elapsedMs,
+      drumType,
+    });
+    if (!event) {
+      return false;
+    }
+
+    track.isRecording = true;
+    track.active = true;
+    this.adapter.updateVisuals?.(looperState);
+    return true;
+  }
+
+  recordSelfDrumHit(looperState, drumType, now = performance.now()) {
+    const data = looperState?.looperData;
+    if (!data?.recording || !drumType) {
+      return false;
+    }
+
+    const elapsedMs = data.timeline.getElapsedMs(now);
+    const event = data.timeline.addDrumHitEvent(LOOPER_SELF_PERCUSSION_TRACK_ID, {
+      nodeId: LOOPER_SELF_PERCUSSION_TRACK_ID,
+      timeMs: elapsedMs,
+      drumType,
+    });
+    if (!event) {
+      return false;
+    }
+
+    this.adapter.updateVisuals?.(looperState);
+    return true;
   }
 
   clearRuntimeState(looperState) {
