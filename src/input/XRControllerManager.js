@@ -89,9 +89,6 @@ export class XRControllerManager {
     if (controller.userData.handedness === "left" && next.x && !state.x) {
       this.handlers.onDeletePress?.(controller);
     }
-    if (controller.userData.handedness === "left" && next.y && !state.y) {
-      this.handlers.onDisconnectPress?.(controller);
-    }
     if (next.trigger && !state.trigger) {
       this.handlers.onTriggerPress?.(controller);
     }

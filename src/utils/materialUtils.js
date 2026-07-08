@@ -34,9 +34,11 @@ export async function loadMaterialTextureSet(textureLoader, texturePaths) {
     textures[key] = loaded[index];
   });
 
-  if (textures.baseMap) {
-    textures.baseMap.colorSpace = THREE.SRGBColorSpace;
-  }
+  entries.forEach(([key], index) => {
+    if (key.toLowerCase().endsWith("basemap")) {
+      loaded[index].colorSpace = THREE.SRGBColorSpace;
+    }
+  });
 
   for (const texture of loaded) {
     texture.flipY = false;

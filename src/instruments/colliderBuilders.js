@@ -115,6 +115,7 @@ export function createMorphTargetSpheres(root, hitTargets, { hitMarkerOpacity })
     sphere.userData.interactionType = target.type;
     sphere.userData.side = target.side;
     sphere.userData.morphName = target.type === INTERACTION_TYPES.nose ? MORPH_TARGET_NAMES.nose : null;
+    sphere.userData.colliderRadius = radius;
     sphere.userData.invertVerticalMorph = Boolean(target.invertVerticalMorph);
     sphere.material.wireframe = DEBUG_SHOW_COLLIDERS;
     sphere.renderOrder = MORPH_TARGET_COLLIDER_SETTINGS.renderOrder;

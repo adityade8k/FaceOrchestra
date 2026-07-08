@@ -6,8 +6,15 @@ export const LOOPER_COLLIDER_OPACITY = 0.34;
 export const HONK_CONNECTION_COLLIDER_OPACITY = 0.32;
 export const LOOPER_WIRE_RADIUS = 0.008;
 export const LOOPER_WIRE_SEGMENTS = 36;
-export const LOOPER_MIN_NOTE_DURATION_MS = 24;
+export const LOOPER_MIN_ACTION_DURATION_MS = 24;
 export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 33;
+export const LOOPER_SHAKE_DISCONNECT_SETTINGS = {
+  enabled: true,
+  durationMs: 360,
+  intensity: 0.85,
+  range: 0.16,
+  cooldownMs: 700,
+};
 export const LOOPER_BUTTON_ACTIONS = ["play", "pause", "record", "stop"];
 export const LOOPER_WIRE_COLORS = [0x2f80ff, 0xff4f5e];
 

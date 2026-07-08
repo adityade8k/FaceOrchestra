@@ -10,7 +10,6 @@ import {
   BEND_SMOOTHING,
   DEBUG_LOG_MORPHS,
   DEBUG_LOG_RAYCAST,
-  DEBUG_SHOW_BOUNDING_BOXES,
   DEBUG_SHOW_COLLIDERS,
   DEBUG_SHOW_RAYS,
   DEFAULT_INSTRUMENT_DISTANCE,
@@ -27,10 +26,10 @@ import {
   LOOPER_CONTROL_MORPH_TARGETS,
   LOOPER_COMPONENT_ID,
   LOOPER_DEBUG_COLORS,
-  LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
-  LOOPER_MIN_NOTE_DURATION_MS,
+  LOOPER_MIN_ACTION_DURATION_MS,
   LOOPER_MORPH_SETTINGS,
   LOOPER_MORPH_TARGET_NAMES,
+  LOOPER_SHAKE_DISCONNECT_SETTINGS,
   LOOPER_TEXTURE_PATHS,
   LOOPER_TRACK_COUNT,
   LOOPER_WIRE_COLORS,
@@ -47,11 +46,9 @@ import {
   SPAWN_COMPONENT_OPTIONS,
   SPAWN_DISTANCE,
   SPAWN_Y_OFFSET,
-  SQUEEZE_COLLIDER_MIN_OVERLAP,
   SQUEEZE_SENSITIVITY,
 } from "../config.js";
 import { LooperAudioEngine } from "../audio/LooperAudioEngine.js";
-import { DebugVisuals } from "../debug/DebugVisuals.js";
 import { XRControllerManager } from "../input/XRControllerManager.js";
 import { GripTransformSystem } from "../interaction/GripTransformSystem.js";
 import { RaycastInteractionSystem } from "../interaction/RaycastInteractionSystem.js";
@@ -67,8 +64,8 @@ import {
   getLooperControlName,
   getLooperNodeName,
 } from "../instruments/looperNames.js";
-import { LooperPlaybackEngine } from "../instruments/LooperPlaybackEngine.js";
-import { LooperTimeline } from "../instruments/LooperTimeline.js";
+import { HonkPerformanceState } from "../honk/HonkPerformanceState.js";
+import { LooperController } from "../looper/LooperController.js";
 import { InstructionPanel } from "../ui/InstructionPanel.js";
 import { RadialSpawnMenu } from "../ui/RadialSpawnMenu.js";
 import {
@@ -151,8 +148,6 @@ const VOWEL_LETTERS_BY_MORPH = {
 const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
-const LOCK_INDICATOR_COLOR = 0x45f6ff;
-const LOCK_INDICATOR_OPACITY = 0.16;
 const PENDING_SPAWN_DISTANCE = SPAWN_DISTANCE;
 const PENDING_SPAWN_GLASS_COLOR = 0xd8f8ff;
 const PENDING_SPAWN_GLASS_OPACITY = 0.34;
@@ -203,6 +198,7 @@ const F_NATURAL_MINOR_SNAP_STEPS_FROM_F = [-5, -4, -2, 0, 2, 3, 5, 7];
 const SCALE_PRESET_SPACING = 0.32;
 const CHROMATIC_NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const F4_MIDI_NOTE = 65;
+const CHORD_SQUEEZE_SPHERE_MIN_INTERSECTION = 0.2;
 const PITCH_SNAP_STEPS = {
   cMajor: C_MAJOR_SCALE_PRESET.map((note) => note.semitonesFromF),
   fNaturalMinor: F_NATURAL_MINOR_SNAP_STEPS_FROM_F,
@@ -215,10 +211,6 @@ const tempScale = new THREE.Vector3();
 const tempSpawnForward = new THREE.Vector3();
 const tempSpawnRight = new THREE.Vector3();
 const tempSpawnTarget = new THREE.Vector3();
-const tempBox = new THREE.Box3();
-const tempBoxA = new THREE.Box3();
-const tempBoxB = new THREE.Box3();
-const tempBoxSize = new THREE.Vector3();
 const tempAudioPosition = new THREE.Vector3();
 const tempAudioForward = new THREE.Vector3();
 const tempAudioUp = new THREE.Vector3();
@@ -230,6 +222,17 @@ const tempLooperPreviousQuaternion = new THREE.Quaternion();
 const tempWireStart = new THREE.Vector3();
 const tempWireEnd = new THREE.Vector3();
 const tempControlDragPosition = new THREE.Vector3();
+const tempChordLeaderPosition = new THREE.Vector3();
+const tempChordFollowerPosition = new THREE.Vector3();
+const tempChordLeaderQuaternion = new THREE.Quaternion();
+const tempChordFollowerQuaternion = new THREE.Quaternion();
+const tempChordInverseQuaternion = new THREE.Quaternion();
+const tempSqueezeSphereA = new THREE.Sphere();
+const tempSqueezeSphereB = new THREE.Sphere();
+const tempSqueezeColliderScale = new THREE.Vector3();
+const tempShakePosition = new THREE.Vector3();
+const tempShakeBounds = new THREE.Box3();
+const tempShakeRange = new THREE.Vector3();
 
 export function collectHitTargets(root) {
   const hitTargets = {};
@@ -385,6 +388,28 @@ export class InstrumentController {
     });
     this.radialSpawnMenu = new RadialSpawnMenu();
     this.instructionPanelView = null;
+    this.looperController = new LooperController({
+      ensureAudio: () => this.synth.ensureAudio(),
+      captureAction: (honkState) => this.captureLooperActionFromHonk(honkState),
+      getConnectedHonk: (track) => track.connectedHonkState,
+      getPlaybackTargets: (track, connectedHonkState) =>
+        this.getLooperPlaybackHonkTargets(connectedHonkState || track.connectedHonkState),
+      getHonkTargetId: (honkState) => honkState?.id,
+      isPlayableHonk: (honkState) => Boolean(honkState?.interactive && honkState.root?.visible),
+      getAutomationLayerId: (looperState, track) => this.getLooperAutomationLayerId(looperState, track),
+      getActionVoiceId: (looperState, track, honkState) =>
+        this.getLooperActionVoiceId(looperState, track, honkState),
+      setAutomationLayer: (honkState, layerId, snapshot) =>
+        this.setHonkAutomationLayer(honkState, layerId, snapshot),
+      clearAutomationLayer: (honkState, layerId) => this.clearHonkAutomationLayer(honkState, layerId),
+      startActionVoice: (voiceId) => this.synth.start(voiceId),
+      releaseActionVoice: (voiceId) => this.releaseSynthVoice(voiceId),
+      updateActionVoice: (voiceId, honkState, snapshot, volume) =>
+        this.updateLooperActionVoice(voiceId, honkState, snapshot, volume),
+      updateWireForTrack: (looperState, track) => this.updateLooperWireForTrack(looperState, track),
+      disposeWireMesh: (wireMesh) => this.disposeWireMesh(wireMesh),
+      updateVisuals: (looperState) => this.updateLooperVisuals(looperState),
+    });
 
     this.instrumentTemplate = null;
     this.componentTemplates = new Map();
@@ -394,6 +419,7 @@ export class InstrumentController {
     this.noteFont = null;
     this.noteFontLoadPromise = null;
     this.nextInstrumentId = 1;
+    this.nextChordLockOrder = 1;
     this.instrumentStates = [];
     this.activeInstrumentState = null;
     this.pendingSpawnPlacement = null;
@@ -411,7 +437,6 @@ export class InstrumentController {
         onARelease: (controller) => this.handleARelease(controller),
         onBPress: (controller) => this.handleBPress(controller),
         onDeletePress: (controller) => this.handleDeletePress(controller),
-        onDisconnectPress: (controller) => this.handleDisconnectPress(controller),
         onTriggerPress: (controller) => this.handleTriggerPress(controller),
         onTriggerRelease: (controller) => this.handleTriggerRelease(controller),
         onRadialMenuCancel: (controller) => this.cancelRadialMenu(controller),
@@ -446,6 +471,7 @@ export class InstrumentController {
       controllers: this.controllers,
       controllerStates: this.controllerStates,
       getPointedInstrumentState: (controller) => this.getPointedInstrumentState(controller),
+      getTransformTargetState: (state) => this.getLockedChordTransformTargetState(state),
       adjustInstrumentBaseScale: (state, delta) => this.adjustInstrumentBaseScale(state, delta),
     });
   }
@@ -589,9 +615,17 @@ export class InstrumentController {
       hornSqueezeValue: 0,
       baseScale: this.getRootUniformScale(root),
       locked: false,
+      lockedTextureApplied: false,
+      chordLockOrder: null,
+      chordLeaderState: null,
+      chordFollowerStates: new Set(),
+      chordAttachmentOffset: new THREE.Vector3(),
+      chordAttachmentQuaternion: new THREE.Quaternion(),
+      chordAttachmentBaseScaleRatio: 1,
       bendValue: 0,
       targetBendValue: 0,
       activeBends: new Map(),
+      performanceState: new HonkPerformanceState(),
       noteLabelGroup: null,
       noteLabelMesh: null,
       noteLabelTextValue: null,
@@ -600,7 +634,6 @@ export class InstrumentController {
     state.morphController = new MorphTargetController(root, {
       warnMissingExpectedMorphs: this.hasExpectedHonkMorphs(morphMeshes),
     });
-    state.debugVisuals = DEBUG_SHOW_BOUNDING_BOXES ? new DebugVisuals(root) : null;
     this.nextInstrumentId += 1;
 
     if (attachToHitTargets) {
@@ -647,62 +680,24 @@ export class InstrumentController {
   initializeInstrumentState(state) {
     state.morphController.resetAll();
     this.setVowel(null, state);
+    state.performanceState?.setLiveState({
+      squeeze: 0,
+      bend: 0,
+      earLeft: 0,
+      earRight: 0,
+      nose: 0,
+      vowel: "neutral",
+    });
     for (const sphere of this.getProceduralMorphTargetSpheres(state)) {
       this.setSpherePositionFromSignedValue(sphere, 0);
     }
   }
 
   initializeLooperState(state) {
-    const tracks = [];
-    for (let index = 0; index < LOOPER_TRACK_COUNT; index += 1) {
-      tracks.push({
-        index,
-        nodeTarget: state.hitTargets[getLooperNodeName(index)] || null,
-        connectedHonkState: null,
-        wireMesh: null,
-        isRecording: false,
-        isPlaying: false,
-        lastGestureSample: null,
-        lastGestureSampleAtMs: -Infinity,
-      });
-    }
-
     state.isLooper = true;
-    state.looperData = {
-      tracks,
-      timeline: new LooperTimeline(),
-      playbackEngine: new LooperPlaybackEngine(),
-      recording: false,
-      playing: false,
-      paused: false,
-      hasRecording: false,
-      durationMs: 0,
-      activeRecordings: new Map(),
-      activePlaybackVoices: new Map(),
-      playbackTouchedHonks: new Set(),
-      prePlaybackMorphStates: new Map(),
-      buttonMorphReleaseTimes: new Map(),
-      playingHeadMorphValue: 0,
-      playingHeadMorphTarget: 0,
-      playingHeadMorphPhase: 0,
-      lastPlayingHeadMorphUpdateMs: 0,
-      lastPlaybackUpdateMs: 0,
-      volumeControlValue: 0,
-      gapControlValue: -1,
-      speedControlValue: 0,
-      volume: this.getLooperVolumeFromControl(0),
-      loopGapMs: this.getLooperGapFromControl(-1),
-      speed: this.getLooperSpeedFromControl(0),
-      lastPosition: new THREE.Vector3(),
-      lastQuaternion: new THREE.Quaternion(),
-    };
-    state.looperData.playbackHandlers = {
-      onNoteOn: (event, activeNote) => this.handleLooperPlaybackNoteOn(state, event, activeNote),
-      onNoteOff: (event) => this.handleLooperPlaybackNoteOff(state, event),
-      onReleaseNote: (activeNote) => this.releaseLooperPlaybackNote(state.looperData, activeNote.noteId),
-      onGesture: (event) => this.handleLooperPlaybackGesture(state, event),
-      onLoopBoundary: () => this.handleLooperLoopBoundary(state),
-    };
+    state.looperData = this.looperController.createStateData(state, {
+      trackCount: LOOPER_TRACK_COUNT,
+    });
 
     state.root.updateMatrixWorld(true);
     state.root.getWorldPosition(state.looperData.lastPosition);
@@ -793,6 +788,10 @@ export class InstrumentController {
       state.hornHolders.clear();
       state.activeBends.clear();
       state.targetBendValue = 0;
+      state.performanceState?.setLiveState({ squeeze: 0, bend: 0 });
+      if (state.isLooper) {
+        this.stopPlayback(state);
+      }
     }
 
     this.synth.releaseAll();
@@ -843,6 +842,8 @@ export class InstrumentController {
     this.updateTriggerInteraction();
     this.updateGripTransform();
     this.updateLooperFollowerTransforms();
+    this.updateLockedChordFollowerTransforms();
+    this.updateShakeDisconnect(time);
     this.updateHorn(time);
     this.updateLooperRecordings();
     this.updateLooperMorphAnimations();
@@ -1231,19 +1232,6 @@ export class InstrumentController {
     this.deleteInstrument(instrumentState);
   }
 
-  handleDisconnectPress(controller) {
-    if (this.pendingSpawnPlacement) {
-      return;
-    }
-
-    const hit = this.getCurrentHit(controller);
-    if (hit?.object?.userData.isLooperNode) {
-      const looperState = hit.object.userData.instrumentState;
-      this.disconnectLooperTrack(looperState, hit.object.userData.looperTrackIndex);
-      return;
-    }
-  }
-
   handleBPress(controller) {
     if (this.pendingSpawnPlacement) {
       return;
@@ -1254,8 +1242,20 @@ export class InstrumentController {
       return;
     }
 
-    instrumentState.locked = !instrumentState.locked;
-    this.updateLockVisual(instrumentState);
+    if (!instrumentState.locked) {
+      if (instrumentState.interactive) {
+        this.lockConnectedChordStates(instrumentState);
+      } else {
+        instrumentState.locked = true;
+        this.ensureChordLockOrder(instrumentState);
+        this.updateLockVisual(instrumentState);
+      }
+    } else {
+      instrumentState.locked = false;
+      instrumentState.chordLockOrder = null;
+      this.clearLockedChordMembership(instrumentState);
+      this.updateLockVisual(instrumentState);
+    }
   }
 
   isLockableInstrumentState(instrumentState) {
@@ -1288,6 +1288,7 @@ export class InstrumentController {
 
   deleteInstrument(instrumentState) {
     const instrumentVoiceSuffix = `:instrument-${instrumentState.id}`;
+    this.clearLockedChordMembership(instrumentState);
     this.cleanupLooperReferencesForDeletedInstrument(instrumentState);
 
     for (const controller of this.controllers) {
@@ -1319,6 +1320,11 @@ export class InstrumentController {
       if (controllerState?.gripInstrumentState === instrumentState) {
         controllerState.gripHeld = false;
         controllerState.gripInstrumentState = null;
+        controllerState.gripSourceInstrumentState = null;
+      }
+
+      if (controllerState?.gripSourceInstrumentState === instrumentState) {
+        controllerState.gripSourceInstrumentState = null;
       }
 
       if (controllerState?.raySqueezeInstrumentState === instrumentState) {
@@ -1335,7 +1341,6 @@ export class InstrumentController {
     if (instrumentState.sceneObject) {
       instrumentState.sceneObject.dispose();
     } else {
-      instrumentState.debugVisuals?.dispose();
       this.disposeInstrumentResources(instrumentState);
       instrumentState.root.removeFromParent();
     }
@@ -1370,6 +1375,8 @@ export class InstrumentController {
 
     instrumentState.hornHolders.clear();
     instrumentState.activeBends.clear();
+    instrumentState.chordLeaderState = null;
+    instrumentState.chordFollowerStates?.clear();
     instrumentState.hitTargetList.length = 0;
     instrumentState.morphMeshes.length = 0;
   }
@@ -1851,12 +1858,23 @@ export class InstrumentController {
     if (interaction.dragType === "ear") {
       interaction.instrumentState.scalePresetNote = null;
       interaction.instrumentState.morphController.setEar(interaction.side, value);
+      interaction.instrumentState.performanceState?.setLiveState({
+        earLeft:
+          interaction.side === "left"
+            ? value
+            : interaction.instrumentState.performanceState.live.earLeft,
+        earRight:
+          interaction.side === "right"
+            ? value
+            : interaction.instrumentState.performanceState.live.earRight,
+      });
       this.updateNoteLabel(interaction.instrumentState);
       return;
     }
 
     if (interaction.dragType === "nose") {
       interaction.instrumentState.morphController.setNose(value);
+      interaction.instrumentState.performanceState?.setLiveState({ nose: value });
       return;
     }
 
@@ -1913,6 +1931,7 @@ export class InstrumentController {
       return;
     }
 
+    this.resetShakeDisconnectTracking(this.controllerStates.get(controller));
     this.gripTransformSystem?.release(controller);
   }
 
@@ -1925,7 +1944,175 @@ export class InstrumentController {
     this.gripTransformSystem?.handleScaleThumbstick(controller, direction);
   }
 
+  updateShakeDisconnect(now = performance.now()) {
+    const settings = LOOPER_SHAKE_DISCONNECT_SETTINGS;
+    if (!settings?.enabled) {
+      return;
+    }
+
+    for (const controller of this.controllers) {
+      const controllerState = this.controllerStates.get(controller);
+      const honkState = this.getShakeDisconnectHonkState(controllerState);
+      if (!honkState) {
+        this.resetShakeDisconnectTracking(controllerState);
+        continue;
+      }
+
+      const connections = this.getLooperConnectionsForHonk(honkState);
+      if (connections.length === 0) {
+        this.resetShakeDisconnectTracking(controllerState);
+        continue;
+      }
+
+      if (now < (controllerState.shakeDisconnectCooldownUntilMs || 0)) {
+        continue;
+      }
+
+      this.recordShakeDisconnectSample(controllerState, honkState, now);
+      if (!this.isShakeDisconnectTriggered(controllerState, settings, now)) {
+        continue;
+      }
+
+      for (const { looperState, track } of connections) {
+        this.disconnectLooperTrack(looperState, track.index);
+      }
+      controllerState.shakeDisconnectCooldownUntilMs = now + Math.max(settings.cooldownMs || 0, 0);
+      this.resetShakeDisconnectTracking(controllerState);
+    }
+  }
+
+  getShakeDisconnectHonkState(controllerState) {
+    if (!controllerState?.gripHeld) {
+      return null;
+    }
+
+    const sourceState = controllerState.gripSourceInstrumentState;
+    if (this.isShakeDisconnectHonkState(sourceState)) {
+      return sourceState;
+    }
+
+    const gripState = controllerState.gripInstrumentState;
+    if (this.isShakeDisconnectHonkState(gripState)) {
+      return gripState;
+    }
+
+    return null;
+  }
+
+  isShakeDisconnectHonkState(state) {
+    return Boolean(state?.interactive && state.root?.visible && !state.pendingPlacement);
+  }
+
+  getLooperConnectionsForHonk(honkState) {
+    const connections = [];
+    if (!honkState?.interactive) {
+      return connections;
+    }
+
+    for (const looperState of this.instrumentStates) {
+      const data = looperState.looperData;
+      if (!data || !looperState.root?.visible) {
+        continue;
+      }
+
+      for (const track of data.tracks) {
+        if (track.connectedHonkState === honkState) {
+          connections.push({ looperState, track });
+        }
+      }
+    }
+    return connections;
+  }
+
+  recordShakeDisconnectSample(controllerState, honkState, now) {
+    if (controllerState.shakeDisconnectTargetState !== honkState) {
+      this.resetShakeDisconnectTracking(controllerState);
+      controllerState.shakeDisconnectTargetState = honkState;
+    }
+
+    if (!controllerState.shakeDisconnectSamples) {
+      controllerState.shakeDisconnectSamples = [];
+    }
+    if (!controllerState.shakeDisconnectLastPosition) {
+      controllerState.shakeDisconnectLastPosition = new THREE.Vector3();
+    }
+
+    honkState.root.updateMatrixWorld(true);
+    honkState.root.getWorldPosition(tempShakePosition);
+
+    const samples = controllerState.shakeDisconnectSamples;
+    if (!controllerState.shakeDisconnectHasLastPosition) {
+      controllerState.shakeDisconnectLastPosition.copy(tempShakePosition);
+      controllerState.shakeDisconnectLastSampleTime = now;
+      controllerState.shakeDisconnectHasLastPosition = true;
+      samples.push({ time: now, position: tempShakePosition.clone(), speed: 0 });
+      return;
+    }
+
+    const elapsedSeconds = Math.max((now - controllerState.shakeDisconnectLastSampleTime) / 1000, 0.0001);
+    const speed = tempShakePosition.distanceTo(controllerState.shakeDisconnectLastPosition) / elapsedSeconds;
+    samples.push({ time: now, position: tempShakePosition.clone(), speed });
+    controllerState.shakeDisconnectLastPosition.copy(tempShakePosition);
+    controllerState.shakeDisconnectLastSampleTime = now;
+
+    const durationMs = Math.max(LOOPER_SHAKE_DISCONNECT_SETTINGS.durationMs || 0, 0);
+    if (durationMs > 0) {
+      const oldestAllowedTime = now - durationMs;
+      while (samples.length > 0 && samples[0].time < oldestAllowedTime) {
+        samples.shift();
+      }
+    } else {
+      while (samples.length > 2) {
+        samples.shift();
+      }
+    }
+  }
+
+  isShakeDisconnectTriggered(controllerState, settings, now) {
+    const samples = controllerState.shakeDisconnectSamples || [];
+    if (samples.length < 2) {
+      return false;
+    }
+
+    const durationMs = Math.max(settings.durationMs || 0, 0);
+    const elapsedMs = samples[samples.length - 1].time - samples[0].time;
+    if (elapsedMs < durationMs) {
+      return false;
+    }
+
+    let speedSum = 0;
+    for (const sample of samples) {
+      speedSum += sample.speed || 0;
+    }
+    const averageSpeed = speedSum / Math.max(samples.length - 1, 1);
+    if (averageSpeed < Math.max(settings.intensity || 0, 0)) {
+      return false;
+    }
+
+    tempShakeBounds.makeEmpty();
+    for (const sample of samples) {
+      tempShakeBounds.expandByPoint(sample.position);
+    }
+    tempShakeBounds.getSize(tempShakeRange);
+    const range = tempShakeRange.length();
+    return range >= Math.max(settings.range || 0, 0);
+  }
+
+  resetShakeDisconnectTracking(controllerState) {
+    if (!controllerState) {
+      return;
+    }
+
+    controllerState.shakeDisconnectTargetState = null;
+    controllerState.shakeDisconnectHasLastPosition = false;
+    controllerState.shakeDisconnectLastSampleTime = 0;
+    if (controllerState.shakeDisconnectSamples) {
+      controllerState.shakeDisconnectSamples.length = 0;
+    }
+  }
+
   adjustInstrumentBaseScale(state, delta) {
+    state = this.getLockedChordTransformTargetState(state);
     if (!state?.root) {
       return;
     }
@@ -2004,6 +2191,14 @@ export class InstrumentController {
     targetState.morphController.setEar("left", leftEar);
     targetState.morphController.setEar("right", rightEar);
     targetState.morphController.setNose(nose);
+    targetState.performanceState?.setLiveState({
+      squeeze: 0,
+      bend: 0,
+      earLeft: leftEar,
+      earRight: rightEar,
+      nose,
+      vowel: targetState.currentVowelLetter,
+    });
 
     const targetLeftEar = targetState.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
     const targetRightEar = targetState.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
@@ -2035,16 +2230,14 @@ export class InstrumentController {
     const sourceData = sourceState.looperData;
     const targetData = targetState.looperData;
     this.clearLooperRuntimeState(targetState);
-    targetData.timeline = sourceData.timeline?.clone?.() || new LooperTimeline();
+    targetData.timeline = sourceData.timeline?.clone?.() || this.looperController.createTimeline();
     targetData.hasRecording = targetData.timeline.hasRecording();
     targetData.durationMs = targetData.timeline.durationMs;
 
     for (const targetTrack of targetData.tracks) {
       targetTrack.connectedHonkState = null;
-      targetTrack.isRecording = false;
-      targetTrack.isPlaying = false;
-      targetTrack.lastGestureSample = null;
-      targetTrack.lastGestureSampleAtMs = -Infinity;
+      targetTrack.resetRuntimeState();
+      targetTrack.active = Boolean(targetData.timeline.getTrack(targetTrack.trackId)?.active);
       this.disposeWireMesh(targetTrack.wireMesh);
       targetTrack.wireMesh = null;
     }
@@ -2095,7 +2288,7 @@ export class InstrumentController {
       data.gapControlValue = clamped;
       data.loopGapMs = this.getLooperGapFromControl(clamped);
       if (!data.recording && data.timeline?.hasRecording()) {
-        data.timeline.setLoopGap(data.loopGapMs, LOOPER_MIN_NOTE_DURATION_MS);
+        data.timeline.setLoopGap(data.loopGapMs, LOOPER_MIN_ACTION_DURATION_MS);
         data.durationMs = data.timeline.durationMs;
       }
     } else {
@@ -2244,18 +2437,8 @@ export class InstrumentController {
       return;
     }
 
-    this.stopPlayback(looperState);
-    data.activeRecordings.clear();
-    data.recording = false;
-    data.playing = false;
-    data.paused = false;
+    this.looperController.clearRuntimeState(looperState);
     data.buttonMorphReleaseTimes.clear();
-    for (const track of data.tracks) {
-      track.isRecording = false;
-      track.isPlaying = false;
-      track.lastGestureSample = null;
-      track.lastGestureSampleAtMs = -Infinity;
-    }
     for (const morphName of Object.values(LOOPER_BUTTON_MORPH_TARGETS)) {
       this.setMorph(morphName, 0, looperState);
     }
@@ -2325,6 +2508,203 @@ export class InstrumentController {
     }
   }
 
+  attachNewlyLockedChordState(newState) {
+    if (!this.isLockedChordState(newState)) {
+      return;
+    }
+
+    let targetLeader = null;
+    let targetSortValue = Number.MAX_SAFE_INTEGER;
+    for (const candidateState of this.instrumentStates) {
+      if (
+        candidateState === newState ||
+        !this.isLockedChordState(candidateState) ||
+        !this.areSqueezeColliderSpheresOverlapping(newState, candidateState)
+      ) {
+        continue;
+      }
+
+      this.ensureChordLockOrder(candidateState);
+      const candidateLeader = this.getLockedChordRootState(candidateState);
+      if (!this.isLockedChordState(candidateLeader) || candidateLeader === newState) {
+        continue;
+      }
+
+      this.ensureChordLockOrder(candidateLeader);
+      const sortValue = this.getChordLockSortValue(candidateLeader);
+      if (sortValue < targetSortValue) {
+        targetLeader = candidateLeader;
+        targetSortValue = sortValue;
+      }
+    }
+
+    if (targetLeader) {
+      this.attachLockedChordFollower(targetLeader, newState);
+    }
+  }
+
+  lockConnectedChordStates(startState) {
+    const connectedStates = this.getTouchingInstrumentChain(startState).filter(
+      (state) => state?.interactive && this.isLockableInstrumentState(state),
+    );
+    if (!connectedStates.includes(startState)) {
+      connectedStates.unshift(startState);
+    }
+
+    const existingLockedStates = connectedStates.filter((state) => this.isLockedChordState(state));
+    const statesToLock = [
+      startState,
+      ...connectedStates.filter((state) => state !== startState && !state.locked),
+    ];
+
+    for (const state of statesToLock) {
+      state.locked = true;
+      this.ensureChordLockOrder(state);
+      this.updateLockVisual(state);
+    }
+
+    const leader = this.getEarliestLockedChordLeader(existingLockedStates) || startState;
+    this.ensureChordLockOrder(leader);
+    for (const state of statesToLock) {
+      if (state === leader || !this.isLockedChordState(state)) {
+        continue;
+      }
+      this.attachLockedChordFollower(leader, state);
+    }
+  }
+
+  getEarliestLockedChordLeader(states) {
+    let targetLeader = null;
+    let targetSortValue = Number.MAX_SAFE_INTEGER;
+    for (const state of states) {
+      const leader = this.getLockedChordRootState(state);
+      if (!this.isLockedChordState(leader)) {
+        continue;
+      }
+
+      this.ensureChordLockOrder(leader);
+      const sortValue = this.getChordLockSortValue(leader);
+      if (sortValue < targetSortValue) {
+        targetLeader = leader;
+        targetSortValue = sortValue;
+      }
+    }
+    return targetLeader;
+  }
+
+  attachLockedChordFollower(leader, follower) {
+    if (!leader?.root || !follower?.root || leader === follower) {
+      return;
+    }
+
+    if (follower.chordLeaderState && follower.chordLeaderState !== leader) {
+      follower.chordLeaderState.chordFollowerStates?.delete(follower);
+    }
+    leader.chordLeaderState = null;
+    follower.chordLeaderState = leader;
+    leader.chordFollowerStates.add(follower);
+
+    leader.root.updateMatrixWorld(true);
+    follower.root.updateMatrixWorld(true);
+    leader.root.getWorldPosition(tempChordLeaderPosition);
+    leader.root.getWorldQuaternion(tempChordLeaderQuaternion);
+    follower.root.getWorldPosition(tempChordFollowerPosition);
+    follower.root.getWorldQuaternion(tempChordFollowerQuaternion);
+
+    tempChordInverseQuaternion.copy(tempChordLeaderQuaternion).invert();
+    follower.chordAttachmentOffset
+      .copy(tempChordFollowerPosition)
+      .sub(tempChordLeaderPosition)
+      .applyQuaternion(tempChordInverseQuaternion)
+      .multiplyScalar(1 / Math.max(leader.baseScale, 0.0001));
+    follower.chordAttachmentQuaternion
+      .copy(tempChordInverseQuaternion)
+      .multiply(tempChordFollowerQuaternion);
+    follower.chordAttachmentBaseScaleRatio = follower.baseScale / Math.max(leader.baseScale, 0.0001);
+  }
+
+  updateLockedChordFollowerTransforms() {
+    for (const leader of this.instrumentStates) {
+      if (!this.isLockedChordState(leader) || leader.chordFollowerStates.size === 0) {
+        continue;
+      }
+
+      leader.root.updateMatrixWorld(true);
+      leader.root.getWorldPosition(tempChordLeaderPosition);
+      leader.root.getWorldQuaternion(tempChordLeaderQuaternion);
+      const leaderBaseScale = Math.max(leader.baseScale, 0.0001);
+
+      for (const follower of leader.chordFollowerStates) {
+        if (!this.isLockedChordState(follower) || follower.chordLeaderState !== leader) {
+          continue;
+        }
+
+        tempChordFollowerPosition
+          .copy(follower.chordAttachmentOffset)
+          .multiplyScalar(leaderBaseScale)
+          .applyQuaternion(tempChordLeaderQuaternion)
+          .add(tempChordLeaderPosition);
+        follower.root.position.copy(tempChordFollowerPosition);
+        follower.root.quaternion.copy(tempChordLeaderQuaternion).multiply(follower.chordAttachmentQuaternion);
+        this.setInstrumentBaseScale(follower, leaderBaseScale * follower.chordAttachmentBaseScaleRatio);
+      }
+    }
+  }
+
+  clearLockedChordMembership(state) {
+    if (!state) {
+      return;
+    }
+
+    if (state.chordLeaderState?.chordFollowerStates) {
+      state.chordLeaderState.chordFollowerStates.delete(state);
+    }
+    state.chordLeaderState = null;
+
+    for (const follower of state.chordFollowerStates || []) {
+      if (follower.chordLeaderState === state) {
+        follower.chordLeaderState = null;
+      }
+    }
+    state.chordFollowerStates?.clear();
+  }
+
+  ensureChordLockOrder(state) {
+    if (!state || Number.isFinite(state.chordLockOrder)) {
+      return;
+    }
+
+    state.chordLockOrder = this.nextChordLockOrder;
+    this.nextChordLockOrder += 1;
+  }
+
+  getChordLockSortValue(state) {
+    return Number.isFinite(state?.chordLockOrder) ? state.chordLockOrder : Number.MAX_SAFE_INTEGER;
+  }
+
+  getLockedChordTransformTargetState(state) {
+    const rootState = this.getLockedChordRootState(state);
+    return this.isLockedChordState(rootState) ? rootState : state;
+  }
+
+  getLockedChordRootState(state) {
+    let currentState = state;
+    const visitedStates = new Set();
+    while (
+      currentState?.chordLeaderState &&
+      this.isLockedChordState(currentState.chordLeaderState) &&
+      !visitedStates.has(currentState.chordLeaderState)
+    ) {
+      visitedStates.add(currentState);
+      currentState = currentState.chordLeaderState;
+    }
+    return currentState;
+  }
+
+  isLockedChordState(state) {
+    return Boolean(state?.locked && state.interactive && state.root?.visible && !state.pendingPlacement);
+  }
+
   getLooperFollowerHonks(looperState) {
     const followerHonks = new Set();
     for (const connection of looperState?.looperData?.tracks || []) {
@@ -2345,6 +2725,10 @@ export class InstrumentController {
 
     const chain = this.getTouchingInstrumentChain(connectedHonkState).filter((state) => state.interactive);
     return chain.length > 0 ? chain : [connectedHonkState];
+  }
+
+  getLooperPlaybackHonkTargets(connectedHonkState) {
+    return this.getLooperFollowerHonkChain(connectedHonkState);
   }
 
   isInstrumentStateCurrentlyGripped(instrumentState) {
@@ -2429,6 +2813,23 @@ export class InstrumentController {
       interaction.activeChain = playableChain;
     }
 
+    for (const state of this.instrumentStates) {
+      if (!state.interactive) {
+        continue;
+      }
+
+      let bendSum = 0;
+      for (const value of state.activeBends.values()) {
+        bendSum += value;
+      }
+      const liveSqueeze = state.hornHolders.size > 0 ? 1 : 0;
+      const liveBend = liveSqueeze > 0 ? THREE.MathUtils.clamp(bendSum, -1, 1) : 0;
+      state.performanceState?.setLiveState({
+        squeeze: liveSqueeze,
+        bend: liveBend,
+      });
+    }
+
     this.updateLooperPlayback(now);
 
     for (const state of this.instrumentStates) {
@@ -2436,31 +2837,33 @@ export class InstrumentController {
         continue;
       }
 
+      const resolved = state.performanceState?.resolve?.();
+      const targetSqueeze = resolved?.squeeze ?? (state.hornHolders.size > 0 ? 1 : 0);
+      const targetBend = resolved?.bend ?? 0;
+
       state.hornSqueezeValue = THREE.MathUtils.lerp(
         state.hornSqueezeValue,
-        state.hornHolders.size > 0 ? 1 : 0,
+        targetSqueeze,
         SQUEEZE_SENSITIVITY,
       );
       state.morphController.setSqueeze(state.hornSqueezeValue);
 
-      let bendSum = 0;
-      for (const value of state.activeBends.values()) {
-        bendSum += value;
-      }
-      state.targetBendValue = state.hornHolders.size > 0 ? THREE.MathUtils.clamp(bendSum, -1, 1) : 0;
+      state.targetBendValue = targetBend;
       state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
       state.morphController.setBend(state.bendValue);
+      if (resolved) {
+        this.applyResolvedHonkMorphState(state, resolved);
+      }
       this.updateBendAlignedColliders(state);
 
       const pulse = 1 + state.hornSqueezeValue * 0.035;
       this.applyInstrumentVisualScale(state, pulse);
-      state.debugVisuals?.update();
     }
 
     for (const { interaction } of activeHoldInteractions) {
       for (const synthState of interaction.activeChain || []) {
         const voiceId = this.getInstrumentVoiceId(interaction.voiceId, synthState);
-        const pitchBendSemitones = synthState.targetBendValue * MAX_PITCH_BEND_SEMITONES;
+        const pitchBendSemitones = synthState.bendValue * MAX_PITCH_BEND_SEMITONES;
         this.synth.update({
           voiceId,
           hornAmount: synthState.hornSqueezeValue,
@@ -2480,127 +2883,27 @@ export class InstrumentController {
   }
 
   startRecording(looperState, now = performance.now()) {
-    const data = looperState?.looperData;
-    if (!data) {
-      return;
-    }
-
-    this.stopPlayback(looperState);
-    data.timeline = new LooperTimeline();
-    data.activeRecordings.clear();
-    data.hasRecording = false;
-    data.durationMs = 0;
-    data.recording = true;
-    data.playing = false;
-    data.paused = false;
-
-    const baselines = [];
-    for (const track of data.tracks) {
-      track.isRecording = false;
-      track.isPlaying = false;
-      track.lastGestureSample = null;
-      track.lastGestureSampleAtMs = -Infinity;
-      const sample = this.captureLooperSampleFromHonk(track.connectedHonkState);
-      if (sample) {
-        baselines.push({ trackIndex: track.index, sample });
-        track.lastGestureSample = { ...sample };
-        track.lastGestureSampleAtMs = 0;
-      }
-    }
-
-    data.timeline.startRecording(now, baselines);
-    this.updateLooperVisuals(looperState);
+    this.looperController.startRecording(looperState, now);
   }
 
   stopRecording(looperState, now = performance.now()) {
-    const data = looperState?.looperData;
-    if (!data?.recording) {
-      return;
-    }
-
-    for (const track of data.tracks) {
-      if (data.activeRecordings.has(track.index)) {
-        this.finishLooperNoteRecording(looperState, track, now);
-      }
-      track.isRecording = false;
-    }
-
-    data.recording = false;
-    data.hasRecording = data.timeline.stopRecording(now, LOOPER_MIN_NOTE_DURATION_MS, data.loopGapMs);
-    data.durationMs = data.timeline.durationMs;
-    this.updateLooperVisuals(looperState);
+    this.looperController.stopRecording(looperState, now);
   }
 
   clearRecording(looperState) {
-    const data = looperState?.looperData;
-    if (!data) {
-      return;
-    }
-
-    this.stopPlayback(looperState);
-    data.timeline.clearRecording();
-    data.activeRecordings.clear();
-    data.hasRecording = false;
-    data.durationMs = 0;
-    data.recording = false;
-    data.paused = false;
-    for (const track of data.tracks) {
-      track.isRecording = false;
-      track.isPlaying = false;
-      track.lastGestureSample = null;
-      track.lastGestureSampleAtMs = -Infinity;
-    }
-    this.updateLooperVisuals(looperState);
+    this.looperController.clearRecording(looperState);
   }
 
   startPlayback(looperState, now = performance.now()) {
-    const data = looperState?.looperData;
-    if (!data?.timeline?.hasRecording() || data.recording) {
-      return;
-    }
-
-    this.synth.ensureAudio();
-    this.releaseLooperPlaybackVoices(data);
-    data.playbackEngine.stop(data.playbackHandlers);
-    this.resetLooperPlaybackMorphState(data, { restoreOriginal: true });
-
-    data.playing = true;
-    data.paused = false;
-    data.lastPlaybackUpdateMs = now;
-    data.playbackEngine.start(now);
-    this.applyLooperTimelineBaselines(looperState);
+    this.looperController.startPlayback(looperState, now);
   }
 
   pausePlayback(looperState) {
-    const data = looperState?.looperData;
-    if (!data?.playing || data.paused) {
-      return;
-    }
-
-    data.playbackEngine.pause(data.playbackHandlers);
-    this.releaseLooperPlaybackVoices(data);
-    data.playing = false;
-    data.paused = true;
-    for (const track of data.tracks) {
-      track.isPlaying = false;
-    }
+    this.looperController.pausePlayback(looperState);
   }
 
   stopPlayback(looperState) {
-    const data = looperState?.looperData;
-    if (!data) {
-      return;
-    }
-
-    data.playbackEngine.stop(data.playbackHandlers);
-    this.releaseLooperPlaybackVoices(data);
-    data.playing = false;
-    data.paused = false;
-    data.lastPlaybackUpdateMs = 0;
-    for (const track of data.tracks) {
-      track.isPlaying = false;
-    }
-    this.resetLooperPlaybackMorphState(data, { restoreOriginal: true });
+    this.looperController.stopPlayback(looperState);
   }
 
   updatePlayback(delta = 0, time = performance.now()) {
@@ -2609,465 +2912,15 @@ export class InstrumentController {
   }
 
   updateLooperRecordings(now = performance.now()) {
-    for (const looperState of this.instrumentStates) {
-      const data = looperState.looperData;
-      if (!data?.recording || !looperState.root?.visible) {
-        continue;
-      }
-
-      const elapsedMs = data.timeline.getElapsedMs(now);
-      for (const track of data.tracks) {
-        const honkState = track.connectedHonkState;
-        const sample = this.captureLooperSampleFromHonk(honkState);
-        const honkActive = this.hasLiveHonkHolder(honkState);
-        const activeRecording = data.activeRecordings.get(track.index);
-
-        if (!sample) {
-          if (activeRecording) {
-            this.finishLooperNoteRecording(looperState, track, now);
-          }
-          continue;
-        }
-
-        if (this.shouldRecordLooperGestureSample(track, sample, elapsedMs)) {
-          data.timeline.addGesture(track.index, elapsedMs, sample, activeRecording?.noteId ?? null);
-          track.lastGestureSample = { ...sample };
-          track.lastGestureSampleAtMs = elapsedMs;
-        }
-
-        if (honkActive && !activeRecording) {
-          this.beginLooperNoteRecording(looperState, track, now, sample);
-        } else if (!honkActive && activeRecording) {
-          this.finishLooperNoteRecording(looperState, track, now);
-        }
-      }
-    }
-  }
-
-  hasLiveHonkHolder(honkState) {
-    if (!honkState?.interactive || !honkState.root?.visible) {
-      return false;
-    }
-    for (const voiceId of honkState.hornHolders) {
-      if (!String(voiceId).startsWith("looper-")) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  beginLooperNoteRecording(looperState, track, now, sample) {
-    const data = looperState?.looperData;
-    if (!data || !track || !sample) {
-      return;
-    }
-
-    const elapsedMs = data.timeline.getElapsedMs(now);
-    const noteId = data.timeline.addNoteOn(track.index, elapsedMs, sample);
-    data.activeRecordings.set(track.index, {
-      noteId,
-      startedAtMs: now,
-    });
-    track.isRecording = true;
-    this.updateLooperVisuals(looperState);
-  }
-
-  finishLooperNoteRecording(looperState, track, now = performance.now()) {
-    const data = looperState?.looperData;
-    const recording = data?.activeRecordings.get(track?.index);
-    if (!data || !track || !recording) {
-      return;
-    }
-
-    const elapsedMs = data.timeline.getElapsedMs(now);
-    const minEndMs = data.timeline.getElapsedMs(recording.startedAtMs) + LOOPER_MIN_NOTE_DURATION_MS;
-    data.timeline.addNoteOff(track.index, Math.max(elapsedMs, minEndMs), recording.noteId);
-    data.activeRecordings.delete(track.index);
-    track.isRecording = false;
-    this.updateLooperVisuals(looperState);
-  }
-
-  captureLooperSampleFromHonk(honkState) {
-    if (!honkState?.interactive || !honkState.root?.visible) {
-      return null;
-    }
-
-    return {
-      leftEar: honkState.morphController.getEarAmount("left"),
-      rightEar: honkState.morphController.getEarAmount("right"),
-      nose: honkState.morphController.getValue(MORPH_TARGET_NAMES.nose),
-      vowel: honkState.currentVowelLetter || "neutral",
-      pitchBendSemitones: honkState.targetBendValue * MAX_PITCH_BEND_SEMITONES,
-      pitchSnap: honkState.pitchSnap,
-    };
-  }
-
-  shouldRecordLooperGestureSample(track, sample, elapsedMs) {
-    if (!track.lastGestureSample) {
-      return true;
-    }
-    if (elapsedMs - track.lastGestureSampleAtMs < LOOPER_GESTURE_SAMPLE_INTERVAL_MS) {
-      return false;
-    }
-    return this.looperSamplesDiffer(track.lastGestureSample, sample);
-  }
-
-  looperSamplesDiffer(first, second) {
-    if (!first || !second) {
-      return true;
-    }
-    return (
-      Math.abs(first.leftEar - second.leftEar) > 0.015 ||
-      Math.abs(first.rightEar - second.rightEar) > 0.015 ||
-      Math.abs(first.nose - second.nose) > 0.015 ||
-      Math.abs((first.pitchBendSemitones || 0) - (second.pitchBendSemitones || 0)) > 0.08 ||
-      first.vowel !== second.vowel ||
-      first.pitchSnap !== second.pitchSnap
-    );
+    this.looperController.updateRecordings(this.instrumentStates, now);
   }
 
   updateLooperPlayback(now = performance.now()) {
-    for (const looperState of this.instrumentStates) {
-      const data = looperState.looperData;
-      if (!data?.playing || data.paused || !looperState.root?.visible) {
-        continue;
-      }
-
-      if (!data.timeline?.hasRecording()) {
-        this.stopPlayback(looperState);
-        continue;
-      }
-
-      data.playbackEngine.update(now, data.timeline, data.speed, data.playbackHandlers);
-      this.applyLooperPlaybackHolders(looperState);
-    }
-  }
-
-  handleLooperPlaybackNoteOn(looperState, event, activeNote = null) {
-    const data = looperState?.looperData;
-    const track = data?.tracks[event.trackIndex];
-    const sample = event.sample || data?.playbackEngine.getTrackSample(event.trackIndex);
-    if (!data || !track || !sample) {
-      return;
-    }
-
-    track.isPlaying = true;
-    this.applyLooperGestureSampleToTrack(looperState, track, sample);
-    this.syncLooperPlaybackVoiceTargets(looperState, activeNote || event);
-    this.updateLooperVisuals(looperState);
-  }
-
-  handleLooperPlaybackNoteOff(looperState, event) {
-    const data = looperState?.looperData;
-    if (!data) {
-      return;
-    }
-
-    this.releaseLooperPlaybackNote(data, event.noteId);
-    const track = data.tracks[event.trackIndex];
-    if (track) {
-      track.isPlaying = this.hasActiveLooperTrackNote(data, track.index, event.noteId);
-    }
-    this.updateLooperVisuals(looperState);
-  }
-
-  handleLooperPlaybackGesture(looperState, event) {
-    const data = looperState?.looperData;
-    const track = data?.tracks[event.trackIndex];
-    if (!data || !track || !event.sample) {
-      return;
-    }
-
-    this.applyLooperGestureSampleToTrack(looperState, track, event.sample);
-  }
-
-  handleLooperLoopBoundary(looperState) {
-    const data = looperState?.looperData;
-    if (!data) {
-      return;
-    }
-
-    this.releaseLooperPlaybackVoices(data);
-    for (const track of data.tracks) {
-      track.isPlaying = false;
-    }
-    this.applyLooperTimelineBaselines(looperState);
-    this.updateLooperVisuals(looperState);
-  }
-
-  getLooperPlaybackVoiceTargets(looperState, track) {
-    const connectedHonkState =
-      track.connectedHonkState?.interactive && track.connectedHonkState.root?.visible
-        ? track.connectedHonkState
-        : null;
-    if (!connectedHonkState) {
-      return [looperState];
-    }
-
-    const chain = this.getTouchingInstrumentChain(connectedHonkState).filter((state) => state.interactive);
-    return chain.length > 0 ? chain : [connectedHonkState];
-  }
-
-  syncLooperPlaybackVoiceTargets(looperState, activeNote) {
-    const data = looperState?.looperData;
-    const track = data?.tracks?.[activeNote?.trackIndex];
-    if (!data || !track || activeNote?.noteId === undefined || activeNote?.noteId === null) {
-      return null;
-    }
-
-    let voiceMap = data.activePlaybackVoices.get(activeNote.noteId);
-    if (!voiceMap) {
-      voiceMap = new Map();
-      data.activePlaybackVoices.set(activeNote.noteId, voiceMap);
-    }
-
-    const desiredVoiceIds = new Set();
-    for (const targetState of this.getLooperPlaybackVoiceTargets(looperState, track)) {
-      const voiceId = this.getLooperVoiceId(looperState, activeNote.noteId, targetState);
-      desiredVoiceIds.add(voiceId);
-      if (!voiceMap.has(voiceId)) {
-        this.synth.start(voiceId);
-      }
-      voiceMap.set(voiceId, targetState);
-    }
-
-    for (const [voiceId] of voiceMap) {
-      if (!desiredVoiceIds.has(voiceId)) {
-        this.releaseSynthVoice(voiceId);
-        voiceMap.delete(voiceId);
-      }
-    }
-
-    return voiceMap;
-  }
-
-  applyLooperPlaybackHolders(looperState) {
-    const data = looperState?.looperData;
-    if (!data?.playbackEngine) {
-      return;
-    }
-
-    for (const activeNote of data.playbackEngine.getActiveNotes()) {
-      const sample = activeNote.sample || data.playbackEngine.getTrackSample(activeNote.trackIndex);
-      const voiceMap = this.syncLooperPlaybackVoiceTargets(looperState, activeNote);
-      if (!sample || !voiceMap) {
-        continue;
-      }
-
-      for (const [voiceId, targetState] of voiceMap) {
-        if (targetState !== looperState) {
-          const targetSample = this.getLooperPlaybackSampleForTarget(
-            looperState,
-            activeNote.trackIndex,
-            targetState,
-            sample,
-          );
-          this.applyLooperPlaybackToHonk(targetState, voiceId, targetSample);
-        }
-      }
-    }
+    this.looperController.updatePlayback(this.instrumentStates, now);
   }
 
   updateLooperPlaybackAudio() {
-    for (const looperState of this.instrumentStates) {
-      const data = looperState.looperData;
-      if (!data?.playing || data.paused || !looperState.root?.visible) {
-        continue;
-      }
-
-      for (const activeNote of data.playbackEngine.getActiveNotes()) {
-        const sample = activeNote.sample || data.playbackEngine.getTrackSample(activeNote.trackIndex);
-        const voiceMap = data.activePlaybackVoices.get(activeNote.noteId);
-        if (!sample || !voiceMap) {
-          continue;
-        }
-
-        for (const [voiceId, spatialState] of voiceMap) {
-          const targetSample = this.getLooperPlaybackSampleForTarget(
-            looperState,
-            activeNote.trackIndex,
-            spatialState,
-            sample,
-          );
-          if (!targetSample) {
-            continue;
-          }
-          this.updateLooperPlaybackVoice(voiceId, targetSample, spatialState, data.volume);
-        }
-      }
-    }
-  }
-
-  getLooperPlaybackSampleForTarget(looperState, trackIndex, targetState, recordedSample) {
-    const connectedHonkState = looperState?.looperData?.tracks?.[trackIndex]?.connectedHonkState;
-    if (!targetState || targetState === looperState || targetState === connectedHonkState) {
-      return recordedSample;
-    }
-
-    const liveSample = this.captureLooperSampleFromHonk(targetState);
-    if (!liveSample) {
-      return recordedSample;
-    }
-
-    return {
-      ...liveSample,
-      pitchBendSemitones: recordedSample?.pitchBendSemitones || 0,
-    };
-  }
-
-  updateLooperPlaybackVoice(voiceId, sample, spatialState, volume) {
-    this.synth.update({
-      voiceId,
-      hornAmount: 1,
-      masterGain: SPATIAL_AUDIO_SETTINGS.masterGain * volume,
-      leftEar: sample.leftEar,
-      rightEar: sample.rightEar,
-      nose: sample.nose,
-      vowel: sample.vowel === "neutral" ? "A" : sample.vowel || "A",
-      pitchBendSemitones: sample.pitchBendSemitones || 0,
-      pitchSnap: spatialState?.pitchSnap || sample.pitchSnap,
-    });
-
-    this.updateInstrumentSpatialVoice(voiceId, spatialState);
-  }
-
-  applyLooperPlaybackToHonk(honkState, voiceId, sample) {
-    if (!honkState?.interactive) {
-      return;
-    }
-
-    const bendAmount = THREE.MathUtils.clamp(
-      (sample.pitchBendSemitones || 0) / Math.max(MAX_PITCH_BEND_SEMITONES, 0.0001),
-      -1,
-      1,
-    );
-    honkState.hornHolders.add(voiceId);
-    honkState.activeBends.set(voiceId, bendAmount);
-  }
-
-  applyLooperGestureSampleToTrack(looperState, track, sample) {
-    const honkState = track.connectedHonkState;
-    if (!honkState?.interactive || !honkState.root?.visible) {
-      return;
-    }
-
-    this.storePrePlaybackMorphState(looperState.looperData, honkState);
-    honkState.morphController.setEar("left", sample.leftEar);
-    honkState.morphController.setEar("right", sample.rightEar);
-    honkState.morphController.setNose(sample.nose);
-    this.setVowelByLetter(sample.vowel, honkState);
-
-    const leftEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
-    const rightEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
-    const nose = honkState.hitTargets[INTERACTION_TARGET_NAMES.nose];
-    if (leftEar?.userData.isProceduralMorphTarget) {
-      this.setSpherePositionFromSignedValue(leftEar, sample.leftEar);
-    }
-    if (rightEar?.userData.isProceduralMorphTarget) {
-      this.setSpherePositionFromSignedValue(rightEar, sample.rightEar);
-    }
-    if (nose?.userData.isProceduralMorphTarget) {
-      this.setSpherePositionFromMorph(nose, sample.nose);
-    }
-    this.updateNoteLabel(honkState);
-    looperState.looperData.playbackTouchedHonks.add(honkState);
-  }
-
-  applyLooperTimelineBaselines(looperState) {
-    const data = looperState?.looperData;
-    if (!data?.timeline) {
-      return;
-    }
-
-    for (const [trackIndex, sample] of data.timeline.trackBaselines) {
-      const track = data.tracks[trackIndex];
-      if (track) {
-        this.applyLooperGestureSampleToTrack(looperState, track, sample);
-      }
-    }
-  }
-
-  storePrePlaybackMorphState(data, honkState) {
-    if (!data || !honkState || data.prePlaybackMorphStates.has(honkState)) {
-      return;
-    }
-
-    data.prePlaybackMorphStates.set(honkState, this.captureLooperSampleFromHonk(honkState));
-  }
-
-  resetLooperPlaybackMorphState(data, { restoreOriginal = false } = {}) {
-    if (!data) {
-      return;
-    }
-
-    if (restoreOriginal) {
-      for (const [honkState, sample] of data.prePlaybackMorphStates) {
-        if (!sample || !honkState?.interactive || !honkState.root?.visible) {
-          continue;
-        }
-        this.restoreHonkMorphSample(honkState, sample);
-      }
-    }
-
-    data.prePlaybackMorphStates.clear();
-    data.playbackTouchedHonks.clear();
-  }
-
-  restoreHonkMorphSample(honkState, sample) {
-    honkState.morphController.setEar("left", sample.leftEar);
-    honkState.morphController.setEar("right", sample.rightEar);
-    honkState.morphController.setNose(sample.nose);
-    this.setVowelByLetter(sample.vowel, honkState);
-
-    const leftEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
-    const rightEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
-    const nose = honkState.hitTargets[INTERACTION_TARGET_NAMES.nose];
-    if (leftEar?.userData.isProceduralMorphTarget) {
-      this.setSpherePositionFromSignedValue(leftEar, sample.leftEar);
-    }
-    if (rightEar?.userData.isProceduralMorphTarget) {
-      this.setSpherePositionFromSignedValue(rightEar, sample.rightEar);
-    }
-    if (nose?.userData.isProceduralMorphTarget) {
-      this.setSpherePositionFromMorph(nose, sample.nose);
-    }
-    this.updateNoteLabel(honkState);
-  }
-
-  hasActiveLooperTrackNote(data, trackIndex, exceptNoteId = null) {
-    for (const activeNote of data.playbackEngine.getActiveNotes()) {
-      if (activeNote.trackIndex === trackIndex && activeNote.noteId !== exceptNoteId) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  releaseLooperPlaybackVoices(data) {
-    if (!data) {
-      return;
-    }
-
-    for (const noteId of [...data.activePlaybackVoices.keys()]) {
-      this.releaseLooperPlaybackNote(data, noteId);
-    }
-  }
-
-  releaseLooperPlaybackNote(data, noteId) {
-    const voiceMap = data.activePlaybackVoices.get(noteId);
-    if (!voiceMap) {
-      return;
-    }
-
-    for (const voiceId of voiceMap.keys()) {
-      this.releaseSynthVoice(voiceId);
-    }
-    data.activePlaybackVoices.delete(noteId);
-  }
-
-  getLooperVoiceId(looperState, noteId, instrumentState = null) {
-    const instrumentSuffix = instrumentState ? `:instrument-${instrumentState.id}` : "";
-    return `looper-${looperState.id}:note-${noteId}${instrumentSuffix}`;
+    this.looperController.updateAutomationAudio();
   }
 
   releaseSynthVoice(voiceId) {
@@ -3075,32 +2928,88 @@ export class InstrumentController {
     this.synth.release(voiceId);
   }
 
-  connectLooperTrackToHonk(looperState, trackIndex, honkState) {
-    const track = this.getLooperTrack(looperState, trackIndex);
-    if (!track || !honkState?.interactive) {
+  captureLooperActionFromHonk(honkState) {
+    if (!honkState?.interactive || !honkState.root?.visible) {
+      return null;
+    }
+
+    const live = honkState.performanceState?.live;
+    return {
+      squeeze: honkState.hornSqueezeValue || 0,
+      bend: honkState.bendValue || 0,
+      earLeft: live?.earLeft ?? honkState.morphController.getEarAmount("left"),
+      earRight: live?.earRight ?? honkState.morphController.getEarAmount("right"),
+      nose: live?.nose ?? honkState.morphController.getValue(MORPH_TARGET_NAMES.nose),
+      vowel: live?.vowel ?? honkState.currentVowelLetter ?? "neutral",
+    };
+  }
+
+  setHonkAutomationLayer(honkState, layerId, snapshot) {
+    if (!honkState?.performanceState) {
+      return;
+    }
+    honkState.performanceState.setAutomationLayer(layerId, snapshot);
+  }
+
+  clearHonkAutomationLayer(honkState, layerId) {
+    honkState?.performanceState?.clearAutomationLayer(layerId);
+  }
+
+  getLooperAutomationLayerId(looperState, track) {
+    return `looper-${looperState.id}:track-${track.index}`;
+  }
+
+  getLooperActionVoiceId(looperState, track, honkState) {
+    return `${this.getLooperAutomationLayerId(looperState, track)}:instrument-${honkState.id}:action`;
+  }
+
+  updateLooperActionVoice(voiceId, honkState, snapshot, volume) {
+    if (!honkState?.interactive || !honkState.root?.visible) {
+      this.releaseSynthVoice(voiceId);
       return;
     }
 
-    track.connectedHonkState = honkState;
-    this.updateLooperWireForTrack(looperState, track);
-    this.updateLooperVisuals(looperState);
+    this.synth.update({
+      voiceId,
+      hornAmount: THREE.MathUtils.clamp(snapshot.squeeze || 0, 0, 1),
+      masterGain: SPATIAL_AUDIO_SETTINGS.masterGain * volume,
+      leftEar: honkState.morphController.getEarAmount("left"),
+      rightEar: honkState.morphController.getEarAmount("right"),
+      nose: honkState.morphController.getValue(MORPH_TARGET_NAMES.nose),
+      vowel: honkState.currentVowelLetter === "neutral" ? "A" : honkState.currentVowelLetter,
+      pitchBendSemitones: honkState.bendValue * MAX_PITCH_BEND_SEMITONES,
+      pitchSnap: honkState.pitchSnap,
+    });
+    this.updateInstrumentSpatialVoice(voiceId, honkState);
+  }
+
+  applyResolvedHonkMorphState(honkState, resolved) {
+    honkState.morphController.setEar("left", resolved.earLeft);
+    honkState.morphController.setEar("right", resolved.earRight);
+    honkState.morphController.setNose(resolved.nose);
+    this.applyVowelLetterToState(resolved.vowel, honkState, { updateLiveState: false, updateSynth: false });
+
+    const leftEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
+    const rightEar = honkState.hitTargets[INTERACTION_TARGET_NAMES.rightEar];
+    const nose = honkState.hitTargets[INTERACTION_TARGET_NAMES.nose];
+    if (leftEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(leftEar, resolved.earLeft);
+    }
+    if (rightEar?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromSignedValue(rightEar, resolved.earRight);
+    }
+    if (nose?.userData.isProceduralMorphTarget) {
+      this.setSpherePositionFromMorph(nose, resolved.nose);
+    }
+    this.updateNoteLabel(honkState);
+  }
+
+  connectLooperTrackToHonk(looperState, trackIndex, honkState) {
+    this.looperController.connectTrackToHonk(looperState, trackIndex, honkState);
   }
 
   disconnectLooperTrack(looperState, trackIndex) {
-    const track = this.getLooperTrack(looperState, trackIndex);
-    if (!track) {
-      return;
-    }
-
-    if (looperState.looperData?.activeRecordings.has(track.index)) {
-      this.finishLooperNoteRecording(looperState, track, performance.now());
-    }
-    track.connectedHonkState = null;
-    track.isRecording = false;
-    track.isPlaying = false;
-    this.disposeWireMesh(track.wireMesh);
-    track.wireMesh = null;
-    this.updateLooperVisuals(looperState);
+    this.looperController.disconnectTrack(looperState, trackIndex);
   }
 
   updateLooperWires() {
@@ -3173,8 +3082,7 @@ export class InstrumentController {
     }
 
     if (instrumentState?.isLooper) {
-      this.stopRecording(instrumentState);
-      this.stopPlayback(instrumentState);
+      this.looperController.releaseLooper(instrumentState);
       for (const track of instrumentState.looperData?.tracks || []) {
         this.disposeWireMesh(track.wireMesh);
         track.wireMesh = null;
@@ -3195,6 +3103,7 @@ export class InstrumentController {
         }
       }
     }
+    this.looperController.releaseHonk(instrumentState);
   }
 
   updateAllLooperVisuals() {
@@ -3234,7 +3143,7 @@ export class InstrumentController {
       } else if (track.isPlaying) {
         nodeColor = LOOPER_DEBUG_COLORS.playing;
         opacity = 0.58;
-      } else if (data.hasRecording && track.connectedHonkState) {
+      } else if (data.hasRecording && track.active) {
         nodeColor = LOOPER_DEBUG_COLORS.recorded;
         opacity = 0.5;
       }
@@ -3393,7 +3302,7 @@ export class InstrumentController {
           continue;
         }
 
-        if (this.areInstrumentBodyCollidersTouching(state, otherState)) {
+        if (this.areSqueezeColliderSpheresOverlapping(state, otherState)) {
           queue.push(otherState);
         }
       }
@@ -3402,60 +3311,64 @@ export class InstrumentController {
     return chain;
   }
 
-  areInstrumentBodyCollidersTouching(firstState, secondState) {
-    this.setSqueezeColliderBounds(firstState, tempBoxA);
-    this.setSqueezeColliderBounds(secondState, tempBoxB);
-    if (tempBoxA.isEmpty() || tempBoxB.isEmpty()) {
+  areSqueezeColliderSpheresOverlapping(firstState, secondState) {
+    if (
+      !this.setSqueezeColliderSphere(firstState, tempSqueezeSphereA) ||
+      !this.setSqueezeColliderSphere(secondState, tempSqueezeSphereB)
+    ) {
       return false;
     }
 
-    tempBox.copy(tempBoxA).intersect(tempBoxB);
-    if (tempBox.isEmpty()) {
+    const radiusSum = tempSqueezeSphereA.radius + tempSqueezeSphereB.radius;
+    if (!Number.isFinite(radiusSum) || radiusSum <= 0) {
       return false;
     }
 
-    const overlapVolume = this.getBoxVolume(tempBox);
-    const smallerColliderVolume = Math.min(this.getBoxVolume(tempBoxA), this.getBoxVolume(tempBoxB));
-    if (smallerColliderVolume <= 0) {
+    const distance = tempSqueezeSphereA.center.distanceTo(tempSqueezeSphereB.center);
+    const overlapDepth = radiusSum - distance;
+    if (overlapDepth <= 0) {
       return false;
     }
 
-    const requiredOverlap = THREE.MathUtils.clamp(SQUEEZE_COLLIDER_MIN_OVERLAP, 0, 1);
-    return overlapVolume / smallerColliderVolume >= requiredOverlap;
+    const smallerDiameter = Math.min(tempSqueezeSphereA.radius, tempSqueezeSphereB.radius) * 2;
+    return overlapDepth / Math.max(smallerDiameter, 0.0001) >= CHORD_SQUEEZE_SPHERE_MIN_INTERSECTION;
   }
 
-  getBoxVolume(box) {
-    if (!box || box.isEmpty()) {
-      return 0;
-    }
-
-    box.getSize(tempBoxSize);
-    return Math.max(tempBoxSize.x, 0) * Math.max(tempBoxSize.y, 0) * Math.max(tempBoxSize.z, 0);
-  }
-
-  setSqueezeColliderBounds(state, targetBox) {
-    targetBox.makeEmpty();
+  setSqueezeColliderSphere(state, targetSphere) {
     const squeezeCollider = state?.hitTargets?.[INTERACTION_TARGET_NAMES.horn];
-    if (!squeezeCollider) {
-      return targetBox;
+    if (!squeezeCollider?.isMesh) {
+      targetSphere.radius = -1;
+      return false;
     }
 
     squeezeCollider.updateWorldMatrix(true, false);
-    targetBox.setFromObject(squeezeCollider);
-    return targetBox;
+    squeezeCollider.getWorldPosition(targetSphere.center);
+    squeezeCollider.getWorldScale(tempSqueezeColliderScale);
+
+    let localRadius = squeezeCollider.userData.colliderRadius;
+    if (!Number.isFinite(localRadius) || localRadius <= 0) {
+      localRadius = squeezeCollider.geometry?.parameters?.radius;
+    }
+    if (!Number.isFinite(localRadius) || localRadius <= 0) {
+      squeezeCollider.geometry?.computeBoundingSphere?.();
+      localRadius = squeezeCollider.geometry?.boundingSphere?.radius ?? 0;
+    }
+
+    const worldScale = Math.max(
+      Math.abs(tempSqueezeColliderScale.x),
+      Math.abs(tempSqueezeColliderScale.y),
+      Math.abs(tempSqueezeColliderScale.z),
+    );
+    targetSphere.radius = localRadius * worldScale;
+    return Number.isFinite(targetSphere.radius) && targetSphere.radius > 0;
   }
 
   updateRaycastHover() {
-    const lockedIndicatorStates = new Set();
-
     for (const controller of this.controllers) {
       const controllerState = this.controllerStates.get(controller);
       const hit = this.getCurrentHit(controller);
       const nextTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
       const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
-      if (lockedInstrumentState?.locked) {
-        lockedIndicatorStates.add(lockedInstrumentState);
-      }
 
       if (controllerState.hoveredTarget && controllerState.hoveredTarget !== nextTarget) {
         this.setTargetHighlight(controllerState.hoveredTarget, false);
@@ -3474,14 +3387,8 @@ export class InstrumentController {
             this.isLooperColliderTarget(nextTarget) ||
             lockedInstrumentState
             ? RAY_COLOR_SPHERE_HOVER
-            : RAY_COLOR_DEFAULT,
+          : RAY_COLOR_DEFAULT,
         );
-      }
-    }
-
-    for (const instrumentState of this.instrumentStates) {
-      if (instrumentState.locked || instrumentState.hitTargets?.[INTERACTION_TARGET_NAMES.body]?.userData.lockIndicatorVisible) {
-        this.setLockIndicatorVisible(instrumentState, lockedIndicatorStates.has(instrumentState));
       }
     }
   }
@@ -3522,7 +3429,67 @@ export class InstrumentController {
     return this.raycastSystem.getGripHit(controller);
   }
 
+  setInstrumentLockedTexture(instrumentState, locked) {
+    if (!instrumentState?.root) {
+      return;
+    }
+
+    const textureSet = this.getTextureSetForInstrumentState(instrumentState);
+    const baseMap = textureSet?.baseMap;
+    const lockedBaseMap = textureSet?.lockedBaseMap;
+    if (!baseMap || !lockedBaseMap) {
+      return;
+    }
+
+    const useLockedTexture = Boolean(locked);
+    if (instrumentState.lockedTextureApplied === useLockedTexture) {
+      return;
+    }
+
+    const targetMap = useLockedTexture ? lockedBaseMap : baseMap;
+    instrumentState.root.traverse((object) => {
+      if (
+        !object.isMesh ||
+        object.userData.isHitTarget ||
+        object.userData.isNoteLabel ||
+        object.name.startsWith("DEBUG_") ||
+        !object.material
+      ) {
+        return;
+      }
+
+      object.material = Array.isArray(object.material)
+        ? object.material.map((material) => this.getTextureSwapMaterial(material, targetMap))
+        : this.getTextureSwapMaterial(object.material, targetMap);
+    });
+    instrumentState.lockedTextureApplied = useLockedTexture;
+  }
+
+  getTextureSetForInstrumentState(instrumentState) {
+    if (instrumentState?.isLooper || instrumentState?.componentId === LOOPER_COMPONENT_ID) {
+      return this.looperMaterialTextures;
+    }
+    return this.instrumentMaterialTextures;
+  }
+
+  getTextureSwapMaterial(material, targetMap) {
+    if (!material) {
+      return material;
+    }
+
+    const targetMaterial = material.userData.lockTextureUniqueMaterial ? material : material.clone();
+    targetMaterial.userData = {
+      ...targetMaterial.userData,
+      lockTextureUniqueMaterial: true,
+      disposeOnInstrumentDelete: true,
+    };
+    targetMaterial.map = targetMap;
+    targetMaterial.needsUpdate = true;
+    return targetMaterial;
+  }
+
   updateLockVisual(instrumentState) {
+    this.setInstrumentLockedTexture(instrumentState, instrumentState?.locked);
     this.setLockIndicatorVisible(instrumentState, false);
   }
 
@@ -3534,10 +3501,9 @@ export class InstrumentController {
 
     const baseOpacity =
       typeof bodyTarget.userData.baseHitOpacity === "number" ? bodyTarget.userData.baseHitOpacity : HIT_MARKER_OPACITY;
-    const showIndicator = Boolean(instrumentState.locked && visible);
-    bodyTarget.userData.lockIndicatorVisible = showIndicator;
-    bodyTarget.material.color.setHex(showIndicator ? LOCK_INDICATOR_COLOR : getHitTargetColor(bodyTarget));
-    bodyTarget.material.opacity = showIndicator ? Math.max(baseOpacity, LOCK_INDICATOR_OPACITY) : baseOpacity;
+    bodyTarget.userData.lockIndicatorVisible = false;
+    bodyTarget.material.color.setHex(getHitTargetColor(bodyTarget));
+    bodyTarget.material.opacity = baseOpacity;
     bodyTarget.material.transparent = true;
     bodyTarget.material.depthWrite = false;
   }
@@ -3682,16 +3648,18 @@ export class InstrumentController {
     }
 
     const vowelLetter = VOWEL_LETTERS_BY_MORPH[vowelMorphName] || null;
-    state.morphController.setVowel(vowelLetter);
-
-    state.currentVowelIndex = VOWEL_MORPHS.indexOf(vowelMorphName);
-    state.currentVowelLetter = vowelLetter || "neutral";
-    this.currentVowelIndex = state.currentVowelIndex;
-    this.currentVowelLetter = state.currentVowelLetter;
-    this.synth.setVowel(state.currentVowelLetter === "neutral" ? "A" : state.currentVowelLetter);
+    this.applyVowelLetterToState(vowelLetter, state);
   }
 
   setVowelByLetter(vowelLetter, state = this.activeInstrumentState) {
+    this.applyVowelLetterToState(vowelLetter, state);
+  }
+
+  applyVowelLetterToState(
+    vowelLetter,
+    state = this.activeInstrumentState,
+    { updateLiveState = true, updateSynth = true } = {},
+  ) {
     if (!state) {
       return;
     }
@@ -3705,7 +3673,12 @@ export class InstrumentController {
       this.currentVowelIndex = state.currentVowelIndex;
       this.currentVowelLetter = state.currentVowelLetter;
     }
-    this.synth.setVowel(normalized || "A");
+    if (updateLiveState) {
+      state.performanceState?.setLiveState({ vowel: state.currentVowelLetter });
+    }
+    if (updateSynth) {
+      this.synth.setVowel(normalized || "A");
+    }
   }
 
   cycleVowel(state = this.activeInstrumentState) {
@@ -3713,13 +3686,9 @@ export class InstrumentController {
       return;
     }
 
-    const vowelLetter = state.morphController.cycleVowel();
-    const vowelMorphName = MORPH_TARGET_NAMES.vowels[vowelLetter];
-    state.currentVowelIndex = VOWEL_MORPHS.indexOf(vowelMorphName);
-    state.currentVowelLetter = vowelLetter;
-    this.currentVowelIndex = state.currentVowelIndex;
-    this.currentVowelLetter = state.currentVowelLetter;
-    this.synth.setVowel(vowelLetter);
+    const nextIndex = (state.currentVowelIndex + 1) % VOWEL_MORPHS.length;
+    const vowelMorphName = VOWEL_MORPHS[nextIndex];
+    this.applyVowelLetterToState(VOWEL_LETTERS_BY_MORPH[vowelMorphName], state);
   }
 
   spawnInstrumentInFrontOfCamera() {
@@ -3798,6 +3767,10 @@ export class InstrumentController {
     state.scalePresetNote = note.label;
     state.morphController.setEar("left", pitchAmount);
     state.morphController.setEar("right", octaveAmount);
+    state.performanceState?.setLiveState({
+      earLeft: pitchAmount,
+      earRight: octaveAmount,
+    });
 
     const leftEar = state.hitTargets[INTERACTION_TARGET_NAMES.leftEar];
     const rightEar = state.hitTargets[INTERACTION_TARGET_NAMES.rightEar];

@@ -13,23 +13,27 @@ export class GripTransformSystem {
     controllers,
     controllerStates,
     getPointedInstrumentState,
+    getTransformTargetState = (state) => state,
     adjustInstrumentBaseScale,
   }) {
     this.controllers = controllers;
     this.controllerStates = controllerStates;
     this.getPointedInstrumentState = getPointedInstrumentState;
+    this.getTransformTargetState = getTransformTargetState;
     this.adjustInstrumentBaseScale = adjustInstrumentBaseScale;
   }
 
   begin(controller, hit) {
     const controllerState = this.controllerStates.get(controller);
-    const instrumentState = hit?.object?.userData.instrumentState;
+    const sourceInstrumentState = hit?.object?.userData.instrumentState;
+    const instrumentState = this.getTransformTargetState(sourceInstrumentState);
     if (!instrumentState?.root || !instrumentState.root.visible) {
       return;
     }
 
     controllerState.gripHeld = true;
     controllerState.gripInstrumentState = instrumentState;
+    controllerState.gripSourceInstrumentState = sourceInstrumentState;
     controller.updateMatrixWorld(true);
     instrumentState.root.updateMatrixWorld(true);
     controllerState.gripOffsetMatrix.copy(controller.matrixWorld).invert().multiply(instrumentState.root.matrixWorld);
@@ -43,6 +47,7 @@ export class GripTransformSystem {
 
     controllerState.gripHeld = false;
     controllerState.gripInstrumentState = null;
+    controllerState.gripSourceInstrumentState = null;
     controllerState.thumbstickScaleDirection = 0;
   }
 
@@ -61,7 +66,8 @@ export class GripTransformSystem {
     }
 
     const pointedState = this.getPointedInstrumentState(controller);
-    if (pointedState !== controllerState.gripInstrumentState) {
+    const pointedTransformState = this.getTransformTargetState(pointedState);
+    if (pointedTransformState !== controllerState.gripInstrumentState) {
       return;
     }
 
@@ -70,7 +76,7 @@ export class GripTransformSystem {
     }
 
     controllerState.thumbstickScaleDirection = direction;
-    this.adjustInstrumentBaseScale(pointedState, direction * INSTRUMENT_SCALE_STEP);
+    this.adjustInstrumentBaseScale(controllerState.gripInstrumentState, direction * INSTRUMENT_SCALE_STEP);
   }
 
   update() {
