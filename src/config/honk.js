@@ -44,15 +44,8 @@ export const BEND_SMOOTHING = 0.18;
 export const BEND_COLLIDER_ROTATION_DEGREES = -18;
 export const MAX_PITCH_BEND_SEMITONES = 4;
 export const SQUEEZE_SENSITIVITY = 0.18;
-export const SQUEEZE_COLLIDER_MIN_OVERLAP = 0.50;
 export const EAR_DRAG_SENSITIVITY = 1.8;
 export const NOSE_DRAG_SENSITIVITY = 1.8;
-
-export const CHORD_BOX_SCALE = {
-  x: 0.55,
-  y: 0.75,
-  z: 0.55,
-};
 
 export const BEND_ALIGNED_COLLIDER_GROUP_NAME = "BEND_aligned_interaction_colliders";
 

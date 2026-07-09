@@ -112,18 +112,20 @@ export class RaycastInteractionSystem {
 
     const gripTargets = this.targets;
     gripTargets.length = 0;
+    const addGripTarget = (target) => {
+      if (target?.visible !== false && target?.userData.isBodyGripTarget && !gripTargets.includes(target)) {
+        gripTargets.push(target);
+      }
+    };
+
     for (const state of this.getInstrumentStates()) {
       if (!state.root.visible) {
         continue;
       }
 
-      for (const target of state.hitTargetList || []) {
-        gripTargets.push(target);
-      }
+      addGripTarget(state.hitTargets?.[INTERACTION_TARGET_NAMES.body]);
       for (const target of state.gripTargetList || []) {
-        if (target?.visible !== false) {
-          gripTargets.push(target);
-        }
+        addGripTarget(target);
       }
     }
 

@@ -67,6 +67,14 @@ export const SPAWN_COMPONENT_OPTIONS = [
     preset: "fMajorChord",
   },
   {
+    id: "chord-aminor",
+    label: "A Min",
+    modelPath: MODEL_PATH,
+    color: 0xff7fb0,
+    variantOf: "honk",
+    preset: "aMinorChord",
+  },
+  {
     id: "looper",
     label: "Looper",
     modelPath: LOOPER_MODEL_PATH,
