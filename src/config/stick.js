@@ -23,4 +23,11 @@ export const STICK_SETTINGS = {
   collision: {
     maxUserDistance: 2.25,
   },
+
+  haptics: {
+    enabled: true,
+    intensity: 0.65,
+    durationMs: 35,
+    cooldownMs: 45,
+  },
 };

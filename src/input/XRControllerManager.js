@@ -159,6 +159,7 @@ function createControllerState() {
     stickObject: null,
     stickCollider: null,
     stickContactKeys: new Set(),
+    stickHapticCooldownUntilMs: 0,
     raySqueezeVoiceId: null,
     raySqueezeActiveVoiceIds: new Set(),
     raySqueezeInstrumentState: null,

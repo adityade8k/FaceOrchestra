@@ -1006,6 +1006,10 @@ export class InstrumentController {
     return this.controllerManager.findGamepad(handedness);
   }
 
+  getControllerGamepad(controller) {
+    return controller?.userData?.gamepad || this.findGamepad(controller?.userData?.handedness);
+  }
+
   getThumbstickScaleDirection(gamepad) {
     return this.controllerManager.getThumbstickScaleDirection(gamepad);
   }
@@ -2290,7 +2294,7 @@ export class InstrumentController {
 
         nextKeys.add(contactKey);
         if (!previousKeys.has(contactKey)) {
-          this.handleStickPercussionContactEnter(instrumentState, drumType, now);
+          this.handleStickPercussionContactEnter(controller, controllerState, instrumentState, drumType, now);
         }
       }
 
@@ -2428,9 +2432,80 @@ export class InstrumentController {
     return true;
   }
 
-  handleStickPercussionContactEnter(instrumentState, drumType, now = performance.now()) {
+  handleStickPercussionContactEnter(
+    controller,
+    controllerState,
+    instrumentState,
+    drumType,
+    now = performance.now(),
+  ) {
     this.playStickPercussion(drumType);
+    this.triggerStickHitHaptics(controller, controllerState, now);
     this.recordStickPercussionHit(instrumentState, drumType, now);
+  }
+
+  triggerStickHitHaptics(controller, controllerState, now = performance.now()) {
+    const settings = STICK_SETTINGS.haptics;
+    if (!settings || settings.enabled === false || !controller) {
+      return;
+    }
+
+    const cooldownMs = Math.max(getConfigNumber(settings.cooldownMs, 0), 0);
+    if (cooldownMs > 0 && now < (controllerState?.stickHapticCooldownUntilMs || 0)) {
+      return;
+    }
+
+    const durationMs = Math.max(getConfigNumber(settings.durationMs, 0), 0);
+    const intensity = THREE.MathUtils.clamp(getConfigNumber(settings.intensity, 0), 0, 1);
+    if (durationMs <= 0 || intensity <= 0) {
+      return;
+    }
+
+    const pulsePromise = this.pulseGamepadHaptics(this.getControllerGamepad(controller), intensity, durationMs);
+    if (!pulsePromise) {
+      return;
+    }
+
+    if (controllerState && cooldownMs > 0) {
+      controllerState.stickHapticCooldownUntilMs = now + cooldownMs;
+    }
+    if (pulsePromise.catch) {
+      pulsePromise.catch((error) => {
+        console.warn("Could not pulse controller haptics:", error);
+      });
+    }
+  }
+
+  pulseGamepadHaptics(gamepad, intensity, durationMs) {
+    if (!gamepad) {
+      return null;
+    }
+
+    try {
+      const pulsePromises = [];
+      for (const actuator of gamepad.hapticActuators || []) {
+        if (typeof actuator?.pulse === "function") {
+          pulsePromises.push(actuator.pulse(intensity, durationMs));
+        }
+      }
+      if (pulsePromises.length > 0) {
+        return Promise.all(pulsePromises);
+      }
+
+      const vibrationActuator = gamepad.vibrationActuator;
+      if (typeof vibrationActuator?.playEffect === "function") {
+        return vibrationActuator.playEffect("dual-rumble", {
+          startDelay: 0,
+          duration: durationMs,
+          weakMagnitude: intensity,
+          strongMagnitude: intensity,
+        });
+      }
+    } catch (error) {
+      console.warn("Could not pulse controller haptics:", error);
+    }
+
+    return null;
   }
 
   playStickPercussion(drumType, { volume = 1 } = {}) {
