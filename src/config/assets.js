@@ -18,7 +18,6 @@ export const LOOPER_TEXTURE_PATHS = {
 };
 
 export const STICK_TEXTURE_PATHS = {
-  baseMap: "./model/branch/branch_3d_model_pbr_basecolor.JPEG",
   normalMap: "./model/branch/branch_3d_model_pbr_normal.JPEG",
   metalnessMap: "./model/branch/branch_3d_model_pbr_metallic.JPEG",
   roughnessMap: "./model/branch/branch_3d_model_pbr_roughness.JPEG",

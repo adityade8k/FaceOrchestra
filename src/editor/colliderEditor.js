@@ -6,6 +6,8 @@ import { clone as cloneSkeletonAware } from "three/addons/utils/SkeletonUtils.js
 import {
   HONK_CONNECTION_COLLIDER_SETTINGS,
   INTERACTION_COLLIDERS,
+  INTERACTION_TYPES,
+  MORPH_TARGET_NAMES,
 } from "../config/honk.js";
 import {
   LOOPER_BUTTON_ACTIONS,
@@ -134,6 +136,8 @@ const state = {
   nodeObjects: [],
   arcHelpers: new Map(),
   morphTargets: new Map(),
+  morphValues: new Map(),
+  syncingColliderPreview: false,
 };
 
 window.__colliderEditorDebug = {
@@ -153,11 +157,15 @@ transformControls.addEventListener("dragging-changed", (event) => {
 });
 
 transformControls.addEventListener("objectChange", () => {
+  if (state.syncingColliderPreview) {
+    return;
+  }
   if (!state.selected) {
     return;
   }
   constrainSelectedTransform(state.selected);
   syncConfigFromObject(state.selected);
+  syncColliderPreviewForMorphs();
   if (state.selected.userData.editor?.kind === "looperNodeLayout") {
     rebuildLooperNodes();
   }
@@ -251,6 +259,7 @@ function clearCurrentObject() {
   state.nodeObjects = [];
   state.arcHelpers.clear();
   state.morphTargets.clear();
+  state.morphValues.clear();
   colliderSelect.innerHTML = "";
   propertiesEl.innerHTML = "";
   morphTargetsEl.innerHTML = "";
@@ -535,6 +544,142 @@ function createLooperArcHelper(mesh, config, color) {
   return line;
 }
 
+function syncColliderPreviewForMorphs() {
+  state.syncingColliderPreview = true;
+  try {
+    for (const name of state.colliderOrder) {
+      const mesh = state.colliders.get(name);
+      if (!mesh) {
+        continue;
+      }
+
+      const editor = mesh.userData.editor;
+      const config = getConfigForEditor(editor);
+
+      if (!editor || !config) {
+        continue;
+      }
+
+      if (editor.kind === "honkInteraction") {
+        applyHonkInteractionConfig(mesh, config);
+        mesh.position.add(getColliderPreviewOffset(mesh, config));
+        continue;
+      }
+
+      if (editor.kind === "looperControl") {
+        applyLooperTransformConfig(mesh, config);
+        mesh.position.add(getColliderPreviewOffset(mesh, config));
+      }
+    }
+  } finally {
+    state.syncingColliderPreview = false;
+  }
+}
+
+function getColliderPreviewOffset(mesh, config) {
+  const editor = mesh?.userData?.editor;
+  const offset = new THREE.Vector3();
+
+  if (!editor || !config) {
+    return offset;
+  }
+
+  if (editor.kind === "honkInteraction") {
+    const signedValue = getHonkInteractionSignedMorphValue(config);
+    const travel = state.size.y * getFiniteNumber(config.movementRange, 0);
+
+    offset.y = signedValue * travel;
+    return offset;
+  }
+
+  if (editor.kind === "looperControl") {
+    const signedValue = getLooperControlSignedMorphValue(config);
+
+    if (config.movementMode === "arc" && config.arc) {
+      return getLooperControlArcPreviewOffset(config, signedValue);
+    }
+
+    const travel = state.size.y * getFiniteNumber(config.movementRange, 0.24);
+    offset.y = signedValue * travel;
+    return offset;
+  }
+
+  return offset;
+}
+
+function getHonkInteractionSignedMorphValue(config) {
+  let signedValue = 0;
+
+  if (config.type === INTERACTION_TYPES.nose) {
+    signedValue = getMorphValue(MORPH_TARGET_NAMES.nose);
+  }
+
+  if (config.type === INTERACTION_TYPES.ear) {
+    const earTargets =
+      config.side === "left"
+        ? {
+            up: MORPH_TARGET_NAMES.ears.leftUp,
+            down: MORPH_TARGET_NAMES.ears.leftDown,
+          }
+        : {
+            up: MORPH_TARGET_NAMES.ears.rightUp,
+            down: MORPH_TARGET_NAMES.ears.rightDown,
+          };
+
+    signedValue = getMorphValue(earTargets.up) - getMorphValue(earTargets.down);
+  }
+
+  if (config.invertVerticalMorph) {
+    signedValue *= -1;
+  }
+
+  return THREE.MathUtils.clamp(signedValue, -1, 1);
+}
+
+function getLooperControlSignedMorphValue(config) {
+  const morphTargets = config.morphTargets || {};
+  const signedValue = getMorphValue(morphTargets.up) - getMorphValue(morphTargets.down);
+
+  return THREE.MathUtils.clamp(signedValue, -1, 1);
+}
+
+function getLooperControlArcPreviewOffset(config, signedValue) {
+  const offset = new THREE.Vector3();
+  const arc = config.arc || {};
+
+  const side = getFiniteNumber(arc.side, 1) < 0 ? -1 : 1;
+  const radius = Math.max(state.size.x * getFiniteNumber(arc.radius, 0.18), 0.0001);
+  const minAngle = getFiniteNumber(arc.minDegrees, -48) * DEG_TO_RAD;
+  const maxAngle = getFiniteNumber(arc.maxDegrees, 48) * DEG_TO_RAD;
+  const midpointAngle = THREE.MathUtils.lerp(minAngle, maxAngle, 0.5);
+
+  const t = (THREE.MathUtils.clamp(signedValue, -1, 1) + 1) * 0.5;
+  const angle = THREE.MathUtils.lerp(minAngle, maxAngle, t);
+
+  const midpointX = -side * Math.cos(midpointAngle) * radius;
+  const midpointY = Math.sin(midpointAngle) * radius;
+
+  const localX = -side * Math.cos(angle) * radius - midpointX;
+  const localY = Math.sin(angle) * radius - midpointY;
+
+  const rotationZ = getFiniteNumber(config.rotationDegrees?.z, 0) * DEG_TO_RAD;
+  const rotationCos = Math.cos(rotationZ);
+  const rotationSin = Math.sin(rotationZ);
+
+  offset.x = localX * rotationCos - localY * rotationSin;
+  offset.y = localX * rotationSin + localY * rotationCos;
+
+  return offset;
+}
+
+function getMorphValue(name) {
+  if (!name) {
+    return 0;
+  }
+
+  return state.morphValues.get(name) ?? 0;
+}
+
 function populateColliderSelect() {
   colliderSelect.innerHTML = "";
   state.colliderOrder.forEach((name) => {
@@ -607,15 +752,18 @@ function buildPropertyPanel(mesh) {
     addReadOnlyField(grid, "Type", config.type || "");
     addVectorField(grid, "Position", config, ["x", "y", "z"], 0.001, () => {
       applyHonkInteractionConfig(mesh, config);
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     addNumberField(grid, "Size", config.size, 0.001, (value) => {
       config.size = Math.max(value, 0.0001);
       applyHonkInteractionConfig(mesh, config);
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     addNumberField(grid, "Move range", config.movementRange ?? 0, 0.001, (value) => {
       config.movementRange = Math.max(value, 0);
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     return;
@@ -645,6 +793,7 @@ function buildPropertyPanel(mesh) {
     });
     addVectorField(grid, "Scale", config.scale, ["x", "y", "z"], 0.001, () => {
       applyLooperTransformConfig(mesh, config);
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     addReadOnlyField(grid, "Morph", config.morphTarget || "");
@@ -655,19 +804,23 @@ function buildPropertyPanel(mesh) {
     addVectorField(grid, "Position", config, ["x", "y", "z"], 0.001, () => {
       applyLooperTransformConfig(mesh, config);
       updateArcHelpers();
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     addVectorField(grid, "Rotation", config.rotationDegrees, ["x", "y", "z"], 0.1, () => {
       applyLooperTransformConfig(mesh, config);
       updateArcHelpers();
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     addVectorField(grid, "Scale", config.scale, ["x", "y", "z"], 0.001, () => {
       applyLooperTransformConfig(mesh, config);
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     addNumberField(grid, "Move range", config.movementRange ?? 0.24, 0.001, (value) => {
       config.movementRange = Math.max(value, 0.0001);
+      syncColliderPreviewForMorphs();
       updateConfigOutput();
     });
     addNumberField(grid, "Drag sens.", config.dragSensitivity ?? 1, 0.01, (value) => {
@@ -677,6 +830,7 @@ function buildPropertyPanel(mesh) {
     addCheckboxField(grid, "Arc enabled", config.movementMode === "arc", (value) => {
       setControlArcEnabled(config, value);
       updateArcHelpers();
+      syncColliderPreviewForMorphs();
       buildPropertyPanel(mesh);
       updateConfigOutput();
     });
@@ -685,27 +839,32 @@ function buildPropertyPanel(mesh) {
         config.rotationDegrees.z = value;
         applyLooperTransformConfig(mesh, config);
         updateArcHelpers();
+        syncColliderPreviewForMorphs();
         updatePropertyInputs();
         updateConfigOutput();
       });
       addNumberField(grid, "Arc side", config.arc?.side ?? 1, 1, (value) => {
         config.arc.side = value < 0 ? -1 : 1;
         updateArcHelpers();
+        syncColliderPreviewForMorphs();
         updateConfigOutput();
       });
       addNumberField(grid, "Arc radius", config.arc?.radius ?? 0.18, 0.001, (value) => {
         config.arc.radius = Math.max(value, 0.0001);
         updateArcHelpers();
+        syncColliderPreviewForMorphs();
         updateConfigOutput();
       });
       addNumberField(grid, "Arc start", config.arc?.minDegrees ?? -48, 0.1, (value) => {
         config.arc.minDegrees = value;
         updateArcHelpers();
+        syncColliderPreviewForMorphs();
         updateConfigOutput();
       });
       addNumberField(grid, "Arc end", config.arc?.maxDegrees ?? 48, 0.1, (value) => {
         config.arc.maxDegrees = value;
         updateArcHelpers();
+        syncColliderPreviewForMorphs();
         updateConfigOutput();
       });
     }
@@ -961,11 +1120,21 @@ function collectMorphTargets(model) {
 
     const setMorph = (rawValue) => {
       const value = THREE.MathUtils.clamp(Number.parseFloat(rawValue) || 0, 0, 1);
+
       range.value = formatNumber(value, 2);
       number.value = formatNumber(value, 2);
+
+      if (value === 0) {
+        state.morphValues.delete(name);
+      } else {
+        state.morphValues.set(name, value);
+      }
+
       for (const target of state.morphTargets.get(name)) {
         target.mesh.morphTargetInfluences[target.index] = value;
       }
+
+      syncColliderPreviewForMorphs();
     };
 
     range.addEventListener("input", () => setMorph(range.value));
@@ -1013,9 +1182,12 @@ function syncConfigFromObject(mesh) {
   }
 
   if (editor.kind === "honkInteraction") {
-    config.x = normalizedX(mesh.position.x);
-    config.y = normalizedY(mesh.position.y);
-    config.z = normalizedZ(mesh.position.z);
+    const neutralPosition = mesh.position.clone().sub(getColliderPreviewOffset(mesh, config));
+
+    config.x = normalizedX(neutralPosition.x);
+    config.y = normalizedY(neutralPosition.y);
+    config.z = normalizedZ(neutralPosition.z);
+
     const radius = averageAxis(mesh.scale);
     config.size = Math.max(radius / state.maxSize, 0.0001);
     mesh.scale.setScalar(config.size * state.maxSize);
@@ -1035,9 +1207,14 @@ function syncConfigFromObject(mesh) {
   }
 
   if (editor.kind === "looperButton" || editor.kind === "looperControl") {
-    config.x = normalizedX(mesh.position.x);
-    config.y = normalizedY(mesh.position.y);
-    config.z = normalizedZ(mesh.position.z);
+    const neutralPosition =
+      editor.kind === "looperControl"
+        ? mesh.position.clone().sub(getColliderPreviewOffset(mesh, config))
+        : mesh.position;
+
+    config.x = normalizedX(neutralPosition.x);
+    config.y = normalizedY(neutralPosition.y);
+    config.z = normalizedZ(neutralPosition.z);
     config.rotationDegrees = rotationDegreesFromMesh(mesh);
     config.scale = vectorFromThree(mesh.scale);
     return;

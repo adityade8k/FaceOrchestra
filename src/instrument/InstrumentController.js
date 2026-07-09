@@ -191,18 +191,25 @@ const F_MAJOR_CHORD_PRESET = [
   { label: "A", semitonesFromF: 4 },
   { label: "C", semitonesFromF: -5, octaveOffset: 1 },
 ];
+const A_MINOR_CHORD_PRESET = [
+  { label: "A", semitonesFromF: 4 },
+  { label: "C", semitonesFromF: -5, octaveOffset: 1 },
+  { label: "E", semitonesFromF: -1, octaveOffset: 1 },
+];
 const SPAWN_PRESETS = {
   cMajorScale: { notes: C_MAJOR_SCALE_PRESET, namePrefix: "Honk" },
   fNaturalMinorScale: { notes: F_NATURAL_MINOR_SCALE_PRESET, namePrefix: "HonkFm" },
   cMajorChord: { notes: C_MAJOR_CHORD_PRESET, namePrefix: "CMaj" },
   gMajorChord: { notes: G_MAJOR_CHORD_PRESET, namePrefix: "GMaj" },
   fMajorChord: { notes: F_MAJOR_CHORD_PRESET, namePrefix: "FMaj" },
+  aMinorChord: { notes: A_MINOR_CHORD_PRESET, namePrefix: "AMin" },
 };
 const F_NATURAL_MINOR_SNAP_STEPS_FROM_F = [-5, -4, -2, 0, 2, 3, 5, 7];
 const SCALE_PRESET_SPACING = 0.32;
 const CHROMATIC_NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const F4_MIDI_NOTE = 65;
 const CHORD_SQUEEZE_SPHERE_MIN_INTERSECTION = 0.2;
+const DEFAULT_STICK_COLLISION_MAX_USER_DISTANCE = 2.25;
 const PITCH_SNAP_STEPS = {
   cMajor: C_MAJOR_SCALE_PRESET.map((note) => note.semitonesFromF),
   fNaturalMinor: F_NATURAL_MINOR_SNAP_STEPS_FROM_F,
@@ -235,7 +242,12 @@ const tempShakePosition = new THREE.Vector3();
 const tempShakeBounds = new THREE.Box3();
 const tempShakeRange = new THREE.Vector3();
 const tempStickColliderBounds = new THREE.Box3();
+const tempStickColliderLocalBounds = new THREE.Box3();
+const tempStickColliderInverseMatrix = new THREE.Matrix4();
 const tempStickTargetBounds = new THREE.Box3();
+const tempStickTargetToColliderMatrix = new THREE.Matrix4();
+const tempStickTriangle = new THREE.Triangle();
+const tempStickUserPosition = new THREE.Vector3();
 
 export function collectHitTargets(root) {
   const hitTargets = {};
@@ -271,7 +283,7 @@ export function collectHitTargets(root) {
 function collectGripRaycastTargets(root) {
   const targets = [];
   root.traverse((object) => {
-    if (object.isMesh && !object.userData.isHitTarget) {
+    if (object.isMesh && object.userData.isBodyGripTarget) {
       targets.push(object);
     }
   });
@@ -945,6 +957,7 @@ export class InstrumentController {
     this.pollControllers();
     if (this.pendingSpawnPlacement) {
       this.updatePendingSpawnPreview();
+      this.updateLooperPlaybackDuringPendingSpawn(time);
       return;
     }
     if (hadPendingSpawnPlacement) {
@@ -1376,8 +1389,8 @@ export class InstrumentController {
   isLockableInstrumentState(instrumentState) {
     return Boolean(
       instrumentState?.root?.visible &&
-        !instrumentState.pendingPlacement &&
-        (instrumentState.interactive || instrumentState.isLooper),
+      !instrumentState.pendingPlacement &&
+      (instrumentState.interactive || instrumentState.isLooper),
     );
   }
 
@@ -1803,6 +1816,83 @@ export class InstrumentController {
     this.setLooperControlValue(looperState, interaction.control, nextValue, false, interaction.morphTargets);
   }
 
+  getSignedMorphValueForCollider(sphere, state) {
+    const type = sphere.userData.interactionType;
+
+    if (!state?.morphController) return 0;
+
+    if (type === INTERACTION_TYPES.ear) {
+      return state.morphController.getEarAmount(sphere.userData.side);
+    }
+
+    if (type === INTERACTION_TYPES.nose) {
+      const value = state.morphController.getValue(
+        sphere.userData.morphName || MORPH_TARGET_NAMES.nose
+      );
+
+      return sphere.userData.invertVerticalMorph ? -value : value;
+    }
+
+    const positiveName = sphere.userData.positiveMorphName || sphere.userData.morphName;
+    const negativeName = sphere.userData.negativeMorphName;
+
+    const positive = positiveName
+      ? state.morphController.getValue(positiveName)
+      : 0;
+
+    const negative = negativeName
+      ? state.morphController.getValue(negativeName)
+      : 0;
+
+    const signedValue = positive - negative;
+
+    return sphere.userData.invertVerticalMorph ? -signedValue : signedValue;
+  }
+
+  syncMorphColliderTravel(state) {
+    if (!state?.morphController) return;
+
+    const spheres = this.getProceduralMorphTargetSpheres(state);
+
+    for (const sphere of spheres) {
+      if (
+        typeof sphere.userData.neutralY !== "number" ||
+        typeof sphere.userData.minY !== "number" ||
+        typeof sphere.userData.maxY !== "number"
+      ) {
+        continue;
+      }
+
+      const signedValue = THREE.MathUtils.clamp(
+        this.getSignedMorphValueForCollider(sphere, state),
+        -1,
+        1
+      );
+
+      this.setSpherePositionFromSignedValue(sphere, signedValue);
+    }
+
+    if (!state.isLooper) {
+      return;
+    }
+
+    for (const [control, fallbackMorphTargets] of Object.entries(LOOPER_CONTROL_MORPH_TARGETS)) {
+      const sphere = state.hitTargets[getLooperControlName(control)];
+      if (!sphere?.userData.isLooperControl) {
+        continue;
+      }
+
+      const morphTargets = sphere.userData.looperMorphTargets || fallbackMorphTargets;
+      const signedValue = THREE.MathUtils.clamp(
+        state.morphController.getValue(morphTargets.up) - state.morphController.getValue(morphTargets.down),
+        -1,
+        1,
+      );
+
+      this.positionControlColliderFromValue(sphere, signedValue);
+    }
+  }
+
   getControlValueFromDrag(sphere, interaction, dragDelta) {
     const scaledDragDelta = dragDelta * (sphere.userData.dragSensitivity ?? 1);
     if (sphere.userData.movementMode === "arc") {
@@ -2026,13 +2116,24 @@ export class InstrumentController {
   }
 
   setSpherePositionFromSignedValue(sphere, signedValue) {
-    sphere.position.y = THREE.MathUtils.mapLinear(
-      THREE.MathUtils.clamp(signedValue, -1, 1),
-      -1,
-      1,
-      sphere.userData.minY,
-      sphere.userData.maxY,
-    );
+    const value = THREE.MathUtils.clamp(signedValue, -1, 1);
+
+    const neutralY = sphere.userData.neutralY;
+    const minY = sphere.userData.minY;
+    const maxY = sphere.userData.maxY;
+
+    if (
+      typeof neutralY !== "number" ||
+      typeof minY !== "number" ||
+      typeof maxY !== "number"
+    ) {
+      return;
+    }
+
+    sphere.position.y =
+      value >= 0
+        ? THREE.MathUtils.lerp(neutralY, maxY, value)
+        : THREE.MathUtils.lerp(neutralY, minY, -value);
   }
 
   getOrCreateControllerStick(controller, controllerState) {
@@ -2142,11 +2243,20 @@ export class InstrumentController {
   }
 
   updateStickPercussionContacts(now = performance.now()) {
+    let hasUserPosition = false;
+
     for (const controller of this.controllers) {
       const controllerState = this.controllerStates.get(controller);
       if (!controllerState?.stickActive || !controllerState.stickCollider?.visible) {
         controllerState?.stickContactKeys?.clear();
         continue;
+      }
+
+      if (!hasUserPosition) {
+        const userCamera = this.getUserCamera();
+        userCamera.updateMatrixWorld(true);
+        userCamera.getWorldPosition(tempStickUserPosition);
+        hasUserPosition = true;
       }
 
       controllerState.stickCollider.updateWorldMatrix(true, false);
@@ -2167,7 +2277,14 @@ export class InstrumentController {
           ? STICK_PERCUSSION_TYPES.hihat
           : STICK_PERCUSSION_TYPES.boink;
         const contactKey = `${drumType}:${instrumentState.id}`;
-        if (!this.doesStickColliderTouchInstrumentMeshes(tempStickColliderBounds, instrumentState)) {
+        if (
+          !this.doesStickColliderTouchInstrumentMeshes(
+            controllerState.stickCollider,
+            tempStickColliderBounds,
+            instrumentState,
+            tempStickUserPosition,
+          )
+        ) {
           continue;
         }
 
@@ -2188,25 +2305,102 @@ export class InstrumentController {
   isStickPercussionTargetState(instrumentState) {
     return Boolean(
       instrumentState?.root?.visible &&
-        !instrumentState.pendingPlacement &&
-        (instrumentState.interactive || instrumentState.isLooper),
+      !instrumentState.pendingPlacement &&
+      (instrumentState.interactive || instrumentState.isLooper),
     );
   }
 
-  doesStickColliderTouchInstrumentMeshes(stickBounds, instrumentState) {
-    let touched = false;
+  doesStickColliderTouchInstrumentMeshes(stickCollider, stickBounds, instrumentState, userPosition) {
+    if (!stickCollider?.isMesh || !stickCollider.geometry) {
+      return false;
+    }
+
     instrumentState.root.updateMatrixWorld(true);
+    tempStickTargetBounds.setFromObject(instrumentState.root);
+    if (
+      tempStickTargetBounds.isEmpty() ||
+      !stickBounds.intersectsBox(tempStickTargetBounds) ||
+      !this.isStickTargetBoundsCloseToUser(tempStickTargetBounds, userPosition)
+    ) {
+      return false;
+    }
+
+    if (!stickCollider.geometry.boundingBox) {
+      stickCollider.geometry.computeBoundingBox();
+    }
+    tempStickColliderLocalBounds.copy(stickCollider.geometry.boundingBox);
+    tempStickColliderInverseMatrix.copy(stickCollider.matrixWorld).invert();
+
+    let touched = false;
     instrumentState.root.traverse((object) => {
       if (touched || !this.isStickPercussionTargetMesh(object)) {
         return;
       }
 
       tempStickTargetBounds.setFromObject(object);
-      if (!tempStickTargetBounds.isEmpty() && stickBounds.intersectsBox(tempStickTargetBounds)) {
+      if (
+        tempStickTargetBounds.isEmpty() ||
+        !stickBounds.intersectsBox(tempStickTargetBounds) ||
+        !this.isStickTargetBoundsCloseToUser(tempStickTargetBounds, userPosition)
+      ) {
+        return;
+      }
+
+      if (this.doesStickColliderIntersectMeshTriangles(object)) {
         touched = true;
       }
     });
     return touched;
+  }
+
+  isStickTargetBoundsCloseToUser(bounds, userPosition) {
+    const maxDistance =
+      STICK_SETTINGS.collision?.maxUserDistance ?? DEFAULT_STICK_COLLISION_MAX_USER_DISTANCE;
+    if (!Number.isFinite(maxDistance) || maxDistance <= 0 || !userPosition) {
+      return true;
+    }
+
+    return bounds.distanceToPoint(userPosition) <= maxDistance;
+  }
+
+  doesStickColliderIntersectMeshTriangles(targetMesh) {
+    const geometry = targetMesh?.geometry;
+    const position = geometry?.attributes?.position;
+    if (!position || position.count < 3 || tempStickColliderLocalBounds.isEmpty()) {
+      return false;
+    }
+
+    tempStickTargetToColliderMatrix.multiplyMatrices(
+      tempStickColliderInverseMatrix,
+      targetMesh.matrixWorld,
+    );
+
+    const index = geometry.index;
+    const triangleCount = index ? Math.floor(index.count / 3) : Math.floor(position.count / 3);
+    for (let triangleIndex = 0; triangleIndex < triangleCount; triangleIndex += 1) {
+      const vertexIndexA = index ? index.getX(triangleIndex * 3) : triangleIndex * 3;
+      const vertexIndexB = index ? index.getX(triangleIndex * 3 + 1) : triangleIndex * 3 + 1;
+      const vertexIndexC = index ? index.getX(triangleIndex * 3 + 2) : triangleIndex * 3 + 2;
+
+      this.setStickCollisionTriangleVertex(targetMesh, vertexIndexA, tempStickTriangle.a);
+      this.setStickCollisionTriangleVertex(targetMesh, vertexIndexB, tempStickTriangle.b);
+      this.setStickCollisionTriangleVertex(targetMesh, vertexIndexC, tempStickTriangle.c);
+
+      if (tempStickColliderLocalBounds.intersectsTriangle(tempStickTriangle)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  setStickCollisionTriangleVertex(targetMesh, vertexIndex, target) {
+    if (typeof targetMesh.getVertexPosition === "function") {
+      targetMesh.getVertexPosition(vertexIndex, target);
+    } else {
+      target.fromBufferAttribute(targetMesh.geometry.attributes.position, vertexIndex);
+    }
+    target.applyMatrix4(tempStickTargetToColliderMatrix);
   }
 
   isStickPercussionTargetMesh(object) {
@@ -2302,16 +2496,17 @@ export class InstrumentController {
       return;
     }
 
+    const gripHit = this.getGripHit(controller);
+    if (gripHit) {
+      this.gripTransformSystem?.begin(controller, gripHit);
+      return;
+    }
+
     const rayHit = this.getCurrentHit(controller);
     const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
     if (!this.isStickBlockingRayHit(rayHit, lockedInstrumentState)) {
       this.activateStick(controller);
       return;
-    }
-
-    const gripHit = this.getGripHit(controller);
-    if (gripHit) {
-      this.gripTransformSystem?.begin(controller, gripHit);
     }
   }
 
@@ -3229,34 +3424,7 @@ export class InstrumentController {
     }
 
     this.updateLooperPlayback(now);
-
-    for (const state of this.instrumentStates) {
-      if (!state.interactive) {
-        continue;
-      }
-
-      const resolved = state.performanceState?.resolve?.();
-      const targetSqueeze = resolved?.squeeze ?? (state.hornHolders.size > 0 ? 1 : 0);
-      const targetBend = resolved?.bend ?? 0;
-
-      state.hornSqueezeValue = THREE.MathUtils.lerp(
-        state.hornSqueezeValue,
-        targetSqueeze,
-        SQUEEZE_SENSITIVITY,
-      );
-      state.morphController.setSqueeze(state.hornSqueezeValue);
-
-      state.targetBendValue = targetBend;
-      state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
-      state.morphController.setBend(state.bendValue);
-      if (resolved) {
-        this.applyResolvedHonkMorphState(state, resolved);
-      }
-      this.updateBendAlignedColliders(state);
-
-      const pulse = 1 + state.hornSqueezeValue * 0.035;
-      this.applyInstrumentVisualScale(state, pulse);
-    }
+    this.applyResolvedHonkPerformanceStates();
 
     for (const { interaction } of activeHoldInteractions) {
       for (const synthState of interaction.activeChain || []) {
@@ -3306,6 +3474,59 @@ export class InstrumentController {
   updatePlayback(delta = 0, time = performance.now()) {
     this.updateLooperPlayback(time);
     this.updateLooperPlaybackAudio();
+  }
+
+  updateLooperPlaybackDuringPendingSpawn(now = performance.now()) {
+    this.clearLiveHornInteractionState();
+    this.updateLooperPlayback(now);
+    this.applyResolvedHonkPerformanceStates();
+    this.updateLooperPlaybackAudio();
+    this.updateLooperMorphAnimations(now);
+  }
+
+  clearLiveHornInteractionState() {
+    for (const state of this.instrumentStates) {
+      if (!state.interactive) {
+        continue;
+      }
+
+      state.hornHolders.clear();
+      state.activeBends.clear();
+      state.performanceState?.setLiveState({
+        squeeze: 0,
+        bend: 0,
+      });
+    }
+  }
+
+  applyResolvedHonkPerformanceStates() {
+    for (const state of this.instrumentStates) {
+      if (!state.interactive) {
+        continue;
+      }
+
+      const resolved = state.performanceState?.resolve?.();
+      const targetSqueeze = resolved?.squeeze ?? (state.hornHolders.size > 0 ? 1 : 0);
+      const targetBend = resolved?.bend ?? 0;
+
+      state.hornSqueezeValue = THREE.MathUtils.lerp(
+        state.hornSqueezeValue,
+        targetSqueeze,
+        SQUEEZE_SENSITIVITY,
+      );
+      state.morphController.setSqueeze(state.hornSqueezeValue);
+
+      state.targetBendValue = targetBend;
+      state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
+      state.morphController.setBend(state.bendValue);
+      if (resolved) {
+        this.applyResolvedHonkMorphState(state, resolved);
+      }
+      this.updateBendAlignedColliders(state);
+
+      const pulse = 1 + state.hornSqueezeValue * 0.035;
+      this.applyInstrumentVisualScale(state, pulse);
+    }
   }
 
   updateLooperRecordings(now = performance.now()) {
@@ -3580,8 +3801,8 @@ export class InstrumentController {
   getRaySqueezeInteraction(controller, controllerState) {
     const gripInstrumentState =
       controllerState.gripHeld &&
-      controllerState.gripInstrumentState?.interactive &&
-      controllerState.gripInstrumentState.root?.visible
+        controllerState.gripInstrumentState?.interactive &&
+        controllerState.gripInstrumentState.root?.visible
         ? controllerState.gripInstrumentState
         : null;
 
@@ -3915,6 +4136,7 @@ export class InstrumentController {
       return;
     }
     state.morphController.setMorph(morphName, value);
+    this.syncMorphColliderTravel(state);
   }
 
   createNoteLabel(state) {
@@ -4026,7 +4248,7 @@ export class InstrumentController {
     }
     return snapSteps.reduce((closest, step) =>
       Math.abs(step - rawPitchSemitones) < Math.abs(closest - rawPitchSemitones) ? step : closest,
-    snapSteps[0]);
+      snapSteps[0]);
   }
 
   setVowel(vowelMorphName, state = this.activeInstrumentState) {

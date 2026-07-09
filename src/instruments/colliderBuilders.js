@@ -122,11 +122,34 @@ export function createMorphTargetSpheres(root, hitTargets, { hitMarkerOpacity })
     sphere.userData.neutralY = neutralY - parentOffsetY;
     sphere.userData.minY = neutralY - travel - parentOffsetY;
     sphere.userData.maxY = neutralY + travel - parentOffsetY;
+
     sphere.position.set(
       tempBoxCenter.x + target.x * tempBoxSize.x - (parent === bendAlignedGroup ? bendAlignedGroup.position.x : 0),
       neutralY - parentOffsetY,
       tempBoxCenter.z + target.z * tempBoxSize.z - (parent === bendAlignedGroup ? bendAlignedGroup.position.z : 0),
     );
+
+    sphere.userData.morphName =
+      target.type === INTERACTION_TYPES.nose ? MORPH_TARGET_NAMES.nose : null;
+
+    sphere.userData.positiveMorphName = null;
+    sphere.userData.negativeMorphName = null;
+
+    if (target.type === INTERACTION_TYPES.nose) {
+      sphere.userData.positiveMorphName = MORPH_TARGET_NAMES.nose;
+    }
+
+    if (target.type === INTERACTION_TYPES.ear) {
+      sphere.userData.positiveMorphName =
+        target.side === "left"
+          ? MORPH_TARGET_NAMES.ears.leftUp
+          : MORPH_TARGET_NAMES.ears.rightUp;
+
+      sphere.userData.negativeMorphName =
+        target.side === "left"
+          ? MORPH_TARGET_NAMES.ears.leftDown
+          : MORPH_TARGET_NAMES.ears.rightDown;
+    }
 
     parent.add(sphere);
     hitTargets[target.name] = sphere;
@@ -266,12 +289,12 @@ export function createLooperColliders(root, hitTargets, { makeHitTargetMaterial 
     node.position.set(
       tempBoxCenter.x + tempBoxSize.x * (getNumber(nodeCenter.x, LOOPER_NODE_COLLIDER_LAYOUT.center.x) + columnOffset),
       tempBoxCenter.y +
-        tempBoxSize.y *
-          (getNumber(nodeCenter.y, LOOPER_NODE_COLLIDER_LAYOUT.center.y) -
-            row * getNumber(nodeLayout.rowSpacing, LOOPER_NODE_COLLIDER_LAYOUT.rowSpacing)),
+      tempBoxSize.y *
+      (getNumber(nodeCenter.y, LOOPER_NODE_COLLIDER_LAYOUT.center.y) -
+        row * getNumber(nodeLayout.rowSpacing, LOOPER_NODE_COLLIDER_LAYOUT.rowSpacing)),
       tempBoxCenter.z +
-        tempBoxSize.z * getNumber(nodeCenter.z, LOOPER_NODE_COLLIDER_LAYOUT.center.z) +
-        maxSize * getNumber(nodeLayout.forwardOffsetScale, LOOPER_NODE_COLLIDER_LAYOUT.forwardOffsetScale),
+      tempBoxSize.z * getNumber(nodeCenter.z, LOOPER_NODE_COLLIDER_LAYOUT.center.z) +
+      maxSize * getNumber(nodeLayout.forwardOffsetScale, LOOPER_NODE_COLLIDER_LAYOUT.forwardOffsetScale),
     );
     addCollider(node, getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, {
       isLooperNode: true,
@@ -399,7 +422,7 @@ function configureControlMotion(mesh, controlConfig, { neutralX, neutralY, neutr
   const defaultArcSide = LOOPER_CONTROL_MOTION_DEFAULTS.defaultArcSide;
   const side =
     getNumber(controlConfig.arc.side, defaultArcSide) <
-    LOOPER_CONTROL_MOTION_DEFAULTS.arcSideNegativeThreshold
+      LOOPER_CONTROL_MOTION_DEFAULTS.arcSideNegativeThreshold
       ? -defaultArcSide
       : defaultArcSide;
   mesh.userData.arcRadius = radius;
@@ -448,7 +471,7 @@ function createColliderTransformDebug(mesh, name, length) {
   const axes = new THREE.LineSegments(geometry, material);
   axes.name = `DEBUG_transform_axes_${name}`;
   axes.renderOrder = COLLIDER_DEBUG_VISUAL_SETTINGS.axisRenderOrder;
-  axes.raycast = () => {};
+  axes.raycast = () => { };
   mesh.add(axes);
 }
 
@@ -496,6 +519,6 @@ function createControlArcDebug(root, name, color, userData) {
   const arcLine = new THREE.Line(geometry, material);
   arcLine.name = `DEBUG_control_arc_${name}`;
   arcLine.renderOrder = COLLIDER_DEBUG_VISUAL_SETTINGS.arcRenderOrder;
-  arcLine.raycast = () => {};
+  arcLine.raycast = () => { };
   root.add(arcLine);
 }
