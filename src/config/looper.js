@@ -4,8 +4,27 @@ export const HONK_CONNECTION_TARGET_NAME = "HIT_honkConnection";
 export const LOOPER_TRACK_COUNT = 8;
 export const LOOPER_COLLIDER_OPACITY = 0.34;
 export const HONK_CONNECTION_COLLIDER_OPACITY = 0.32;
-export const LOOPER_WIRE_RADIUS = 0.008;
-export const LOOPER_WIRE_SEGMENTS = 36;
+export const LOOPER_WIRE_SETTINGS = {
+  radius: 0.008,
+  radialSegments: 7,
+  minimumLength: 0.004,
+  positionEpsilon: 0.00035,
+  directionEpsilon: 0.002,
+  minSplineSpans: 2,
+  maxSplineSpans: 5,
+  distancePerSplineSpan: 0.5,
+  anglePerSplineSpanDegrees: 70,
+  endpointLeadRatio: 0.22,
+  maxEndpointLead: 0.24,
+  sagRatio: 0.11,
+  angleSagRatio: 0.025,
+  minSag: 0.012,
+  maxSag: 0.24,
+  minTubularSegments: 20,
+  maxTubularSegments: 64,
+  tubularSegmentsPerMeter: 28,
+  tubularSegmentsPerSpan: 5,
+};
 export const LOOPER_MIN_ACTION_DURATION_MS = 24;
 export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 33;
 export const LOOPER_SHAKE_DISCONNECT_SETTINGS = {
@@ -120,6 +139,7 @@ export const LOOPER_BUTTON_COLLIDERS = {
 
 export const LOOPER_NODE_COLLIDER_LAYOUT = {
   center: { x: -0.068, y: -0.04, z: -0.05 },
+  wireDirection: { x: 0, y: 0, z: 1 },
   columns: 2,
   minColumns: 1,
   centerColumn: 0.5,

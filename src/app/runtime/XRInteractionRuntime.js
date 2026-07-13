@@ -39,7 +39,6 @@ export const XRInteractionRuntimeMethods = {
         instrumentState.locked = !instrumentState.locked;
         this.updateLockVisual(instrumentState);
       }
-      this.savePersistedScene();
     },
     isLockableInstrumentState(instrumentState) {
       return Boolean(
@@ -296,15 +295,11 @@ export const XRInteractionRuntimeMethods = {
       if (this.pendingSpawnPlacement) {
         return;
       }
-  
+
       const controllerState = this.controllerStates.get(controller);
-      const repositionedInstrument = Boolean(controllerState?.gripHeld);
       this.resetShakeDisconnectTracking(controllerState);
       this.gripTransformSystem?.release(controller);
       this.interactionCoordinator.setMode(controller, ControllerMode.IDLE);
-      if (repositionedInstrument) {
-        this.savePersistedScene();
-      }
     },
     handleScaleStepIntent(controller, direction) {
       if (this.pendingSpawnPlacement) {

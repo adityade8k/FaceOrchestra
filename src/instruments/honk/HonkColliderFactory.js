@@ -170,6 +170,7 @@ export class HonkColliderFactory {
       this.showDebug ? HONK_CONNECTION_COLLIDER_OPACITY : 0,
     );
     target.userData.hitColor = LOOPER_DEBUG_COLORS.honkConnection;
+    target.userData.wireSocketOutward = { ...HONK_CONNECTION_COLLIDER_SETTINGS.wireDirection };
     root.add(target);
     return target;
   }

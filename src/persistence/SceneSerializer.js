@@ -10,7 +10,7 @@ export class SceneSerializer {
   serialize() {
     const scene = createEmptySceneData();
     scene.instruments = [...this.registry.values()]
-      .filter((instrument) => instrument?.persistable !== false && instrument?.root?.visible && !instrument.pendingPlacement)
+      .filter((instrument) => instrument?.persistable !== false && !instrument.pendingPlacement)
       .map((instrument) => this.serializeInstrument(instrument));
     scene.relationships.honkLocks = this.lockService?.serialize?.() || [];
     scene.relationships.looperConnections = this.serializeLooperConnections(scene.instruments);
@@ -19,12 +19,16 @@ export class SceneSerializer {
   }
 
   serializeInstrument(instrument) {
-    const serialized = instrument.serialize?.() || {};
+    const serialized = omitTransientLooperState(
+      instrument.serialize?.() || {},
+      instrument.kind,
+    );
+    const scaleOverride = Number.isFinite(instrument.baseScale) ? instrument.baseScale : null;
     return {
+      ...serialized,
       id: instrument.id,
       kind: instrument.kind,
-      ...serialized,
-      transform: serialized.transform || serializeTransform(instrument.root, instrument.getScale?.()),
+      transform: serializeTransform(instrument.root, scaleOverride),
     };
   }
 
@@ -59,4 +63,32 @@ function assertPlainScene(scene) {
   const serialized = JSON.stringify(scene);
   if (!serialized) throw new TypeError("Scene did not serialize to JSON");
   return JSON.parse(serialized);
+}
+
+const TRANSIENT_LOOPER_FIELDS = Object.freeze([
+  "transport",
+  "transportState",
+  "recording",
+  "playing",
+  "paused",
+  "stopped",
+  "playheadMs",
+  "playbackPositionMs",
+  "lastPlaybackUpdateMs",
+  "playbackEngine",
+  "automationLayers",
+  "activeVoiceIds",
+]);
+
+function omitTransientLooperState(serialized, kind) {
+  if (kind !== "looper" || !serialized || typeof serialized !== "object") {
+    return serialized;
+  }
+  const persistent = { ...serialized };
+  for (const field of TRANSIENT_LOOPER_FIELDS) delete persistent[field];
+  if (persistent.looper && typeof persistent.looper === "object") {
+    persistent.looper = { ...persistent.looper };
+    for (const field of TRANSIENT_LOOPER_FIELDS) delete persistent.looper[field];
+  }
+  return persistent;
 }

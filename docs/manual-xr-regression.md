@@ -67,7 +67,7 @@ If the physical map differs, stop and report the input source profile, handednes
 
 - [ ] **Enter XR** — Enter immersive AR when available, otherwise immersive VR. Expected: the session starts once, controllers/rays appear, passthrough hides the opaque fallback environment when the blend mode permits it, and no duplicate scene or controller roots are created.
 
-- [ ] **Exit XR** — Exit while the scene contains at least one Honk and one Looper. Expected: the scene saves, live voices and controller interactions stop, rays/menus/Stick state reset, the desktop fallback returns, and placed instruments are not accidentally deleted from persisted data.
+- [ ] **Exit XR** — Exit while the scene contains at least one Honk and one Looper. Expected: exactly one scene snapshot is written, live voices and controller interactions stop, rays/menus/Stick state reset, the desktop fallback returns, and placed instruments are not accidentally deleted from persisted data.
 
 - [ ] **Dismiss instructions** — Aim at the instruction panel close target and pull Trigger. Expected: the panel hides, ray hover/haptic behavior clears, and the spawn menu becomes available. Re-enter XR and confirm instruction visibility follows the configured session behavior.
 
@@ -87,11 +87,11 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Equip stick** — Point away from instrument transform targets and hold Grip. Expected: the Stick attaches to that controller using the configured local transform, the ray hides, its strike collider activates, and it disappears/clears contacts on Grip release.
 
-- [ ] **Cancel spawn preview** — Select any item, then press Grip before placement. Expected: the preview group and every preview entity are removed through lifecycle cleanup, nothing is saved, no glass material remains, and normal interactions resume.
+- [ ] **Cancel spawn preview** — Select any item, then press Grip before placement. Expected: the preview group and every preview entity are removed through lifecycle cleanup, no storage write occurs, the canceled entities are absent from the eventual exit snapshot, no glass material remains, and normal interactions resume.
 
 - [ ] **Scale spawn preview** — Create a multi-Honk preview and step the right thumbstick up and down. Expected: every member scales together once per direction transition, stays within Honk limits, keeps its spacing, and does not drift or place early.
 
-- [ ] **Place spawn preview** — Move/rotate the preview controller, then pull Trigger. Expected: all roots preserve their preview world transforms when attached to the scene, pending flags clear, normal materials/interactions return, and the placement persists after reload.
+- [ ] **Place spawn preview** — Move/rotate the preview controller, then pull Trigger. Expected: all roots preserve their preview world transforms when attached to the scene, pending flags clear, normal materials/interactions return, no immediate storage write occurs, and the placement persists after exiting XR and reloading.
 
 - [ ] Open the radial menu and press Grip before releasing A. Expected: the menu cancels without creating a preview, then closes cleanly.
 
@@ -103,7 +103,7 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 Use an unlocked isolated Honk and an unlocked Looper first. Keep the controller ray on the intended body/grip target.
 
-- [ ] **Move honk** — Hold Grip on the Honk body and translate the controller. Expected: only that Honk follows with a stable offset; release commits the transform and marks persistence dirty.
+- [ ] **Move honk** — Hold Grip on the Honk body and translate the controller. Expected: only that Honk follows with a stable offset; release commits the transform in memory without writing storage, and XR exit persists it.
 
 - [ ] **Rotate honk** — During the same grip interaction, rotate the controller around multiple axes. Expected: the Honk follows smoothly without a position jump, scale change, or stuck grip after release.
 
@@ -183,7 +183,7 @@ Use a Looper plus at least two Honks. Keep one track visually identifiable throu
 
 - [ ] **Disconnect honk** — Grip the connected Honk and perform the configured shake gesture. Expected: every matching track disconnects after the duration/intensity threshold, wires dispose, automation releases, and cooldown prevents immediate retrigger. If a direct disconnect UI is exposed, verify it produces the same cleanup.
 
-- [ ] Reconnect a Honk, move and scale both endpoints, and observe the wire. Expected: no detached endpoint, stale geometry, or duplicate wire appears.
+- [ ] Reconnect a Honk, move and scale both endpoints, and observe the wire from short, long, side, and rear angles. Expected: no detached endpoint, stale geometry, or duplicate wire appears; the cable leaves and enters along the socket directions, uses additional smooth spans for longer/sharper routes, and sags downward instead of forming a fixed upward arch.
 
 - [ ] **Record squeeze** — Connect a track, press Record, squeeze/release the Honk for longer than the minimum action duration, then stop recording. Expected: the track becomes active and playback reproduces squeeze timing plus the configured loop gap.
 
@@ -194,6 +194,8 @@ Use a Looper plus at least two Honks. Keep one track visually identifiable throu
 - [ ] **Record stick percussion** — While recording, strike the connected Honk and the Looper. Expected: Honk `boink` is recorded on the connected track, Looper `hihat` on the self-percussion track, and playback fires deterministic events once per loop.
 
 - [ ] **Play** — Press Play from stopped state. Expected: recorded tracks enter playing state, the head animates, automation/audio starts, and ordinary Play restarts rather than silently resuming an old paused offset.
+
+- [ ] **Stress the mix** — Play several recorded tracks, sustain multiple live Honks, and strike both percussion sounds concurrently. Expected: the shared low-pass retains useful brightness, peak limiting prevents digital crackle/clipping, and the mix remains responsive without pumping or a large loudness jump.
 
 - [ ] **Pause** — Press Pause during playback. Expected: playhead progression stops, applied automation/action voices release, tracks stop presenting playback, and the transport reports paused.
 
@@ -227,13 +229,15 @@ Use disposable fixtures; do not destroy the scene intended for persistence tests
 
 Create a deliberate fixture: two tuned Honks in a locked group, one separate unlocked touching pair, one Looper with at least one connection and recorded gesture/percussion, non-default Looper controls, and a Stick preference.
 
-- [ ] **Save scene** — Perform a persistence-dirtying action and exit XR or wait for maintenance save. Expected: `face-orchestra:scene:v2` contains parseable plain JSON with `schemaVersion: 2`, stable instrument IDs, transforms/state, lock relationships, Looper connection IDs, and equipment preference. It contains no Object3D/audio/function/class serialization.
+- [ ] **Exit-only save** — Note the current `face-orchestra:scene:v2` value, then spawn/delete/transform Honks and Loopers, change Honk ears/nose/vowel, record and connect a Looper, adjust its controls, and lock a formation. Expected: storage does not change during these actions. Exit XR once; exactly one write produces parseable plain JSON with `schemaVersion: 2`, stable instrument IDs, canonical transforms/scales, Honk state, complete Looper timelines/controls, lock relationships, connection IDs, and equipment preference.
+
+- [ ] **Exit during recording** — Start a Looper recording, perform a held squeeze/bend and a percussion hit, then exit XR without pressing Stop. Expected: the final sample and neutral release events are committed, timeline duration is non-zero and normalized, the recording restores and plays fully, and no recording/playing/paused transport flag is stored.
 
 - [ ] **Reload scene** — Reload the page and re-enter XR without clearing storage. Expected: initialization completes without duplicates or uncaught errors and relationship restoration occurs only after all instrument entities exist.
 
 - [ ] **Restore honks** — Compare count, stable IDs, transforms, scales, tuning/note labels, and saved defaults. Expected: every valid Honk restores once; pending previews and transient live squeeze/bend do not restore.
 
-- [ ] **Restore loopers** — Compare count, stable IDs, transforms, controls, timeline duration/events, and stopped runtime state. Expected: Loopers restore once with no stale action voice or preview wire.
+- [ ] **Restore loopers** — Compare count, stable IDs, transforms, controls, timeline duration/events, and stopped runtime state. Expected: Loopers restore once with their recordings intact, always stopped regardless of their exit-time play/pause state, with no stale action voice or preview wire.
 
 - [ ] **Restore locked groups** — Compare group ID, anchor, members, and relative layout. Expected: lock visuals and transform targeting return; moving/scaling any member moves the restored group without a jump.
 
@@ -249,7 +253,7 @@ Create a deliberate fixture: two tuned Honks in a locked group, one separate unl
 
 Run this section separately with a backed-up storage profile.
 
-- [ ] Place a representative v1 payload under `face-orchestra:spawned-instruments:v1` with no v2 key, then reload. Expected: Honk/Looper records migrate to schema v2 with unique stable IDs and plain transforms/tuning; the v2 key is written.
+- [ ] Place a representative v1 payload under `face-orchestra:spawned-instruments:v1` with no v2 key, then reload. Expected: Honk/Looper records migrate in memory with unique stable IDs and plain transforms/tuning; no write occurs until XR exit, when the v2 key is written once.
 
 - [ ] Confirm migration does not invent lock memberships or Looper connections that were not recoverable from v1. Legacy appearance flags may remain as migration evidence.
 

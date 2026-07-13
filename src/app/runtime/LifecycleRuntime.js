@@ -67,7 +67,6 @@ export const LifecycleRuntimeMethods = {
       if (this.activeInstrumentState === instrumentState) {
         this.activeInstrumentState = this.instrumentStates.at(-1) || null;
       }
-      this.savePersistedScene();
     },
     isObjectInInstrument(object, instrumentState) {
       let current = object;

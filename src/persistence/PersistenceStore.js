@@ -10,8 +10,13 @@ export class PersistenceStore {
 
   save(data) {
     if (!this.storage) return false;
-    this.storage.setItem(this.key, JSON.stringify(data));
-    return true;
+    try {
+      this.storage.setItem(this.key, JSON.stringify(data));
+      return true;
+    } catch (error) {
+      console.warn(`Could not persist scene at ${this.key}:`, error);
+      return false;
+    }
   }
 
   load() {
@@ -23,10 +28,7 @@ export class PersistenceStore {
       const legacy = this.read(legacyKey);
       if (!legacy) continue;
       const migrated = migrateSceneData(legacy);
-      if (migrated) {
-        this.save(migrated);
-        return migrated;
-      }
+      if (migrated) return migrated;
     }
     return null;
   }

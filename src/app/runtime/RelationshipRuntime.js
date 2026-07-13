@@ -4,7 +4,6 @@ export const RelationshipRuntimeMethods = {
     const group = this.honkLockService.lockFormation(startInstrument.id);
     if (!group) return null;
     this.applyLockGroupVisualState(group, true);
-    this.scenePersistence?.markDirty?.();
     return group;
   },
 
@@ -14,7 +13,6 @@ export const RelationshipRuntimeMethods = {
     if (!group) return null;
     this.applyLockGroupVisualState(group, false);
     const unlocked = this.honkLockService.unlockGroup(group);
-    this.scenePersistence?.markDirty?.();
     return unlocked;
   },
 

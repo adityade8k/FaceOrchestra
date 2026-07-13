@@ -62,7 +62,7 @@ flowchart TD
 - `start()` starts the scene runtime and installs the renderer animation loop.
 - `update(delta, elapsed, now)` advances the frame scheduler.
 - `onXRSessionStart()` applies the XR blend mode and starts session UI behavior.
-- `onXRSessionEnd()` saves/releases runtime interaction state and restores the desktop environment.
+- `onXRSessionEnd()` finalizes active Looper recordings, writes one scene snapshot, releases runtime interaction state, and restores the desktop environment.
 - `endXRSession()` requests session termination when one exists.
 - `dispose()` tears down runtime and renderer resources.
 
@@ -261,6 +261,8 @@ Trigger on track node
 → create persistent presentation wire
 ```
 
+Wire presentation is generated as a continuous path of adaptive cubic spans. Distance and socket-entry angle choose the span and tube resolution; socket-local directions shape both leads, and gravity adds downward sag perpendicular to the direct chord. Position and direction caches prevent unchanged paths from rebuilding every frame. Wire meshes remain transient presentation resources and are recreated from persisted Looper/Honk IDs.
+
 Gripping and shaking a connected Honk can disconnect its matching tracks; thresholds and cooldown live in Looper configuration.
 
 The timeline records sampled Honk action snapshots and deterministic percussion events. Playback applies an automation layer whose ID is derived from Looper and track IDs. `HonkPerformanceState` combines that layer with live input instead of replacing it. Playback can target the current contact component, but persisted assignment remains the one connected Honk ID.
@@ -272,7 +274,7 @@ The timeline records sampled Honk action snapshots and deterministic percussion 
 `AudioSystem` is the facade composed from:
 
 - `AudioContextService` — lazy creation/resume after a user gesture;
-- `MasterBus` — input gain, compressor, output gain, destination;
+- `MasterBus` — input gain, master low-pass, bus compressor, makeup gain, peak limiter, safety output gain, and destination;
 - `HonkVoiceService` and `HonkVoice` — per-ID oscillator/formant/nasal voice behavior;
 - `PercussionVoiceService` — Stick percussion voices;
 - pitch/formant/audio math modules.
@@ -313,7 +315,7 @@ Gamepad/XR controller
 | Application boot | `main.js` → `createFaceOrchestraApp` → `FaceOrchestraApp.initialize` → controller setup, instruction view, asset loads, two-pass restore → animation loop. |
 | Desktop fallback | `SceneRuntime` uses the perspective camera, opaque background, fallback environment, lights, resize listener, and normal render loop. |
 | Enter XR | AR/VR button starts the session → `FaceOrchestraApp.onXRSessionStart` sets blend mode → session runtime shows or suppresses instructions. |
-| Exit XR | Session event → save current scene → release controller/live interaction state and voices → subsystem resets → `SceneRuntime.resetAfterXR`. Persisted instruments remain for the next session. |
+| Exit XR | Session event → discard pending previews → take one final Looper recording sample → finalize recordings and stop transports → write one scene snapshot → release controller/live interaction state and voices → subsystem resets → `SceneRuntime.resetAfterXR`. Persisted instruments remain for the next session. |
 | Dismiss instructions | Trigger raycast resolves the close button → instruction view hides → spawn flow becomes available. |
 | Open/select spawn menu | XR input → `spawn.menu.open` → `SpawnMenuController`/radial view; controller orientation selects an entry. A release confirms. |
 | Preview/place/cancel | Catalog action creates one entity or several recipe Honks → preview attaches roots to a controller-local group → thumbstick scales → Trigger preserves world transforms and places; Grip/lifecycle cancellation removes preview entities. |
@@ -329,7 +331,7 @@ Gamepad/XR controller
 | Record Stick percussion | Strike subscriber finds recording self/connected track → adds a deterministic percussion event through Looper public methods. |
 | Play/pause/resume/stop | Looper button → controller → validated transport transition → playback engine/layer application → presentation morphs and audio. |
 | Live interaction during playback | XR updates live state while Looper updates its own automation layer; Honk resolution combines both before presentation. |
-| Delete instrument | Delete intent → controller references detached → `InstrumentLifecycleService` relationship/audio cleanup → registry removal → entity-owned resource disposal → persistence dirty/save. |
+| Delete instrument | Delete intent → controller references detached → `InstrumentLifecycleService` relationship/audio cleanup → registry removal → entity-owned resource disposal. The in-memory scene is saved at XR exit. |
 | Restore scene | Store parses/migrates plain JSON → pass 1 creates every stable-ID entity and restores state → pass 2 restores lock groups and Looper connections → equipment preference. |
 
 ## Deterministic frame phases
@@ -346,7 +348,6 @@ Gamepad/XR controller
 | 6 | `AUTOMATION` | Sample active Looper recordings. |
 | 7 | `PERFORMANCE` | Collect live Honk interactions, advance Looper playback, resolve live plus automation state, and update Honk/action voices. |
 | 8 | `PRESENTATION` | Update Looper morph animations and wires; Honk morph/audio application occurs as part of the performance resolver used by the behavior-preserving runtime. |
-| 9 | `MAINTENANCE` | Save the scene only when persistence is dirty. |
 
 Preview mode deliberately short-circuits the remaining normal phases after its transform callback. It explicitly uses a preview-safe Looper playback path before setting `skipRemaining`, which prevents ray/grip/collision side effects while keeping existing loops audible and animated.
 
@@ -354,7 +355,7 @@ The scheduler accepts an `order` within each phase and exposes `describe()` for 
 
 ## Persistence architecture
 
-`ScenePersistence` coordinates dirty state, `PersistenceStore`, `SceneSerializer`, and `SceneRestorer`.
+`ScenePersistence` coordinates `PersistenceStore`, `SceneSerializer`, and `SceneRestorer`. It has no frame callback or mutation listener. The only runtime save call is the XR-session-exit path, so one complete snapshot is written after all in-session edits are finished.
 
 Current storage:
 
@@ -371,7 +372,7 @@ Conceptual payload:
   schemaVersion: 2,
   instruments: [
     { id, kind: "honk", transform, tuning, performanceDefaults },
-    { id, kind: "looper", transform, controls, timeline }
+    { id, kind: "looper", transform, appearance, controls, timeline }
   ],
   relationships: {
     honkLocks: [
@@ -387,7 +388,11 @@ Conceptual payload:
 }
 ```
 
-Serialization includes only visible, placed, persistable entities. Stick entities are excluded because their capability is `persistable-preference`, not `persistable`. Unlocked contact formations are excluded because the contact graph is derived from current colliders.
+Serialization includes every placed, persistable entity and excludes pending previews. Stick entities are excluded because their capability is `persistable-preference`, not `persistable`. Unlocked contact formations are excluded because the contact graph is derived from current colliders.
+
+Looper timelines contain the durable recording data: baselines, gesture events, percussion events, duration, and loop gap. Controls, locked appearance, transforms, and stable-ID connections are also stored. Runtime transport fields—including recording, playing, paused, playback position, playback engine state, automation layers, and active voices—are explicitly omitted, and restoration resets the transport to stopped. An active recording is sampled and finalized before serialization so its terminal release events and normalized duration are durable.
+
+Honk transforms use the canonical user-set `baseScale`, not the temporary squeeze pulse applied to the rendered root. Restoration synchronizes that scale plus tuning, ear/nose values, vowel metadata, morph presentation, procedural colliders, and note labels. Live squeeze/bend sources, voices, and Looper automation layers remain transient.
 
 Restore uses two passes:
 
@@ -476,9 +481,7 @@ The repository deliberately uses Node’s built-in test runner rather than a bro
 
 Headset-only behavior remains outside automated verification: XR controller ergonomics, tracking noise, grip/raycast feel, haptic intensity, model collider alignment, passthrough blending, audible mix, and visual morph fidelity. Use [manual-xr-regression.md](manual-xr-regression.md).
 
-## Developer tools
-
-`tools/collider-editor/` is a separate desktop application with its own HTML, CSS, JavaScript, and HTTP server. It may read runtime asset/config files but is not imported by `src/main.js` or any runtime domain. This boundary prevents authoring tools from becoming production dependencies.
+## Local HTTPS
 
 Local TLS material belongs under ignored `certs/`. `scripts/serve-https.py` reads it at runtime; no certificate or private key is tracked.
 

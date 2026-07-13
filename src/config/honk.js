@@ -63,6 +63,7 @@ export const MORPH_TARGET_COLLIDER_SETTINGS = {
 
 export const HONK_CONNECTION_COLLIDER_SETTINGS = {
   position: { x: -0.18, y: -0.105, z: 0.001 },
+  wireDirection: { x: -1, y: 0, z: 0 },
   scale: 0.06,
   minModelSize: 0.1,
   sphereSegments: 24,

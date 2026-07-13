@@ -74,7 +74,7 @@ export class LooperGestureRecorder {
     }
   }
 
-  updateTrack(timeline, track, now, captureActionByHonkId) {
+  updateTrack(timeline, track, now, captureActionByHonkId, { force = false } = {}) {
     if (!timeline?.recording || !track) {
       return;
     }
@@ -108,7 +108,7 @@ export class LooperGestureRecorder {
     }
 
     const forceGate = this.hasSqueezeGateTransition(track.recorderState, action);
-    if (!forceGate && elapsedMs - track.recorderState.lastSampleAtMs < this.sampleIntervalMs) {
+    if (!force && !forceGate && elapsedMs - track.recorderState.lastSampleAtMs < this.sampleIntervalMs) {
       return;
     }
 
@@ -142,9 +142,15 @@ export class LooperGestureRecorder {
     }
   }
 
-  stop(timeline, tracks, now, minDurationMs, loopGapMs) {
+  stop(timeline, tracks, now, minDurationMs, loopGapMs, captureActionByHonkId = null) {
     if (!timeline?.recording) {
       return timeline?.hasRecording?.() || false;
+    }
+
+    if (typeof captureActionByHonkId === "function") {
+      for (const track of tracks) {
+        this.updateTrack(timeline, track, now, captureActionByHonkId, { force: true });
+      }
     }
 
     const elapsedMs = timeline.getElapsedMs(now);

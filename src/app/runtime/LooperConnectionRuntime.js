@@ -6,8 +6,7 @@ import {
   LOOPER_COLLIDER_OPACITY,
   LOOPER_DEBUG_COLORS,
   LOOPER_SHAKE_DISCONNECT_SETTINGS,
-  LOOPER_WIRE_RADIUS,
-  LOOPER_WIRE_SEGMENTS,
+  LOOPER_WIRE_SETTINGS,
 } from "../../config/looper.js";
 import {
   getLooperButtonName,
@@ -28,7 +27,10 @@ const tempShakeBounds = new THREE.Box3();
 const tempShakePosition = new THREE.Vector3();
 const tempShakeRange = new THREE.Vector3();
 const tempWireEnd = new THREE.Vector3();
+const tempWireEndTangent = new THREE.Vector3();
+const tempWireOwnerPosition = new THREE.Vector3();
 const tempWireStart = new THREE.Vector3();
+const tempWireStartTangent = new THREE.Vector3();
 
 
 export const LooperConnectionRuntimeMethods = {
@@ -62,11 +64,32 @@ export const LooperConnectionRuntimeMethods = {
       const hit = this.getCurrentHit(controller);
       if (hit?.object?.userData.isHonkConnectionTarget) {
         tempWireEnd.copy(hit.point);
+        const honkState = this.instrumentRegistry?.getFromObject3D?.(hit.object) || null;
+        setWireSocketTangent(
+          hit.object,
+          honkState?.root,
+          tempWireEnd,
+          tempWireEndTangent,
+          true,
+        );
       } else {
         tempWireEnd.copy(this.raycaster.ray.origin).addScaledVector(this.raycaster.ray.direction, 0.85);
+        tempWireEndTangent.copy(tempWireEnd).sub(tempWireStart).normalize();
       }
-  
-      this.updateWireMeshGeometry(interaction.wireMesh, tempWireStart, tempWireEnd);
+
+      setWireSocketTangent(
+        interaction.track.nodeTarget,
+        interaction.looperState?.root,
+        tempWireStart,
+        tempWireStartTangent,
+      );
+      this.updateWireMeshGeometry(
+        interaction.wireMesh,
+        tempWireStart,
+        tempWireEnd,
+        tempWireStartTangent,
+        tempWireEndTangent,
+      );
     },
     finishLooperWireInteraction(controller, interaction) {
       const hit = this.getCurrentHit(controller);
@@ -371,15 +394,35 @@ export const LooperConnectionRuntimeMethods = {
   
       track.nodeTarget.getWorldPosition(tempWireStart);
       honkTarget.getWorldPosition(tempWireEnd);
-      this.updateWireMeshGeometry(track.wireMesh, tempWireStart, tempWireEnd);
+      setWireSocketTangent(
+        track.nodeTarget,
+        looperState.root,
+        tempWireStart,
+        tempWireStartTangent,
+      );
+      setWireSocketTangent(
+        honkTarget,
+        honkState.root,
+        tempWireEnd,
+        tempWireEndTangent,
+        true,
+      );
+      this.updateWireMeshGeometry(
+        track.wireMesh,
+        tempWireStart,
+        tempWireEnd,
+        tempWireStartTangent,
+        tempWireEndTangent,
+      );
     },
     createLooperWireMaterial(color) {
       return createWireMaterial(color, this.instrumentMaterialTextures);
     },
-    updateWireMeshGeometry(wireMesh, start, end) {
+    updateWireMeshGeometry(wireMesh, start, end, startTangent, endTangent) {
       updateWireMeshGeometryUtility(wireMesh, start, end, {
-        segments: LOOPER_WIRE_SEGMENTS,
-        radius: LOOPER_WIRE_RADIUS,
+        startTangent,
+        endTangent,
+        settings: LOOPER_WIRE_SETTINGS,
       });
     },
     disposeWireMesh(wireMesh) {
@@ -459,3 +502,29 @@ export const LooperConnectionRuntimeMethods = {
       }
     },
 };
+
+function setWireSocketTangent(
+  target,
+  ownerRoot,
+  endpoint,
+  output,
+  arriving = false,
+) {
+  const socketOutward = target?.userData?.wireSocketOutward;
+  if (socketOutward && target?.parent) {
+    target.parent.updateWorldMatrix?.(true, false);
+    output
+      .set(socketOutward.x || 0, socketOutward.y || 0, socketOutward.z || 0)
+      .transformDirection(target.parent.matrixWorld);
+  } else if (ownerRoot?.getWorldPosition) {
+    ownerRoot.getWorldPosition(tempWireOwnerPosition);
+    output.copy(endpoint).sub(tempWireOwnerPosition).normalize();
+  } else {
+    output.set(0, 0, 0);
+  }
+
+  if (arriving) {
+    output.negate();
+  }
+  return output;
+}

@@ -7,7 +7,6 @@ export const FRAME_PHASES = Object.freeze([
   "AUTOMATION",
   "PERFORMANCE",
   "PRESENTATION",
-  "MAINTENANCE",
 ]);
 
 export class FrameScheduler {

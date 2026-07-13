@@ -5,7 +5,7 @@ Face Orchestra is a browser-based WebXR musical playground built with Three.js a
 The runtime has exactly three instrument kinds:
 
 - **Honk** — a placeable, transformable, playable instrument with tuning, morphs, colliders, and its own resolved performance state.
-- **Looper** — a placeable recorder/player with tracks, transport, controls, timelines, stable-ID Honk connections, and wires.
+- **Looper** — a placeable recorder/player with tracks, transport, controls, timelines, stable-ID Honk connections, and adaptive spline wires.
 - **Stick** — an equippable collision-driven instrument that emits semantic percussion events.
 
 A chord is not an instrument. An unlocked chord formation is a transient connected component derived from touching Honk squeeze colliders. A locked formation is a persistent relationship between ordinary Honks.
@@ -17,7 +17,7 @@ For implementation details, see [Architecture](docs/architecture.md). Before mer
 - A modern browser with ES modules, WebGL, and Web Audio.
 - A WebXR-capable browser/headset for immersive interaction. The current controller map targets Quest-style controllers.
 - Python 3 for the included HTTP/HTTPS development servers.
-- Node.js 20 or newer is recommended for verification and the collider-editor server.
+- Node.js 20 or newer is recommended for verification.
 - Network access while loading the page. Three.js, Three.js addons, and the note-label font are loaded from `unpkg.com`.
 
 There are currently no npm runtime dependencies to install; the browser import map pins Three.js to `0.164.1`.
@@ -109,7 +109,7 @@ Formation recipes in [`src/instruments/formations/formationRecipes.js`](src/inst
 
 ```text
 INPUT → INTENT → TRANSFORM → COLLISION → RELATIONSHIPS
-      → AUTOMATION → PERFORMANCE → PRESENTATION → MAINTENANCE
+      → AUTOMATION → PERFORMANCE → PRESENTATION
 ```
 
 Core ownership rules:
@@ -145,7 +145,6 @@ src/
 └── xr/                  hardware input, intent mapping, raycast, grip, haptics
 
 scripts/                 HTTPS server and source/import verification
-tools/collider-editor/   separate desktop collider-authoring application
 tests/                  pure Node test suites
 ```
 
@@ -160,7 +159,11 @@ Scenes use schema version `2` under the local-storage key `face-orchestra:scene:
 - Looper track connections as `{ looperId, trackId, honkId }`;
 - the preferred Stick type.
 
-Unlocked contact formations, Three.js objects, audio nodes, colliders, wires, and class instances are not serialized. Restoration is two-pass: create all instruments first, then resolve locks and Looper connections by ID, restore deferred Looper timelines, and apply equipment preferences. The v1 migration reads `face-orchestra:spawned-instruments:v1`, assigns stable IDs, maps legacy components to Honks/Loopers, and writes schema v2. Legacy data did not contain recoverable ID-based relationships, so migration cannot invent them.
+The browser writes this snapshot once, when the immersive XR session exits. Spawning, deleting, transforming, recording, and adjusting controls only change the in-memory scene during the session. If a Looper is still recording at exit, its last sample and release events are finalized before the snapshot is written.
+
+Looper recordings, controls, locked appearance, and connections persist. Transport state does not: recording, playing, paused, and playback-position data are excluded, so every restored Looper starts stopped. Honk transforms, user-set scale, tuning, ear/nose values, and vowel persist; held squeeze/bend gestures remain transient.
+
+Unlocked contact formations, pending previews, Three.js objects, audio nodes, colliders, wires, and class instances are not serialized. Restoration is two-pass: create all instruments first, then resolve locks and Looper connections by ID, restore deferred Looper timelines, and apply equipment preferences. The v1 migration reads `face-orchestra:spawned-instruments:v1`, assigns stable IDs, and maps legacy components to Honks/Loopers in memory; the next XR exit writes schema v2. Legacy data did not contain recoverable ID-based relationships, so migration cannot invent them.
 
 To clear only the current v2 scene during development:
 
@@ -177,27 +180,17 @@ npm run verify
 ```
 
 - `npm run check` checks JavaScript syntax, resolves every relative import, rejects forbidden legacy architecture patterns, and verifies that local certificate material is absent.
-- `npm test` runs the lightweight Node test suites for contact/lock relationships, performance layering, registries/lifecycle, Stick events, Looper transport/timeline/connections, pitch, and persistence.
+- `npm test` runs the lightweight Node test suites for contact/lock relationships, performance layering, registries/lifecycle, Stick events, Looper transport/timeline/connections/wire paths, the master audio bus, pitch, and persistence.
 - `npm run verify` runs both checks in order.
 
 Automated tests intentionally focus on pure domain logic. Rendering, WebXR controller mappings, headset tracking, haptics, spatial collision feel, model morphs, and audible output require the manual headset pass.
 
-## Collider editor
-
-The collider editor is a separate developer application, not part of the XR runtime:
-
-```sh
-npm run collider-editor
-```
-
-Open the URL printed by the command (normally <http://127.0.0.1:5174/tools/collider-editor/>). It loads the Honk, Looper, and Stick models and produces configuration values for collider transforms. If the default port is occupied, the server tries subsequent ports.
-
 ## Configuration
 
 - `src/config/assets.js` — central model, texture, and font manifest.
-- `src/config/audio.js` — gain, compressor, synthesis, and percussion settings.
+- `src/config/audio.js` — gain, master filtering/limiting, synthesis, and percussion settings.
 - `src/config/honk.js` — morph names, collider layout, drag sensitivity, and Honk scale limits.
-- `src/config/looper.js` — tracks, controls, collider layout, transport presentation, wires, and shake-disconnect thresholds.
+- `src/config/looper.js` — tracks, controls, collider layout, transport presentation, adaptive wire geometry, and shake-disconnect thresholds.
 - `src/config/stick.js` — equipment transform, strike collider, range, and haptics.
 - `src/config/formations.js` — contact hysteresis, minimum lock size, and recipe spacing.
 - `src/config/spawning.js` — catalog actions and placement defaults.

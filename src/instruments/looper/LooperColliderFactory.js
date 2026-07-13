@@ -139,6 +139,7 @@ export class LooperColliderFactory {
       addCollider(node, getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, {
         isLooperNode: true,
         looperTrackIndex: index,
+        wireSocketOutward: { ...nodeLayout.wireDirection },
       });
     }
 

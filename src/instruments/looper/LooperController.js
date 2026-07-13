@@ -135,6 +135,7 @@ export class LooperController {
       now,
       LOOPER_MIN_ACTION_DURATION_MS,
       data.loopGapMs,
+      (honkId) => this.captureActionByHonkId(honkId),
     );
     data.durationMs = data.timeline.durationMs;
     data.transport.finishRecording();

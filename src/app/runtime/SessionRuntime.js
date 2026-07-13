@@ -3,6 +3,7 @@ import { SHOW_INSTRUCTION_PANEL } from "../../config/ui.js";
 
 export const SessionRuntimeMethods = {
     onXRSessionStart() {
+      this.xrSessionActive = true;
       this.instructionPanelClosed = !SHOW_INSTRUCTION_PANEL;
   
       if (SHOW_INSTRUCTION_PANEL) {
@@ -14,12 +15,25 @@ export const SessionRuntimeMethods = {
         }
       }
     },
-    onXRSessionEnd() {
-      this.savePersistedScene();
-      this.hideInstructionPanel();
-      this.pendingPanelPlacementFrames = 0;
-      this.deletePendingSpawnPlacement();
-      this.resetSubsystemsAfterSession();
+    onXRSessionEnd(now = performance.now()) {
+      if (!this.xrSessionActive) return false;
+      this.xrSessionActive = false;
+      let didSave = false;
+      try {
+        this.hideInstructionPanel();
+        this.pendingPanelPlacementFrames = 0;
+        this.deletePendingSpawnPlacement();
+        for (const looper of this.instrumentRegistry.getByKind("looper")) {
+          if (looper.transport?.recording) {
+            looper.finishRecording(now);
+          }
+          looper.stop();
+        }
+        didSave = this.savePersistedSceneOnXRExit();
+      } finally {
+        this.resetSubsystemsAfterSession();
+      }
+      return didSave;
     },
     showInstructionPanel() {
       if (!this.instructionPanel) {

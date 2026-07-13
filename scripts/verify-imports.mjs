@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const roots = ["src", "tools"];
+const roots = ["src"];
 const sourceFiles = roots.flatMap(walk).filter((file) => [".js", ".mjs"].includes(extname(file)));
 const errors = [];
 const relativeImportPattern = /(?:from\s*|import\s*\()\s*["'](\.{1,2}\/[^"']+)["']/g;

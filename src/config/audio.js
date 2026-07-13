@@ -9,7 +9,10 @@ export const HONK_MASTER_GAIN = 0.78;
 
 export const AUDIO_MASTER_BUS_SETTINGS = {
   inputGain: 0.9,
-  outputGain: 6.56,
+  lowpass: {
+    frequency: 14000,
+    q: 0.707,
+  },
   compressor: {
     threshold: -18,
     knee: 18,
@@ -17,6 +20,15 @@ export const AUDIO_MASTER_BUS_SETTINGS = {
     attack: 0.004,
     release: 0.18,
   },
+  makeupGain: 6.56,
+  limiter: {
+    threshold: -1,
+    knee: 0,
+    ratio: 20,
+    attack: 0.001,
+    release: 0.08,
+  },
+  outputGain: 0.94,
 };
 
 export const VOICE_GAIN_SETTINGS = {

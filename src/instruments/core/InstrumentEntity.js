@@ -148,6 +148,9 @@ export class InstrumentEntity {
         this.root.scale.y = value;
         this.root.scale.z = value;
       }
+      if (Object.prototype.hasOwnProperty.call(this, "baseScale")) {
+        this.baseScale = value;
+      }
       return this;
     }
 
@@ -156,6 +159,9 @@ export class InstrumentEntity {
       throw new TypeError("Instrument scale must be a finite scalar or three-component value.");
     }
     writeTuple(this.root.scale, tuple);
+    if (Object.prototype.hasOwnProperty.call(this, "baseScale")) {
+      this.baseScale = (Math.abs(tuple[0]) + Math.abs(tuple[1]) + Math.abs(tuple[2])) / 3;
+    }
     return this;
   }
 

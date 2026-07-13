@@ -117,6 +117,12 @@ export class HonkLockGroup {
       this.transformAdapter.applyWorld(anchor, transform);
     }
     this.updateMemberTransforms();
+    for (const memberId of this.memberIds) {
+      const member = this.resolveInstrument(memberId);
+      if (!member || !Object.prototype.hasOwnProperty.call(member, "baseScale")) continue;
+      const memberScale = member.getScale?.() ?? averageScale(this.transformAdapter.captureWorld(member).scale);
+      if (Number.isFinite(memberScale)) member.baseScale = memberScale;
+    }
   }
 
   serialize() {

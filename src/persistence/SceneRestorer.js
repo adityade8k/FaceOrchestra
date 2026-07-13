@@ -84,6 +84,7 @@ function applyTransform(instrument, transform = {}) {
   if (Array.isArray(transform.scale) && transform.scale.length === 3) {
     if (typeof instrument.setScale === "function" && approximatelyUniform(transform.scale)) {
       instrument.setScale(transform.scale[0]);
+      if (Number.isFinite(instrument.baseScale)) instrument.baseScale = transform.scale[0];
     } else {
       root.scale.fromArray(transform.scale);
     }

@@ -308,7 +308,7 @@ export const InstrumentAssetRuntimeMethods = {
       this.initializeLooperState(state);
     }
     this.activeInstrumentState = state;
-    this.setInstrumentBaseScale(state, options.baseScale || INSTRUMENT_BASE_SCALE);
+    this.setInstrumentBaseScale(state, options.baseScale ?? INSTRUMENT_BASE_SCALE);
     return root;
   },
 };

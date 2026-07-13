@@ -49,8 +49,11 @@ export class FaceOrchestraApp {
   }
 
   onXRSessionEnd() {
-    this.runtime.onXRSessionEnd();
-    this.sceneRuntime.resetAfterXR();
+    try {
+      return this.runtime.onXRSessionEnd();
+    } finally {
+      this.sceneRuntime.resetAfterXR();
+    }
   }
 
   async endXRSession() {
@@ -121,9 +124,5 @@ export class FaceOrchestraApp {
       runtime.updateLooperMorphAnimations(frame.now);
       runtime.updateLooperWires();
     }, { label: "morphs, audio, wires, and UI" });
-
-    this.frameScheduler.add("MAINTENANCE", () => {
-      runtime.scenePersistence.save();
-    }, { label: "flush dirty persistence" });
   }
 }

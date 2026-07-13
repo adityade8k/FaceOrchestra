@@ -205,7 +205,6 @@ export const SpawnRuntimeMethods = {
       }
 
       this.activeInstrumentState = placed.at(-1) || this.activeInstrumentState;
-      this.savePersistedScene();
     },
     deletePendingSpawnPlacement() {
       const pending = this.pendingSpawnPlacement;
@@ -418,7 +417,6 @@ export const SpawnRuntimeMethods = {
       if (entry?.action === "formation") {
         const states = this.formationSpawner.spawn(entry.recipeId);
         this.positionSpawnedFormationInFrontOfCamera(states);
-        this.savePersistedScene();
         return;
       }
 
@@ -427,10 +425,9 @@ export const SpawnRuntimeMethods = {
       if (!component) {
         return;
       }
-  
+
       this.positionObjectInFrontOfCamera(component, SPAWN_DISTANCE);
       this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
-      this.savePersistedScene();
     },
     spawnScalePreset(scalePreset, namePrefix = "Honk") {
       const states = [];
@@ -444,7 +441,6 @@ export const SpawnRuntimeMethods = {
         states.push(this.activeInstrumentState);
       }
       this.positionSpawnedFormationInFrontOfCamera(states);
-      this.savePersistedScene();
     },
     positionSpawnedFormationInFrontOfCamera(states) {
       if (!states?.length) return;

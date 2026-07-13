@@ -25,6 +25,20 @@ test("locks the current chained formation and transforms every member from stabl
   assert.equal(fixture.registry.get("b").root.scale.x, 2);
 });
 
+test("scaling a locked formation updates every member's durable base scale", () => {
+  const fixture = createFixture([instrument("a", 0), instrument("b", 2), instrument("c", 4)]);
+  fixture.graph.setContact("a", "b", true);
+  fixture.graph.setContact("b", "c", true);
+  const group = fixture.locks.lockFormation("a", { id: "lock-scale" });
+
+  group.setScale(2.5);
+
+  assert.deepEqual(
+    group.getMemberIds().map((id) => fixture.registry.get(id).baseScale),
+    [2.5, 2.5, 2.5],
+  );
+});
+
 test("unlock preserves world transforms", () => {
   const fixture = createFixture([instrument("a", 0), instrument("b", 2)]);
   fixture.graph.setContact("a", "b", true);
@@ -121,8 +135,12 @@ function instrument(id, x) {
     root,
     disposed: false,
     visible: true,
+    baseScale: 1,
     getScale: () => root.scale.x,
-    setScale: (scale) => root.scale.set(scale, scale, scale),
+    setScale(scale) {
+      root.scale.set(scale, scale, scale);
+      this.baseScale = scale;
+    },
   };
 }
 

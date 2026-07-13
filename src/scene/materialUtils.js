@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-// Shared by runtime asset loading and the standalone collider editor.
+// Shared material helpers for runtime asset loading.
 
 export function applyStandardInstrumentMaterials(root, textures = {}, options = {}) {
   root.traverse((object) => {

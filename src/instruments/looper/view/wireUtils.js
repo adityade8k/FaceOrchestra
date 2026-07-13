@@ -1,9 +1,6 @@
 import * as THREE from "three";
-
-const tempLift = new THREE.Vector3();
-const tempMidA = new THREE.Vector3();
-const tempMidB = new THREE.Vector3();
-const tempMid = new THREE.Vector3();
+import { LOOPER_WIRE_SETTINGS } from "../../../config/looper.js";
+import { createWirePathPlan } from "./wirePath.js";
 
 export function createWireMaterial(color, textures = {}) {
   const material = new THREE.MeshStandardMaterial({
@@ -17,45 +14,125 @@ export function createWireMaterial(color, textures = {}) {
   return material;
 }
 
-export function updateWireMeshGeometry(wireMesh, start, end, { segments, radius }) {
-  if (!wireMesh || start.distanceToSquared(end) < 0.00001) {
-    return;
+export function updateWireMeshGeometry(
+  wireMesh,
+  start,
+  end,
+  {
+    startTangent = null,
+    endTangent = null,
+    settings = LOOPER_WIRE_SETTINGS,
+  } = {},
+) {
+  if (!wireMesh) {
+    return false;
   }
 
-  const lastStart = wireMesh.userData.lastWireStart || new THREE.Vector3();
-  const lastEnd = wireMesh.userData.lastWireEnd || new THREE.Vector3();
-  if (
-    wireMesh.userData.lastWireStart &&
-    lastStart.distanceToSquared(start) < 0.0000001 &&
-    lastEnd.distanceToSquared(end) < 0.0000001
-  ) {
-    return;
+  const resolvedSettings = { ...LOOPER_WIRE_SETTINGS, ...(settings || {}) };
+  const plan = createWirePathPlan(start, end, {
+    startTangent,
+    endTangent,
+    settings: resolvedSettings,
+  });
+  const positionEpsilonSquared = Math.pow(resolvedSettings.positionEpsilon || 0.00035, 2);
+  const directionEpsilonSquared = Math.pow(resolvedSettings.directionEpsilon || 0.002, 2);
+  const unchanged = hasMatchingWireCache(
+    wireMesh,
+    start,
+    end,
+    plan.startTangent,
+    plan.endTangent,
+    positionEpsilonSquared,
+    directionEpsilonSquared,
+  );
+
+  if (plan.spanCount === 0) {
+    wireMesh.visible = false;
+    cacheWireState(wireMesh, start, end, plan);
+    return false;
   }
 
-  const curve = createWireCurve(start, end);
-  const geometry = new THREE.TubeGeometry(curve, segments, radius, 8, false);
+  if (unchanged && wireMesh.visible) {
+    return false;
+  }
+
+  const curve = createWireCurveFromPlan(plan);
+  const geometry = new THREE.TubeGeometry(
+    curve,
+    plan.tubularSegments,
+    resolvedSettings.radius,
+    resolvedSettings.radialSegments,
+    false,
+  );
   geometry.userData.disposeOnInstrumentDelete = true;
+  geometry.userData.wireSpanCount = plan.spanCount;
   wireMesh.geometry?.dispose?.();
   wireMesh.geometry = geometry;
-  lastStart.copy(start);
-  lastEnd.copy(end);
-  wireMesh.userData.lastWireStart = lastStart;
-  wireMesh.userData.lastWireEnd = lastEnd;
+  wireMesh.visible = true;
+  cacheWireState(wireMesh, start, end, plan);
+  return true;
 }
 
-export function createWireCurve(start, end) {
-  const distance = start.distanceTo(end);
-  tempLift.set(0, Math.min(Math.max(distance * 0.28, 0.045), 0.22), 0);
-  tempMid.copy(start).lerp(end, 0.5).addScaledVector(tempLift, 1.15);
-  tempMidA.copy(start).lerp(end, 0.25).addScaledVector(tempLift, 0.75);
-  tempMidB.copy(start).lerp(end, 0.75).addScaledVector(tempLift, 0.75);
+export function createWireCurve(start, end, options = {}) {
+  return createWireCurveFromPlan(createWirePathPlan(start, end, options));
+}
 
-  return new THREE.CatmullRomCurve3(
-    [start.clone(), tempMidA.clone(), tempMid.clone(), tempMidB.clone(), end.clone()],
-    false,
-    "catmullrom",
-    0.35,
+function createWireCurveFromPlan(plan) {
+  const curve = new THREE.CurvePath();
+  for (const segment of plan.segments) {
+    curve.add(new THREE.CubicBezierCurve3(
+      toVector3(segment.start),
+      toVector3(segment.control1),
+      toVector3(segment.control2),
+      toVector3(segment.end),
+    ));
+  }
+  curve.userData = { wirePathPlan: plan };
+  return curve;
+}
+
+function hasMatchingWireCache(
+  wireMesh,
+  start,
+  end,
+  startTangent,
+  endTangent,
+  positionEpsilonSquared,
+  directionEpsilonSquared,
+) {
+  const data = wireMesh.userData;
+  return Boolean(
+    data.lastWireStart &&
+    data.lastWireEnd &&
+    data.lastWireStartTangent &&
+    data.lastWireEndTangent &&
+    data.lastWireStart.distanceToSquared(start) <= positionEpsilonSquared &&
+    data.lastWireEnd.distanceToSquared(end) <= positionEpsilonSquared &&
+    data.lastWireStartTangent.distanceToSquared(startTangent) <= directionEpsilonSquared &&
+    data.lastWireEndTangent.distanceToSquared(endTangent) <= directionEpsilonSquared
   );
+}
+
+function cacheWireState(wireMesh, start, end, plan) {
+  const data = wireMesh.userData;
+  data.lastWireStart = copyCachedVector(data.lastWireStart, start);
+  data.lastWireEnd = copyCachedVector(data.lastWireEnd, end);
+  data.lastWireStartTangent = copyCachedVector(
+    data.lastWireStartTangent,
+    plan.startTangent,
+  );
+  data.lastWireEndTangent = copyCachedVector(data.lastWireEndTangent, plan.endTangent);
+  data.wirePathPlan = plan;
+}
+
+function copyCachedVector(target, value) {
+  const vector = target || new THREE.Vector3();
+  vector.set(value?.x || 0, value?.y || 0, value?.z || 0);
+  return vector;
+}
+
+function toVector3(point) {
+  return new THREE.Vector3(point.x, point.y, point.z);
 }
 
 export function disposeWireMesh(wireMesh) {

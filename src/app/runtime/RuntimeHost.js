@@ -141,6 +141,7 @@ export class RuntimeHost {
     this.noteFontLoadPromise = null;
     this.activeInstrumentState = null;
     this.pendingSpawnPlacement = null;
+    this.xrSessionActive = false;
     this.currentVowelIndex = -1;
     this.currentVowelLetter = "neutral";
     this.instructionPanelView = null;
@@ -248,15 +249,28 @@ export class RuntimeHost {
       lockService: this.honkLockService,
       createInstrument: async (saved) => {
         const componentId = saved.kind === "looper" ? "looper" : saved.componentId || "honk";
+        const baseScale = getSerializedUniformScale(saved.transform?.scale);
         this.createSpawnedComponent(componentId, {
           id: saved.id,
           tuning: saved.tuning,
+          ...(baseScale === null ? {} : { baseScale }),
         });
         return this.activeInstrumentState;
       },
       onEquipment: (equipment) => this.stickEquipmentSystem.restoreEquipmentPreference(equipment),
-      onInstrumentRestored: (instrument) => {
+      onInstrumentRestored: (instrument, saved) => {
         if (instrument.kind === "looper") this.updateLockVisual(instrument);
+        if (instrument.kind === "honk") {
+          const resolved = instrument.getResolvedPerformanceState?.();
+          if (resolved) this.applyResolvedHonkMorphState(instrument, resolved);
+          this.syncMorphColliderTravel(instrument);
+          this.updateBendAlignedColliders(instrument);
+        }
+        const baseScale = getSerializedUniformScale(saved.transform?.scale);
+        if (baseScale !== null) {
+          instrument.baseScale = baseScale;
+          this.applyInstrumentVisualScale(instrument, 1);
+        }
         this.syncLooperTransformReference(instrument);
       },
     });
@@ -349,9 +363,8 @@ export class RuntimeHost {
     return this;
   }
 
-  savePersistedScene() {
-    this.scenePersistence.markDirty();
-    return this.scenePersistence.save({ force: true });
+  savePersistedSceneOnXRExit() {
+    return this.scenePersistence.save();
   }
 
   async restorePersistedScene() {
@@ -408,3 +421,10 @@ Object.assign(
   HonkPresentationRuntimeMethods,
   RelationshipRuntimeMethods,
 );
+
+function getSerializedUniformScale(scale) {
+  if (!Array.isArray(scale) || scale.length !== 3 || !scale.every(Number.isFinite)) {
+    return null;
+  }
+  return (Math.abs(scale[0]) + Math.abs(scale[1]) + Math.abs(scale[2])) / 3;
+}

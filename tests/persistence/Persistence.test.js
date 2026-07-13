@@ -42,6 +42,40 @@ test("serializer returns plain JSON and persists relationships by ID", () => {
   assert.equal(Object.getPrototypeOf(saved), Object.prototype);
 });
 
+test("serializer keeps durable Looper data but excludes transport state", () => {
+  const looper = fakeInstrument("looper-1", "looper");
+  looper.root.visible = false;
+  looper.root.scale = tuple([2.07, 2.07, 2.07]);
+  looper.baseScale = 2;
+  looper.serialize = () => ({
+    id: looper.id,
+    kind: looper.kind,
+    appearance: { locked: true },
+    controls: { volume: 0.4, gap: -0.25, speed: 0.6 },
+    timeline: { schemaVersion: 1, durationMs: 480, tracks: [{ trackId: "track-0", events: [] }] },
+    transport: { state: "paused" },
+    recording: false,
+    playing: false,
+    paused: true,
+    playbackPositionMs: 240,
+  });
+  const pendingHonk = fakeInstrument("honk-pending", "honk");
+  pendingHonk.pendingPlacement = true;
+
+  const saved = new SceneSerializer({
+    registry: fakeRegistry([looper, pendingHonk]),
+    lockService: { serialize: () => [] },
+  }).serialize();
+
+  assert.equal(saved.instruments.length, 1);
+  assert.deepEqual(saved.instruments[0].transform.scale, [2, 2, 2]);
+  assert.deepEqual(saved.instruments[0].controls, looper.serialize().controls);
+  assert.deepEqual(saved.instruments[0].timeline, looper.serialize().timeline);
+  for (const field of ["transport", "recording", "playing", "paused", "playbackPositionMs"]) {
+    assert.equal(Object.hasOwn(saved.instruments[0], field), false);
+  }
+});
+
 test("restorer creates all instruments before lock and looper relationships", async () => {
   const events = [];
   const instruments = new Map();
@@ -111,6 +145,39 @@ test("restorer skips relationships whose targets are missing", async () => {
   });
   assert.deepEqual(restoredLocks, []);
   assert.deepEqual(result.skipped, []);
+});
+
+test("restorer synchronizes a saved uniform scale with runtime baseScale", async () => {
+  const instrument = fakeInstrument("honk-1", "honk");
+  instrument.baseScale = 0.5;
+  instrument.setScale = (scale) => instrument.root.scale.fromArray([scale, scale, scale]);
+  const instruments = new Map();
+  const registry = {
+    get: (id) => instruments.get(id) || null,
+    has: (id) => instruments.has(id),
+    add: (entry) => instruments.set(entry.id, entry),
+  };
+  const restorer = new SceneRestorer({
+    registry,
+    createInstrument: async () => instrument,
+    lockService: { restore() {} },
+  });
+
+  await restorer.restore({
+    instruments: [{
+      id: instrument.id,
+      kind: instrument.kind,
+      transform: {
+        position: [1, 2, 3],
+        quaternion: [0, 0, 0, 1],
+        scale: [2.25, 2.25, 2.25],
+      },
+    }],
+    relationships: { honkLocks: [], looperConnections: [] },
+  });
+
+  assert.equal(instrument.baseScale, 2.25);
+  assert.deepEqual(instrument.root.scale.toArray(), [2.25, 2.25, 2.25]);
 });
 
 function fakeInstrument(id, kind) {
