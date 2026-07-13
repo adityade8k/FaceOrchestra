@@ -4090,11 +4090,22 @@ export class InstrumentController {
       const hit = this.getCurrentHit(controller);
       const nextTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
       const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
+      const hitInstrumentState = nextTarget?.userData.instrumentState;
+      const unlockedInteractionTarget =
+        nextTarget &&
+        nextTarget.name !== INTERACTION_TARGET_NAMES.body &&
+        hitInstrumentState &&
+        !hitInstrumentState?.locked
+          ? nextTarget
+          : null;
+      const lockedGrabTarget =
+        lockedInstrumentState?.hitTargets?.[INTERACTION_TARGET_NAMES.body] || null;
+      const hapticContactTarget = lockedGrabTarget || unlockedInteractionTarget;
 
-      if (nextTarget && controllerState.raycastContactTarget !== nextTarget) {
+      if (hapticContactTarget && controllerState.raycastContactTarget !== hapticContactTarget) {
         this.triggerRaycastHitHaptics(controller, controllerState);
       }
-      controllerState.raycastContactTarget = nextTarget;
+      controllerState.raycastContactTarget = hapticContactTarget;
 
       if (controllerState.hoveredTarget && controllerState.hoveredTarget !== nextTarget) {
         this.setTargetHighlight(controllerState.hoveredTarget, false);
