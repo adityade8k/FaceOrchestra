@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "python3 -m http.server 5173",
-    "collider-editor": "node tools/collider-editor-server.mjs"
+    "dev:https": "python3 scripts/serve-https.py",
+    "collider-editor": "node tools/collider-editor/server.mjs",
+    "test": "node --test",
+    "check": "node scripts/verify-imports.mjs",
+    "verify": "npm run check && npm test"
   }
 }

@@ -1,87 +1,43 @@
-import * as THREE from "three";
 import { ARButton } from "three/addons/webxr/ARButton.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
-import { MODEL_PATH } from "./config/assets.js";
+import { createFaceOrchestraApp } from "./app/createFaceOrchestraApp.js";
+import { ASSET_PATHS } from "./config/assets.js";
 import { XR_OPTIONAL_FEATURES } from "./config/xr.js";
-import { InstrumentController } from "./instrument/InstrumentController.js";
-import { VowelSynth } from "./audio/VowelSynth.js";
 
-const app = document.querySelector("#app");
+const container = document.querySelector("#app");
 const status = document.querySelector("#status span");
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x202124);
-
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 30);
-camera.position.set(0, 1.55, 2.2);
-
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  alpha: true,
-});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.xr.enabled = true;
-app.appendChild(renderer.domElement);
-
-const synth = new VowelSynth();
-const instrumentController = new InstrumentController({
-  scene,
-  camera,
-  renderer,
-  synth,
-});
-
-setupNeutralFallbackWorld();
-setupLights();
-setupXRButton();
-
-instrumentController
-  .init()
-  .then(() => {
-    status.textContent = "Enter AR/VR, hold A for the spawn menu, release to preview, right stick scales, trigger places.";
-  })
-  .catch((error) => {
-    console.error(error);
-    status.textContent = `Could not load ${MODEL_PATH}. Check the model path and console.`;
-  });
+const app = createFaceOrchestraApp({ container });
+const { renderer } = app.sceneRuntime;
 
 renderer.xr.addEventListener("sessionstart", () => {
-  const session = renderer.xr.getSession();
-  const blendMode = session?.environmentBlendMode;
-  const isPassthroughLike = blendMode === "alpha-blend" || blendMode === "additive";
-
-  scene.background = isPassthroughLike ? null : new THREE.Color(0x202124);
-  setFallbackWorldVisible(!isPassthroughLike);
-  instrumentController.onXRSessionStart();
-  status.textContent = "XR session active. Release A to preview, use right stick to scale, trigger to place, grip to delete.";
+  app.onXRSessionStart();
+  setStatus("XR session active. Release A to preview, use right stick to scale, trigger to place, grip to delete.");
 });
 
 renderer.xr.addEventListener("sessionend", () => {
-  scene.background = new THREE.Color(0x202124);
-  setFallbackWorldVisible(true);
-  instrumentController.onXRSessionEnd();
-  status.textContent = "XR session ended. Enter AR/VR to continue.";
+  app.onXRSessionEnd();
+  setStatus("XR session ended. Enter AR/VR to continue.");
 });
 
-renderer.setAnimationLoop(() => {
-  instrumentController.update();
-  renderer.render(scene, camera);
+setupXRButton(renderer).catch((error) => {
+  console.warn("Could not configure WebXR entry:", error);
+  setStatus("WebXR setup failed. Desktop preview is still available.");
 });
 
-window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+app.initialize()
+  .then(() => {
+    app.start();
+    setStatus("Enter AR/VR, hold A for the spawn menu, release to preview, right stick scales, trigger places.");
+  })
+  .catch((error) => {
+    console.error(error);
+    setStatus(`Could not load ${ASSET_PATHS.models.honk}. Check the model path and console.`);
+  });
 
-async function setupXRButton() {
+async function setupXRButton(webglRenderer) {
   if (!navigator.xr) {
-    document.body.appendChild(VRButton.createButton(renderer));
-    status.textContent = "WebXR was not detected. Desktop preview is still available.";
+    document.body.appendChild(VRButton.createButton(webglRenderer));
+    setStatus("WebXR was not detected. Desktop preview is still available.");
     return;
   }
 
@@ -93,52 +49,18 @@ async function setupXRButton() {
   }
 
   if (supportsAR) {
-    document.body.appendChild(
-      ARButton.createButton(renderer, {
-        optionalFeatures: XR_OPTIONAL_FEATURES,
-        domOverlay: { root: document.body },
-      }),
-    );
-    status.textContent = "Quest passthrough ready. Enter AR to begin.";
+    document.body.appendChild(ARButton.createButton(webglRenderer, {
+      optionalFeatures: XR_OPTIONAL_FEATURES,
+      domOverlay: { root: document.body },
+    }));
+    setStatus("Quest passthrough ready. Enter AR to begin.");
     return;
   }
 
-  document.body.appendChild(VRButton.createButton(renderer));
-  status.textContent = "Passthrough AR is unavailable here. Enter VR or use desktop preview.";
+  document.body.appendChild(VRButton.createButton(webglRenderer));
+  setStatus("Passthrough AR is unavailable here. Enter VR or use desktop preview.");
 }
 
-function setupLights() {
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x2d3436, 1.15);
-  scene.add(hemi);
-
-  const key = new THREE.DirectionalLight(0xffffff, 2.2);
-  key.name = "KeyLight";
-  key.position.set(2.5, 4.2, 2.8);
-  key.castShadow = true;
-  scene.add(key);
-
-  const fill = new THREE.DirectionalLight(0x8fc7ff, 0.75);
-  fill.name = "CoolFillLight";
-  fill.position.set(-2.2, 2.2, 1.6);
-  scene.add(fill);
-
-  const rim = new THREE.DirectionalLight(0xffd49a, 1.4);
-  rim.name = "WarmRimLight";
-  rim.position.set(-1.4, 2.8, -3.2);
-  scene.add(rim);
-}
-
-function setupNeutralFallbackWorld() {
-  const grid = new THREE.GridHelper(8, 16, 0x5b6470, 0x353b42);
-  grid.name = "FallbackWorld";
-  grid.position.y = 0;
-  scene.add(grid);
-}
-
-function setFallbackWorldVisible(visible) {
-  scene.traverse((object) => {
-    if (object.name === "FallbackWorld") {
-      object.visible = visible;
-    }
-  });
+function setStatus(message) {
+  if (status) status.textContent = message;
 }

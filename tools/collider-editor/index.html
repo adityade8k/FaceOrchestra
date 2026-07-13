@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face Orchestra Collider Editor</title>
+    <link rel="stylesheet" href="./colliderEditor.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="collider-editor">
+      <section id="viewport" aria-label="Collider editor viewport"></section>
+      <aside id="panel" aria-label="Collider editor controls">
+        <header class="panel-header">
+          <div>
+            <h1>Collider Editor</h1>
+            <p id="status">Loading...</p>
+          </div>
+        </header>
+
+        <div class="control-block">
+          <label for="object-select">Object</label>
+          <select id="object-select">
+            <option value="honk">Honk</option>
+            <option value="looper">Looper</option>
+            <option value="stick">Stick</option>
+          </select>
+        </div>
+
+        <div class="control-block">
+          <label for="collider-select">Collider</label>
+          <select id="collider-select"></select>
+        </div>
+
+        <div class="tool-row" aria-label="Transform mode">
+          <button class="tool-button active" type="button" data-mode="translate" title="Translate">Move</button>
+          <button class="tool-button" type="button" data-mode="rotate" title="Rotate">Rotate</button>
+          <button class="tool-button" type="button" data-mode="scale" title="Scale">Scale</button>
+        </div>
+
+        <section class="control-section">
+          <h2>Selected</h2>
+          <div id="properties"></div>
+        </section>
+
+        <section class="control-section">
+          <h2>Morph Targets</h2>
+          <div id="morph-targets"></div>
+        </section>
+
+        <section class="control-section output-section">
+          <div class="section-title-row">
+            <h2>Config Output</h2>
+            <div class="copy-actions">
+              <button type="button" id="copy-selected">Copy Selected</button>
+              <button type="button" id="copy-all">Copy All</button>
+            </div>
+          </div>
+          <textarea id="config-output" spellcheck="false"></textarea>
+        </section>
+      </aside>
+    </main>
+
+    <script type="module" src="./colliderEditor.js"></script>
+  </body>
+</html>

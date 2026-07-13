@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SPAWN_COMPONENT_OPTIONS } from "../config/ui.js";
+import { SPAWN_CATALOG_ENTRIES } from "../config/spawning.js";
 
 const RADIAL_MENU_RADIUS = 0.18;
 const RADIAL_MENU_INNER_RADIUS = 0.035;
@@ -15,7 +15,12 @@ const tempStartInverseQuaternion = new THREE.Quaternion();
 const tempControllerQuaternion = new THREE.Quaternion();
 
 export class RadialSpawnMenu {
-  create() {
+  constructor(options = SPAWN_CATALOG_ENTRIES.filter((entry) => entry.visibleInRadial !== false)) {
+    this.options = options;
+  }
+
+  create(options = this.options) {
+    this.options = options;
     const group = new THREE.Group();
     group.name = "SpawnRadialMenu";
     group.position.set(0, 0, -RADIAL_MENU_DISTANCE);
@@ -29,11 +34,11 @@ export class RadialSpawnMenu {
     group.add(dial);
     group.userData.dial = dial;
 
-    const optionCount = Math.max(SPAWN_COMPONENT_OPTIONS.length, 1);
+    const optionCount = Math.max(this.options.length, 1);
     const arc = (Math.PI * 2) / optionCount;
     const startOffset = RADIAL_MENU_TOP_ANGLE + arc * 0.5;
 
-    SPAWN_COMPONENT_OPTIONS.forEach((option, index) => {
+    this.options.forEach((option, index) => {
       const startAngle = startOffset - index * arc;
       const endAngle = startAngle - arc;
       const segment = new THREE.Mesh(
@@ -145,7 +150,7 @@ export class RadialSpawnMenu {
   }
 
   getSelectedIndex(controller, state) {
-    const optionCount = SPAWN_COMPONENT_OPTIONS.length;
+    const optionCount = this.options.length;
     if (optionCount <= 1) {
       return 0;
     }
@@ -204,7 +209,7 @@ export class RadialSpawnMenu {
     state.radialMenuDialRotation = dialRotation;
     state.radialMenuSelectedIndex = this.getSelectedIndexForDialRotation(
       dialRotation,
-      SPAWN_COMPONENT_OPTIONS.length,
+      this.options.length,
     );
 
     menu.rotation.z = -controllerRoll;

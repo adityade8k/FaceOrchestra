@@ -1,8 +1,8 @@
-import { STICK_MODEL_PATH } from "./assets.js";
+import { ASSET_PATHS } from "./assets.js";
 
 export const STICK_SETTINGS = {
   enabled: true,
-  modelPath: STICK_MODEL_PATH,
+  modelPath: ASSET_PATHS.models.stick,
 
   // Local transform from the XR controller to the held stick.
   position: { x: 0, y: -0.02, z: -0.28 },
