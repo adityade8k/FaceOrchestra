@@ -51,6 +51,7 @@ The expected Quest-style map is:
 | Input | Expected intent |
 | --- | --- |
 | Right A press/release | Open/confirm spawn menu |
+| Grip held + Right A press | Duplicate the actively gripped Honk or Looper; never open the menu |
 | Right B press | Contextual Honk formation or Looper lock toggle |
 | Left X press | Delete pointed instrument |
 | Trigger press/release | Place preview or interact with the current ray target |
@@ -97,7 +98,11 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] Begin a preview while a Looper is already playing. Expected: ordinary ray/grip/collision interactions pause during preview, but Looper playback/audio/presentation continues through the preview-safe update path.
 
-- [ ] Duplicate a supported instrument using the existing grip-plus-spawn gesture. Expected: the duplicate receives a new stable ID; a duplicated Looper copies timeline/controls but starts with no copied live connections or wires.
+- [ ] **Duplicate Honk** — Grip an unlocked Honk, then press Right A without releasing Grip. Expected: exactly one immediate duplicate receives a new stable ID at the same transform, the radial menu and spawn preview remain closed, and Grip transfers to the duplicate so moving the controller peels it away from the unchanged original. Press A again and confirm the newest duplicate—not the original—is copied.
+
+- [ ] **Duplicate Looper** — Grip an unlocked Looper, then press Right A. Expected: exactly one new Looper copies the timeline and volume/gap/speed controls but starts stopped, unlocked, and without copied Honk connections, wires, automation, voices, or live transport state.
+
+- [ ] Hold Grip with no duplicable transform target and press Right A. Expected: the radial menu remains disabled and no instrument or preview is created. Grip release followed by Right A opens the menu normally.
 
 ## 3. Transform targets
 

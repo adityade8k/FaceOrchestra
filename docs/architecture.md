@@ -317,7 +317,8 @@ Gamepad/XR controller
 | Enter XR | AR/VR button starts the session → `FaceOrchestraApp.onXRSessionStart` sets blend mode → session runtime shows or suppresses instructions. |
 | Exit XR | Session event → discard pending previews → take one final Looper recording sample → finalize recordings and stop transports → write one scene snapshot → release controller/live interaction state and voices → subsystem resets → `SceneRuntime.resetAfterXR`. Persisted instruments remain for the next session. |
 | Dismiss instructions | Trigger raycast resolves the close button → instruction view hides → spawn flow becomes available. |
-| Open/select spawn menu | XR input → `spawn.menu.open` → `SpawnMenuController`/radial view; controller orientation selects an entry. A release confirms. |
+| Open/select spawn menu | Right A with Grip released → `spawn.menu.open` → `SpawnMenuController`/radial view; controller orientation selects an entry. A release confirms. Any active Grip suppresses this route. |
+| Duplicate gripped instrument | Grip transform owns a single unlocked Honk/Looper → Right A press → resolve canonical `gripSourceInstrumentState` behind the transform-profile wrapper → create a fresh-ID copy → copy durable instrument state only → retarget Grip to the duplicate. No radial menu or spawn preview is created. |
 | Preview/place/cancel | Catalog action creates one entity or several recipe Honks → preview attaches roots to a controller-local group → thumbstick scales → Trigger preserves world transforms and places; Grip/lifecycle cancellation removes preview entities. |
 | Spawn formation recipe | `SpawnCatalog` resolves a recipe ID → each `FormationSpawner`/runtime recipe member creates an ordinary Honk with its own stable ID and tuning. |
 | Raycast Honk interactions | Ray target descriptor → owning Honk → semantic squeeze/vowel/ear/nose method → performance state; presentation applies morph/audio later in the frame. |

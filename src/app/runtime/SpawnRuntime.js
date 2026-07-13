@@ -18,8 +18,13 @@ import {
   createPendingSpawnGlassMaterial,
   disposePendingSpawnMaterials,
 } from "../../spawning/pendingSpawnMaterials.js";
+import {
+  SpawnMenuPrimaryAction,
+  resolveSpawnMenuPrimaryAction,
+} from "../../spawning/spawnMenuPrimaryAction.js";
 import { RAY_COLOR_HOVER } from "../../ui/interactionTargetPresentation.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
+import { setControllerGripTarget } from "../../xr/controllerGripState.js";
 
 const tempQuaternion = new THREE.Quaternion();
 const tempSpawnForward = new THREE.Vector3();
@@ -38,16 +43,13 @@ export const SpawnRuntimeMethods = {
       }
   
       const controllerState = this.controllerStates.get(controller);
-      if (
-        controllerState?.gripHeld &&
-        controllerState.gripInstrumentState?.root?.visible &&
-        this.getPointedInstrumentState(controller) === controllerState.gripInstrumentState
-      ) {
-        this.duplicateInstrumentForGrip(controller, controllerState.gripInstrumentState);
+      const primaryAction = resolveSpawnMenuPrimaryAction({ controllerState, gripPressed });
+      if (primaryAction.type === SpawnMenuPrimaryAction.duplicate) {
+        this.duplicateInstrumentForGrip(controller, primaryAction.source);
         return;
       }
   
-      if (gripPressed || controllerState?.grip) {
+      if (primaryAction.type === SpawnMenuPrimaryAction.suppress) {
         return;
       }
   
@@ -336,12 +338,15 @@ export const SpawnRuntimeMethods = {
         return;
       }
   
-      controllerState.gripHeld = true;
-      controllerState.gripInstrumentState = duplicateState;
+      const duplicateGripTarget = this.transformTargetResolver?.resolve?.(duplicateState) || duplicateState;
+      setControllerGripTarget(controllerState, duplicateGripTarget, duplicateState);
       this.interactionCoordinator.setMode(controller, ControllerMode.GRIP_TRANSFORMING);
       controller.updateMatrixWorld(true);
-      duplicateRoot.updateMatrixWorld(true);
-      controllerState.gripOffsetMatrix.copy(controller.matrixWorld).invert().multiply(duplicateRoot.matrixWorld);
+      duplicateGripTarget.root.updateMatrixWorld(true);
+      controllerState.gripOffsetMatrix
+        .copy(controller.matrixWorld)
+        .invert()
+        .multiply(duplicateGripTarget.root.matrixWorld);
     },
     copyInstrumentMorphState(sourceState, targetState) {
       const vowelLetter = sourceState.currentVowelLetter === "neutral" ? null : sourceState.currentVowelLetter;

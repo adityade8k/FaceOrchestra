@@ -62,8 +62,9 @@ Hardware button indices live in [`src/xr/controllerBindings.js`](src/xr/controll
 
 | Input | Context | Behavior |
 | --- | --- | --- |
-| Right A, hold | Instructions dismissed, no preview | Open the radial spawn menu. Rotate the controller to select. |
+| Right A, hold | Instructions dismissed, no preview, Grip released | Open the radial spawn menu. Rotate the controller to select. |
 | Right A, release | Spawn menu open | Confirm the selected catalog entry and create a translucent placement preview. |
+| Grip + Right A press | Actively gripping an unlocked Honk or Looper | Create one immediate duplicate and transfer the active grip to it. The radial menu stays closed. |
 | Trigger | Spawn preview active | Place the preview. |
 | Grip | Spawn menu or preview active | Cancel the menu or preview. |
 | Right thumbstick Y | Preview active | Scale every instrument in the preview one step at a time. |
