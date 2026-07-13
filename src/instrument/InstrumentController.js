@@ -150,6 +150,7 @@ const VOWEL_LETTERS_BY_MORPH = {
 };
 
 const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
+const PERSISTED_SCENE_STORAGE_KEY = "face-orchestra:spawned-instruments:v1";
 const CONTROLLER_RAY_LENGTH = 1.6;
 const RAY_COLOR_DEFAULT = 0xf6d878;
 const RAY_COLOR_SPHERE_HOVER = 0x45f6ff;
@@ -524,6 +525,7 @@ export class InstrumentController {
     await this.loadInstrument();
     await this.loadStick();
     await this.loadNoteFont();
+    this.restorePersistedScene();
   }
 
   setupControllers() {
@@ -880,6 +882,7 @@ export class InstrumentController {
   }
 
   onXRSessionEnd() {
+    this.savePersistedScene();
     this.hideInstructionPanel();
     this.pendingPanelPlacementFrames = 0;
     this.deletePendingSpawnPlacement();
@@ -988,6 +991,79 @@ export class InstrumentController {
     this.updateLooperRecordings();
     this.updateLooperMorphAnimations();
     this.updateLooperWires();
+  }
+
+  savePersistedScene() {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+
+    const instruments = this.instrumentStates
+      .filter((state) => state?.root?.visible && !state.pendingPlacement)
+      .map((state) => ({
+        componentId: state.componentId || "honk",
+        position: state.root.position.toArray(),
+        quaternion: state.root.quaternion.toArray(),
+        baseScale: state.baseScale,
+        locked: Boolean(state.locked),
+        scalePresetNote: state.scalePresetNoteConfig || null,
+      }));
+
+    try {
+      localStorage.setItem(PERSISTED_SCENE_STORAGE_KEY, JSON.stringify({ version: 1, instruments }));
+    } catch (error) {
+      console.warn("Could not save spawned instruments:", error);
+    }
+  }
+
+  restorePersistedScene() {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+
+    let savedScene;
+    try {
+      const serializedScene = localStorage.getItem(PERSISTED_SCENE_STORAGE_KEY);
+      if (!serializedScene) {
+        return;
+      }
+      savedScene = JSON.parse(serializedScene);
+    } catch (error) {
+      console.warn("Could not read saved spawned instruments:", error);
+      return;
+    }
+
+    if (!Array.isArray(savedScene?.instruments)) {
+      return;
+    }
+
+    for (const saved of savedScene.instruments) {
+      if (!this.componentTemplates.has(saved?.componentId)) {
+        continue;
+      }
+
+      const root = this.createSpawnedComponent(saved.componentId);
+      const state = this.activeInstrumentState;
+      if (!root || !state) {
+        continue;
+      }
+
+      if (Array.isArray(saved.position) && saved.position.length === 3) {
+        root.position.fromArray(saved.position);
+      }
+      if (Array.isArray(saved.quaternion) && saved.quaternion.length === 4) {
+        root.quaternion.fromArray(saved.quaternion).normalize();
+      }
+      if (Number.isFinite(saved.baseScale)) {
+        this.setInstrumentBaseScale(state, saved.baseScale);
+      }
+      if (saved.scalePresetNote && state.interactive) {
+        this.applyScalePresetNote(state, saved.scalePresetNote);
+      }
+      state.locked = Boolean(saved.locked);
+      this.updateLockVisual(state);
+      this.syncLooperTransformReference(state);
+    }
   }
 
   updateSceneObjects(delta, time) {
@@ -1274,6 +1350,7 @@ export class InstrumentController {
 
     pending.group.removeFromParent();
     this.activeInstrumentState = pending.states.at(-1) || this.activeInstrumentState;
+    this.savePersistedScene();
   }
 
   deletePendingSpawnPlacement() {
@@ -1402,6 +1479,7 @@ export class InstrumentController {
       this.clearLockedChordMembership(instrumentState);
       this.updateLockVisual(instrumentState);
     }
+    this.savePersistedScene();
   }
 
   isLockableInstrumentState(instrumentState) {
@@ -1495,6 +1573,7 @@ export class InstrumentController {
     if (this.activeInstrumentState === instrumentState) {
       this.activeInstrumentState = this.instrumentStates.at(-1) || null;
     }
+    this.savePersistedScene();
   }
 
   disposeInstrumentResources(instrumentState) {
@@ -2639,8 +2718,13 @@ export class InstrumentController {
       return;
     }
 
-    this.resetShakeDisconnectTracking(this.controllerStates.get(controller));
+    const controllerState = this.controllerStates.get(controller);
+    const repositionedInstrument = Boolean(controllerState?.gripHeld);
+    this.resetShakeDisconnectTracking(controllerState);
     this.gripTransformSystem?.release(controller);
+    if (repositionedInstrument) {
+      this.savePersistedScene();
+    }
   }
 
   handleGripScaleThumbstick(controller, direction) {
@@ -4457,6 +4541,7 @@ export class InstrumentController {
 
     this.positionObjectInFrontOfCamera(component, SPAWN_DISTANCE);
     this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
+    this.savePersistedScene();
   }
 
   spawnScalePreset(scalePreset, namePrefix = "Honk") {
@@ -4501,6 +4586,7 @@ export class InstrumentController {
 
       this.applyScalePresetNote(this.activeInstrumentState, note);
     }
+    this.savePersistedScene();
   }
 
   applyScalePresetNote(state, note) {
@@ -4512,6 +4598,11 @@ export class InstrumentController {
       note.semitonesFromF < 0 ? note.semitonesFromF / 5 : note.semitonesFromF / 7;
     const octaveAmount = THREE.MathUtils.clamp((note.octaveOffset || 0) / 2, -1, 1);
     state.scalePresetNote = note.label;
+    state.scalePresetNoteConfig = {
+      label: note.label,
+      semitonesFromF: note.semitonesFromF,
+      octaveOffset: note.octaveOffset || 0,
+    };
     state.morphController.setEar("left", pitchAmount);
     state.morphController.setEar("right", octaveAmount);
     state.performanceState?.setLiveState({
