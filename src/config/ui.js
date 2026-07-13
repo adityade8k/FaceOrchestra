@@ -43,6 +43,14 @@ export const SPAWN_COMPONENT_OPTIONS = [
     preset: "fNaturalMinorScale",
   },
   {
+    id: "honk-fsharpminor",
+    label: "Honk F#m",
+    modelPath: MODEL_PATH,
+    color: 0x8f7cff,
+    variantOf: "honk",
+    preset: "fSharpNaturalMinorScale",
+  },
+  {
     id: "chord-cmajor",
     label: "C Maj",
     modelPath: MODEL_PATH,

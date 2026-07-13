@@ -26,7 +26,7 @@ export const STICK_SETTINGS = {
 
   haptics: {
     enabled: true,
-    intensity: 0.65,
+    intensity: 1,
     durationMs: 35,
     cooldownMs: 45,
   },

@@ -150,6 +150,8 @@ function createControllerState() {
     y: false,
     thumbstickScaleDirection: 0,
     hoveredTarget: null,
+    raycastContactTarget: null,
+    raycastHapticCooldownUntilMs: 0,
     activeTriggerInteraction: null,
     suppressTriggerUntilRelease: false,
     gripHeld: false,

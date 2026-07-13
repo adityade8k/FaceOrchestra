@@ -41,6 +41,7 @@ import {
   MORPH_TARGET_NAMES,
   NOTE_LABEL_SETTINGS,
   NOSE_DRAG_SENSITIVITY,
+  RAYCAST_HAPTICS,
   SHOW_INSTRUCTION_PANEL,
   HONK_MASTER_GAIN,
   SPAWN_COMPONENT_OPTIONS,
@@ -176,6 +177,16 @@ const F_NATURAL_MINOR_SCALE_PRESET = [
   { label: "Eb", semitonesFromF: -2, octaveOffset: 1 },
   { label: "F", semitonesFromF: 0, octaveOffset: 1 },
 ];
+const F_SHARP_NATURAL_MINOR_SCALE_PRESET = [
+  { label: "F#", semitonesFromF: 1 },
+  { label: "G#", semitonesFromF: 3 },
+  { label: "A", semitonesFromF: 4 },
+  { label: "B", semitonesFromF: 6 },
+  { label: "C#", semitonesFromF: -4, octaveOffset: 1 },
+  { label: "D", semitonesFromF: -3, octaveOffset: 1 },
+  { label: "E", semitonesFromF: -1, octaveOffset: 1 },
+  { label: "F#", semitonesFromF: 1, octaveOffset: 1 },
+];
 const C_MAJOR_CHORD_PRESET = [
   { label: "C", semitonesFromF: -5 },
   { label: "E", semitonesFromF: -1 },
@@ -199,6 +210,7 @@ const A_MINOR_CHORD_PRESET = [
 const SPAWN_PRESETS = {
   cMajorScale: { notes: C_MAJOR_SCALE_PRESET, namePrefix: "Honk" },
   fNaturalMinorScale: { notes: F_NATURAL_MINOR_SCALE_PRESET, namePrefix: "HonkFm" },
+  fSharpNaturalMinorScale: { notes: F_SHARP_NATURAL_MINOR_SCALE_PRESET, namePrefix: "HonkFSharpMinor" },
   cMajorChord: { notes: C_MAJOR_CHORD_PRESET, namePrefix: "CMaj" },
   gMajorChord: { notes: G_MAJOR_CHORD_PRESET, namePrefix: "GMaj" },
   fMajorChord: { notes: F_MAJOR_CHORD_PRESET, namePrefix: "FMaj" },
@@ -893,6 +905,7 @@ export class InstrumentController {
       state.y = false;
       state.thumbstickScaleDirection = 0;
       state.hoveredTarget = null;
+      state.raycastContactTarget = null;
       state.activeTriggerInteraction = null;
       state.suppressTriggerUntilRelease = false;
       state.gripHeld = false;
@@ -1177,6 +1190,7 @@ export class InstrumentController {
         this.setTargetHighlight(controllerState.hoveredTarget, false);
         controllerState.hoveredTarget = null;
       }
+      controllerState.raycastContactTarget = null;
 
       const interaction = controllerState.activeTriggerInteraction;
       if (interaction?.type === "looperWire") {
@@ -2163,12 +2177,15 @@ export class InstrumentController {
   }
 
   clearControllerHover(controllerState) {
-    if (!controllerState?.hoveredTarget) {
+    if (!controllerState) {
       return;
     }
 
-    this.setTargetHighlight(controllerState.hoveredTarget, false);
-    controllerState.hoveredTarget = null;
+    if (controllerState.hoveredTarget) {
+      this.setTargetHighlight(controllerState.hoveredTarget, false);
+      controllerState.hoveredTarget = null;
+    }
+    controllerState.raycastContactTarget = null;
   }
 
   clearControllerTriggerInteraction(controllerState) {
@@ -2474,6 +2491,36 @@ export class InstrumentController {
         console.warn("Could not pulse controller haptics:", error);
       });
     }
+  }
+
+  triggerRaycastHitHaptics(controller, controllerState, now = performance.now()) {
+    const settings = RAYCAST_HAPTICS;
+    if (!settings || settings.enabled === false || !controller) {
+      return;
+    }
+
+    const cooldownMs = Math.max(getConfigNumber(settings.cooldownMs, 0), 0);
+    if (cooldownMs > 0 && now < (controllerState?.raycastHapticCooldownUntilMs || 0)) {
+      return;
+    }
+
+    const durationMs = Math.max(getConfigNumber(settings.durationMs, 0), 0);
+    const intensity = THREE.MathUtils.clamp(getConfigNumber(settings.intensity, 0), 0, 1);
+    if (durationMs <= 0 || intensity <= 0) {
+      return;
+    }
+
+    const pulsePromise = this.pulseGamepadHaptics(this.getControllerGamepad(controller), intensity, durationMs);
+    if (!pulsePromise) {
+      return;
+    }
+
+    if (controllerState && cooldownMs > 0) {
+      controllerState.raycastHapticCooldownUntilMs = now + cooldownMs;
+    }
+    pulsePromise.catch?.((error) => {
+      console.warn("Could not pulse raycast haptics:", error);
+    });
   }
 
   pulseGamepadHaptics(gamepad, intensity, durationMs) {
@@ -4044,6 +4091,11 @@ export class InstrumentController {
       const nextTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
       const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
 
+      if (nextTarget && controllerState.raycastContactTarget !== nextTarget) {
+        this.triggerRaycastHitHaptics(controller, controllerState);
+      }
+      controllerState.raycastContactTarget = nextTarget;
+
       if (controllerState.hoveredTarget && controllerState.hoveredTarget !== nextTarget) {
         this.setTargetHighlight(controllerState.hoveredTarget, false);
       }
@@ -4472,7 +4524,7 @@ export class InstrumentController {
       return;
     }
 
-    const defaultComponentId = this.componentTemplates.has(LOOPER_COMPONENT_ID) ? LOOPER_COMPONENT_ID : "honk";
+    const defaultComponentId = "honk";
     const instrument = this.createSpawnedComponent(defaultComponentId);
     if (!instrument) {
       return;
