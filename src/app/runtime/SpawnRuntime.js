@@ -314,6 +314,8 @@ export const SpawnRuntimeMethods = {
       const componentId = sourceState.componentId || "honk";
       const duplicateRoot = this.createSpawnedComponent(componentId, {
         tuning: sourceState.kind === "honk" ? { ...sourceState.tuning } : undefined,
+        bpm: sourceState.kind === "metronome" ? sourceState.bpm : undefined,
+        volume: sourceState.kind === "metronome" ? sourceState.volume : undefined,
       });
       const duplicateState = this.activeInstrumentState;
       if (!duplicateRoot || !duplicateState) {
@@ -331,6 +333,10 @@ export const SpawnRuntimeMethods = {
       }
       if (sourceState.kind === "looper" && duplicateState.kind === "looper") {
         this.copyLooperState(sourceState, duplicateState);
+      }
+      if (sourceState.kind === "metronome" && duplicateState.kind === "metronome") {
+        this.positionMetronomeControls(duplicateState);
+        this.updateMetronomeLabel(duplicateState);
       }
   
       const controllerState = this.controllerStates.get(controller);
@@ -515,7 +521,7 @@ export const SpawnRuntimeMethods = {
         return;
       }
   
-      const defaultComponentId = "honk";
+      const defaultComponentId = "metronome";
       const instrument = this.createSpawnedComponent(defaultComponentId);
       if (!instrument) {
         return;

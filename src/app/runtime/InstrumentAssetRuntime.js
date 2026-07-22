@@ -16,6 +16,7 @@ import {
   MORPH_TARGET_NAMES,
 } from "../../config/honk.js";
 import { LOOPER_COMPONENT_ID, LOOPER_TRACK_COUNT } from "../../config/looper.js";
+import { METRONOME_COMPONENT_ID, METRONOME_SETTINGS } from "../../config/metronome.js";
 import { SPAWN_CATALOG_ENTRIES } from "../../config/spawning.js";
 import { STICK_SETTINGS } from "../../config/stick.js";
 import { NOTE_LABEL_SETTINGS } from "../../config/ui.js";
@@ -89,6 +90,15 @@ export const InstrumentAssetRuntimeMethods = {
       id: "honk",
       kind: "honk",
       template: this.instrumentTemplate,
+      interactive: true,
+    });
+
+    const metronomeEntry = SPAWN_CATALOG_ENTRIES.find(({ kind }) => kind === "metronome");
+    this.componentTemplates.set(METRONOME_COMPONENT_ID, {
+      ...metronomeEntry,
+      id: METRONOME_COMPONENT_ID,
+      kind: "metronome",
+      template: new THREE.Group(),
       interactive: true,
     });
 
@@ -250,7 +260,7 @@ export const InstrumentAssetRuntimeMethods = {
     if (!componentOption?.template) return null;
 
     const root = cloneSkeletonAware(componentOption.template);
-    const kind = componentOption.kind === "looper" ? "looper" : "honk";
+    const kind = componentOption.kind;
     root.name = options.name || `${componentOption.label || kind}_${this.instrumentRegistry.size + 1}`;
     root.visible = true;
     root.userData.componentId = componentOption.id;
@@ -260,6 +270,10 @@ export const InstrumentAssetRuntimeMethods = {
     let domainTargets = {};
     if (kind === "honk") {
       const created = this.honkColliderFactory.create(root);
+      domainTargets = created.targets;
+      hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
+    } else if (kind === "metronome") {
+      const created = this.metronomeColliderFactory.create(root);
       domainTargets = created.targets;
       hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
     } else {
@@ -279,6 +293,8 @@ export const InstrumentAssetRuntimeMethods = {
         warnMissingExpectedMorphs: kind === "honk" && this.hasExpectedHonkMorphs(morphMeshes),
       }),
       tuning: options.tuning || {},
+      bpm: options.bpm,
+      volume: options.volume,
       componentId: componentOption.id,
     });
 
@@ -304,11 +320,17 @@ export const InstrumentAssetRuntimeMethods = {
     if (kind === "honk") {
       this.initializeInstrumentState(state);
       this.createNoteLabel(state);
-    } else {
+    } else if (kind === "looper") {
       this.initializeLooperState(state);
+    } else if (kind === "metronome") {
+      this.positionMetronomeControls(state);
+      this.createMetronomeLabel(state);
     }
     this.activeInstrumentState = state;
-    this.setInstrumentBaseScale(state, options.baseScale ?? INSTRUMENT_BASE_SCALE);
+    this.setInstrumentBaseScale(
+      state,
+      options.baseScale ?? (kind === "metronome" ? METRONOME_SETTINGS.baseScale : INSTRUMENT_BASE_SCALE),
+    );
     return root;
   },
 };
@@ -334,6 +356,9 @@ function decorateInstrumentEntity(state, { componentOption, hitTargets, morphMes
   state.noteLabelGroup = null;
   state.noteLabelMesh = null;
   state.noteLabelTextValue = null;
+  state.metronomeLabelGroup = null;
+  state.metronomeLabelMesh = null;
+  state.metronomeLabelTextValue = null;
   state.pitchSnap = state.tuning?.pitchSnap || componentOption.pitchSnap || null;
   state.scalePresetNote = state.tuning?.note || null;
   state.scalePresetNoteConfig = state.tuning?.note ? {

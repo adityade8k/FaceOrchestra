@@ -14,6 +14,7 @@ import {
   getInteractionTargetColor,
 } from "../../ui/interactionTargetPresentation.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
+import { METRONOME_SETTINGS } from "../../config/metronome.js";
 
 const tempScale = new THREE.Vector3();
 
@@ -35,7 +36,7 @@ export const XRInteractionRuntimeMethods = {
         } else {
           this.lockConnectedChordStates(instrumentState);
         }
-      } else if (instrumentState.kind === "looper") {
+      } else if (instrumentState.kind === "looper" || instrumentState.kind === "metronome") {
         instrumentState.locked = !instrumentState.locked;
         this.updateLockVisual(instrumentState);
       }
@@ -44,7 +45,7 @@ export const XRInteractionRuntimeMethods = {
       return Boolean(
         instrumentState?.root?.visible &&
         !instrumentState.pendingPlacement &&
-        (instrumentState.kind === "honk" || instrumentState.kind === "looper"),
+        (instrumentState.kind === "honk" || instrumentState.kind === "looper" || instrumentState.kind === "metronome"),
       );
     },
     handleTriggerBeginIntent(controller) {
@@ -74,9 +75,33 @@ export const XRInteractionRuntimeMethods = {
         this.activeInstrumentState = lockedInstrumentState;
         return;
       }
+      if (lockedInstrumentState?.kind === "metronome") {
+        lockedInstrumentState.toggle();
+        controllerState.activeTriggerInteraction = null;
+        this.activeInstrumentState = lockedInstrumentState;
+        return;
+      }
   
       if (this.handleLooperTriggerPress(controller, hit)) {
         return;
+      }
+
+      const metronomeState = this.instrumentRegistry.getFromObject3D(hit?.object);
+      if (metronomeState?.kind === "metronome" && !metronomeState.locked) {
+        this.activeInstrumentState = metronomeState;
+        if (hit.object.userData.isBodyGripTarget) {
+          metronomeState.toggle();
+          controllerState.activeTriggerInteraction = null;
+          return;
+        }
+        const control = hit.object.userData.metronomeControl;
+        if (control) {
+          controllerState.activeTriggerInteraction = {
+            type: "metronomeControlDrag", control, instrumentState: metronomeState,
+            sphere: hit.object, dragStartY: controller.position.y, dragStartSphereY: hit.object.position.y,
+          };
+          return;
+        }
       }
   
       if (lockedInstrumentState?.kind === "honk") {
@@ -199,6 +224,27 @@ export const XRInteractionRuntimeMethods = {
   
         if (interaction.type === "looperControlDrag") {
           this.updateLooperControlDrag(controller, interaction);
+          continue;
+        }
+
+        if (interaction.type === "metronomeControlDrag") {
+          const sphere = interaction.sphere;
+          const localDeltaY = (controller.position.y - interaction.dragStartY) /
+            this.getInstrumentWorldScaleY(interaction.instrumentState);
+          sphere.position.y = THREE.MathUtils.clamp(
+            interaction.dragStartSphereY + localDeltaY, sphere.userData.minY, sphere.userData.maxY,
+          );
+          const amount = THREE.MathUtils.mapLinear(
+            sphere.position.y, sphere.userData.minY, sphere.userData.maxY, 0, 1,
+          );
+          if (interaction.control === "bpm") {
+            interaction.instrumentState.setBpm(THREE.MathUtils.lerp(
+              METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm, amount,
+            ));
+            this.updateMetronomeLabel(interaction.instrumentState);
+          } else {
+            interaction.instrumentState.setVolume(amount);
+          }
           continue;
         }
   

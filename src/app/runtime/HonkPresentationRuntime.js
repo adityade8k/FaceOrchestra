@@ -10,6 +10,8 @@ import {
   LOOPER_CONTROL_MORPH_TARGETS,
 } from "../../config/looper.js";
 import { NOTE_LABEL_SETTINGS } from "../../config/ui.js";
+import { METRONOME_LABEL_SETTINGS, METRONOME_SETTINGS } from "../../config/metronome.js";
+import { METRONOME_INTERACTION_ROLES } from "../../instruments/metronome/MetronomeInstrument.js";
 import {
   VOWEL_LETTERS_BY_MORPH,
   VOWEL_MORPHS,
@@ -26,6 +28,68 @@ import {
 } from "../../ui/interactionTargetPresentation.js";
 
 export const HonkPresentationRuntimeMethods = {
+    updateMetronomes(now = performance.now()) {
+      for (const metronome of this.instrumentRegistry.getByKind("metronome")) metronome.update(now);
+    },
+    positionMetronomeControls(state) {
+      if (state?.kind !== "metronome") return;
+      const bpmTarget = state.targetsByRole.get(METRONOME_INTERACTION_ROLES.bpm);
+      const volumeTarget = state.targetsByRole.get(METRONOME_INTERACTION_ROLES.volume);
+      if (bpmTarget) bpmTarget.position.y = THREE.MathUtils.mapLinear(
+        state.bpm, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm,
+        bpmTarget.userData.minY, bpmTarget.userData.maxY,
+      );
+      if (volumeTarget) volumeTarget.position.y = THREE.MathUtils.mapLinear(
+        state.volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume,
+        volumeTarget.userData.minY, volumeTarget.userData.maxY,
+      );
+    },
+    createMetronomeLabel(state) {
+      if (!this.noteFont || state?.kind !== "metronome") return;
+      const settings = METRONOME_LABEL_SETTINGS;
+      const group = new THREE.Group();
+      group.name = "METRONOME_bpm_label";
+      group.userData.isNoteLabel = true;
+      group.position.set(settings.position.x, settings.position.y, settings.position.z);
+      group.rotation.set(
+        THREE.MathUtils.degToRad(settings.rotationDegrees.x),
+        THREE.MathUtils.degToRad(settings.rotationDegrees.y),
+        THREE.MathUtils.degToRad(settings.rotationDegrees.z),
+      );
+      state.root.add(group);
+      state.metronomeLabelGroup = group;
+      this.updateMetronomeLabel(state);
+    },
+    updateMetronomeLabel(state) {
+      if (!this.noteFont || !state?.metronomeLabelGroup) return;
+      const labelText = `${Math.round(state.bpm)} BPM`;
+      if (labelText === state.metronomeLabelTextValue) return;
+      if (state.metronomeLabelMesh) this.disposeNoteLabelMesh(state.metronomeLabelMesh);
+      const settings = METRONOME_LABEL_SETTINGS;
+      const geometry = new TextGeometry(labelText, {
+        font: this.noteFont, size: settings.size, depth: settings.depth, curveSegments: settings.curveSegments,
+      });
+      geometry.computeBoundingBox();
+      if (geometry.boundingBox) {
+        geometry.translate(
+          -(geometry.boundingBox.min.x + geometry.boundingBox.max.x) * 0.5,
+          -(geometry.boundingBox.min.y + geometry.boundingBox.max.y) * 0.5,
+          0,
+        );
+      }
+      geometry.userData.disposeOnInstrumentDelete = true;
+      const material = new THREE.MeshStandardMaterial({
+        color: settings.color, roughness: 0.36, metalness: 0.02, side: THREE.DoubleSide,
+      });
+      material.userData.disposeOnInstrumentDelete = true;
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = "METRONOME_bpm_text";
+      mesh.userData.isNoteLabel = true;
+      mesh.renderOrder = 30;
+      state.metronomeLabelGroup.add(mesh);
+      state.metronomeLabelMesh = mesh;
+      state.metronomeLabelTextValue = labelText;
+    },
     getSignedMorphValueForCollider(sphere, state) {
       const type = sphere.userData.interactionType;
   

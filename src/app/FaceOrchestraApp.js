@@ -118,6 +118,7 @@ export class FaceOrchestraApp {
 
     this.frameScheduler.add("PERFORMANCE", (frame) => {
       runtime.updateHorn(frame.now);
+      runtime.updateMetronomes(frame.now);
     }, { label: "resolve live input plus automation" });
 
     this.frameScheduler.add("PRESENTATION", (frame) => {

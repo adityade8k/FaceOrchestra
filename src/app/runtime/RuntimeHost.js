@@ -14,7 +14,10 @@ import { HonkLockService } from "../../instruments/formations/HonkLockService.js
 import { getFormationRecipe } from "../../instruments/formations/formationRecipes.js";
 import { HonkColliderFactory } from "../../instruments/honk/HonkColliderFactory.js";
 import { HonkInstrument } from "../../instruments/honk/HonkInstrument.js";
+import { METRONOME_SETTINGS } from "../../config/metronome.js";
 import { LooperInstrument } from "../../instruments/looper/LooperInstrument.js";
+import { MetronomeColliderFactory } from "../../instruments/metronome/MetronomeColliderFactory.js";
+import { MetronomeInstrument } from "../../instruments/metronome/MetronomeInstrument.js";
 import { StickColliderFactory } from "../../instruments/stick/StickColliderFactory.js";
 import { StickCollisionSystem, ThreeStickCollisionAdapter } from "../../instruments/stick/StickCollisionSystem.js";
 import { StickEquipmentSystem } from "../../instruments/stick/StickEquipmentSystem.js";
@@ -89,6 +92,7 @@ export class RuntimeHost {
     });
 
     this.honkColliderFactory = new HonkColliderFactory({ THREE });
+    this.metronomeColliderFactory = new MetronomeColliderFactory({ THREE });
     this.stickColliderFactory = new StickColliderFactory({ THREE });
     this.stickEquipmentSystem = new StickEquipmentSystem({
       controllerResolver: (controllerId) => this.controllers.find(
@@ -159,7 +163,9 @@ export class RuntimeHost {
   }
 
   get instrumentStates() {
-    return [...this.instrumentRegistry.values()].filter(({ kind }) => kind === "honk" || kind === "looper");
+    return [...this.instrumentRegistry.values()].filter(
+      ({ kind }) => kind === "honk" || kind === "looper" || kind === "metronome",
+    );
   }
 
   get controllers() {
@@ -181,7 +187,11 @@ export class RuntimeHost {
         instrumentRegistry: this.instrumentRegistry,
         looperAdapter: this.createLooperAdapter(),
       }))
-      .register("stick", (options) => new StickInstrument(options));
+      .register("stick", (options) => new StickInstrument(options))
+      .register("metronome", (options) => new MetronomeInstrument({
+        ...options,
+        audioSystem: this.audioSystem,
+      }));
   }
 
   configureXR() {
@@ -248,11 +258,15 @@ export class RuntimeHost {
       registry: this.instrumentRegistry,
       lockService: this.honkLockService,
       createInstrument: async (saved) => {
-        const componentId = saved.kind === "looper" ? "looper" : saved.componentId || "honk";
+        const componentId = saved.kind === "looper" || saved.kind === "metronome"
+          ? saved.kind
+          : saved.componentId || "honk";
         const baseScale = getSerializedUniformScale(saved.transform?.scale);
         this.createSpawnedComponent(componentId, {
           id: saved.id,
           tuning: saved.tuning,
+          bpm: saved.bpm,
+          volume: saved.volume,
           ...(baseScale === null ? {} : { baseScale }),
         });
         return this.activeInstrumentState;
@@ -341,6 +355,13 @@ export class RuntimeHost {
     if (instrument?.kind === "looper") {
       return { minScale: 0.5, maxScale: 6, scaleStep: 0.25 };
     }
+    if (instrument?.kind === "metronome") {
+      return {
+        minScale: METRONOME_SETTINGS.minScale,
+        maxScale: METRONOME_SETTINGS.maxScale,
+        scaleStep: METRONOME_SETTINGS.scaleStep,
+      };
+    }
     return {
       minScale: INSTRUMENT_MIN_SCALE,
       maxScale: INSTRUMENT_MAX_SCALE,
@@ -387,6 +408,7 @@ export class RuntimeHost {
       honk.resetLivePerformance();
       honk.releaseAllAudioVoices();
     }
+    for (const metronome of this.instrumentRegistry.getByKind("metronome")) metronome.pause();
     this.gripTransformSystem.reset();
     this.stickEquipmentSystem.reset();
     this.inputSourceManager.resetSession();
