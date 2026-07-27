@@ -27,6 +27,14 @@ export const LOOPER_WIRE_SETTINGS = {
 };
 export const LOOPER_MIN_ACTION_DURATION_MS = 24;
 export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 33;
+export const LOOPER_MAX_RECORDING_DURATION_MS = 120000;
+export const LOOPER_BEAT_DETECTION_SETTINGS = Object.freeze({
+  minBpm: 60,
+  maxBpm: 200,
+  chordClusterMs: 90,
+  subdivisionsPerBeat: 4,
+  maxSnapMs: 85,
+});
 export const LOOPER_SHAKE_DISCONNECT_SETTINGS = {
   enabled: true,
   durationMs: 360,

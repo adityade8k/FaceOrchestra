@@ -32,6 +32,9 @@ export const SessionRuntimeMethods = {
         didSave = this.savePersistedSceneOnXRExit();
       } finally {
         this.resetSubsystemsAfterSession();
+        this.audioSystem?.suspend?.()?.catch?.((error) => {
+          console.warn("Could not suspend audio after XR exit:", error);
+        });
       }
       return didSave;
     },

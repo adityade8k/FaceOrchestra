@@ -31,6 +31,7 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
     },
     savePersistedSceneOnXRExit() { events.push("save"); return true; },
     resetSubsystemsAfterSession() { events.push("reset"); },
+    audioSystem: { suspend() { events.push("suspend-audio"); return Promise.resolve(); } },
   };
 
   const didSave = SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234);
@@ -45,6 +46,7 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
     "stop:paused-looper",
     "save",
     "reset",
+    "suspend-audio",
   ]);
 
   assert.equal(SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1300), false);
@@ -61,13 +63,14 @@ test("XR teardown still resets subsystems when persistence throws", () => {
     instrumentRegistry: { getByKind: () => [] },
     savePersistedSceneOnXRExit() { throw new Error("storage unavailable"); },
     resetSubsystemsAfterSession() { events.push("reset"); },
+    audioSystem: { suspend() { events.push("suspend-audio"); return Promise.resolve(); } },
   };
 
   assert.throws(
     () => SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234),
     /storage unavailable/,
   );
-  assert.deepEqual(events, ["reset"]);
+  assert.deepEqual(events, ["reset", "suspend-audio"]);
   assert.equal(runtime.xrSessionActive, false);
 });
 

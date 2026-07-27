@@ -39,7 +39,7 @@ export class MetronomeColliderFactory {
     geometry.userData.disposeWithOwner = true;
     const material = new this.THREE.MeshBasicMaterial({
       color, transparent: true, opacity: this.showDebug ? METRONOME_SETTINGS.debugOpacity : 0,
-      depthWrite: false, wireframe: this.showDebug,
+      depthTest: !this.showDebug, depthWrite: false, wireframe: this.showDebug,
     });
     material.userData.disposeWithOwner = true;
     const target = new this.THREE.Mesh(geometry, material);

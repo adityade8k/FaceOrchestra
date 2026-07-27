@@ -52,13 +52,19 @@ export class AudioSystem {
     this.honkVoices.setVoiceVowel(voiceId, vowel);
   }
 
-  releaseVoice(voiceId = "main") {
+  releaseVoice(voiceId = "main", options = {}) {
     this.honkVoices.setVoicePitchBend(voiceId, 0);
-    this.honkVoices.releaseVoice(voiceId);
+    this.honkVoices.releaseVoice(voiceId, options.fadeSeconds);
   }
 
   releaseAll() {
     this.honkVoices.releaseAll();
+  }
+
+  suspend() {
+    const context = this.audioContextService.context;
+    if (!context || context.state === "closed" || context.state === "suspended") return Promise.resolve();
+    return context.suspend?.() || Promise.resolve();
   }
 
   triggerStickPercussion(type, options) {
@@ -71,7 +77,7 @@ export class AudioSystem {
     const gain = context.createGain();
     const now = context.currentTime;
     const duration = METRONOME_SETTINGS.clickDurationSeconds;
-    oscillator.type = "square";
+    oscillator.type = METRONOME_SETTINGS.clickOscillatorType;
     oscillator.frequency.setValueAtTime(METRONOME_SETTINGS.clickFrequency, now);
     gain.gain.setValueAtTime(Math.max(0.0001, volume * METRONOME_SETTINGS.clickGain), now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);

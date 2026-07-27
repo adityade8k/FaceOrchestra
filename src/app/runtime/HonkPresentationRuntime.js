@@ -45,7 +45,7 @@ export const HonkPresentationRuntimeMethods = {
       );
     },
     createMetronomeLabel(state) {
-      if (!this.noteFont || state?.kind !== "metronome") return;
+      if (state?.kind !== "metronome") return;
       const settings = METRONOME_LABEL_SETTINGS;
       const group = new THREE.Group();
       group.name = "METRONOME_bpm_label";
@@ -56,38 +56,45 @@ export const HonkPresentationRuntimeMethods = {
         THREE.MathUtils.degToRad(settings.rotationDegrees.y),
         THREE.MathUtils.degToRad(settings.rotationDegrees.z),
       );
+      const canvas = document.createElement("canvas");
+      canvas.width = settings.canvasWidth;
+      canvas.height = settings.canvasHeight;
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      });
+      material.userData.disposeOnInstrumentDelete = true;
+      const sprite = new THREE.Sprite(material);
+      sprite.name = "METRONOME_bpm_text";
+      sprite.scale.set(settings.spriteWidth, settings.spriteHeight, 1);
+      sprite.renderOrder = 30;
+      group.add(sprite);
       state.root.add(group);
       state.metronomeLabelGroup = group;
+      state.metronomeLabelCanvas = canvas;
+      state.metronomeLabelTexture = texture;
+      state.metronomeLabelMesh = sprite;
       this.updateMetronomeLabel(state);
     },
     updateMetronomeLabel(state) {
-      if (!this.noteFont || !state?.metronomeLabelGroup) return;
+      if (!state?.metronomeLabelGroup) return;
       const labelText = `${Math.round(state.bpm)} BPM`;
       if (labelText === state.metronomeLabelTextValue) return;
-      if (state.metronomeLabelMesh) this.disposeNoteLabelMesh(state.metronomeLabelMesh);
       const settings = METRONOME_LABEL_SETTINGS;
-      const geometry = new TextGeometry(labelText, {
-        font: this.noteFont, size: settings.size, depth: settings.depth, curveSegments: settings.curveSegments,
-      });
-      geometry.computeBoundingBox();
-      if (geometry.boundingBox) {
-        geometry.translate(
-          -(geometry.boundingBox.min.x + geometry.boundingBox.max.x) * 0.5,
-          -(geometry.boundingBox.min.y + geometry.boundingBox.max.y) * 0.5,
-          0,
-        );
-      }
-      geometry.userData.disposeOnInstrumentDelete = true;
-      const material = new THREE.MeshStandardMaterial({
-        color: settings.color, roughness: 0.36, metalness: 0.02, side: THREE.DoubleSide,
-      });
-      material.userData.disposeOnInstrumentDelete = true;
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.name = "METRONOME_bpm_text";
-      mesh.userData.isNoteLabel = true;
-      mesh.renderOrder = 30;
-      state.metronomeLabelGroup.add(mesh);
-      state.metronomeLabelMesh = mesh;
+      const canvas = state.metronomeLabelCanvas;
+      const context = canvas?.getContext?.("2d");
+      if (!context) return;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = `#${settings.color.toString(16).padStart(6, "0")}`;
+      context.font = settings.font;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(labelText, canvas.width * 0.5, canvas.height * 0.5);
+      state.metronomeLabelTexture.needsUpdate = true;
       state.metronomeLabelTextValue = labelText;
     },
     getSignedMorphValueForCollider(sphere, state) {

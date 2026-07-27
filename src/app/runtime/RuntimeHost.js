@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LOOPER_ACTION_RELEASE_FADE_SECONDS } from "../../config/audio.js";
 import { INSTRUMENT_MAX_SCALE, INSTRUMENT_MIN_SCALE, INSTRUMENT_SCALE_STEP } from "../../config/honk.js";
 import { AssetRepository } from "../../scene/AssetRepository.js";
 import { InstrumentFactory } from "../../instruments/core/InstrumentFactory.js";
@@ -339,12 +340,20 @@ export class RuntimeHost {
         this.instrumentRegistry.get(honkId)?.startAudioVoice(voiceId),
       releaseActionVoice: (voiceId, honkId) => {
         const honk = this.instrumentRegistry.get(honkId);
-        if (honk?.activeVoiceIds?.has(voiceId)) honk.releaseAudioVoice(voiceId);
+        if (honk?.activeVoiceIds?.has(voiceId)) {
+          honk.releaseAudioVoice(voiceId, { fadeSeconds: LOOPER_ACTION_RELEASE_FADE_SECONDS });
+        }
         else this.releaseHonkVoice(voiceId);
       },
       updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume) =>
         this.updateLooperActionVoice(voiceId, this.instrumentRegistry.get(honkId), snapshot, volume),
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
+      getMetronomeTiming: (now) => {
+        const metronomes = this.instrumentRegistry.getByKind("metronome").filter(
+          (metronome) => !metronome.disposed && metronome.root?.visible,
+        );
+        return metronomes.length === 1 ? metronomes[0].getBeatTiming(now) : null;
+      },
       updateWireForTrack: (looper, track) => this.updateLooperWireForTrack(looper, track),
       disposeWireMesh: (wire) => this.disposeWireMesh(wire),
       updateVisuals: (looper) => this.updateLooperVisuals(looper),

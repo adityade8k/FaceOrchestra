@@ -180,6 +180,7 @@ export class HonkColliderFactory {
       color,
       transparent: true,
       opacity: this.showDebug ? debugOpacity : 0,
+      depthTest: !this.showDebug,
       depthWrite: false,
       wireframe: this.showDebug,
     });

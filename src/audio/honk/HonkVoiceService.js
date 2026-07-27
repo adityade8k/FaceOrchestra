@@ -7,6 +7,7 @@ export class HonkVoiceService {
     this.ensureAudio = ensureAudio;
     this.getDestination = getDestination;
     this.voices = new Map();
+    this.releasingVoices = new Map();
     this.startingVoices = new Set();
     this.startTokens = new Map();
     this.currentVowel = "A";
@@ -15,6 +16,14 @@ export class HonkVoiceService {
   async startVoice(voiceId = "main") {
     if (this.voices.has(voiceId) || this.startingVoices.has(voiceId)) {
       return;
+    }
+
+    // A release tail may still be sounding after the active voice leaves the map.
+    // Silence that tail before retriggering the same voice ID to prevent doubling.
+    const releasingVoice = this.releasingVoices.get(voiceId);
+    if (releasingVoice) {
+      releasingVoice.disconnect?.();
+      this.releasingVoices.delete(voiceId);
     }
 
     const startToken = {};
@@ -61,10 +70,14 @@ export class HonkVoiceService {
     });
   }
 
-  releaseVoice(voiceId = "main") {
+  releaseVoice(voiceId = "main", options = RELEASE_FADE_SECONDS) {
+    const requestedFade = typeof options === "number" ? options : options?.fadeSeconds;
+    const fadeSeconds = Number.isFinite(requestedFade)
+      ? Math.max(requestedFade, 0)
+      : RELEASE_FADE_SECONDS;
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
-    this.stopVoice(voiceId, RELEASE_FADE_SECONDS);
+    this.stopVoice(voiceId, fadeSeconds);
   }
 
   releaseAll() {
@@ -72,6 +85,10 @@ export class HonkVoiceService {
     for (const voiceId of voiceIds) {
       this.releaseVoice(voiceId);
     }
+    for (const voice of this.releasingVoices.values()) {
+      voice.disconnect?.();
+    }
+    this.releasingVoices.clear();
   }
 
   stopVoice(voiceId, fadeSeconds = RELEASE_FADE_SECONDS) {
@@ -83,6 +100,11 @@ export class HonkVoiceService {
     this.voices.delete(voiceId);
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
-    voice.release(fadeSeconds);
+    this.releasingVoices.set(voiceId, voice);
+    voice.release(fadeSeconds, () => {
+      if (this.releasingVoices.get(voiceId) === voice) {
+        this.releasingVoices.delete(voiceId);
+      }
+    });
   }
 }

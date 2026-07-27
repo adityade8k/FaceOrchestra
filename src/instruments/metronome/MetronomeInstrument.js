@@ -19,6 +19,8 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.volume = clamp(volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
     this.playing = false;
     this.nextTickMs = null;
+    this.lastTickMs = null;
+    this.beatOriginMs = null;
     this.targetsByRole = new Map();
     for (const [role, target] of Object.entries(targets)) {
       if (!target) continue;
@@ -28,8 +30,17 @@ export class MetronomeInstrument extends InstrumentEntity {
   }
 
   setBpm(value) {
-    this.bpm = Math.round(clamp(value, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm));
-    this.nextTickMs = null;
+    const previousBpm = this.bpm;
+    const nextBpm = Math.round(clamp(value, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm));
+    if (this.playing && Number.isFinite(this.nextTickMs)) {
+      const now = performance.now();
+      const previousInterval = 60000 / previousBpm;
+      const nextInterval = 60000 / nextBpm;
+      const remainingBeatFraction = clamp((this.nextTickMs - now) / previousInterval, 0, 1);
+      this.nextTickMs = now + nextInterval * remainingBeatFraction;
+      this.beatOriginMs = this.nextTickMs - nextInterval;
+    }
+    this.bpm = nextBpm;
     return this.bpm;
   }
 
@@ -40,13 +51,17 @@ export class MetronomeInstrument extends InstrumentEntity {
 
   play(now = performance.now()) {
     this.playing = true;
+    this.lastTickMs = null;
     this.nextTickMs = now;
+    this.beatOriginMs = now;
     return true;
   }
 
   pause() {
     this.playing = false;
     this.nextTickMs = null;
+    this.lastTickMs = null;
+    this.beatOriginMs = null;
     return false;
   }
 
@@ -60,9 +75,24 @@ export class MetronomeInstrument extends InstrumentEntity {
     if (now < this.nextTickMs) return false;
     this.audioSystem?.triggerMetronomeClick?.({ volume: this.volume });
     const interval = 60000 / this.bpm;
+    this.lastTickMs = this.nextTickMs;
     do this.nextTickMs += interval;
     while (this.nextTickMs <= now);
     return true;
+  }
+
+  getBeatTiming(now = performance.now()) {
+    const beatIntervalMs = 60000 / this.bpm;
+    if (!this.playing || !Number.isFinite(this.beatOriginMs)) {
+      return { active: false, bpm: this.bpm, beatIntervalMs, nearestBeatMs: now };
+    }
+    const beatIndex = Math.round((now - this.beatOriginMs) / beatIntervalMs);
+    return {
+      active: true,
+      bpm: this.bpm,
+      beatIntervalMs,
+      nearestBeatMs: this.beatOriginMs + beatIndex * beatIntervalMs,
+    };
   }
 
   serialize() {
@@ -80,6 +110,9 @@ export class MetronomeInstrument extends InstrumentEntity {
   dispose() {
     this.pause();
     this.targetsByRole.clear();
+    this.metronomeLabelTexture?.dispose?.();
+    this.metronomeLabelTexture = null;
+    this.metronomeLabelCanvas = null;
     this.root.traverse?.((object) => {
       if (object.geometry?.userData?.disposeWithOwner) object.geometry.dispose?.();
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {

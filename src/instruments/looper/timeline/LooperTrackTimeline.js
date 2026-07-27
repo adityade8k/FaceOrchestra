@@ -157,14 +157,14 @@ export class LooperTrackTimeline {
     });
   }
 
-  sample(timeMs, target, { inLoopGap = false } = {}) {
+  sample(timeMs, target, { inTailPadding = false } = {}) {
     resetActionState(target);
     if (!this.active) {
       return target;
     }
 
     this.sortEvents();
-    if (inLoopGap) {
+    if (inTailPadding) {
       if (this.hasRecordedField("squeeze")) {
         target.squeeze = 0;
       }
@@ -214,6 +214,17 @@ export class LooperTrackTimeline {
       nextValue === undefined ||
       !nextEvent ||
       nextEvent.timeMs <= previousEvent.timeMs
+    ) {
+      return previousValue;
+    }
+
+    // SqueezeStart/SqueezeEnd are note gates, not automation points. A linear
+    // ramp from a release toward the next attack would fill a recorded rest with
+    // a gradually rising Honk.
+    if (
+      field === "squeeze" &&
+      (previousEvent.type === LooperActionEventType.SqueezeEnd ||
+        nextEvent.type === LooperActionEventType.SqueezeStart)
     ) {
       return previousValue;
     }

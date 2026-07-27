@@ -258,6 +258,9 @@ export const InstrumentAssetRuntimeMethods = {
   createSpawnedComponent(componentId, options = {}) {
     const componentOption = this.componentTemplates.get(componentId) || this.componentTemplates.get("honk");
     if (!componentOption?.template) return null;
+    if (componentOption.kind === "metronome" && this.instrumentRegistry.getByKind("metronome").length > 0) {
+      return null;
+    }
 
     const root = cloneSkeletonAware(componentOption.template);
     const kind = componentOption.kind;
@@ -359,6 +362,8 @@ function decorateInstrumentEntity(state, { componentOption, hitTargets, morphMes
   state.metronomeLabelGroup = null;
   state.metronomeLabelMesh = null;
   state.metronomeLabelTextValue = null;
+  state.metronomeLabelCanvas = null;
+  state.metronomeLabelTexture = null;
   state.pitchSnap = state.tuning?.pitchSnap || componentOption.pitchSnap || null;
   state.scalePresetNote = state.tuning?.note || null;
   state.scalePresetNoteConfig = state.tuning?.note ? {
@@ -400,6 +405,7 @@ function makeHitTargetMaterial(_name, color = 0xffffff, opacity = HIT_MARKER_OPA
     color: color ?? 0xffffff,
     transparent: true,
     opacity: DEBUG_SHOW_COLLIDERS ? opacity ?? HIT_MARKER_OPACITY : 0,
+    depthTest: !DEBUG_SHOW_COLLIDERS,
     depthWrite: false,
     wireframe: DEBUG_SHOW_COLLIDERS,
   });

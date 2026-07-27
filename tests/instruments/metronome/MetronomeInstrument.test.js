@@ -33,6 +33,29 @@ test("metronome persists BPM and volume but restores paused", () => {
   );
 });
 
+test("changing BPM while playing preserves beat phase instead of immediately retriggering", () => {
+  const clicks = [];
+  const metronome = new MetronomeInstrument({
+    id: "metro-smooth",
+    root: object3D(),
+    audioSystem: { triggerMetronomeClick: () => clicks.push(true) },
+  });
+  const originalNow = performance.now;
+  performance.now = () => 1250;
+  try {
+    metronome.setBpm(120);
+    metronome.play(1000);
+    metronome.update(1000);
+    metronome.setBpm(60);
+    assert.equal(metronome.nextTickMs, 1750);
+    assert.equal(metronome.update(1251), false);
+    assert.equal(metronome.update(1750), true);
+    assert.equal(clicks.length, 2);
+  } finally {
+    performance.now = originalNow;
+  }
+});
+
 function object3D() {
   return {
     visible: true,

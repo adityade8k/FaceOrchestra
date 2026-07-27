@@ -142,7 +142,7 @@ export class LooperGestureRecorder {
     }
   }
 
-  stop(timeline, tracks, now, minDurationMs, loopGapMs, captureActionByHonkId = null) {
+  stop(timeline, tracks, now, minDurationMs, captureActionByHonkId = null, timing = null) {
     if (!timeline?.recording) {
       return timeline?.hasRecording?.() || false;
     }
@@ -159,7 +159,7 @@ export class LooperGestureRecorder {
       track.isRecording = false;
     }
 
-    const hasRecording = timeline.stopRecording(now, minDurationMs, loopGapMs);
+    const hasRecording = timeline.stopRecording(now, minDurationMs, timing);
     for (const track of tracks) {
       const trackTimeline = timeline.getTrack(track.trackId);
       track.active = Boolean(trackTimeline?.active);
