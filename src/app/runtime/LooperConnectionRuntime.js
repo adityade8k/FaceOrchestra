@@ -440,6 +440,18 @@ export const LooperConnectionRuntimeMethods = {
       if (!data) {
         return;
       }
+
+      for (const [control, value] of [
+        ["volume", data.volumeControlValue],
+        ["gap", data.gapControlValue],
+        ["speed", data.speedControlValue],
+      ]) {
+        this.applyLooperControlMorphValue(looperState, control, value);
+        const sphere = looperState.hitTargets[getLooperControlName(control)];
+        if (sphere?.userData.isLooperControl) {
+          this.positionControlColliderFromValue(sphere, value);
+        }
+      }
   
       for (const action of LOOPER_BUTTON_ACTIONS) {
         const target = looperState.hitTargets[getLooperButtonName(action)];

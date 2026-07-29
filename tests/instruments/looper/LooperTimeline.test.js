@@ -196,18 +196,21 @@ test("LooperTimeline survives a plain-JSON round trip and rebuilds derived state
   assert.equal(timeline.getTrack("track-0").events[0].value, 1);
 });
 
-test("metronome-synchronized recording preserves its origin and rounds loop length to beats", () => {
+test("metronome-synchronized recording normalizes to its onset without quantizing timing", () => {
   const timeline = new LooperTimeline();
-  timeline.startRecording(1000);
-  timeline.addFieldEvent("track-0", "squeeze", 105, 1, { trackIndex: 0 });
-  timeline.addFieldEvent("track-0", "squeeze", 410, 0, { trackIndex: 0 });
-  timeline.stopRecording(1992, 1, {
-    preserveRecordingOrigin: true,
+  timeline.startRecording(1000, {
+    active: true,
     beatIntervalMs: 500,
+    beatOriginMs: 1000,
   });
+  timeline.addFieldEvent("track-0", "squeeze", 105, 1, { trackIndex: 0 });
+  timeline.markMusicalOnset(105);
+  timeline.addFieldEvent("track-0", "squeeze", 410, 0, { trackIndex: 0 });
+  timeline.stopRecording(1992, 1);
 
-  assert.equal(timeline.getTrack("track-0").events[0].timeMs, 105);
-  assert.equal(timeline.recordedDurationMs, 1000);
-  assert.equal(timeline.durationMs, 1000);
-  assert.equal(LooperTimeline.fromJSON(timeline.toJSON()).durationMs, 1000);
+  assert.deepEqual(timeline.getTrack("track-0").events.map((event) => event.timeMs), [0, 305]);
+  assert.equal(timeline.firstOnsetPhaseMs, 105);
+  assert.equal(timeline.recordedDurationMs, 305);
+  assert.equal(timeline.durationMs, 305);
+  assert.deepEqual(LooperTimeline.fromJSON(timeline.toJSON()).toJSON(), timeline.toJSON());
 });

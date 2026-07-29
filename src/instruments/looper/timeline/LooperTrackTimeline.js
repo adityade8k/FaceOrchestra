@@ -130,6 +130,12 @@ export class LooperTrackTimeline {
     this.sorted = false;
   }
 
+  discardEventsBefore(timeMs) {
+    this.events = this.events.filter((event) => event.timeMs >= timeMs);
+    this.rebuildRecordedFields();
+    this.sorted = false;
+  }
+
   getDrumHitEventsAt(timeMs, epsilon = 0.001) {
     if (!this.active) {
       return [];

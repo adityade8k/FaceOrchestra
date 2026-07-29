@@ -53,8 +53,8 @@ export class LooperGestureRecorder {
     this.epsilons = { ...DEFAULT_EPSILONS, ...epsilons };
   }
 
-  start(timeline, tracks, now, captureActionByHonkId) {
-    timeline.startRecording(now);
+  start(timeline, tracks, now, captureActionByHonkId, timing = null) {
+    timeline.startRecording(now, timing);
     for (const track of tracks) {
       track.resetRecordingState();
       const captured = this.captureTrackAction(track, captureActionByHonkId);
@@ -263,6 +263,9 @@ export class LooperGestureRecorder {
         value,
         interpolation: "linear",
       });
+      if (type === LooperActionEventType.SqueezeStart) {
+        timeline.markMusicalOnset(elapsedMs);
+      }
       return;
     }
 

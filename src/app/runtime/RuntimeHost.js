@@ -350,7 +350,10 @@ export class RuntimeHost {
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
       getMetronomeTiming: (now) => {
         const metronomes = this.instrumentRegistry.getByKind("metronome").filter(
-          (metronome) => !metronome.disposed && metronome.root?.visible,
+          (metronome) =>
+            !metronome.disposed &&
+            metronome.root?.visible &&
+            metronome.playing,
         );
         return metronomes.length === 1 ? metronomes[0].getBeatTiming(now) : null;
       },

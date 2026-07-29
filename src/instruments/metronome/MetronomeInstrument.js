@@ -84,13 +84,20 @@ export class MetronomeInstrument extends InstrumentEntity {
   getBeatTiming(now = performance.now()) {
     const beatIntervalMs = 60000 / this.bpm;
     if (!this.playing || !Number.isFinite(this.beatOriginMs)) {
-      return { active: false, bpm: this.bpm, beatIntervalMs, nearestBeatMs: now };
+      return {
+        active: false,
+        bpm: this.bpm,
+        beatIntervalMs,
+        beatOriginMs: null,
+        nearestBeatMs: now,
+      };
     }
     const beatIndex = Math.round((now - this.beatOriginMs) / beatIntervalMs);
     return {
       active: true,
       bpm: this.bpm,
       beatIntervalMs,
+      beatOriginMs: this.beatOriginMs,
       nearestBeatMs: this.beatOriginMs + beatIndex * beatIntervalMs,
     };
   }

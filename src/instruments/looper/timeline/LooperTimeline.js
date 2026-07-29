@@ -1,7 +1,11 @@
 import { resetActionState } from "./actionState.js";
 import { LooperTrackTimeline } from "./LooperTrackTimeline.js";
 
-export const LOOPER_TIMELINE_SCHEMA_VERSION = 1;
+export const LOOPER_TIMELINE_SCHEMA_VERSION = 2;
+export const LooperTimingMode = Object.freeze({
+  Ordinary: "ordinary",
+  Metronome: "metronome",
+});
 const DEFAULT_BEAT_INTERVAL_MS = 500;
 
 export class LooperTimeline {
@@ -10,17 +14,43 @@ export class LooperTimeline {
     this.contentEndMs = 0;
     this.recordedDurationMs = 0;
     this.beatIntervalMs = 0;
+    this.timingMode = LooperTimingMode.Ordinary;
+    this.firstOnsetPhaseMs = 0;
     this.beatAnalysis = null;
     this.gapBeats = 0;
     this.startedAtMs = 0;
     this.recording = false;
+    this.firstOnsetElapsedMs = null;
+    this.recordingBeatOriginMs = null;
     this.tracks = new Map();
   }
 
-  startRecording(now) {
+  startRecording(now, timing = null) {
     this.clearRecording();
     this.recording = true;
     this.startedAtMs = now;
+    if (timing?.active && timing.beatIntervalMs > 0 && Number.isFinite(timing.beatOriginMs)) {
+      this.timingMode = LooperTimingMode.Metronome;
+      this.beatIntervalMs = timing.beatIntervalMs;
+      this.recordingBeatOriginMs = timing.beatOriginMs;
+    }
+  }
+
+  markMusicalOnset(elapsedMs) {
+    if (!this.recording || this.firstOnsetElapsedMs !== null || !Number.isFinite(elapsedMs)) {
+      return false;
+    }
+    this.firstOnsetElapsedMs = Math.max(elapsedMs, 0);
+    if (this.timingMode === LooperTimingMode.Metronome && this.beatIntervalMs > 0) {
+      const onsetAbsoluteMs = this.startedAtMs + this.firstOnsetElapsedMs;
+      const beatIndex = Math.round(
+        (onsetAbsoluteMs - this.recordingBeatOriginMs) / this.beatIntervalMs,
+      );
+      const nearestBeatAbsoluteMs =
+        this.recordingBeatOriginMs + beatIndex * this.beatIntervalMs;
+      this.firstOnsetPhaseMs = onsetAbsoluteMs - nearestBeatAbsoluteMs;
+    }
+    return true;
   }
 
   stopRecording(now, minDurationMs = 1, timing = null) {
@@ -30,9 +60,25 @@ export class LooperTimeline {
 
     const elapsedMs = this.getElapsedMs(now);
     this.recording = false;
-    this.beatIntervalMs = Math.max(timing?.beatIntervalMs || 0, 0);
-    if (timing?.preserveRecordingOrigin && this.beatIntervalMs > 0) {
-      this.recordedDurationMs = this.quantizeDurationToBeats(elapsedMs, this.beatIntervalMs);
+    if (
+      this.timingMode === LooperTimingMode.Metronome &&
+      !Number.isFinite(this.firstOnsetElapsedMs)
+    ) {
+      this.tracks.clear();
+      this.recordedDurationMs = 0;
+      this.contentEndMs = 0;
+      this.durationMs = 0;
+      return false;
+    }
+    if (
+      this.timingMode === LooperTimingMode.Metronome &&
+      Number.isFinite(this.firstOnsetElapsedMs)
+    ) {
+      for (const track of this.tracks.values()) {
+        track.discardEventsBefore(this.firstOnsetElapsedMs);
+        track.normalize(this.firstOnsetElapsedMs);
+      }
+      this.recordedDurationMs = this.getContentEndMs();
     } else {
       const firstActionMs = this.getFirstActionMs();
       const leadingSilenceMs = Number.isFinite(firstActionMs) ? Math.max(firstActionMs, 0) : 0;
@@ -49,10 +95,14 @@ export class LooperTimeline {
     this.contentEndMs = 0;
     this.recordedDurationMs = 0;
     this.beatIntervalMs = 0;
+    this.timingMode = LooperTimingMode.Ordinary;
+    this.firstOnsetPhaseMs = 0;
     this.beatAnalysis = null;
     this.gapBeats = 0;
     this.startedAtMs = 0;
     this.recording = false;
+    this.firstOnsetElapsedMs = null;
+    this.recordingBeatOriginMs = null;
     this.tracks.clear();
   }
 
@@ -268,6 +318,8 @@ export class LooperTimeline {
       contentEndMs: this.contentEndMs,
       recordedDurationMs: this.recordedDurationMs,
       beatIntervalMs: this.beatIntervalMs,
+      timingMode: this.timingMode,
+      firstOnsetPhaseMs: this.firstOnsetPhaseMs,
       beatAnalysis: this.beatAnalysis ? { ...this.beatAnalysis } : null,
       gapBeats: this.gapBeats,
       tracks: [...this.tracks.values()].map((track) => track.toJSON()),
@@ -295,6 +347,12 @@ export class LooperTimeline {
       Number.isFinite(serialized.beatIntervalMs) ? serialized.beatIntervalMs : 0,
       0,
     );
+    timeline.timingMode = serialized.timingMode === LooperTimingMode.Metronome
+      ? LooperTimingMode.Metronome
+      : LooperTimingMode.Ordinary;
+    timeline.firstOnsetPhaseMs = Number.isFinite(serialized.firstOnsetPhaseMs)
+      ? serialized.firstOnsetPhaseMs
+      : 0;
     timeline.beatAnalysis = serialized.beatAnalysis && typeof serialized.beatAnalysis === "object"
       ? { ...serialized.beatAnalysis }
       : null;
