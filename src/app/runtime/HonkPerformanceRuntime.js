@@ -174,10 +174,10 @@ export const HonkPerformanceRuntimeMethods = {
         this.applyInstrumentVisualScale(state, pulse);
       }
     },
-    releaseHonkVoice(voiceId) {
+    releaseHonkVoice(voiceId, options = {}) {
       for (const honk of this.instrumentRegistry.getByKind("honk")) {
         if (!honk.activeVoiceIds?.has(voiceId)) continue;
-        honk.releaseAudioVoice(voiceId);
+        honk.releaseAudioVoice(voiceId, options);
         return true;
       }
       return false;

@@ -6,7 +6,14 @@ export const NASALITY_SETTINGS = {
 };
 
 export const HONK_MASTER_GAIN = 0.78;
-export const LOOPER_ACTION_RELEASE_FADE_SECONDS = 0.015;
+export const HONK_RELEASE_SETTINGS = Object.freeze({
+  liveFadeSeconds: 0.12,
+  looperActionFadeSeconds: 0.035,
+  minimumFadeSeconds: 0.01,
+  stopPaddingSeconds: 0.008,
+});
+export const LOOPER_ACTION_RELEASE_FADE_SECONDS =
+  HONK_RELEASE_SETTINGS.looperActionFadeSeconds;
 
 export const AUDIO_MASTER_BUS_SETTINGS = {
   inputGain: 0.9,

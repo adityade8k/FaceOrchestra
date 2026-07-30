@@ -1,11 +1,15 @@
 import { HonkVoice } from "./HonkVoice.js";
-
-const RELEASE_FADE_SECONDS = 0.12;
+import { HONK_RELEASE_SETTINGS } from "../../config/audio.js";
 
 export class HonkVoiceService {
-  constructor({ ensureAudio, getDestination }) {
+  constructor({
+    ensureAudio,
+    getDestination,
+    createVoice = (options) => new HonkVoice(options),
+  }) {
     this.ensureAudio = ensureAudio;
     this.getDestination = getDestination;
+    this.createVoice = createVoice;
     this.voices = new Map();
     this.releasingVoices = new Map();
     this.startingVoices = new Set();
@@ -18,21 +22,13 @@ export class HonkVoiceService {
       return;
     }
 
-    // A release tail may still be sounding after the active voice leaves the map.
-    // Silence that tail before retriggering the same voice ID to prevent doubling.
-    const releasingVoice = this.releasingVoices.get(voiceId);
-    if (releasingVoice) {
-      releasingVoice.disconnect?.();
-      this.releasingVoices.delete(voiceId);
-    }
-
     const startToken = {};
     this.startingVoices.add(voiceId);
     this.startTokens.set(voiceId, startToken);
     try {
       const context = await this.ensureAudio();
       if (this.startTokens.get(voiceId) !== startToken) return;
-      const voice = new HonkVoice({
+      const voice = this.createVoice({
         context,
         destination: this.getDestination(context),
         vowel: this.currentVowel,
@@ -70,11 +66,11 @@ export class HonkVoiceService {
     });
   }
 
-  releaseVoice(voiceId = "main", options = RELEASE_FADE_SECONDS) {
+  releaseVoice(voiceId = "main", options = HONK_RELEASE_SETTINGS.liveFadeSeconds) {
     const requestedFade = typeof options === "number" ? options : options?.fadeSeconds;
     const fadeSeconds = Number.isFinite(requestedFade)
       ? Math.max(requestedFade, 0)
-      : RELEASE_FADE_SECONDS;
+      : HONK_RELEASE_SETTINGS.liveFadeSeconds;
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
     this.stopVoice(voiceId, fadeSeconds);
@@ -85,13 +81,9 @@ export class HonkVoiceService {
     for (const voiceId of voiceIds) {
       this.releaseVoice(voiceId);
     }
-    for (const voice of this.releasingVoices.values()) {
-      voice.disconnect?.();
-    }
-    this.releasingVoices.clear();
   }
 
-  stopVoice(voiceId, fadeSeconds = RELEASE_FADE_SECONDS) {
+  stopVoice(voiceId, fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds) {
     const voice = this.voices.get(voiceId);
     if (!voice) {
       return;
@@ -100,9 +92,19 @@ export class HonkVoiceService {
     this.voices.delete(voiceId);
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
-    this.releasingVoices.set(voiceId, voice);
+    let releaseGenerations = this.releasingVoices.get(voiceId);
+    if (!releaseGenerations) {
+      releaseGenerations = new Set();
+      this.releasingVoices.set(voiceId, releaseGenerations);
+    }
+    releaseGenerations.add(voice);
     voice.release(fadeSeconds, () => {
-      if (this.releasingVoices.get(voiceId) === voice) {
+      const currentGenerations = this.releasingVoices.get(voiceId);
+      if (!currentGenerations) {
+        return;
+      }
+      currentGenerations.delete(voice);
+      if (currentGenerations.size === 0 && this.releasingVoices.get(voiceId) === currentGenerations) {
         this.releasingVoices.delete(voiceId);
       }
     });

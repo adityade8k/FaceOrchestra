@@ -1,4 +1,5 @@
 import {
+  HONK_RELEASE_SETTINGS,
   NASALITY_SETTINGS,
   VOICE_GAIN_SETTINGS,
 } from "../../config/audio.js";
@@ -15,6 +16,7 @@ export class HonkVoice {
     this.vowel = null;
     this.pitchBendSemitones = 0;
     this.disconnected = false;
+    this.releaseState = null;
 
     this.createNodes();
     this.rebuildFormants(vowel);
@@ -183,34 +185,74 @@ export class HonkVoice {
     );
   }
 
-  release(fadeSeconds, onEnded) {
+  release(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded) {
+    if (this.releaseState) {
+      return this.releaseState;
+    }
+
     const now = this.context.currentTime;
-    const stopAt = now + Math.max(fadeSeconds, 0.01);
+    const requestedFade = Number.isFinite(fadeSeconds)
+      ? fadeSeconds
+      : HONK_RELEASE_SETTINGS.liveFadeSeconds;
+    const safeFadeSeconds = Math.max(
+      requestedFade,
+      HONK_RELEASE_SETTINGS.minimumFadeSeconds,
+    );
+    const silentAt = now + safeFadeSeconds;
+    const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
+    let completed = false;
+    let fallbackTimer = null;
+    const completeRelease = () => {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      if (fallbackTimer !== null) {
+        globalThis.clearTimeout?.(fallbackTimer);
+        fallbackTimer = null;
+      }
+      this.disconnect();
+      onEnded?.();
+    };
+    const handleSourceEnded = () => {
+      completeRelease();
+    };
+
+    this.releaseState = {
+      releaseStart: now,
+      silentAt,
+      stopAt,
+    };
     this.pitchBendSemitones = 0;
     if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
       this.master.gain.cancelAndHoldAtTime(now);
     } else {
-      const currentGain = Math.max(this.master.gain.value || 0.0001, 0.0001);
+      const currentGain = Number.isFinite(this.master.gain.value)
+        ? Math.max(this.master.gain.value, 0)
+        : 0.0001;
       this.master.gain.cancelScheduledValues(now);
       this.master.gain.setValueAtTime(currentGain, now);
     }
-    this.master.gain.exponentialRampToValueAtTime(0.0001, stopAt);
-    this.source.onended = () => {
-      this.disconnect();
-      onEnded?.();
-    };
+    this.master.gain.linearRampToValueAtTime(0, silentAt);
+    this.source.onended = handleSourceEnded;
 
     try {
       this.source.stop(stopAt);
     } catch {
-      this.disconnect();
-      onEnded?.();
+      const delayMilliseconds = Math.max(
+        0,
+        Math.ceil((stopAt - this.context.currentTime) * 1000),
+      );
+      fallbackTimer = globalThis.setTimeout?.(handleSourceEnded, delayMilliseconds) ?? null;
+      fallbackTimer?.unref?.();
     }
     try {
       this.vibrato.stop(stopAt);
     } catch {
       // Source cleanup is enough if vibrato was already stopped.
     }
+
+    return this.releaseState;
   }
 
   disconnect() {

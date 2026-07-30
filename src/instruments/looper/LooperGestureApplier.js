@@ -1,3 +1,4 @@
+import { LOOPER_ACTION_RELEASE_FADE_SECONDS } from "../../config/audio.js";
 import { copyActionState, createActionState, resetActionState } from "./timeline/actionState.js";
 
 const ACTION_SQUEEZE_THRESHOLD = 0.015;
@@ -142,7 +143,7 @@ export class LooperGestureApplier {
         const squeeze = snapshot.squeeze || 0;
         if (squeeze <= ACTION_SQUEEZE_THRESHOLD) {
           if (targetEntry.voiceActive) {
-            this.adapter.releaseActionVoice?.(voiceId, honkId);
+            this.releaseActionVoice(voiceId, honkId);
             targetEntry.voiceActive = false;
           }
           continue;
@@ -206,6 +207,12 @@ export class LooperGestureApplier {
     this.adapter.updateActionVoiceByHonkId?.(voiceId, honkId, snapshot, volume);
   }
 
+  releaseActionVoice(voiceId, honkId) {
+    this.adapter.releaseActionVoice?.(voiceId, honkId, {
+      fadeSeconds: LOOPER_ACTION_RELEASE_FADE_SECONDS,
+    });
+  }
+
   copyChordFollowerAction(target, source) {
     resetActionState(target);
     if (!source) {
@@ -225,7 +232,7 @@ export class LooperGestureApplier {
       this.clearAutomationLayer(targetEntry.honkId, layerId);
     }
     if (targetEntry?.voiceId) {
-      this.adapter.releaseActionVoice?.(targetEntry.voiceId, targetEntry.honkId);
+      this.releaseActionVoice(targetEntry.voiceId, targetEntry.honkId);
     }
     if (targetEntry) {
       targetEntry.voiceActive = false;

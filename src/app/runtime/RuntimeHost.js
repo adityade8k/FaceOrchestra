@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { LOOPER_ACTION_RELEASE_FADE_SECONDS } from "../../config/audio.js";
 import { INSTRUMENT_MAX_SCALE, INSTRUMENT_MIN_SCALE, INSTRUMENT_SCALE_STEP } from "../../config/honk.js";
 import { AssetRepository } from "../../scene/AssetRepository.js";
 import { InstrumentFactory } from "../../instruments/core/InstrumentFactory.js";
@@ -338,12 +337,12 @@ export class RuntimeHost {
         this.instrumentRegistry.get(honkId)?.clearAutomationLayer(layerId),
       startActionVoice: (voiceId, honkId) =>
         this.instrumentRegistry.get(honkId)?.startAudioVoice(voiceId),
-      releaseActionVoice: (voiceId, honkId) => {
+      releaseActionVoice: (voiceId, honkId, options = {}) => {
         const honk = this.instrumentRegistry.get(honkId);
         if (honk?.activeVoiceIds?.has(voiceId)) {
-          honk.releaseAudioVoice(voiceId, { fadeSeconds: LOOPER_ACTION_RELEASE_FADE_SECONDS });
+          honk.releaseAudioVoice(voiceId, options);
         }
-        else this.releaseHonkVoice(voiceId);
+        else this.releaseHonkVoice(voiceId, options);
       },
       updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume) =>
         this.updateLooperActionVoice(voiceId, this.instrumentRegistry.get(honkId), snapshot, volume),
