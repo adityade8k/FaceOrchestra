@@ -7,6 +7,7 @@ import {
   LooperTransport,
   LooperTransportState,
 } from "../../../src/instruments/looper/LooperTransport.js";
+import { HONK_RELEASE_SETTINGS } from "../../../src/config/audio.js";
 
 test("LooperTransport records and finishes in a stopped state", () => {
   const transport = new LooperTransport();
@@ -85,5 +86,31 @@ test("stopping transport clears applied Honk automation", () => {
   assert.deepEqual(cleared, [{
     honkId: "honk-a",
     layerId: "looper-looper-a:track-0",
+  }]);
+});
+
+test("Looper note-off passes the configured action release fade", () => {
+  const releases = [];
+  const applier = new LooperGestureApplier({
+    isPlayableHonkId: (honkId) => honkId === "honk-a",
+    setAutomationLayerByHonkId() {},
+    startActionVoice() {},
+    releaseActionVoice: (voiceId, honkId, options) => {
+      releases.push({ voiceId, honkId, options });
+    },
+    updateActionVoiceByHonkId() {},
+  });
+  const track = new LooperTrack({ index: 0, connectedHonkId: "honk-a" });
+  const looper = { id: "looper-a", looperData: { tracks: [track] } };
+
+  applier.applyTrackSnapshot(looper, track, { squeeze: 0.75 });
+  applier.updateAudio();
+  applier.applyTrackSnapshot(looper, track, { squeeze: 0 });
+  applier.updateAudio();
+
+  assert.deepEqual(releases, [{
+    voiceId: "looper-looper-a:track-0:instrument-honk-a:action",
+    honkId: "honk-a",
+    options: { fadeSeconds: HONK_RELEASE_SETTINGS.looperActionFadeSeconds },
   }]);
 });
