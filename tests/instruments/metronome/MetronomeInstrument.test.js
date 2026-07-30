@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MetronomeInstrument } from "../../../src/instruments/metronome/MetronomeInstrument.js";
+import { getMetronomePendulumAngle } from "../../../src/instruments/metronome/MetronomePendulumRig.js";
 
 test("metronome clamps controls, schedules clicks by BPM, and pauses", () => {
   const clicks = [];
@@ -56,6 +57,135 @@ test("changing BPM while playing preserves beat phase instead of immediately ret
   }
 });
 
+test("changing BPM after an odd beat preserves pendulum side and direction", () => {
+  const metronome = new MetronomeInstrument({
+    id: "metro-phase-parity",
+    root: object3D(),
+  });
+  const originalNow = performance.now;
+  performance.now = () => 1625;
+  try {
+    metronome.setBpm(120);
+    metronome.play(1000);
+    metronome.update(1000);
+    metronome.update(1500);
+
+    const swingRadians = 0.4;
+    const before = getMetronomePendulumAngle({
+      nowMs: 1625,
+      beatOriginMs: metronome.beatOriginMs,
+      bpm: metronome.bpm,
+      swingRadians,
+    });
+    metronome.setBpm(60);
+    const after = getMetronomePendulumAngle({
+      nowMs: 1625,
+      beatOriginMs: metronome.beatOriginMs,
+      bpm: metronome.bpm,
+      swingRadians,
+    });
+
+    assert.ok(before < 0);
+    assert.ok(Math.abs(after - before) < 1e-12);
+    assert.equal(metronome.nextBeatIndex, 2);
+    assert.equal(metronome.nextTickMs, 2375);
+    assert.equal(metronome.beatOriginMs, 375);
+  } finally {
+    performance.now = originalNow;
+  }
+});
+
+test("missed frames retain the pendulum beat ordinal across a BPM change", () => {
+  const metronome = new MetronomeInstrument({
+    id: "metro-missed-frames",
+    root: object3D(),
+  });
+  const originalNow = performance.now;
+  performance.now = () => 2675;
+  try {
+    metronome.setBpm(120);
+    metronome.play(1000);
+    metronome.update(1000);
+    metronome.update(2600);
+    assert.equal(metronome.nextBeatIndex, 4);
+    assert.equal(metronome.nextTickMs, 3000);
+
+    const swingRadians = 0.4;
+    const before = getMetronomePendulumAngle({
+      nowMs: 2675,
+      beatOriginMs: metronome.beatOriginMs,
+      bpm: metronome.bpm,
+      swingRadians,
+    });
+    const beforeNext = getMetronomePendulumAngle({
+      nowMs: 2676,
+      beatOriginMs: metronome.beatOriginMs,
+      bpm: metronome.bpm,
+      swingRadians,
+    });
+    metronome.setBpm(60);
+    const after = getMetronomePendulumAngle({
+      nowMs: 2675,
+      beatOriginMs: metronome.beatOriginMs,
+      bpm: metronome.bpm,
+      swingRadians,
+    });
+    const afterNext = getMetronomePendulumAngle({
+      nowMs: 2676,
+      beatOriginMs: metronome.beatOriginMs,
+      bpm: metronome.bpm,
+      swingRadians,
+    });
+
+    assert.ok(Math.abs(after - before) < 1e-12);
+    assert.equal(Math.sign(afterNext - after), Math.sign(beforeNext - before));
+    assert.equal(metronome.nextBeatIndex, 4);
+    assert.equal(metronome.nextTickMs, 3325);
+    assert.equal(metronome.beatOriginMs, -675);
+  } finally {
+    performance.now = originalNow;
+  }
+});
+
+test("metronome drives and resets its pendulum rig with playback lifecycle", () => {
+  const updates = [];
+  let resets = 0;
+  let disposals = 0;
+  const pendulumRig = {
+    update(options) {
+      updates.push({ ...options });
+      return 0.25;
+    },
+    reset() {
+      resets += 1;
+      return 0;
+    },
+    dispose() {
+      disposals += 1;
+    },
+  };
+  const metronome = new MetronomeInstrument({
+    id: "metro-pendulum",
+    root: object3D(),
+    bpm: 120,
+    pendulumRig,
+  });
+
+  metronome.play(1000);
+  metronome.update(1250);
+  assert.deepEqual(updates, [
+    { nowMs: 1000, bpm: 120, beatOriginMs: 1000, playing: true },
+    { nowMs: 1250, bpm: 120, beatOriginMs: 1000, playing: true },
+  ]);
+
+  metronome.pause();
+  assert.equal(resets, 1);
+  metronome.dispose();
+  assert.equal(resets, 2);
+  assert.equal(disposals, 1);
+  assert.equal(metronome.pendulumRig, null);
+});
+
 test("a duplicated metronome copies controls and scale but starts paused with independent rigs", () => {
   const sourceRig = { values: {}, setValue(parameter, value) { this.values[parameter] = value; } };
   const duplicateRig = { values: {}, setValue(parameter, value) { this.values[parameter] = value; } };
@@ -94,6 +224,46 @@ test("metronome playback keeps its schedule while the scene is in placement mode
   assert.equal(metronome.update(1500), true);
   assert.equal(clicks.length, 2);
   assert.equal(metronome.playing, true);
+});
+
+test("Play eye latches without restarting cadence and Pause eye resets playback", () => {
+  const events = [];
+  const buttonRig = {
+    setPressed(action, pressed) { events.push(`set:${action}:${pressed}`); },
+    press(action, now) { events.push(`press:${action}:${now}`); },
+    reset() { events.push("reset"); },
+    update() {},
+  };
+  const metronome = new MetronomeInstrument({
+    id: "metro-eyes",
+    root: object3D(),
+    buttonRig,
+  });
+
+  metronome.pressButton("play", 1000);
+  const originalSchedule = {
+    nextTickMs: metronome.nextTickMs,
+    nextBeatIndex: metronome.nextBeatIndex,
+    beatOriginMs: metronome.beatOriginMs,
+  };
+  metronome.pressButton("play", 1250);
+
+  assert.equal(metronome.playing, true);
+  assert.deepEqual(
+    {
+      nextTickMs: metronome.nextTickMs,
+      nextBeatIndex: metronome.nextBeatIndex,
+      beatOriginMs: metronome.beatOriginMs,
+    },
+    originalSchedule,
+  );
+  assert.equal(events.at(-1), "press:play:1250");
+
+  metronome.pressButton("pause", 1300);
+  assert.equal(metronome.playing, false);
+  assert.equal(metronome.nextTickMs, null);
+  assert.equal(metronome.nextBeatIndex, null);
+  assert.deepEqual(events.slice(-2), ["reset", "press:pause:1300"]);
 });
 
 function object3D() {

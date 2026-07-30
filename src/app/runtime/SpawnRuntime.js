@@ -516,18 +516,23 @@ export const SpawnRuntimeMethods = {
       this.updateNoteLabel(state);
     },
     spawnDefaultInstrumentPreview() {
-      if (!this.instrumentTemplate || this.instrumentStates.length > 0) {
+      if (
+        !this.componentTemplates.get("metronome")?.template ||
+        this.instrumentRegistry.getByKind("metronome").length > 0
+      ) {
         return;
       }
   
       const defaultComponentId = "metronome";
       const instrument = this.createSpawnedComponent(defaultComponentId);
-      if (!instrument) {
+      const state = this.activeInstrumentState;
+      if (!instrument || state?.kind !== "metronome") {
+        console.warn("Default metronome spawn failed: the metronome template did not create a metronome.");
         return;
       }
       this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE);
       instrument.position.y -= defaultComponentId === LOOPER_COMPONENT_ID ? 0.18 : 0.38;
-      this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
+      this.setInstrumentBaseScale(state, INSTRUMENT_BASE_SCALE);
     },
     createSpawnedInstrument() {
       return this.createSpawnedComponent("honk");

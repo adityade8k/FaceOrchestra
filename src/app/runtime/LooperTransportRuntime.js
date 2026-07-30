@@ -493,6 +493,7 @@ export const LooperTransportRuntimeMethods = {
       this.applyResolvedHonkPerformanceStates();
       this.updateLooperPlaybackAudio();
       this.updateLooperMorphAnimations(now);
+      this.updateMetronomes(now);
     },
     updateLooperRecordings(now = performance.now()) {
       for (const { looperState, controller } of this.getLooperRuntimeEntries()) {

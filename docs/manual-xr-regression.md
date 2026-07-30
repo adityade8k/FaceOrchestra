@@ -86,6 +86,8 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Spawn looper** — Select `Looper`, preview, and place it. Expected: one Looper appears with eight track nodes, transport buttons, volume/gap/speed targets, body grip target, and no active wire.
 
+- [ ] **Spawn and run metronome** — Select `Metro`, preview, and place it. Trigger the left Play eye, then the right Pause eye. Expected: only the eye targets control transport; Play moves inward and stays latched while beats sound, and the pendulum starts from center and swings around the model-local Z axis at the selected BPM (one side-to-side cycle every two beats). Pause immediately restores Play, moves inward momentarily, always pops back, and returns the pendulum exactly to its authored rest pose. Triggering the body does not start or stop playback. Confirm BPM changes alter the swing speed without jumping to the other side, and that the volume handle still works while unlocked.
+
 - [ ] **Equip stick** — Point away from instrument transform targets and hold Grip. Expected: the Stick attaches to that controller using the configured local transform, the ray hides, its strike collider activates, and it disappears/clears contacts on Grip release.
 
 - [ ] **Cancel spawn preview** — Select any item, then press Grip before placement. Expected: the preview group and every preview entity are removed through lifecycle cleanup, no storage write occurs, the canceled entities are absent from the eventual exit snapshot, no glass material remains, and normal interactions resume.

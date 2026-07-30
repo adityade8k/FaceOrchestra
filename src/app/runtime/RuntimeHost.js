@@ -393,6 +393,7 @@ export class RuntimeHost {
     await this.loadStick();
     await this.loadNoteFont();
     await this.restorePersistedScene();
+    this.onRuntimeInitialized();
     return this;
   }
 

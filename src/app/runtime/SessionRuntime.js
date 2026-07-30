@@ -2,6 +2,11 @@ import { SHOW_INSTRUCTION_PANEL } from "../../config/ui.js";
 
 
 export const SessionRuntimeMethods = {
+    onRuntimeInitialized() {
+      if (this.xrSessionActive && this.instructionPanelClosed) {
+        this.spawnDefaultInstrumentPreview();
+      }
+    },
     onXRSessionStart() {
       this.xrSessionActive = true;
       this.instructionPanelClosed = !SHOW_INSTRUCTION_PANEL;
@@ -10,9 +15,7 @@ export const SessionRuntimeMethods = {
         this.showInstructionPanel();
       } else {
         this.hideInstructionPanel();
-        if (this.instrumentStates.length === 0) {
-          this.spawnDefaultInstrumentPreview();
-        }
+        this.spawnDefaultInstrumentPreview();
       }
     },
     onXRSessionEnd(now = performance.now()) {
@@ -59,9 +62,7 @@ export const SessionRuntimeMethods = {
       this.hideInstructionPanel();
       this.instructionPanelClosed = true;
   
-      if (this.instrumentStates.length === 0) {
-        this.spawnDefaultInstrumentPreview();
-      }
+      this.spawnDefaultInstrumentPreview();
     },
     updatePendingPanelPlacement() {
       if (!this.pendingPanelPlacementFrames || !this.instructionPanel?.visible) {

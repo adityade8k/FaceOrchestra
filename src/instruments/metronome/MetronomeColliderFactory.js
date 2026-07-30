@@ -1,6 +1,7 @@
 import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
 import { METRONOME_SETTINGS } from "../../config/metronome.js";
 import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
+import { MetronomeButtonRig } from "./MetronomeButtonRig.js";
 import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
 import { MetronomeHandleRig } from "./MetronomeHandleRig.js";
 
@@ -23,13 +24,43 @@ export class MetronomeColliderFactory {
       bodyTarget.userData.interactionRole = METRONOME_INTERACTION_ROLES.body;
       targets[METRONOME_INTERACTION_ROLES.body] = bodyTarget;
     }
+    const buttonRig = new MetronomeButtonRig({ root });
+    for (const [action, button] of buttonRig.buttons) {
+      if (!button.node.geometry?.clone) {
+        console.warn(`Metronome eye node "${button.config.nodeName}" has no geometry; ${action} disabled.`);
+        continue;
+      }
+      const geometry = button.node.geometry.clone();
+      geometry.userData ||= {};
+      geometry.userData.disposeWithOwner = true;
+      const collider = new this.THREE.Mesh(
+        geometry,
+        this.createMaterial(button.config.colliderColor),
+      );
+      collider.name = `HIT_metronome_${action}`;
+      collider.scale.setScalar(button.config.colliderScale);
+      collider.renderOrder = METRONOME_SETTINGS.renderOrder;
+      Object.assign(collider.userData, {
+        isHitTarget: true,
+        isBodyGripTarget: false,
+        isMetronomeTarget: true,
+        isMetronomeButton: true,
+        metronomeButtonAction: action,
+        interactionRole: METRONOME_INTERACTION_ROLES[action],
+        baseHitOpacity: this.showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
+        hitColor: button.config.colliderColor,
+      });
+      button.node.add(collider);
+      buttonRig.attachTarget(action, collider);
+      targets[METRONOME_INTERACTION_ROLES[action]] = collider;
+    }
     const handleRig = new MetronomeHandleRig({
       THREE: this.THREE,
       root,
       showDebug: this.showDebug,
     });
     Object.assign(targets, handleRig.targets);
-    return { targets, handleRig };
+    return { targets, handleRig, buttonRig };
   }
 
   createMaterial(color) {

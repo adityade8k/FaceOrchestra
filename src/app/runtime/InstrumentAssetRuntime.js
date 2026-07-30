@@ -27,6 +27,7 @@ import { HONK_INTERACTION_ROLES } from "../../instruments/honk/HonkInstrument.js
 import { MorphTargetController, findMorphMeshes } from "../../instruments/honk/MorphTargetController.js";
 import { LooperColliderFactory } from "../../instruments/looper/LooperColliderFactory.js";
 import { applyStandardInstrumentMaterials } from "../../scene/materialUtils.js";
+import { MetronomePendulumRig } from "../../instruments/metronome/MetronomePendulumRig.js";
 
 const CONTROLLER_RAY_LENGTH = 1.6;
 const RAY_COLOR_DEFAULT = 0xf6d878;
@@ -130,6 +131,9 @@ export const InstrumentAssetRuntimeMethods = {
     template.visible = false;
     if (option.kind === "looper") {
       applyStandardInstrumentMaterials(template, await this.loadLooperMaterialTextures());
+    } else if (option.kind === "metronome") {
+      const textures = await this.assetRepository.loadTextureSet("metronome", ASSET_PATHS.textures.metronome);
+      applyStandardInstrumentMaterials(template, textures, { bumpScale: 0.035 });
     }
     this.componentTemplates.set(option.id, {
       ...option,
@@ -250,8 +254,11 @@ export const InstrumentAssetRuntimeMethods = {
   },
 
   createSpawnedComponent(componentId, options = {}) {
-    const componentOption = this.componentTemplates.get(componentId) || this.componentTemplates.get("honk");
-    if (!componentOption?.template) return null;
+    const componentOption = this.componentTemplates.get(componentId);
+    if (!componentOption?.template) {
+      console.warn(`Cannot spawn component "${componentId}": its template is not loaded.`);
+      return null;
+    }
     const root = cloneSkeletonAware(componentOption.template);
     const kind = componentOption.kind;
     root.name = options.name || `${componentOption.label || kind}_${this.instrumentRegistry.size + 1}`;
@@ -262,6 +269,8 @@ export const InstrumentAssetRuntimeMethods = {
     let hitTargets = collectNamedHitTargets(root);
     let domainTargets = {};
     let handleRig = null;
+    let buttonRig = null;
+    let pendulumRig = null;
     if (kind === "honk") {
       const created = this.honkColliderFactory.create(root);
       domainTargets = created.targets;
@@ -270,6 +279,8 @@ export const InstrumentAssetRuntimeMethods = {
       const created = this.metronomeColliderFactory.create(root);
       domainTargets = created.targets;
       handleRig = created.handleRig;
+      buttonRig = created.buttonRig;
+      pendulumRig = new MetronomePendulumRig({ THREE, root });
       hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
     } else {
       this.createLooperColliders(root, hitTargets);
@@ -291,6 +302,8 @@ export const InstrumentAssetRuntimeMethods = {
       bpm: options.bpm,
       volume: options.volume,
       handleRig,
+      buttonRig,
+      pendulumRig,
       componentId: componentOption.id,
     });
 

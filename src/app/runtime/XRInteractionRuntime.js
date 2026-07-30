@@ -68,6 +68,15 @@ export const XRInteractionRuntimeMethods = {
         this.closeInstructionPanel();
         return;
       }
+
+      const metronomeState = this.instrumentRegistry.getFromObject3D(hit?.object);
+      const metronomeButtonAction = hit?.object?.userData.metronomeButtonAction;
+      if (metronomeState?.kind === "metronome" && metronomeButtonAction) {
+        metronomeState.pressButton(metronomeButtonAction, performance.now());
+        controllerState.activeTriggerInteraction = null;
+        this.activeInstrumentState = metronomeState;
+        return;
+      }
   
       const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
       if (lockedInstrumentState?.kind === "looper") {
@@ -77,7 +86,6 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
       if (lockedInstrumentState?.kind === "metronome") {
-        lockedInstrumentState.toggle();
         controllerState.activeTriggerInteraction = null;
         this.activeInstrumentState = lockedInstrumentState;
         return;
@@ -87,14 +95,8 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
 
-      const metronomeState = this.instrumentRegistry.getFromObject3D(hit?.object);
       if (metronomeState?.kind === "metronome" && !metronomeState.locked) {
         this.activeInstrumentState = metronomeState;
-        if (hit.object.userData.isBodyGripTarget) {
-          metronomeState.toggle();
-          controllerState.activeTriggerInteraction = null;
-          return;
-        }
         const control = hit.object.userData.metronomeControl;
         if (control) {
           const ray = this.getMetronomeControllerRay(controller);
@@ -105,6 +107,8 @@ export const XRInteractionRuntimeMethods = {
           };
           return;
         }
+        controllerState.activeTriggerInteraction = null;
+        return;
       }
   
       if (lockedInstrumentState?.kind === "honk") {

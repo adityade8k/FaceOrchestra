@@ -31,6 +31,41 @@ export const METRONOME_SETTINGS = Object.freeze({
   scaleStep: 0.25,
 });
 
+export const METRONOME_BUTTON_ACTIONS = Object.freeze({
+  play: "play",
+  pause: "pause",
+});
+
+export const METRONOME_EYE_CONTROLS = Object.freeze([
+  Object.freeze({
+    nodeName: "L_button_geo",
+    action: METRONOME_BUTTON_ACTIONS.play,
+    latching: true,
+    pressedOffset: Object.freeze({ x: 0, y: 0, z: -0.012 }),
+    releaseDelayMs: null,
+    colliderScale: 1.08,
+    colliderColor: 0x72d572,
+  }),
+  Object.freeze({
+    nodeName: "R_button_geo",
+    action: METRONOME_BUTTON_ACTIONS.pause,
+    latching: false,
+    pressedOffset: Object.freeze({ x: 0, y: 0, z: -0.012 }),
+    releaseDelayMs: 140,
+    colliderScale: 1.08,
+    colliderColor: 0xff8c42,
+  }),
+]);
+
+// Axis is expressed in the imported model/root frame. The pendulum is a direct
+// child of that root, so its swing delta is premultiplied onto the imported rest
+// quaternion rather than applied around the mesh's post-import local axis.
+export const METRONOME_PENDULUM_SETTINGS = Object.freeze({
+  nodeName: "pendulum_geo",
+  modelLocalAxis: Object.freeze({ x: 0, y: 0, z: 1 }),
+  swingDegrees: 5,
+});
+
 // Axis and offset are expressed in each imported handle's stable rest-local frame.
 // Swapping the `parameter` values is sufficient to swap the two controls.
 export const METRONOME_HANDLE_CONTROLS = Object.freeze([
@@ -38,11 +73,11 @@ export const METRONOME_HANDLE_CONTROLS = Object.freeze([
     nodeName: "L_handle_geo",
     parameter: "bpm",
     axis: Object.freeze({ x: 0, y: 1, z: 0 }),
-    minAngleDegrees: -42,
-    maxAngleDegrees: 42,
+    minAngleDegrees: -50,
+    maxAngleDegrees: 90,
     referenceAngleDegrees: 0,
     colliderRadius: 1.6,
-    colliderOffset: Object.freeze({ x: 5, y: 0, z: -5 }),
+    colliderOffset: Object.freeze({ x: -5, y: 0, z: -5 }),
     colliderColor: 0xff8c42,
     pivotColor: 0xffd0a8,
     planeColor: 0xff8c42,
@@ -53,11 +88,11 @@ export const METRONOME_HANDLE_CONTROLS = Object.freeze([
     nodeName: "R_handle_geo",
     parameter: "volume",
     axis: Object.freeze({ x: 0, y: 1, z: 0 }),
-    minAngleDegrees: -42,
-    maxAngleDegrees: 52,
+    minAngleDegrees: -90,
+    maxAngleDegrees: 40,
     referenceAngleDegrees: 0,
     colliderRadius: 1.6,
-    colliderOffset: Object.freeze({ x: -5, y: 0, z: -5 }),
+    colliderOffset: Object.freeze({ x: 5, y: 0, z: -5 }),
     colliderColor: 0x5ac8fa,
     pivotColor: 0xbdeaff,
     planeColor: 0x5ac8fa,

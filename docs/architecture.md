@@ -322,6 +322,7 @@ Gamepad/XR controller
 | Preview/place/cancel | Catalog action creates one entity or several recipe Honks → preview attaches roots to a controller-local group → thumbstick scales → Trigger preserves world transforms and places; Grip/lifecycle cancellation removes preview entities. |
 | Spawn formation recipe | `SpawnCatalog` resolves a recipe ID → each `FormationSpawner`/runtime recipe member creates an ordinary Honk with its own stable ID and tuning. |
 | Raycast Honk interactions | Ray target descriptor → owning Honk → semantic squeeze/vowel/ear/nose method → performance state; presentation applies morph/audio later in the frame. |
+| Raycast Metronome interactions | Cloned eye-geometry target → owning Metronome → left Play latch or momentary right Pause action; playback drives an independent model-local-Z pendulum rig from the beat phase, while the body remains a transform target and does not control transport. |
 | Grip move/rotate/scale | Ray/grip hit → registry owner → `TransformTargetResolver` → entity or lock proxy → `GripTransformSystem`; relationship phase updates group followers. |
 | Contact formation | Collision phase measures squeeze spheres → debounced graph edge changes → `ChordFormationService` derives connected components. |
 | Lock/unlock | Right secondary intent on a Honk → full connected component → `HonkLockService`; visual state updates via relationship events. |
