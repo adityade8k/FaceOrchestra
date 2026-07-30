@@ -12,6 +12,7 @@ const HONK_ROLES = Object.freeze({
 });
 
 export function getInteractionRole(kind, target) {
+  if (kind === "metronome") return target?.userData?.interactionRole || "metronome.interaction";
   if (kind === "honk") return HONK_ROLES[target?.name] || "honk.interaction";
   if (kind === "looper") {
     if (target?.userData.isLooperButton) return `looper.button.${target.userData.looperAction}`;

@@ -266,10 +266,10 @@ export class HonkInstrument extends InstrumentEntity {
     this.voiceService?.updateVoice?.(voiceId, performanceState, tuning, { gain }, this);
   }
 
-  releaseAudioVoice(voiceId) {
+  releaseAudioVoice(voiceId, options = {}) {
     if (!voiceId) return;
     this.activeVoiceIds.delete(voiceId);
-    this.voiceService?.releaseVoice?.(voiceId);
+    this.voiceService?.releaseVoice?.(voiceId, options);
   }
 
   releaseAllAudioVoices() {

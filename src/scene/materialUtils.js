@@ -17,7 +17,11 @@ export function applyStandardInstrumentMaterials(root, textures = {}, options = 
 export function makeStandardInstrumentMaterial(
   sourceMaterial,
   textures = {},
-  { useSourceMaterialMaps = true, textureTransforms = {} } = {},
+  {
+    useSourceMaterialMaps = true,
+    textureTransforms = {},
+    bumpScale = 0.035,
+  } = {},
 ) {
   const map = applyTextureTransform(
     getMaterialTexture(textures.baseMap, sourceMaterial?.map, useSourceMaterialMaps),
@@ -26,6 +30,7 @@ export function makeStandardInstrumentMaterial(
   const normalMap = getMaterialTexture(textures.normalMap, sourceMaterial?.normalMap, useSourceMaterialMaps);
   const roughnessMap = getMaterialTexture(textures.roughnessMap, sourceMaterial?.roughnessMap, useSourceMaterialMaps);
   const metalnessMap = getMaterialTexture(textures.metalnessMap, sourceMaterial?.metalnessMap, useSourceMaterialMaps);
+  const bumpMap = getMaterialTexture(textures.heightMap, sourceMaterial?.bumpMap, useSourceMaterialMaps);
 
   return new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -33,6 +38,8 @@ export function makeStandardInstrumentMaterial(
     normalMap,
     roughnessMap,
     metalnessMap,
+    bumpMap,
+    bumpScale: bumpMap ? bumpScale : 1,
     roughness: textures.roughnessMap ? 1 : useSourceMaterialMaps ? sourceMaterial?.roughness ?? 0.48 : 0.48,
     metalness: textures.metalnessMap ? 1 : useSourceMaterialMaps ? sourceMaterial?.metalness ?? 0.02 : 0.02,
     side: THREE.DoubleSide,

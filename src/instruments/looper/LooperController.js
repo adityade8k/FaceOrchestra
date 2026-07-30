@@ -1,15 +1,21 @@
 import * as THREE from "three";
 import {
   LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
+  LOOPER_MAX_RECORDING_DURATION_MS,
+  LOOPER_BEAT_DETECTION_SETTINGS,
   LOOPER_MIN_ACTION_DURATION_MS,
   LOOPER_TRACK_COUNT,
 } from "../../config/looper.js";
 import { LooperConnectionManager } from "./LooperConnectionManager.js";
+import { LooperBeatDetector } from "./LooperBeatDetector.js";
 import { LooperControlMapping } from "./looperControlMapping.js";
 import { LooperGestureApplier } from "./LooperGestureApplier.js";
 import { LooperGestureRecorder } from "./LooperGestureRecorder.js";
 import { getLooperNodeName } from "./looperNames.js";
-import { LooperPlaybackEngine } from "./LooperPlaybackEngine.js";
+import {
+  LooperPlaybackEngine,
+  getSynchronizedPlaybackStart,
+} from "./LooperPlaybackEngine.js";
 import { LooperTrack } from "./LooperTrack.js";
 import { LooperTransport } from "./LooperTransport.js";
 import { LooperTimeline } from "./timeline/LooperTimeline.js";
@@ -40,6 +46,7 @@ export class LooperController {
     this.recorder = new LooperGestureRecorder({
       sampleIntervalMs: LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
     });
+    this.beatDetector = new LooperBeatDetector(LOOPER_BEAT_DETECTION_SETTINGS);
     this.applier = new LooperGestureApplier(adapter);
     this.connections = new LooperConnectionManager({
       applier: this.applier,
@@ -73,11 +80,12 @@ export class LooperController {
       playingHeadMorphPhase: 0,
       lastPlayingHeadMorphUpdateMs: 0,
       lastPlaybackUpdateMs: 0,
+      recordingBeatIntervalMs: 0,
       volumeControlValue: 0,
       gapControlValue: -1,
+      gapBeats: 0,
       speedControlValue: 0,
       volume: LooperControlMapping.getVolumeFromControl(0),
-      loopGapMs: LooperControlMapping.getGapFromControl(-1),
       speed: LooperControlMapping.getSpeedFromControl(0),
       lastPosition: new THREE.Vector3(),
       lastQuaternion: new THREE.Quaternion(),
@@ -113,11 +121,14 @@ export class LooperController {
       track.resetRuntimeState();
     }
 
+    const timing = this.getMetronomeTiming(now);
+    data.recordingBeatIntervalMs = timing?.active ? timing.beatIntervalMs : 0;
     this.recorder.start(
       data.timeline,
       data.tracks,
       now,
       (honkId) => this.captureActionByHonkId(honkId),
+      timing,
     );
     this.adapter.updateVisuals?.(looperState);
     return true;
@@ -134,9 +145,17 @@ export class LooperController {
       data.tracks,
       now,
       LOOPER_MIN_ACTION_DURATION_MS,
-      data.loopGapMs,
       (honkId) => this.captureActionByHonkId(honkId),
+      null,
     );
+    if (data.timeline.timingMode !== "metronome") {
+      const beatAnalysis = this.beatDetector.analyze(data.timeline, {
+        fallbackBeatIntervalMs: data.recordingBeatIntervalMs,
+      });
+      if (beatAnalysis) this.beatDetector.apply(data.timeline, beatAnalysis);
+    }
+    data.timeline.setGapBeats(data.gapBeats, LOOPER_MIN_ACTION_DURATION_MS);
+    data.recordingBeatIntervalMs = 0;
     data.durationMs = data.timeline.durationMs;
     data.transport.finishRecording();
     this.adapter.updateVisuals?.(looperState);
@@ -181,7 +200,16 @@ export class LooperController {
     }
 
     data.lastPlaybackUpdateMs = now;
-    data.playbackEngine.start(now, { resume: shouldResume });
+    const timing = this.getMetronomeTiming(now);
+    const playbackOriginMs = !shouldResume && timing?.active &&
+      data.timeline.timingMode === "metronome"
+      ? getSynchronizedPlaybackStart(
+        now,
+        timing,
+        data.timeline.firstOnsetPhaseMs,
+      )
+      : now;
+    data.playbackEngine.start(playbackOriginMs, { resume: shouldResume });
     this.updatePlaybackForLooper(looperState, now);
     this.adapter.updateVisuals?.(looperState);
     return true;
@@ -233,6 +261,11 @@ export class LooperController {
     for (const looperState of looperStates) {
       const data = looperState.looperData;
       if (!data?.transport.recording || !looperState.root?.visible) {
+        continue;
+      }
+
+      if (data.timeline.getElapsedMs(now) >= LOOPER_MAX_RECORDING_DURATION_MS) {
+        this.stopRecording(looperState, now);
         continue;
       }
 
@@ -289,6 +322,10 @@ export class LooperController {
     this.applier.updateAudio();
   }
 
+  getMetronomeTiming(now = performance.now()) {
+    return this.adapter.getMetronomeTiming?.(now) || null;
+  }
+
   handleLoopBoundary(looperState) {
     this.adapter.updateVisuals?.(looperState);
   }
@@ -337,6 +374,7 @@ export class LooperController {
     }
 
     const elapsedMs = data.timeline.getElapsedMs(now);
+    data.timeline.markMusicalOnset(elapsedMs);
     const event = data.timeline.addDrumHitEvent(track.trackId, {
       nodeId: track.nodeId,
       trackIndex: track.index,
@@ -360,6 +398,7 @@ export class LooperController {
     }
 
     const elapsedMs = data.timeline.getElapsedMs(now);
+    data.timeline.markMusicalOnset(elapsedMs);
     const event = data.timeline.addDrumHitEvent(LOOPER_SELF_PERCUSSION_TRACK_ID, {
       nodeId: LOOPER_SELF_PERCUSSION_TRACK_ID,
       timeMs: elapsedMs,
@@ -383,12 +422,13 @@ export class LooperController {
       data.speedControlValue = clamped;
       data.speed = LooperControlMapping.getSpeedFromControl(clamped);
     } else if (control === "gap") {
-      data.gapControlValue = clamped;
-      data.loopGapMs = LooperControlMapping.getGapFromControl(clamped);
+      data.gapBeats = LooperControlMapping.getGapBeatsFromControl(clamped);
+      data.gapControlValue = LooperControlMapping.getGapControlFromBeats(data.gapBeats);
       if (!data.transport.recording && data.timeline?.hasRecording()) {
-        data.timeline.setLoopGap(data.loopGapMs, LOOPER_MIN_ACTION_DURATION_MS);
+        data.timeline.setGapBeats(data.gapBeats, LOOPER_MIN_ACTION_DURATION_MS);
         data.durationMs = data.timeline.durationMs;
       }
+      return data.gapControlValue;
     } else if (control === "volume") {
       data.volumeControlValue = clamped;
       data.volume = LooperControlMapping.getVolumeFromControl(clamped);

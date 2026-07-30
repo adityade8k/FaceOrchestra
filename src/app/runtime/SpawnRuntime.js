@@ -99,7 +99,6 @@ export const SpawnRuntimeMethods = {
       if (!entry) {
         return;
       }
-
       this.disableInteractionsForPendingSpawn();
       const preview = this.spawnPlacementController.begin(controller, entry);
       if (!preview?.instruments?.length) {
@@ -314,6 +313,8 @@ export const SpawnRuntimeMethods = {
       const componentId = sourceState.componentId || "honk";
       const duplicateRoot = this.createSpawnedComponent(componentId, {
         tuning: sourceState.kind === "honk" ? { ...sourceState.tuning } : undefined,
+        bpm: sourceState.kind === "metronome" ? sourceState.bpm : undefined,
+        volume: sourceState.kind === "metronome" ? sourceState.volume : undefined,
       });
       const duplicateState = this.activeInstrumentState;
       if (!duplicateRoot || !duplicateState) {
@@ -331,6 +332,10 @@ export const SpawnRuntimeMethods = {
       }
       if (sourceState.kind === "looper" && duplicateState.kind === "looper") {
         this.copyLooperState(sourceState, duplicateState);
+      }
+      if (sourceState.kind === "metronome" && duplicateState.kind === "metronome") {
+        this.positionMetronomeControls(duplicateState);
+        this.updateMetronomeLabel(duplicateState);
       }
   
       const controllerState = this.controllerStates.get(controller);
@@ -511,18 +516,23 @@ export const SpawnRuntimeMethods = {
       this.updateNoteLabel(state);
     },
     spawnDefaultInstrumentPreview() {
-      if (!this.instrumentTemplate || this.instrumentStates.length > 0) {
+      if (
+        !this.componentTemplates.get("metronome")?.template ||
+        this.instrumentRegistry.getByKind("metronome").length > 0
+      ) {
         return;
       }
   
-      const defaultComponentId = "honk";
+      const defaultComponentId = "metronome";
       const instrument = this.createSpawnedComponent(defaultComponentId);
-      if (!instrument) {
+      const state = this.activeInstrumentState;
+      if (!instrument || state?.kind !== "metronome") {
+        console.warn("Default metronome spawn failed: the metronome template did not create a metronome.");
         return;
       }
       this.positionObjectInFrontOfCamera(instrument, DEFAULT_INSTRUMENT_DISTANCE);
       instrument.position.y -= defaultComponentId === LOOPER_COMPONENT_ID ? 0.18 : 0.38;
-      this.setInstrumentBaseScale(this.activeInstrumentState, INSTRUMENT_BASE_SCALE);
+      this.setInstrumentBaseScale(state, INSTRUMENT_BASE_SCALE);
     },
     createSpawnedInstrument() {
       return this.createSpawnedComponent("honk");

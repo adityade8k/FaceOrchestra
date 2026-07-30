@@ -12,6 +12,8 @@ export class FaceOrchestraApp {
     this.runtime = runtime;
     this.frameScheduler = frameScheduler;
     this.running = false;
+    this.computeSuspended = false;
+    this.teardownGeneration = 0;
     this.initialized = false;
     this.lastFrameMs = null;
     this.elapsedSeconds = 0;
@@ -30,6 +32,7 @@ export class FaceOrchestraApp {
     this.running = true;
     this.sceneRuntime.start();
     this.sceneRuntime.renderer.setAnimationLoop((frameMs) => {
+      if (this.computeSuspended) return;
       const now = Number.isFinite(frameMs) ? frameMs : performance.now();
       const delta = this.lastFrameMs === null ? 0 : Math.max((now - this.lastFrameMs) / 1000, 0);
       this.lastFrameMs = now;
@@ -39,21 +42,43 @@ export class FaceOrchestraApp {
     });
   }
 
+  stopCompute() {
+    this.computeSuspended = true;
+    this.sceneRuntime.renderer.setAnimationLoop(null);
+    this.running = false;
+    this.lastFrameMs = null;
+  }
+
   update(delta = 0, elapsed = this.elapsedSeconds, now = performance.now()) {
     return this.frameScheduler.run({ delta, elapsed, now });
   }
 
   onXRSessionStart(session = this.sceneRuntime.renderer.xr.getSession()) {
+    this.teardownGeneration += 1;
+    this.computeSuspended = false;
     this.sceneRuntime.setXRBlendMode(session?.environmentBlendMode);
     this.runtime.onXRSessionStart();
+    this.start();
   }
 
   onXRSessionEnd() {
-    try {
-      return this.runtime.onXRSessionEnd();
-    } finally {
-      this.sceneRuntime.resetAfterXR();
-    }
+    // Quiesce frame work immediately, but let Three.js and the browser finish
+    // dismantling the XR compositor before detaching the renderer loop or
+    // doing synchronous persistence work.
+    this.computeSuspended = true;
+    const teardownGeneration = ++this.teardownGeneration;
+    setTimeout(() => {
+      if (teardownGeneration !== this.teardownGeneration || !this.computeSuspended) return;
+      this.stopCompute();
+      try {
+        this.runtime.onXRSessionEnd();
+      } catch (error) {
+        console.warn("XR session cleanup failed:", error);
+      } finally {
+        this.sceneRuntime.resetAfterXR();
+      }
+    }, 0);
+    return true;
   }
 
   async endXRSession() {
@@ -64,7 +89,7 @@ export class FaceOrchestraApp {
 
   dispose() {
     if (!this.initialized && !this.running) return;
-    this.running = false;
+    this.stopCompute();
     this.runtime.dispose();
     this.sceneRuntime.dispose();
     this.initialized = false;
@@ -118,6 +143,7 @@ export class FaceOrchestraApp {
 
     this.frameScheduler.add("PERFORMANCE", (frame) => {
       runtime.updateHorn(frame.now);
+      runtime.updateMetronomes(frame.now);
     }, { label: "resolve live input plus automation" });
 
     this.frameScheduler.add("PRESENTATION", (frame) => {

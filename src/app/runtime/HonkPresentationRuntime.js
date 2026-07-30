@@ -10,6 +10,7 @@ import {
   LOOPER_CONTROL_MORPH_TARGETS,
 } from "../../config/looper.js";
 import { NOTE_LABEL_SETTINGS } from "../../config/ui.js";
+import { METRONOME_LABEL_SETTINGS } from "../../config/metronome.js";
 import {
   VOWEL_LETTERS_BY_MORPH,
   VOWEL_MORPHS,
@@ -26,6 +27,67 @@ import {
 } from "../../ui/interactionTargetPresentation.js";
 
 export const HonkPresentationRuntimeMethods = {
+    updateMetronomes(now = performance.now()) {
+      for (const metronome of this.instrumentRegistry.getByKind("metronome")) metronome.update(now);
+    },
+    positionMetronomeControls(state) {
+      if (state?.kind !== "metronome") return;
+      state.handleRig?.setValue("bpm", state.bpm);
+      state.handleRig?.setValue("volume", state.volume);
+    },
+    createMetronomeLabel(state) {
+      if (state?.kind !== "metronome") return;
+      const settings = METRONOME_LABEL_SETTINGS;
+      const group = new THREE.Group();
+      group.name = "METRONOME_bpm_label";
+      group.userData.isNoteLabel = true;
+      group.position.set(settings.position.x, settings.position.y, settings.position.z);
+      group.rotation.set(
+        THREE.MathUtils.degToRad(settings.rotationDegrees.x),
+        THREE.MathUtils.degToRad(settings.rotationDegrees.y),
+        THREE.MathUtils.degToRad(settings.rotationDegrees.z),
+      );
+      const canvas = document.createElement("canvas");
+      canvas.width = settings.canvasWidth;
+      canvas.height = settings.canvasHeight;
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      });
+      material.userData.disposeOnInstrumentDelete = true;
+      const sprite = new THREE.Sprite(material);
+      sprite.name = "METRONOME_bpm_text";
+      sprite.scale.set(settings.spriteWidth, settings.spriteHeight, 1);
+      sprite.renderOrder = 30;
+      group.add(sprite);
+      state.root.add(group);
+      state.metronomeLabelGroup = group;
+      state.metronomeLabelCanvas = canvas;
+      state.metronomeLabelTexture = texture;
+      state.metronomeLabelMesh = sprite;
+      this.updateMetronomeLabel(state);
+    },
+    updateMetronomeLabel(state) {
+      if (!state?.metronomeLabelGroup) return;
+      const labelText = `${Math.round(state.bpm)} BPM`;
+      if (labelText === state.metronomeLabelTextValue) return;
+      const settings = METRONOME_LABEL_SETTINGS;
+      const canvas = state.metronomeLabelCanvas;
+      const context = canvas?.getContext?.("2d");
+      if (!context) return;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = `#${settings.color.toString(16).padStart(6, "0")}`;
+      context.font = settings.font;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(labelText, canvas.width * 0.5, canvas.height * 0.5);
+      state.metronomeLabelTexture.needsUpdate = true;
+      state.metronomeLabelTextValue = labelText;
+    },
     getSignedMorphValueForCollider(sphere, state) {
       const type = sphere.userData.interactionType;
   

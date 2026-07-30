@@ -6,6 +6,53 @@ import { PersistenceStore } from "../../src/persistence/PersistenceStore.js";
 import { ScenePersistence } from "../../src/persistence/ScenePersistence.js";
 import { LEGACY_SCENE_STORAGE_KEYS, SCENE_STORAGE_KEY } from "../../src/persistence/schema.js";
 
+test("XR start always asks the default spawner to ensure a metronome exists", () => {
+  let defaultSpawnRequests = 0;
+  const runtime = {
+    xrSessionActive: false,
+    hideInstructionPanel() {},
+    spawnDefaultInstrumentPreview() { defaultSpawnRequests += 1; },
+  };
+
+  SessionRuntimeMethods.onXRSessionStart.call(runtime);
+
+  assert.equal(runtime.xrSessionActive, true);
+  assert.equal(defaultSpawnRequests, 1);
+});
+
+test("runtime initialization retries the default metronome spawn for an active XR session", () => {
+  let defaultSpawnRequests = 0;
+  const runtime = {
+    xrSessionActive: true,
+    instructionPanelClosed: true,
+    spawnDefaultInstrumentPreview() { defaultSpawnRequests += 1; },
+  };
+
+  SessionRuntimeMethods.onRuntimeInitialized.call(runtime);
+
+  assert.equal(defaultSpawnRequests, 1);
+});
+
+test("runtime initialization does not spawn before XR starts or while instructions remain open", () => {
+  let defaultSpawnRequests = 0;
+  const runtime = {
+    spawnDefaultInstrumentPreview() { defaultSpawnRequests += 1; },
+  };
+
+  SessionRuntimeMethods.onRuntimeInitialized.call({
+    ...runtime,
+    xrSessionActive: false,
+    instructionPanelClosed: true,
+  });
+  SessionRuntimeMethods.onRuntimeInitialized.call({
+    ...runtime,
+    xrSessionActive: true,
+    instructionPanelClosed: false,
+  });
+
+  assert.equal(defaultSpawnRequests, 0);
+});
+
 test("XR exit finalizes recordings and performs exactly one save before reset", () => {
   const events = [];
   const recordingLooper = {
@@ -31,6 +78,7 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
     },
     savePersistedSceneOnXRExit() { events.push("save"); return true; },
     resetSubsystemsAfterSession() { events.push("reset"); },
+    audioSystem: { suspend() { events.push("suspend-audio"); return Promise.resolve(); } },
   };
 
   const didSave = SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234);
@@ -45,6 +93,7 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
     "stop:paused-looper",
     "save",
     "reset",
+    "suspend-audio",
   ]);
 
   assert.equal(SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1300), false);
@@ -61,13 +110,14 @@ test("XR teardown still resets subsystems when persistence throws", () => {
     instrumentRegistry: { getByKind: () => [] },
     savePersistedSceneOnXRExit() { throw new Error("storage unavailable"); },
     resetSubsystemsAfterSession() { events.push("reset"); },
+    audioSystem: { suspend() { events.push("suspend-audio"); return Promise.resolve(); } },
   };
 
   assert.throws(
     () => SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234),
     /storage unavailable/,
   );
-  assert.deepEqual(events, ["reset"]);
+  assert.deepEqual(events, ["reset", "suspend-audio"]);
   assert.equal(runtime.xrSessionActive, false);
 });
 

@@ -96,6 +96,7 @@ The Stick maps Honk strikes to `boink` and Looper strikes to `hihat`. A persiste
 The radial catalog is configured in [`src/config/spawning.js`](src/config/spawning.js). It currently exposes:
 
 - a basic Honk;
+- a Metronome with separate Play/Pause eye controls;
 - C major, F natural minor, and F-sharp natural minor Honk rows;
 - C major, G major, F major, and A minor triad recipes;
 - a Looper.

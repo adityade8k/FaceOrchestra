@@ -140,9 +140,8 @@ export const LooperTransportRuntimeMethods = {
         ? this.getArcControlDragDelta(controller, looperState, sphere, interaction)
         : deltaY / this.getInstrumentWorldScaleY(looperState);
       const nextValue = this.getControlValueFromDrag(sphere, interaction, dragDelta);
-  
-      this.positionControlColliderFromValue(sphere, nextValue);
-      this.setLooperControlValue(looperState, interaction.control, nextValue, false, interaction.morphTargets);
+
+      this.setLooperControlValue(looperState, interaction.control, nextValue, true, interaction.morphTargets);
     },
     getControlValueFromDrag(sphere, interaction, dragDelta) {
       const scaledDragDelta = dragDelta * (sphere.userData.dragSensitivity ?? 1);
@@ -312,18 +311,20 @@ export const LooperTransportRuntimeMethods = {
       }
   
       const clamped = THREE.MathUtils.clamp(value, -1, 1);
-      if (controller.setControlValue(runtimeState, control, clamped) === null) {
+      const appliedValue = controller.setControlValue(runtimeState, control, clamped);
+      if (appliedValue === null) {
         return;
       }
   
-      this.applyLooperControlMorphValue(looperState, control, clamped, morphTargetsOverride);
+      this.applyLooperControlMorphValue(looperState, control, appliedValue, morphTargetsOverride);
   
       if (updateSphere) {
         const sphere = looperState.hitTargets[getLooperControlName(control)];
         if (sphere?.userData.isLooperControl) {
-          this.positionControlColliderFromValue(sphere, clamped);
+          this.positionControlColliderFromValue(sphere, appliedValue);
         }
       }
+      return appliedValue;
     },
     getLooperVolumeFromControl(value) {
       return LooperControlMapping.getVolumeFromControl(value);
@@ -331,8 +332,8 @@ export const LooperTransportRuntimeMethods = {
     getLooperSpeedFromControl(value) {
       return LooperControlMapping.getSpeedFromControl(value);
     },
-    getLooperGapFromControl(value) {
-      return LooperControlMapping.getGapFromControl(value);
+    getLooperGapBeatsFromControl(value) {
+      return LooperControlMapping.getGapBeatsFromControl(value);
     },
     applyLooperControlMorphValue(looperState, control, value, morphTargetsOverride = null) {
       const morphTargets = morphTargetsOverride || looperState?.hitTargets?.[getLooperControlName(control)]?.userData.looperMorphTargets || LOOPER_CONTROL_MORPH_TARGETS[control];
@@ -492,6 +493,7 @@ export const LooperTransportRuntimeMethods = {
       this.applyResolvedHonkPerformanceStates();
       this.updateLooperPlaybackAudio();
       this.updateLooperMorphAnimations(now);
+      this.updateMetronomes(now);
     },
     updateLooperRecordings(now = performance.now()) {
       for (const { looperState, controller } of this.getLooperRuntimeEntries()) {

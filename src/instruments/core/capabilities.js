@@ -2,6 +2,7 @@ export const INSTRUMENT_KINDS = Object.freeze({
   honk: "honk",
   stick: "stick",
   looper: "looper",
+  metronome: "metronome",
 });
 
 export const INSTRUMENT_CAPABILITIES = Object.freeze({
@@ -41,6 +42,12 @@ export const DEFAULT_CAPABILITIES_BY_KIND = Object.freeze({
     INSTRUMENT_CAPABILITIES.transformable,
     INSTRUMENT_CAPABILITIES.playable,
     INSTRUMENT_CAPABILITIES.recordable,
+    INSTRUMENT_CAPABILITIES.persistable,
+  ]),
+  [INSTRUMENT_KINDS.metronome]: Object.freeze([
+    INSTRUMENT_CAPABILITIES.placeable,
+    INSTRUMENT_CAPABILITIES.transformable,
+    INSTRUMENT_CAPABILITIES.playable,
     INSTRUMENT_CAPABILITIES.persistable,
   ]),
 });

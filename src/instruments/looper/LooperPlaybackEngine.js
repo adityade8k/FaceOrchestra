@@ -1,5 +1,16 @@
 import { createActionState } from "./timeline/actionState.js";
 
+export function getSynchronizedPlaybackStart(now, timing, firstOnsetPhaseMs = 0) {
+  const intervalMs = timing?.beatIntervalMs;
+  const beatOriginMs = timing?.beatOriginMs;
+  if (!(intervalMs > 0) || !Number.isFinite(beatOriginMs)) {
+    return now;
+  }
+  const phaseMs = Number.isFinite(firstOnsetPhaseMs) ? firstOnsetPhaseMs : 0;
+  const beatIndex = Math.ceil((now - phaseMs - beatOriginMs) / intervalMs);
+  return beatOriginMs + beatIndex * intervalMs + phaseMs;
+}
+
 export class LooperPlaybackEngine {
   constructor() {
     this.playing = false;
@@ -45,6 +56,10 @@ export class LooperPlaybackEngine {
 
   update(now, timeline, speed = 1, handlers = {}) {
     if (!this.playing || this.paused || !timeline?.hasRecording()) {
+      return false;
+    }
+
+    if (!this.started && now < this.lastUpdateMs) {
       return false;
     }
 

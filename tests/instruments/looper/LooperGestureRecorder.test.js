@@ -17,12 +17,12 @@ test("finalizing an active recording preserves its last sample and neutral relea
   action = { ...action, squeeze: 1, bend: 0.5 };
   recorder.updateTrack(timeline, track, 1100, capture);
   action = { ...action, earLeft: 0.75, nose: 0.4, vowel: "E" };
-  const hasRecording = recorder.stop(timeline, [track], 1200, 24, 80, capture);
+  const hasRecording = recorder.stop(timeline, [track], 1200, 24, capture);
 
   const events = timeline.getTrack(track.trackId).events;
   assert.equal(hasRecording, true);
   assert.equal(timeline.recording, false);
-  assert.equal(timeline.durationMs, 180);
+  assert.equal(timeline.durationMs, 100);
   assert.equal(events.some(({ type, timeMs, value }) => (
     type === LooperActionEventType.SqueezeStart && timeMs === 0 && value === 1
   )), true);

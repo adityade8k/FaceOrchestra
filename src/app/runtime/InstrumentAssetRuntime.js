@@ -16,6 +16,7 @@ import {
   MORPH_TARGET_NAMES,
 } from "../../config/honk.js";
 import { LOOPER_COMPONENT_ID, LOOPER_TRACK_COUNT } from "../../config/looper.js";
+import { METRONOME_COMPONENT_ID, METRONOME_SETTINGS } from "../../config/metronome.js";
 import { SPAWN_CATALOG_ENTRIES } from "../../config/spawning.js";
 import { STICK_SETTINGS } from "../../config/stick.js";
 import { NOTE_LABEL_SETTINGS } from "../../config/ui.js";
@@ -26,6 +27,7 @@ import { HONK_INTERACTION_ROLES } from "../../instruments/honk/HonkInstrument.js
 import { MorphTargetController, findMorphMeshes } from "../../instruments/honk/MorphTargetController.js";
 import { LooperColliderFactory } from "../../instruments/looper/LooperColliderFactory.js";
 import { applyStandardInstrumentMaterials } from "../../scene/materialUtils.js";
+import { MetronomePendulumRig } from "../../instruments/metronome/MetronomePendulumRig.js";
 
 const CONTROLLER_RAY_LENGTH = 1.6;
 const RAY_COLOR_DEFAULT = 0xf6d878;
@@ -92,6 +94,9 @@ export const InstrumentAssetRuntimeMethods = {
       interactive: true,
     });
 
+    const metronomeEntry = SPAWN_CATALOG_ENTRIES.find(({ kind }) => kind === "metronome");
+    if (metronomeEntry) await this.loadStaticComponentTemplate(metronomeEntry);
+
     const looperEntry = SPAWN_CATALOG_ENTRIES.find(({ kind }) => kind === "looper");
     if (looperEntry) await this.loadStaticComponentTemplate(looperEntry);
   },
@@ -126,6 +131,9 @@ export const InstrumentAssetRuntimeMethods = {
     template.visible = false;
     if (option.kind === "looper") {
       applyStandardInstrumentMaterials(template, await this.loadLooperMaterialTextures());
+    } else if (option.kind === "metronome") {
+      const textures = await this.assetRepository.loadTextureSet("metronome", ASSET_PATHS.textures.metronome);
+      applyStandardInstrumentMaterials(template, textures, { bumpScale: 0.035 });
     }
     this.componentTemplates.set(option.id, {
       ...option,
@@ -246,11 +254,13 @@ export const InstrumentAssetRuntimeMethods = {
   },
 
   createSpawnedComponent(componentId, options = {}) {
-    const componentOption = this.componentTemplates.get(componentId) || this.componentTemplates.get("honk");
-    if (!componentOption?.template) return null;
-
+    const componentOption = this.componentTemplates.get(componentId);
+    if (!componentOption?.template) {
+      console.warn(`Cannot spawn component "${componentId}": its template is not loaded.`);
+      return null;
+    }
     const root = cloneSkeletonAware(componentOption.template);
-    const kind = componentOption.kind === "looper" ? "looper" : "honk";
+    const kind = componentOption.kind;
     root.name = options.name || `${componentOption.label || kind}_${this.instrumentRegistry.size + 1}`;
     root.visible = true;
     root.userData.componentId = componentOption.id;
@@ -258,9 +268,19 @@ export const InstrumentAssetRuntimeMethods = {
 
     let hitTargets = collectNamedHitTargets(root);
     let domainTargets = {};
+    let handleRig = null;
+    let buttonRig = null;
+    let pendulumRig = null;
     if (kind === "honk") {
       const created = this.honkColliderFactory.create(root);
       domainTargets = created.targets;
+      hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
+    } else if (kind === "metronome") {
+      const created = this.metronomeColliderFactory.create(root);
+      domainTargets = created.targets;
+      handleRig = created.handleRig;
+      buttonRig = created.buttonRig;
+      pendulumRig = new MetronomePendulumRig({ THREE, root });
       hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
     } else {
       this.createLooperColliders(root, hitTargets);
@@ -279,6 +299,11 @@ export const InstrumentAssetRuntimeMethods = {
         warnMissingExpectedMorphs: kind === "honk" && this.hasExpectedHonkMorphs(morphMeshes),
       }),
       tuning: options.tuning || {},
+      bpm: options.bpm,
+      volume: options.volume,
+      handleRig,
+      buttonRig,
+      pendulumRig,
       componentId: componentOption.id,
     });
 
@@ -304,11 +329,18 @@ export const InstrumentAssetRuntimeMethods = {
     if (kind === "honk") {
       this.initializeInstrumentState(state);
       this.createNoteLabel(state);
-    } else {
+    } else if (kind === "looper") {
       this.initializeLooperState(state);
+    } else if (kind === "metronome") {
+      state.handleRig?.setValue("bpm", state.bpm);
+      state.handleRig?.setValue("volume", state.volume);
+      this.createMetronomeLabel(state);
     }
     this.activeInstrumentState = state;
-    this.setInstrumentBaseScale(state, options.baseScale ?? INSTRUMENT_BASE_SCALE);
+    this.setInstrumentBaseScale(
+      state,
+      options.baseScale ?? (kind === "metronome" ? METRONOME_SETTINGS.baseScale : INSTRUMENT_BASE_SCALE),
+    );
     return root;
   },
 };
@@ -334,6 +366,11 @@ function decorateInstrumentEntity(state, { componentOption, hitTargets, morphMes
   state.noteLabelGroup = null;
   state.noteLabelMesh = null;
   state.noteLabelTextValue = null;
+  state.metronomeLabelGroup = null;
+  state.metronomeLabelMesh = null;
+  state.metronomeLabelTextValue = null;
+  state.metronomeLabelCanvas = null;
+  state.metronomeLabelTexture = null;
   state.pitchSnap = state.tuning?.pitchSnap || componentOption.pitchSnap || null;
   state.scalePresetNote = state.tuning?.note || null;
   state.scalePresetNoteConfig = state.tuning?.note ? {
@@ -375,6 +412,7 @@ function makeHitTargetMaterial(_name, color = 0xffffff, opacity = HIT_MARKER_OPA
     color: color ?? 0xffffff,
     transparent: true,
     opacity: DEBUG_SHOW_COLLIDERS ? opacity ?? HIT_MARKER_OPACITY : 0,
+    depthTest: !DEBUG_SHOW_COLLIDERS,
     depthWrite: false,
     wireframe: DEBUG_SHOW_COLLIDERS,
   });

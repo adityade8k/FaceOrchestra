@@ -53,8 +53,8 @@ export class LooperGestureRecorder {
     this.epsilons = { ...DEFAULT_EPSILONS, ...epsilons };
   }
 
-  start(timeline, tracks, now, captureActionByHonkId) {
-    timeline.startRecording(now);
+  start(timeline, tracks, now, captureActionByHonkId, timing = null) {
+    timeline.startRecording(now, timing);
     for (const track of tracks) {
       track.resetRecordingState();
       const captured = this.captureTrackAction(track, captureActionByHonkId);
@@ -142,7 +142,7 @@ export class LooperGestureRecorder {
     }
   }
 
-  stop(timeline, tracks, now, minDurationMs, loopGapMs, captureActionByHonkId = null) {
+  stop(timeline, tracks, now, minDurationMs, captureActionByHonkId = null, timing = null) {
     if (!timeline?.recording) {
       return timeline?.hasRecording?.() || false;
     }
@@ -159,7 +159,7 @@ export class LooperGestureRecorder {
       track.isRecording = false;
     }
 
-    const hasRecording = timeline.stopRecording(now, minDurationMs, loopGapMs);
+    const hasRecording = timeline.stopRecording(now, minDurationMs, timing);
     for (const track of tracks) {
       const trackTimeline = timeline.getTrack(track.trackId);
       track.active = Boolean(trackTimeline?.active);
@@ -263,6 +263,9 @@ export class LooperGestureRecorder {
         value,
         interpolation: "linear",
       });
+      if (type === LooperActionEventType.SqueezeStart) {
+        timeline.markMusicalOnset(elapsedMs);
+      }
       return;
     }
 

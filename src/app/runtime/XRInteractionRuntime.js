@@ -14,8 +14,10 @@ import {
   getInteractionTargetColor,
 } from "../../ui/interactionTargetPresentation.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
-
 const tempScale = new THREE.Vector3();
+const tempMetronomeRayOrigin = new THREE.Vector3();
+const tempMetronomeRayDirection = new THREE.Vector3();
+const tempMetronomeRayQuaternion = new THREE.Quaternion();
 
 
 export const XRInteractionRuntimeMethods = {
@@ -35,7 +37,7 @@ export const XRInteractionRuntimeMethods = {
         } else {
           this.lockConnectedChordStates(instrumentState);
         }
-      } else if (instrumentState.kind === "looper") {
+      } else if (instrumentState.kind === "looper" || instrumentState.kind === "metronome") {
         instrumentState.locked = !instrumentState.locked;
         this.updateLockVisual(instrumentState);
       }
@@ -44,7 +46,7 @@ export const XRInteractionRuntimeMethods = {
       return Boolean(
         instrumentState?.root?.visible &&
         !instrumentState.pendingPlacement &&
-        (instrumentState.kind === "honk" || instrumentState.kind === "looper"),
+        (instrumentState.kind === "honk" || instrumentState.kind === "looper" || instrumentState.kind === "metronome"),
       );
     },
     handleTriggerBeginIntent(controller) {
@@ -66,6 +68,15 @@ export const XRInteractionRuntimeMethods = {
         this.closeInstructionPanel();
         return;
       }
+
+      const metronomeState = this.instrumentRegistry.getFromObject3D(hit?.object);
+      const metronomeButtonAction = hit?.object?.userData.metronomeButtonAction;
+      if (metronomeState?.kind === "metronome" && metronomeButtonAction) {
+        metronomeState.pressButton(metronomeButtonAction, performance.now());
+        controllerState.activeTriggerInteraction = null;
+        this.activeInstrumentState = metronomeState;
+        return;
+      }
   
       const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
       if (lockedInstrumentState?.kind === "looper") {
@@ -74,8 +85,29 @@ export const XRInteractionRuntimeMethods = {
         this.activeInstrumentState = lockedInstrumentState;
         return;
       }
+      if (lockedInstrumentState?.kind === "metronome") {
+        controllerState.activeTriggerInteraction = null;
+        this.activeInstrumentState = lockedInstrumentState;
+        return;
+      }
   
       if (this.handleLooperTriggerPress(controller, hit)) {
+        return;
+      }
+
+      if (metronomeState?.kind === "metronome" && !metronomeState.locked) {
+        this.activeInstrumentState = metronomeState;
+        const control = hit.object.userData.metronomeControl;
+        if (control) {
+          const ray = this.getMetronomeControllerRay(controller);
+          const drag = metronomeState.handleRig?.beginDrag(control, ray.origin, ray.direction);
+          if (!drag) return;
+          controllerState.activeTriggerInteraction = {
+            type: "metronomeControlDrag", instrumentState: metronomeState, drag,
+          };
+          return;
+        }
+        controllerState.activeTriggerInteraction = null;
         return;
       }
   
@@ -201,6 +233,22 @@ export const XRInteractionRuntimeMethods = {
           this.updateLooperControlDrag(controller, interaction);
           continue;
         }
+
+        if (interaction.type === "metronomeControlDrag") {
+          const ray = this.getMetronomeControllerRay(controller);
+          const result = interaction.instrumentState.handleRig?.updateDrag(
+            interaction.drag,
+            ray.origin,
+            ray.direction,
+          );
+          if (result?.parameter === "bpm") {
+            interaction.instrumentState.setBpm(result.value);
+            this.updateMetronomeLabel(interaction.instrumentState);
+          } else if (result?.parameter === "volume") {
+            interaction.instrumentState.setVolume(result.value);
+          }
+          continue;
+        }
   
         if (interaction.type !== "verticalDragMorph") {
           continue;
@@ -233,6 +281,16 @@ export const XRInteractionRuntimeMethods = {
         const nextValue = interaction.dragStartMorphValue + deltaY * sensitivity;
         this.applyInteractionValue(interaction, nextValue);
       }
+    },
+    getMetronomeControllerRay(controller) {
+      controller.updateMatrixWorld(true);
+      controller.getWorldPosition(tempMetronomeRayOrigin);
+      controller.getWorldQuaternion(tempMetronomeRayQuaternion);
+      tempMetronomeRayDirection.set(0, 0, -1).applyQuaternion(tempMetronomeRayQuaternion).normalize();
+      return {
+        origin: tempMetronomeRayOrigin,
+        direction: tempMetronomeRayDirection,
+      };
     },
     getInteractionValue(config, instrumentState) {
       if (config.dragType === "ear") {

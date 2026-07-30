@@ -11,6 +11,7 @@ const RESET_DELETE_PRIORITY = Object.freeze({
   [INSTRUMENT_KINDS.honk]: 0,
   [INSTRUMENT_KINDS.stick]: 1,
   [INSTRUMENT_KINDS.looper]: 2,
+  [INSTRUMENT_KINDS.metronome]: 3,
 });
 
 /**

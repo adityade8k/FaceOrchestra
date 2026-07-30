@@ -185,11 +185,16 @@ export class HonkVoice {
 
   release(fadeSeconds, onEnded) {
     const now = this.context.currentTime;
-    this.pitchBendSemitones = 0;
-    this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setTargetAtTime(0.0001, now, 0.04);
-
     const stopAt = now + Math.max(fadeSeconds, 0.01);
+    this.pitchBendSemitones = 0;
+    if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
+      this.master.gain.cancelAndHoldAtTime(now);
+    } else {
+      const currentGain = Math.max(this.master.gain.value || 0.0001, 0.0001);
+      this.master.gain.cancelScheduledValues(now);
+      this.master.gain.setValueAtTime(currentGain, now);
+    }
+    this.master.gain.exponentialRampToValueAtTime(0.0001, stopAt);
     this.source.onended = () => {
       this.disconnect();
       onEnded?.();

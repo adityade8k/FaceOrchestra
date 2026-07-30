@@ -2,6 +2,7 @@ export const ASSET_PATHS = Object.freeze({
   models: Object.freeze({
     honk: "./model/honk/horn_gltf.glb",
     looper: "./model/looper/recorder.glb",
+    metronome: "./model/metronome/metronome_02.glb",
     stick: "./model/branch/scene.glb",
   }),
   textures: Object.freeze({
@@ -17,6 +18,13 @@ export const ASSET_PATHS = Object.freeze({
       normalMap: "./model/looper/recorder2_lambert1SG_Normal.png",
       metalnessMap: "./model/looper/recorder2_lambert1SG_Metallic.png",
       roughnessMap: "./model/looper/recorder2_lambert1SG_Roughness.png",
+    }),
+    metronome: Object.freeze({
+      baseMap: "./model/metronome/metronome_for_painter_lambert1_BaseColor.png",
+      normalMap: "./model/metronome/metronome_for_painter_lambert1_Normal.png",
+      roughnessMap: "./model/metronome/metronome_for_painter_lambert1_Roughness.png",
+      metalnessMap: "./model/metronome/metronome_for_painter_lambert1_Metallic.png",
+      heightMap: "./model/metronome/metronome_for_painter_lambert1_Height.png",
     }),
     stick: Object.freeze({
       normalMap: "./model/branch/branch_3d_model_pbr_normal.JPEG",

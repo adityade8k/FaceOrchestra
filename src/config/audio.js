@@ -6,6 +6,7 @@ export const NASALITY_SETTINGS = {
 };
 
 export const HONK_MASTER_GAIN = 0.78;
+export const LOOPER_ACTION_RELEASE_FADE_SECONDS = 0.015;
 
 export const AUDIO_MASTER_BUS_SETTINGS = {
   inputGain: 0.9,
