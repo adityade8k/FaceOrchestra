@@ -11,10 +11,11 @@ export const METRONOME_INTERACTION_ROLES = Object.freeze({
 export class MetronomeInstrument extends InstrumentEntity {
   constructor({ id, root, interactionTargetRegistry = null, targets = {}, audioSystem = null,
     bpm = METRONOME_SETTINGS.defaultBpm, volume = METRONOME_SETTINGS.defaultVolume,
-    componentId = "metronome", metadata = {} } = {}) {
+    componentId = "metronome", handleRig = null, metadata = {} } = {}) {
     super({ id, kind: INSTRUMENT_KINDS.metronome, root, interactionTargetRegistry, metadata });
     this.componentId = componentId;
     this.audioSystem = audioSystem;
+    this.handleRig = handleRig;
     this.bpm = clamp(bpm, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm);
     this.volume = clamp(volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
     this.playing = false;
@@ -41,11 +42,13 @@ export class MetronomeInstrument extends InstrumentEntity {
       this.beatOriginMs = this.nextTickMs - nextInterval;
     }
     this.bpm = nextBpm;
+    this.handleRig?.setValue("bpm", this.bpm);
     return this.bpm;
   }
 
   setVolume(value) {
     this.volume = clamp(value, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
+    this.handleRig?.setValue("volume", this.volume);
     return this.volume;
   }
 
@@ -70,7 +73,7 @@ export class MetronomeInstrument extends InstrumentEntity {
   }
 
   update(now = performance.now()) {
-    if (!this.playing || this.pendingPlacement) return false;
+    if (!this.playing) return false;
     if (!Number.isFinite(this.nextTickMs)) this.nextTickMs = now;
     if (now < this.nextTickMs) return false;
     this.audioSystem?.triggerMetronomeClick?.({ volume: this.volume });
@@ -116,6 +119,8 @@ export class MetronomeInstrument extends InstrumentEntity {
 
   dispose() {
     this.pause();
+    this.handleRig?.dispose?.();
+    this.handleRig = null;
     this.targetsByRole.clear();
     this.metronomeLabelTexture?.dispose?.();
     this.metronomeLabelTexture = null;

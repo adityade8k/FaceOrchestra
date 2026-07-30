@@ -99,11 +99,6 @@ export const SpawnRuntimeMethods = {
       if (!entry) {
         return;
       }
-      if (entry.kind === "metronome" && this.instrumentRegistry.getByKind("metronome").length > 0) {
-        this.closeRadialMenu(controller);
-        return;
-      }
-
       this.disableInteractionsForPendingSpawn();
       const preview = this.spawnPlacementController.begin(controller, entry);
       if (!preview?.instruments?.length) {
@@ -127,9 +122,6 @@ export const SpawnRuntimeMethods = {
       }
 
       if (entry?.action === "equip") return null;
-      if (entry?.kind === "metronome" && this.instrumentRegistry.getByKind("metronome").length > 0) {
-        return null;
-      }
       const root = this.createSpawnedComponent(entry?.id || componentId);
       const state = this.activeInstrumentState;
       if (!root || !state) {

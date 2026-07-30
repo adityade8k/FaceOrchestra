@@ -14,9 +14,10 @@ import {
   getInteractionTargetColor,
 } from "../../ui/interactionTargetPresentation.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
-import { METRONOME_SETTINGS } from "../../config/metronome.js";
-
 const tempScale = new THREE.Vector3();
+const tempMetronomeRayOrigin = new THREE.Vector3();
+const tempMetronomeRayDirection = new THREE.Vector3();
+const tempMetronomeRayQuaternion = new THREE.Quaternion();
 
 
 export const XRInteractionRuntimeMethods = {
@@ -96,9 +97,11 @@ export const XRInteractionRuntimeMethods = {
         }
         const control = hit.object.userData.metronomeControl;
         if (control) {
+          const ray = this.getMetronomeControllerRay(controller);
+          const drag = metronomeState.handleRig?.beginDrag(control, ray.origin, ray.direction);
+          if (!drag) return;
           controllerState.activeTriggerInteraction = {
-            type: "metronomeControlDrag", control, instrumentState: metronomeState,
-            sphere: hit.object, dragStartY: controller.position.y, dragStartSphereY: hit.object.position.y,
+            type: "metronomeControlDrag", instrumentState: metronomeState, drag,
           };
           return;
         }
@@ -228,22 +231,17 @@ export const XRInteractionRuntimeMethods = {
         }
 
         if (interaction.type === "metronomeControlDrag") {
-          const sphere = interaction.sphere;
-          const localDeltaY = (controller.position.y - interaction.dragStartY) /
-            this.getInstrumentWorldScaleY(interaction.instrumentState);
-          sphere.position.y = THREE.MathUtils.clamp(
-            interaction.dragStartSphereY + localDeltaY, sphere.userData.minY, sphere.userData.maxY,
+          const ray = this.getMetronomeControllerRay(controller);
+          const result = interaction.instrumentState.handleRig?.updateDrag(
+            interaction.drag,
+            ray.origin,
+            ray.direction,
           );
-          const amount = THREE.MathUtils.mapLinear(
-            sphere.position.y, sphere.userData.minY, sphere.userData.maxY, 0, 1,
-          );
-          if (interaction.control === "bpm") {
-            interaction.instrumentState.setBpm(THREE.MathUtils.lerp(
-              METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm, amount,
-            ));
+          if (result?.parameter === "bpm") {
+            interaction.instrumentState.setBpm(result.value);
             this.updateMetronomeLabel(interaction.instrumentState);
-          } else {
-            interaction.instrumentState.setVolume(amount);
+          } else if (result?.parameter === "volume") {
+            interaction.instrumentState.setVolume(result.value);
           }
           continue;
         }
@@ -279,6 +277,16 @@ export const XRInteractionRuntimeMethods = {
         const nextValue = interaction.dragStartMorphValue + deltaY * sensitivity;
         this.applyInteractionValue(interaction, nextValue);
       }
+    },
+    getMetronomeControllerRay(controller) {
+      controller.updateMatrixWorld(true);
+      controller.getWorldPosition(tempMetronomeRayOrigin);
+      controller.getWorldQuaternion(tempMetronomeRayQuaternion);
+      tempMetronomeRayDirection.set(0, 0, -1).applyQuaternion(tempMetronomeRayQuaternion).normalize();
+      return {
+        origin: tempMetronomeRayOrigin,
+        direction: tempMetronomeRayDirection,
+      };
     },
     getInteractionValue(config, instrumentState) {
       if (config.dragType === "ear") {

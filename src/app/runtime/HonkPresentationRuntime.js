@@ -10,8 +10,7 @@ import {
   LOOPER_CONTROL_MORPH_TARGETS,
 } from "../../config/looper.js";
 import { NOTE_LABEL_SETTINGS } from "../../config/ui.js";
-import { METRONOME_LABEL_SETTINGS, METRONOME_SETTINGS } from "../../config/metronome.js";
-import { METRONOME_INTERACTION_ROLES } from "../../instruments/metronome/MetronomeInstrument.js";
+import { METRONOME_LABEL_SETTINGS } from "../../config/metronome.js";
 import {
   VOWEL_LETTERS_BY_MORPH,
   VOWEL_MORPHS,
@@ -33,16 +32,8 @@ export const HonkPresentationRuntimeMethods = {
     },
     positionMetronomeControls(state) {
       if (state?.kind !== "metronome") return;
-      const bpmTarget = state.targetsByRole.get(METRONOME_INTERACTION_ROLES.bpm);
-      const volumeTarget = state.targetsByRole.get(METRONOME_INTERACTION_ROLES.volume);
-      if (bpmTarget) bpmTarget.position.y = THREE.MathUtils.mapLinear(
-        state.bpm, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm,
-        bpmTarget.userData.minY, bpmTarget.userData.maxY,
-      );
-      if (volumeTarget) volumeTarget.position.y = THREE.MathUtils.mapLinear(
-        state.volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume,
-        volumeTarget.userData.minY, volumeTarget.userData.maxY,
-      );
+      state.handleRig?.setValue("bpm", state.bpm);
+      state.handleRig?.setValue("volume", state.volume);
     },
     createMetronomeLabel(state) {
       if (state?.kind !== "metronome") return;

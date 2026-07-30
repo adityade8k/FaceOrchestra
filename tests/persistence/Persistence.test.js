@@ -180,6 +180,43 @@ test("restorer synchronizes a saved uniform scale with runtime baseScale", async
   assert.deepEqual(instrument.root.scale.toArray(), [2.25, 2.25, 2.25]);
 });
 
+test("restorer recreates every saved metronome and leaves each paused", async () => {
+  const registry = new Map();
+  registry.has = registry.has.bind(registry);
+  registry.add = (instrument) => registry.set(instrument.id, instrument);
+  const created = [];
+  const restorer = new SceneRestorer({
+    registry,
+    lockService: { restore() {} },
+    createInstrument: async (saved) => {
+      const instrument = {
+        id: saved.id,
+        kind: "metronome",
+        root: fakeInstrument(saved.id, "metronome").root,
+        playing: true,
+        restore(data) {
+          this.bpm = data.bpm;
+          this.volume = data.volume;
+          this.playing = false;
+        },
+      };
+      created.push(instrument);
+      return instrument;
+    },
+  });
+  const result = await restorer.restore({
+    instruments: [
+      { id: "metro-a", kind: "metronome", bpm: 90, volume: 0.2 },
+      { id: "metro-b", kind: "metronome", bpm: 180, volume: 0.8 },
+    ],
+  });
+  assert.equal(result.instruments.length, 2);
+  assert.deepEqual(created.map(({ bpm, volume, playing }) => ({ bpm, volume, playing })), [
+    { bpm: 90, volume: 0.2, playing: false },
+    { bpm: 180, volume: 0.8, playing: false },
+  ]);
+});
+
 function fakeInstrument(id, kind) {
   return {
     id,

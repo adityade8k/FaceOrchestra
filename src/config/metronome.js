@@ -7,14 +7,20 @@ export const METRONOME_SETTINGS = Object.freeze({
   defaultVolume: 0.7,
   minVolume: 0,
   maxVolume: 1,
-  bodyRadius: 0.16,
-  controlRadius: 0.055,
-  controlHorizontalOffset: 0.25,
-  controlTravel: 0.28,
   sphereSegments: 24,
   sphereRings: 16,
   debugOpacity: 0.24,
   renderOrder: 24,
+  debug: Object.freeze({
+    colliderOpacity: 0.32,
+    planeOpacity: 0.08,
+    ringOpacity: 0.8,
+    arcOpacity: 1,
+    pivotRadius: 0.5,
+    radialLimits: true,
+    circleSegments: 64,
+    planeSizeMultiplier: 2.35,
+  }),
   clickFrequency: 420,
   clickOscillatorType: "triangle",
   clickDurationSeconds: 0.035,
@@ -24,6 +30,41 @@ export const METRONOME_SETTINGS = Object.freeze({
   maxScale: 6,
   scaleStep: 0.25,
 });
+
+// Axis and offset are expressed in each imported handle's stable rest-local frame.
+// Swapping the `parameter` values is sufficient to swap the two controls.
+export const METRONOME_HANDLE_CONTROLS = Object.freeze([
+  Object.freeze({
+    nodeName: "L_handle_geo",
+    parameter: "bpm",
+    axis: Object.freeze({ x: 0, y: 1, z: 0 }),
+    minAngleDegrees: -42,
+    maxAngleDegrees: 42,
+    referenceAngleDegrees: 0,
+    colliderRadius: 1.6,
+    colliderOffset: Object.freeze({ x: 5, y: 0, z: -5 }),
+    colliderColor: 0xff8c42,
+    pivotColor: 0xffd0a8,
+    planeColor: 0xff8c42,
+    arcColor: 0xffc08a,
+    invertDrag: false,
+  }),
+  Object.freeze({
+    nodeName: "R_handle_geo",
+    parameter: "volume",
+    axis: Object.freeze({ x: 0, y: 1, z: 0 }),
+    minAngleDegrees: -42,
+    maxAngleDegrees: 52,
+    referenceAngleDegrees: 0,
+    colliderRadius: 1.6,
+    colliderOffset: Object.freeze({ x: -5, y: 0, z: -5 }),
+    colliderColor: 0x5ac8fa,
+    pivotColor: 0xbdeaff,
+    planeColor: 0x5ac8fa,
+    arcColor: 0x9ee5ff,
+    invertDrag: false,
+  }),
+]);
 
 export const METRONOME_LABEL_SETTINGS = Object.freeze({
   color: 0xf7efe2,

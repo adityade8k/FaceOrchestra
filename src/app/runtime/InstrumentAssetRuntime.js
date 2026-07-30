@@ -94,13 +94,7 @@ export const InstrumentAssetRuntimeMethods = {
     });
 
     const metronomeEntry = SPAWN_CATALOG_ENTRIES.find(({ kind }) => kind === "metronome");
-    this.componentTemplates.set(METRONOME_COMPONENT_ID, {
-      ...metronomeEntry,
-      id: METRONOME_COMPONENT_ID,
-      kind: "metronome",
-      template: new THREE.Group(),
-      interactive: true,
-    });
+    if (metronomeEntry) await this.loadStaticComponentTemplate(metronomeEntry);
 
     const looperEntry = SPAWN_CATALOG_ENTRIES.find(({ kind }) => kind === "looper");
     if (looperEntry) await this.loadStaticComponentTemplate(looperEntry);
@@ -258,10 +252,6 @@ export const InstrumentAssetRuntimeMethods = {
   createSpawnedComponent(componentId, options = {}) {
     const componentOption = this.componentTemplates.get(componentId) || this.componentTemplates.get("honk");
     if (!componentOption?.template) return null;
-    if (componentOption.kind === "metronome" && this.instrumentRegistry.getByKind("metronome").length > 0) {
-      return null;
-    }
-
     const root = cloneSkeletonAware(componentOption.template);
     const kind = componentOption.kind;
     root.name = options.name || `${componentOption.label || kind}_${this.instrumentRegistry.size + 1}`;
@@ -271,6 +261,7 @@ export const InstrumentAssetRuntimeMethods = {
 
     let hitTargets = collectNamedHitTargets(root);
     let domainTargets = {};
+    let handleRig = null;
     if (kind === "honk") {
       const created = this.honkColliderFactory.create(root);
       domainTargets = created.targets;
@@ -278,6 +269,7 @@ export const InstrumentAssetRuntimeMethods = {
     } else if (kind === "metronome") {
       const created = this.metronomeColliderFactory.create(root);
       domainTargets = created.targets;
+      handleRig = created.handleRig;
       hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
     } else {
       this.createLooperColliders(root, hitTargets);
@@ -298,6 +290,7 @@ export const InstrumentAssetRuntimeMethods = {
       tuning: options.tuning || {},
       bpm: options.bpm,
       volume: options.volume,
+      handleRig,
       componentId: componentOption.id,
     });
 
@@ -326,7 +319,8 @@ export const InstrumentAssetRuntimeMethods = {
     } else if (kind === "looper") {
       this.initializeLooperState(state);
     } else if (kind === "metronome") {
-      this.positionMetronomeControls(state);
+      state.handleRig?.setValue("bpm", state.bpm);
+      state.handleRig?.setValue("volume", state.volume);
       this.createMetronomeLabel(state);
     }
     this.activeInstrumentState = state;

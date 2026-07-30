@@ -56,6 +56,46 @@ test("changing BPM while playing preserves beat phase instead of immediately ret
   }
 });
 
+test("a duplicated metronome copies controls and scale but starts paused with independent rigs", () => {
+  const sourceRig = { values: {}, setValue(parameter, value) { this.values[parameter] = value; } };
+  const duplicateRig = { values: {}, setValue(parameter, value) { this.values[parameter] = value; } };
+  const source = new MetronomeInstrument({
+    id: "metro-source", root: object3D(), bpm: 175, volume: 0.35, handleRig: sourceRig,
+  });
+  source.baseScale = 3.25;
+  source.play(1000);
+  const duplicate = new MetronomeInstrument({
+    id: "metro-copy", root: object3D(), bpm: source.bpm, volume: source.volume, handleRig: duplicateRig,
+  });
+  duplicate.baseScale = source.baseScale;
+  duplicate.setBpm(duplicate.bpm);
+  duplicate.setVolume(duplicate.volume);
+
+  assert.equal(duplicate.bpm, 175);
+  assert.equal(duplicate.volume, 0.35);
+  assert.equal(duplicate.baseScale, 3.25);
+  assert.equal(duplicate.playing, false);
+  assert.deepEqual(duplicateRig.values, { bpm: 175, volume: 0.35 });
+  assert.notStrictEqual(duplicate.handleRig, source.handleRig);
+});
+
+test("metronome playback keeps its schedule while the scene is in placement mode", () => {
+  const clicks = [];
+  const metronome = new MetronomeInstrument({
+    id: "metro-placement",
+    root: object3D(),
+    audioSystem: { triggerMetronomeClick: () => clicks.push(true) },
+  });
+  metronome.setBpm(120);
+  metronome.play(1000);
+  metronome.pendingPlacement = true;
+
+  assert.equal(metronome.update(1000), true);
+  assert.equal(metronome.update(1500), true);
+  assert.equal(clicks.length, 2);
+  assert.equal(metronome.playing, true);
+});
+
 function object3D() {
   return {
     visible: true,

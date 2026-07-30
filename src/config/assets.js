@@ -2,6 +2,7 @@ export const ASSET_PATHS = Object.freeze({
   models: Object.freeze({
     honk: "./model/honk/horn_gltf.glb",
     looper: "./model/looper/recorder.glb",
+    metronome: "./model/metronome/scene.glb",
     stick: "./model/branch/scene.glb",
   }),
   textures: Object.freeze({
