@@ -82,7 +82,7 @@ test("the first beat after a stopped Metronome starts launches every armed Loope
   assert.equal(second.data.clockPlaybackStartBeatPosition, 0);
 });
 
-test("clocked Stop pads recording duration to a whole beat without moving its events", () => {
+test("clocked Stop derives duration from musical content without whole-beat padding", () => {
   const clock = timing({ beatPosition: 0.2, ordinal: 0, lastBeatMs: 1000 });
   const context = createLooper("record-grid", clock);
   context.controller.startRecording(context.looper, 1100);
@@ -92,9 +92,9 @@ test("clocked Stop pads recording duration to a whole beat without moving its ev
   context.controller.stopRecording(context.looper, 1750);
 
   const event = context.data.timeline.getTrack("looper-self-percussion").events[0];
-  assert.equal(event.timeMs, 100);
-  assert.equal(context.data.timeline.durationMs, 500);
-  assert.equal(context.data.timeline.durationMs % context.data.timeline.beatIntervalMs, 0);
+  assert.equal(event.timeMs, 0);
+  assert.equal(context.data.timeline.durationMs, 24);
+  assert.notEqual(context.data.timeline.durationMs % context.data.timeline.beatIntervalMs, 0);
 });
 
 test("clocked playback derives its position from beat phase and preserves phase through BPM changes", () => {
@@ -244,8 +244,7 @@ function recordedTimeline() {
   timeline.timingMode = LooperTimingMode.Metronome;
   timeline.beatIntervalMs = 500;
   timeline.addFieldEvent("track-0", "squeeze", 0, 1, { trackIndex: 0 });
-  timeline.addFieldEvent("track-0", "squeeze", 100, 0, { trackIndex: 0 });
-  timeline.recordedDurationMs = 500;
+  timeline.addFieldEvent("track-0", "squeeze", 500, 0, { trackIndex: 0 });
   timeline.finalizeDuration(1);
   return timeline;
 }

@@ -71,7 +71,11 @@ export class PercussionVoiceService {
       malletSamples[index] = Math.random() * 2 - 1;
     }
 
-    output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
+    output.gain.setValueAtTime(0.0001, now);
+    output.gain.linearRampToValueAtTime(
+      Math.max(volume, 0) * settings.gain,
+      now + Math.max(settings.bodyAttackSeconds ?? 0.004, 0.003),
+    );
     output.connect(this.getDestination(context));
     bodyBus.gain.setValueAtTime(1, now);
     bodyDrive.curve = this.createSoftClipCurve(settings.bodyDrive ?? 1.4);
@@ -223,7 +227,11 @@ export class PercussionVoiceService {
     const stopAt =
       now + Math.max(noiseSeconds, metallicDecaySeconds) + metallicEchoTailSeconds + 0.06;
 
-    output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
+    output.gain.setValueAtTime(0.0001, now);
+    output.gain.linearRampToValueAtTime(
+      Math.max(volume, 0) * settings.gain,
+      now + Math.max(settings.noiseAttackSeconds ?? 0.003, 0.003),
+    );
     output.connect(this.getDestination(context));
 
     source.buffer = noiseBuffer;

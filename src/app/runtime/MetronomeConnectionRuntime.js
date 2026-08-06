@@ -3,7 +3,7 @@ import { METRONOME_SETTINGS } from "../../config/metronome.js";
 import {
   createConnectionWireMesh,
   disposeWireMesh,
-  updateConnectionWireBetweenTargets,
+  updateConnectionWireTargets,
   updateConnectionWireToPoint,
 } from "../../instruments/core/view/connectionWirePresentation.js";
 import {
@@ -106,16 +106,22 @@ export const MetronomeConnectionRuntimeMethods = {
 
   handleMetronomeConnectionAdded(connection) {
     const key = this.getMetronomeConnectionRuntimeKey(connection);
+    this.metronomeConnectionRuntimeEntries ||= new Map();
+    this.metronomeConnectionRuntimeEntries.set(
+      key,
+      this.createMetronomeConnectionRuntimeEntry(connection),
+    );
     if (connection.targetKind === METRONOME_CONNECTION_TARGET_KINDS.honk) {
       const timing = this.instrumentRegistry.get(connection.metronomeId)?.getBeatTiming?.() || null;
       this.metronomePulseStates.set(key, {
         active: false,
         generation: 0,
-        members: new Map(),
+        honk: null,
         lastBeatOrdinal: timing?.lastEmittedBeatOrdinal ?? null,
         releaseAtMs: 0,
       });
     }
+    this.metronomeConnectionsNeedValidation = false;
     this.updateMetronomeConnectionWire(connection);
   },
 
@@ -124,6 +130,7 @@ export const MetronomeConnectionRuntimeMethods = {
     const wireMesh = this.metronomeConnectionWires.get(key);
     if (wireMesh) disposeWireMesh(wireMesh);
     this.metronomeConnectionWires.delete(key);
+    this.metronomeConnectionRuntimeEntries?.delete(key);
     this.releaseMetronomePulse(connection);
     this.metronomePulseStates.delete(key);
     if (connection.targetKind === METRONOME_CONNECTION_TARGET_KINDS.looper) {
@@ -132,9 +139,18 @@ export const MetronomeConnectionRuntimeMethods = {
     }
   },
 
-  validateMetronomeConnections() {
-    for (const connection of [...this.metronomeConnectionManager.connectionsByPort.values()]) {
-      if (!this.isMetronomeConnectionUsable(connection)) {
+  validateMetronomeConnections(now = performance.now()) {
+    const lastValidation = this.lastMetronomeSafetyValidationMs;
+    if (
+      !this.metronomeConnectionsNeedValidation &&
+      Number.isFinite(lastValidation) &&
+      now - lastValidation < 250
+    ) return false;
+    this.metronomeConnectionsNeedValidation = false;
+    this.lastMetronomeSafetyValidationMs = now;
+    for (const entry of this.metronomeConnectionRuntimeEntries?.values?.() || []) {
+      const connection = entry.connection;
+      if (!this.isMetronomeConnectionUsable(connection, entry)) {
         this.metronomeConnectionManager.disconnectPort(
           connection.metronomeId,
           connection.portId,
@@ -142,19 +158,21 @@ export const MetronomeConnectionRuntimeMethods = {
         );
       }
     }
+    return true;
   },
 
   updateMetronomeConnections(now = performance.now()) {
-    for (const connection of this.metronomeConnectionManager.connectionsByPort.values()) {
+    for (const entry of this.metronomeConnectionRuntimeEntries?.values?.() || []) {
+      const connection = entry.connection;
       if (connection.targetKind === METRONOME_CONNECTION_TARGET_KINDS.honk) {
         this.updateMetronomeHonkPulse(connection, now);
       }
     }
   },
 
-  isMetronomeConnectionUsable(connection) {
-    const metronome = this.instrumentRegistry.get(connection.metronomeId);
-    const target = this.instrumentRegistry.get(connection.targetId);
+  isMetronomeConnectionUsable(connection, runtimeEntry = null) {
+    const metronome = runtimeEntry?.metronome || this.instrumentRegistry.get(connection.metronomeId);
+    const target = runtimeEntry?.target || this.instrumentRegistry.get(connection.targetId);
     return Boolean(
       metronome?.kind === "metronome" &&
       !metronome.disposed &&
@@ -165,23 +183,22 @@ export const MetronomeConnectionRuntimeMethods = {
       !target.disposed &&
       !target.pendingPlacement &&
       target.root?.visible !== false &&
-      this.resolveMetronomeConnectionTarget(connection),
+      (runtimeEntry?.endTarget || this.resolveMetronomeConnectionTarget(connection)),
     );
   },
 
   updateMetronomeConnectionWires() {
-    for (const connection of this.metronomeConnectionManager.connectionsByPort.values()) {
-      this.updateMetronomeConnectionWire(connection);
+    for (const entry of this.metronomeConnectionRuntimeEntries?.values?.() || []) {
+      this.updateMetronomeConnectionWire(entry.connection, entry);
     }
   },
 
-  updateMetronomeConnectionWire(connection) {
-    const metronome = this.instrumentRegistry.get(connection.metronomeId);
-    const target = this.instrumentRegistry.get(connection.targetId);
-    const startTarget = metronome?.getConnectionPortTarget?.(connection.portId);
-    const endTarget = this.resolveMetronomeConnectionTarget(connection);
-    if (!startTarget || !endTarget || !target) return false;
+  updateMetronomeConnectionWire(connection, runtimeEntry = null) {
     const key = this.getMetronomeConnectionRuntimeKey(connection);
+    const entry = runtimeEntry || this.metronomeConnectionRuntimeEntries?.get(key) ||
+      this.createMetronomeConnectionRuntimeEntry(connection);
+    const { metronome, target, startTarget, endTarget } = entry;
+    if (!startTarget || !endTarget || !target) return false;
     let wireMesh = this.metronomeConnectionWires.get(key);
     if (!wireMesh) {
       wireMesh = createConnectionWireMesh({
@@ -193,16 +210,20 @@ export const MetronomeConnectionRuntimeMethods = {
       });
       this.metronomeConnectionWires.set(key, wireMesh);
     }
-    return updateConnectionWireBetweenTargets({
+    return updateConnectionWireTargets(
       wireMesh,
       startTarget,
-      startOwnerRoot: metronome.root,
+      metronome.root,
       endTarget,
-      endOwnerRoot: target.root,
-    });
+      target.root,
+    );
   },
 
   resolveMetronomeConnectionTarget(connection) {
+    const cached = this.metronomeConnectionRuntimeEntries?.get(
+      this.getMetronomeConnectionRuntimeKey(connection),
+    );
+    if (cached?.endTarget) return cached.endTarget;
     const target = this.instrumentRegistry.get(connection.targetId);
     if (connection.targetKind === METRONOME_CONNECTION_TARGET_KINDS.looper) {
       return target?.tracks?.find((track) => track.trackId === connection.targetPortId)?.nodeTarget || null;
@@ -214,14 +235,39 @@ export const MetronomeConnectionRuntimeMethods = {
     return null;
   },
 
+  createMetronomeConnectionRuntimeEntry(connection) {
+    const metronome = this.instrumentRegistry.get(connection.metronomeId);
+    const target = this.instrumentRegistry.get(connection.targetId);
+    let endTarget = null;
+    if (connection.targetKind === METRONOME_CONNECTION_TARGET_KINDS.looper) {
+      for (const track of target?.tracks || []) {
+        if (track.trackId === connection.targetPortId) {
+          endTarget = track.nodeTarget || null;
+          break;
+        }
+      }
+    } else if (connection.targetKind === METRONOME_CONNECTION_TARGET_KINDS.honk) {
+      endTarget = target?.getTarget?.(HONK_METRONOME_TARGET_PORT_ID) ||
+        target?.targetsByRole?.get?.(HONK_METRONOME_TARGET_PORT_ID) || null;
+    }
+    return {
+      connection,
+      metronome,
+      target,
+      startTarget: metronome?.getConnectionPortTarget?.(connection.portId) || null,
+      endTarget,
+    };
+  },
+
   resetMetronomeConnectionRuntime({ clearRelationships = true } = {}) {
     this.cancelAllMetronomeWireInteractions();
-    for (const connection of [...this.metronomeConnectionManager.connectionsByPort.values()]) {
-      this.releaseMetronomePulse(connection);
+    for (const entry of this.metronomeConnectionRuntimeEntries?.values?.() || []) {
+      this.releaseMetronomePulse(entry.connection);
     }
     if (clearRelationships) this.metronomeConnectionManager.clear("session-reset");
     for (const wireMesh of this.metronomeConnectionWires.values()) disposeWireMesh(wireMesh);
     this.metronomeConnectionWires.clear();
+    this.metronomeConnectionRuntimeEntries?.clear();
     this.metronomePulseStates.clear();
   },
 };

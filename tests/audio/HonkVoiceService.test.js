@@ -2,175 +2,78 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { HonkVoiceService } from "../../src/audio/honk/HonkVoiceService.js";
-import { HONK_RELEASE_SETTINGS } from "../../src/config/audio.js";
 
-test("release cancels a voice whose audio context is still starting", async () => {
-  let finishAudioStart;
-  const service = new HonkVoiceService({
-    ensureAudio: () => new Promise((resolve) => { finishAudioStart = resolve; }),
-    getDestination: () => null,
-  });
-
-  const starting = service.startVoice("pending-voice");
-  assert.equal(service.startingVoices.has("pending-voice"), true);
-
-  service.releaseVoice("pending-voice");
-  finishAudioStart({});
-  await starting;
-
-  assert.equal(service.startingVoices.has("pending-voice"), false);
-  assert.equal(service.voices.has("pending-voice"), false);
-});
-
-test("release accepts fade options without leaving a voice active", () => {
-  const releases = [];
-  const service = new HonkVoiceService({
-    ensureAudio: async () => ({}),
-    getDestination: () => null,
-  });
-  service.voices.set("played-voice", {
-    release: (fadeSeconds) => releases.push(fadeSeconds),
-  });
-
-  service.releaseVoice("played-voice", { fadeSeconds: 0.03 });
-
-  assert.deepEqual(releases, [0.03]);
-  assert.equal(service.voices.has("played-voice"), false);
-  assert.equal(service.releasingVoices.get("played-voice").size, 1);
-});
-
-test("release uses the configured live fade for an empty options object", () => {
-  const releases = [];
-  const service = new HonkVoiceService({
-    ensureAudio: async () => ({}),
-    getDestination: () => null,
-  });
-  service.voices.set("played-voice", {
-    release: (fadeSeconds) => releases.push(fadeSeconds),
-  });
-
-  service.releaseVoice("played-voice", {});
-
-  assert.deepEqual(releases, [HONK_RELEASE_SETTINGS.liveFadeSeconds]);
-  assert.equal(service.voices.has("played-voice"), false);
-});
-
-test("retrigger leaves the prior release generation connected while a new voice becomes active", async () => {
-  const { service, createdVoices } = createServiceWithControllableVoices();
-
-  await service.startVoice("played-voice");
-  const priorVoice = createdVoices[0];
-  service.releaseVoice("played-voice");
-  await service.startVoice("played-voice");
-  const currentVoice = createdVoices[1];
-
-  assert.equal(priorVoice.disconnectCount, 0);
-  assert.equal(service.releasingVoices.get("played-voice").has(priorVoice), true);
-  assert.equal(service.voices.get("played-voice"), currentVoice);
-  assert.equal(priorVoice.releaseCalls.length, 1);
-});
-
-test("an old completion cannot remove newer active or releasing generations", async () => {
-  const { service, createdVoices } = createServiceWithControllableVoices();
-
-  await service.startVoice("played-voice");
-  service.releaseVoice("played-voice");
-  const oldestVoice = createdVoices[0];
-
-  await service.startVoice("played-voice");
-  service.releaseVoice("played-voice");
-  const newerRelease = createdVoices[1];
-
-  await service.startVoice("played-voice");
-  const currentVoice = createdVoices[2];
-  oldestVoice.finishRelease();
-
-  assert.equal(service.voices.get("played-voice"), currentVoice);
-  assert.deepEqual(
-    [...service.releasingVoices.get("played-voice")],
-    [newerRelease],
-  );
-
-  newerRelease.finishRelease();
-  assert.equal(service.voices.get("played-voice"), currentVoice);
-  assert.equal(service.releasingVoices.has("played-voice"), false);
-});
-
-test("multiple rapid retriggers clean up every independent release generation", async () => {
-  const { service, createdVoices } = createServiceWithControllableVoices();
-
-  for (let generation = 0; generation < 5; generation += 1) {
-    await service.startVoice("played-voice");
-    service.releaseVoice("played-voice", { fadeSeconds: 0.035 });
+test("release and rapid retrigger keep one persistent renderer", async () => {
+  const { service, createdVoices } = createService();
+  await service.startVoice("honk-a");
+  for (let generation = 0; generation < 8; generation += 1) {
+    service.releaseVoice("honk-a", { fadeSeconds: 0.01 });
+    await service.startVoice("honk-a");
   }
-
-  assert.equal(service.voices.has("played-voice"), false);
-  assert.equal(service.releasingVoices.get("played-voice").size, 5);
-
-  for (const voice of [...createdVoices].reverse()) {
-    voice.finishRelease();
-  }
-
-  assert.equal(service.voices.size, 0);
-  assert.equal(service.releasingVoices.size, 0);
-  assert.equal(service.startingVoices.size, 0);
+  assert.equal(createdVoices.length, 1);
+  assert.equal(service.voices.size, 1);
+  assert.equal(createdVoices[0].silenceCalls.length, 8);
+  assert.equal("releasingVoices" in service, false);
+  assert.equal(service.getRendererStats().totalRenderers, 1);
 });
 
-test("releaseAll releases active voices without hard-disconnecting existing tails", async () => {
-  const { service, createdVoices } = createServiceWithControllableVoices();
+test("overlapping live, looper, and metronome updates do not multiply a Honk graph", async () => {
+  const { service, createdVoices } = createService();
+  await Promise.all([
+    service.startVoice("honk-a"),
+    service.startVoice("honk-a"),
+    service.startVoice("honk-a"),
+  ]);
+  service.updateVoice("honk-a", performance(1));
+  service.updateVoice("honk-a", performance(0.5));
+  service.updateVoice("honk-a", performance(0.8));
+  assert.equal(createdVoices.length, 1);
+  assert.equal(createdVoices[0].updates.length, 3);
+});
 
-  await service.startVoice("played-voice");
-  service.releaseVoice("played-voice");
-  const priorTail = createdVoices[0];
-
-  await service.startVoice("other-voice");
-  const activeVoice = createdVoices[1];
+test("renderer count is bounded by physical Honk count", async () => {
+  const { service, createdVoices } = createService();
+  await Promise.all(Array.from({ length: 6 }, (_, index) => service.startVoice(`honk-${index}`)));
+  assert.equal(createdVoices.length, 6);
+  assert.equal(service.getRendererStats().totalRenderers, 6);
   service.releaseAll();
-
-  assert.equal(priorTail.releaseCalls.length, 1);
-  assert.equal(priorTail.disconnectCount, 0);
-  assert.equal(activeVoice.releaseCalls.length, 1);
-  assert.equal(activeVoice.disconnectCount, 0);
-  assert.equal(service.voices.size, 0);
-  assert.equal(service.releasingVoices.get("played-voice").has(priorTail), true);
-  assert.equal(service.releasingVoices.get("other-voice").has(activeVoice), true);
-
-  priorTail.finishRelease();
-  activeVoice.finishRelease();
-  assert.equal(service.releasingVoices.size, 0);
+  assert.equal(service.voices.size, 6);
+  assert.equal(createdVoices.every((voice) => voice.silenceCalls.length === 1), true);
 });
 
-test("releaseAll safely cancels pending asynchronous voice starts", async () => {
+test("dispose cancels a pending renderer start", async () => {
   let finishAudioStart;
   let createCount = 0;
   const service = new HonkVoiceService({
     ensureAudio: () => new Promise((resolve) => { finishAudioStart = resolve; }),
     getDestination: () => null,
-    createVoice: () => {
-      createCount += 1;
-      return createControllableVoice();
-    },
+    createVoice: () => { createCount += 1; return controllableVoice(); },
   });
-
-  const starting = service.startVoice("pending-voice");
-  service.releaseAll();
+  const starting = service.startVoice("honk-pending");
+  service.disposeVoice("honk-pending");
   finishAudioStart({});
   await starting;
-
   assert.equal(createCount, 0);
-  assert.equal(service.startTokens.size, 0);
-  assert.equal(service.startingVoices.size, 0);
-  assert.equal(service.voices.size, 0);
-  assert.equal(service.releasingVoices.size, 0);
+  assert.equal(service.getRendererStats().totalRenderers, 0);
 });
 
-function createServiceWithControllableVoices() {
+test("dispose is the only operation that destroys a renderer", async () => {
+  const { service, createdVoices } = createService();
+  await service.startVoice("honk-a");
+  service.releaseVoice("honk-a");
+  assert.equal(createdVoices[0].disposeCount, 0);
+  service.disposeVoice("honk-a");
+  assert.equal(createdVoices[0].disposeCount, 1);
+  assert.equal(service.voices.size, 0);
+});
+
+function createService() {
   const createdVoices = [];
   const service = new HonkVoiceService({
     ensureAudio: async () => ({ destination: {} }),
     getDestination: (context) => context.destination,
     createVoice: () => {
-      const voice = createControllableVoice();
+      const voice = controllableVoice();
       createdVoices.push(voice);
       return voice;
     },
@@ -178,24 +81,21 @@ function createServiceWithControllableVoices() {
   return { service, createdVoices };
 }
 
-function createControllableVoice() {
+function controllableVoice() {
   return {
     startCount: 0,
-    disconnectCount: 0,
-    releaseCalls: [],
-    releaseCompletion: null,
-    start() {
-      this.startCount += 1;
-    },
-    release(fadeSeconds, onEnded) {
-      this.releaseCalls.push(fadeSeconds);
-      this.releaseCompletion = onEnded;
-    },
-    finishRelease() {
-      this.releaseCompletion?.();
-    },
-    disconnect() {
-      this.disconnectCount += 1;
-    },
+    silenceCalls: [],
+    updates: [],
+    disposeCount: 0,
+    start() { this.startCount += 1; },
+    silence(seconds) { this.silenceCalls.push(seconds); },
+    update(values) { this.updates.push({ ...values }); },
+    setVowel() {},
+    setPitchBend() {},
+    dispose() { this.disposeCount += 1; },
   };
+}
+
+function performance(hornAmount) {
+  return { hornAmount, masterGain: 1, leftEar: 0, rightEar: 0, noteGain: 1, vowel: "A" };
 }

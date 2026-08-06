@@ -80,7 +80,7 @@ export class LooperController {
       );
     }
 
-    return exposeTransportState({
+    const data = exposeTransportState({
       tracks,
       timeline: new LooperTimeline(),
       playbackEngine: new LooperPlaybackEngine(),
@@ -106,6 +106,27 @@ export class LooperController {
       lastPosition: looperState.root?.position?.clone?.() || null,
       lastQuaternion: looperState.root?.quaternion?.clone?.() || null,
     });
+    data.playbackSnapshotOptions = { volume: data.volume };
+    data.playbackPercussionOptions = { volume: data.volume, looperState };
+    data.playbackHandlers = {
+      onTrackSnapshot: (trackTimeline, snapshot) => {
+        const track = this.getTrack(looperState, trackTimeline.trackIndex);
+        if (track) {
+          this.applier.applyTrackSnapshot(
+            looperState,
+            track,
+            snapshot,
+            data.playbackSnapshotOptions,
+          );
+        }
+      },
+      onDrumHit: (_trackTimeline, event) => {
+        this.adapter.playStickPercussion?.(event.value, data.playbackPercussionOptions);
+      },
+      onReleaseTrack: (trackId) => this.releaseTrackById(looperState, trackId),
+      onLoopBoundary: () => this.handleLoopBoundary(looperState),
+    };
+    return data;
   }
 
   createTimeline() {
@@ -331,32 +352,32 @@ export class LooperController {
 
   updateRecordings(looperStates, now = performance.now()) {
     for (const looperState of looperStates) {
-      const data = looperState.looperData;
-      if (!data || !looperState.root?.visible) {
-        continue;
-      }
-
-      if (data.transport.recordArmed) {
-        if (!this.hasArmedTrackOnset(data)) continue;
-        if (!this.beginArmedRecordingFromOnset(looperState, now)) continue;
-      }
-      if (!data.transport.recording) continue;
-
-      if (data.timeline.getElapsedMs(now) >= LOOPER_MAX_RECORDING_DURATION_MS) {
-        this.stopRecording(looperState, now);
-        continue;
-      }
-
-      for (const track of data.tracks) {
-        this.recorder.updateTrack(
-          data.timeline,
-          track,
-          now,
-          (honkId) => this.captureActionByHonkId(honkId),
-        );
-      }
-      this.adapter.updateVisuals?.(looperState);
+      this.updateRecording(looperState, now);
     }
+  }
+
+  updateRecording(looperState, now = performance.now()) {
+    const data = looperState?.looperData;
+    if (!data || !looperState.root?.visible) return false;
+    if (data.transport.recordArmed) {
+      if (!this.hasArmedTrackOnset(data)) return false;
+      if (!this.beginArmedRecordingFromOnset(looperState, now)) return false;
+    }
+    if (!data.transport.recording) return false;
+    if (data.timeline.getElapsedMs(now) >= LOOPER_MAX_RECORDING_DURATION_MS) {
+      this.stopRecording(looperState, now);
+      return true;
+    }
+    for (const track of data.tracks) {
+      this.recorder.updateTrack(
+        data.timeline,
+        track,
+        now,
+        (honkId) => this.captureActionByHonkId(honkId),
+      );
+    }
+    this.adapter.updateVisuals?.(looperState);
+    return true;
   }
 
   hasArmedTrackOnset(data) {
@@ -394,24 +415,9 @@ export class LooperController {
       return;
     }
 
-    const handlers = {
-      onTrackSnapshot: (trackTimeline, snapshot) => {
-        const track = this.getTrack(looperState, trackTimeline.trackIndex);
-        if (track) {
-          this.applier.applyTrackSnapshot(looperState, track, snapshot, {
-            volume: data.volume,
-          });
-        }
-      },
-      onDrumHit: (_trackTimeline, event) => {
-        this.adapter.playStickPercussion?.(event.value, {
-          volume: data.volume,
-          looperState,
-        });
-      },
-      onReleaseTrack: (trackId) => this.releaseTrackById(looperState, trackId),
-      onLoopBoundary: () => this.handleLoopBoundary(looperState),
-    };
+    data.playbackSnapshotOptions.volume = data.volume;
+    data.playbackPercussionOptions.volume = data.volume;
+    const handlers = data.playbackHandlers;
     const timing = this.getTimingForLooper(looperState, now);
     if (timing.connected) {
       if (!hasBeatGrid(timing) || !Number.isFinite(data.clockPlaybackStartBeatPosition)) return;
@@ -426,10 +432,6 @@ export class LooperController {
     data.playbackEngine.update(now, data.timeline, 1, handlers);
   }
 
-  updateAutomationAudio() {
-    this.applier.updateAudio();
-  }
-
   getTimingForLooper(looperState, now = performance.now()) {
     return this.adapter.getTimingForLooper?.(looperState?.id, now) || {
       active: false,
@@ -439,18 +441,22 @@ export class LooperController {
 
   updateClockedTransports(looperStates, now = performance.now()) {
     for (const looperState of looperStates) {
-      const data = looperState?.looperData;
-      if (!data || looperState.root?.visible === false) continue;
-      const timing = this.getTimingForLooper(looperState, now);
-      if (!timing.connected) {
-        continue;
-      }
-      data.clockMetronomeId = timing.metronomeId;
-      if (!hasBeatGrid(timing)) continue;
-      if (data.armedAction !== "record" && data.armed && this.isArmedBeatDue(data, timing)) {
-        this.launchArmedStart(looperState, timing, now);
-      }
+      this.updateClockedTransport(looperState, now);
     }
+  }
+
+  updateClockedTransport(looperState, now = performance.now()) {
+    const data = looperState?.looperData;
+    if (!data || looperState.root?.visible === false) return false;
+    const timing = this.getTimingForLooper(looperState, now);
+    if (!timing.connected) return false;
+    data.clockMetronomeId = timing.metronomeId;
+    if (!hasBeatGrid(timing)) return false;
+    if (data.armedAction !== "record" && data.armed && this.isArmedBeatDue(data, timing)) {
+      this.launchArmedStart(looperState, timing, now);
+      return true;
+    }
+    return false;
   }
 
   isArmedBeatDue(data, timing) {
@@ -507,6 +513,7 @@ export class LooperController {
   }
 
   handleLoopBoundary(looperState) {
+    this.applier.prepareLoopBoundary(looperState);
     this.adapter.updateVisuals?.(looperState);
   }
 

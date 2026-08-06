@@ -17,7 +17,10 @@ import {
   disposeWireMesh as disposeWireMeshUtility,
   updateWireMeshGeometry as updateWireMeshGeometryUtility,
 } from "../../instruments/looper/view/wireUtils.js";
-import { getWireSocketTangent } from "../../instruments/core/view/connectionWirePresentation.js";
+import {
+  getWireEndpointWorldPosition,
+  getWireSocketTangent,
+} from "../../instruments/core/view/connectionWirePresentation.js";
 
 const tempLooperCurrentPosition = new THREE.Vector3();
 const tempLooperCurrentQuaternion = new THREE.Quaternion();
@@ -58,7 +61,11 @@ export const LooperConnectionRuntimeMethods = {
         return;
       }
   
-      interaction.track.nodeTarget.getWorldPosition(tempWireStart);
+      getWireEndpointWorldPosition(
+        interaction.track.nodeTarget,
+        interaction.looperState?.root,
+        tempWireStart,
+      );
       this.setRaycasterFromController(controller);
   
       const hit = this.getCurrentHit(controller);
@@ -175,7 +182,7 @@ export const LooperConnectionRuntimeMethods = {
         return connections;
       }
   
-      for (const looperState of this.instrumentStates) {
+      for (const looperState of this.looperRuntimeStates || this.instrumentStates) {
         const data = this.getLooperData(looperState);
         if (!data || !looperState.root?.visible) {
           continue;
@@ -274,15 +281,14 @@ export const LooperConnectionRuntimeMethods = {
       }
     },
     updateLooperFollowerTransforms() {
-      for (const looperState of this.instrumentStates) {
+      for (const looperState of this.looperRuntimeStates || this.instrumentStates) {
         const data = this.getLooperData(looperState);
         if (!data || !looperState.root?.visible) {
           continue;
         }
   
-        looperState.root.updateMatrixWorld(true);
-        looperState.root.getWorldPosition(tempLooperCurrentPosition);
-        looperState.root.getWorldQuaternion(tempLooperCurrentQuaternion);
+        tempLooperCurrentPosition.copy(looperState.root.position);
+        tempLooperCurrentQuaternion.copy(looperState.root.quaternion);
   
         tempLooperPreviousPosition.copy(data.lastPosition);
         tempLooperPreviousQuaternion.copy(data.lastQuaternion);
@@ -311,37 +317,48 @@ export const LooperConnectionRuntimeMethods = {
       }
     },
     getLooperFollowerHonks(looperState) {
-      const followerHonks = new Set();
-      for (const connection of this.getLooperData(looperState)?.tracks || []) {
-        const honkState = this.resolveHonkStateById(connection.connectedHonkId);
-        if (!this.isLooperConnectableHonk(honkState)) {
-          continue;
-        }
-        for (const followerHonk of this.getLooperFollowerHonkChain(honkState)) {
-          followerHonks.add(followerHonk);
+      const data = this.getLooperData(looperState);
+      const followerHonks = data.runtimeFollowerHonks ||
+        (data.runtimeFollowerHonks = new Set());
+      followerHonks.clear();
+      for (const track of data.tracks) {
+        for (const targetId of this.getCachedLooperPlaybackTargetIds(track)) {
+          const honkState = this.resolveHonkStateById(targetId);
+          if (this.isLooperConnectableHonk(honkState)) followerHonks.add(honkState);
         }
       }
       return followerHonks;
     },
-    getLooperFollowerHonkChain(honkState) {
-      if (!this.isLooperConnectableHonk(honkState)) {
-        return [];
+    getCachedLooperPlaybackTargetIds(track, honkId = track?.connectedHonkId) {
+      if (!track || honkId === null || honkId === undefined) return [];
+      const graphRevision = this.honkContactGraph?.revision || 0;
+      if (
+        track.runtimePlaybackHonkId === honkId &&
+        track.runtimePlaybackGraphRevision === graphRevision &&
+        track.runtimePlaybackTargetIds
+      ) return track.runtimePlaybackTargetIds;
+      const targetIds = track.runtimePlaybackTargetIds || (track.runtimePlaybackTargetIds = []);
+      targetIds.length = 0;
+      const component = track.runtimePlaybackMemberIds ||
+        (track.runtimePlaybackMemberIds = new Set());
+      const queue = track.runtimePlaybackMemberQueue ||
+        (track.runtimePlaybackMemberQueue = []);
+      if (this.honkContactGraph.fillConnectedComponent) {
+        this.honkContactGraph.fillConnectedComponent(honkId, component, queue);
+      } else {
+        component.clear();
+        for (const targetId of this.honkContactGraph.getConnectedComponent(honkId)) {
+          component.add(targetId);
+        }
       }
-  
-      const chain = this.getTouchingInstrumentChain(honkState).filter((state) =>
-        this.isLooperConnectableHonk(state),
-      );
-      return chain.length > 0 ? chain : [honkState];
-    },
-    getLooperPlaybackHonkTargetIds(track, honkId = track?.connectedHonkId) {
-      const honkState = this.resolveHonkStateById(honkId);
-      return this.getLooperFollowerHonkChain(honkState)
-        .map((targetState) => targetState.id)
-        .filter((targetId) => targetId !== null && targetId !== undefined);
-    },
-    getLooperPlaybackHonkTargets(honkOrId) {
-      const honkId = this.getStableInstrumentId(honkOrId);
-      return this.getLooperFollowerHonkChain(this.resolveHonkStateById(honkId));
+      if (component.size > 0) {
+        for (const targetId of component) targetIds.push(targetId);
+      } else {
+        targetIds.push(honkId);
+      }
+      track.runtimePlaybackHonkId = honkId;
+      track.runtimePlaybackGraphRevision = graphRevision;
+      return targetIds;
     },
     isInstrumentStateCurrentlyGripped(instrumentState) {
       for (const controllerState of this.controllerStates.values()) {
@@ -352,14 +369,14 @@ export const LooperConnectionRuntimeMethods = {
       return false;
     },
     updateLooperWires() {
-      for (const looperState of this.instrumentStates) {
+      for (const looperState of this.looperRuntimeStates || this.instrumentStates) {
         const data = this.getLooperData(looperState);
         if (!data || !looperState.root?.visible) {
           continue;
         }
   
         for (const track of data.tracks) {
-          const honkState = this.resolveHonkStateById(track.connectedHonkId);
+          const honkState = this.getCachedLooperTrackHonk(track);
           if (!this.isLooperConnectableHonk(honkState)) {
             if (track.wireMesh) {
               this.disposeWireMesh(track.wireMesh);
@@ -372,14 +389,12 @@ export const LooperConnectionRuntimeMethods = {
       }
     },
     updateLooperWireForTrack(looperState, track) {
-      const honkState = this.resolveHonkStateById(track?.connectedHonkId);
+      const honkState = this.getCachedLooperTrackHonk(track);
       if (!track?.nodeTarget || !this.isLooperConnectableHonk(honkState)) {
         return;
       }
   
-      const honkTarget =
-        honkState.hitTargets?.[HONK_CONNECTION_TARGET_NAME] ||
-        honkState.getTarget?.("honk.looper-connector");
+      const honkTarget = track.runtimeConnectionTarget;
       if (!honkTarget) {
         return;
       }
@@ -392,8 +407,8 @@ export const LooperConnectionRuntimeMethods = {
         this.scene.add(track.wireMesh);
       }
   
-      track.nodeTarget.getWorldPosition(tempWireStart);
-      honkTarget.getWorldPosition(tempWireEnd);
+      getWireEndpointWorldPosition(track.nodeTarget, looperState.root, tempWireStart);
+      getWireEndpointWorldPosition(honkTarget, honkState.root, tempWireEnd);
       getWireSocketTangent(
         track.nodeTarget,
         looperState.root,
@@ -415,24 +430,49 @@ export const LooperConnectionRuntimeMethods = {
         tempWireEndTangent,
       );
     },
+    cacheLooperTrackConnectionTargets(_looperState, track) {
+      if (!track) return null;
+      const honkState = this.resolveHonkStateById(track.connectedHonkId);
+      if (!this.isLooperConnectableHonk(honkState)) {
+        track.runtimeConnectionHonkId = null;
+        track.runtimeConnectionHonk = null;
+        track.runtimeConnectionTarget = null;
+        return null;
+      }
+      track.runtimeConnectionHonkId = track.connectedHonkId;
+      track.runtimeConnectionHonk = honkState;
+      track.runtimeConnectionTarget =
+        honkState.hitTargets?.[HONK_CONNECTION_TARGET_NAME] ||
+        honkState.getTarget?.("honk.looper-connector") || null;
+      return honkState;
+    },
+    getCachedLooperTrackHonk(track) {
+      if (!track) return null;
+      if (
+        track.runtimeConnectionHonkId !== track.connectedHonkId ||
+        !this.isLooperConnectableHonk(track.runtimeConnectionHonk)
+      ) {
+        return this.cacheLooperTrackConnectionTargets(null, track);
+      }
+      return track.runtimeConnectionHonk;
+    },
     createLooperWireMaterial(color) {
       return createWireMaterial(color, this.instrumentMaterialTextures);
     },
     updateWireMeshGeometry(wireMesh, start, end, startTangent, endTangent) {
-      updateWireMeshGeometryUtility(wireMesh, start, end, {
-        startTangent,
-        endTangent,
-        settings: LOOPER_WIRE_SETTINGS,
-      });
+      const data = wireMesh.userData || (wireMesh.userData = {});
+      const options = data.looperWireUpdateOptions ||
+        (data.looperWireUpdateOptions = { settings: LOOPER_WIRE_SETTINGS });
+      options.startTangent = startTangent;
+      options.endTangent = endTangent;
+      updateWireMeshGeometryUtility(wireMesh, start, end, options);
     },
     disposeWireMesh(wireMesh) {
       disposeWireMeshUtility(wireMesh);
     },
     updateAllLooperVisuals() {
-      for (const state of this.instrumentStates) {
-        if (state.kind === "looper") {
-          this.updateLooperVisuals(state);
-        }
+      for (const state of this.looperRuntimeStates || this.instrumentStates) {
+        if (state.kind === "looper") this.updateLooperVisuals(state);
       }
     },
     updateLooperVisuals(looperState) {

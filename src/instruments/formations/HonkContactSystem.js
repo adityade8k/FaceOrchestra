@@ -18,35 +18,50 @@ export class HonkContactSystem {
     this.measurePair = measurePair;
     this.settings = { ...HONK_CONTACT_SETTINGS, ...settings };
     this.pairStates = new Map();
+    this.pairKeyCache = new Map();
+    this.candidates = [];
+    this.activeIds = new Set();
+    this.removedIds = [];
+    this.measurement = { touching: false, overlapRatio: 0, distance: 0, overlapDepth: 0 };
+    this.normalizedMeasurement = { touching: false, overlapRatio: 0 };
+    this.updateFrame = 0;
   }
 
   update(honks = null) {
-    const candidates = [...(honks || this.getHonks?.() || this.instrumentRegistry?.getByKind?.(INSTRUMENT_KINDS.honk) || [])]
-      .filter(isContactCandidate);
-    const activeIds = new Set(candidates.map((honk) => honk.id));
+    this.updateFrame += 1;
+    const candidates = this.candidates;
+    const activeIds = this.activeIds;
+    candidates.length = 0;
+    activeIds.clear();
+    const source = honks || this.getHonks?.() ||
+      this.instrumentRegistry?.getByKind?.(INSTRUMENT_KINDS.honk) || [];
+    for (const honk of source) {
+      if (!isContactCandidate(honk)) continue;
+      candidates.push(honk);
+      activeIds.add(honk.id);
+    }
 
     for (const honk of candidates) {
       this.graph.addHonk(honk.id);
     }
-    for (const honkId of [...this.graph.adjacency.keys()]) {
-      if (!activeIds.has(honkId)) {
-        this.removeHonk(honkId);
-      }
+    const removedIds = this.removedIds;
+    removedIds.length = 0;
+    for (const honkId of this.graph.adjacency.keys()) {
+      if (!activeIds.has(honkId)) removedIds.push(honkId);
     }
+    for (const honkId of removedIds) this.removeHonk(honkId);
 
-    const observedPairs = new Set();
     for (let firstIndex = 0; firstIndex < candidates.length; firstIndex += 1) {
       for (let secondIndex = firstIndex + 1; secondIndex < candidates.length; secondIndex += 1) {
         const first = candidates[firstIndex];
         const second = candidates[secondIndex];
-        const pairKey = canonicalPairKey(first.id, second.id);
-        observedPairs.add(pairKey);
+        const pairKey = this.getCachedPairKey(first.id, second.id);
         this.updatePair(pairKey, first, second);
       }
     }
 
     for (const [pairKey, state] of this.pairStates) {
-      if (!observedPairs.has(pairKey)) {
+      if (state.observedFrame !== this.updateFrame) {
         this.graph.setContact(state.firstId, state.secondId, false);
         this.pairStates.delete(pairKey);
       }
@@ -57,7 +72,14 @@ export class HonkContactSystem {
   updatePair(pairKey, first, second) {
     const firstSphere = this.getColliderSphere(first);
     const secondSphere = this.getColliderSphere(second);
-    const measurement = normalizeMeasurement(this.measurePair(first, second, firstSphere, secondSphere));
+    const measured = this.measurePair(
+      first,
+      second,
+      firstSphere,
+      secondSphere,
+      this.measurement,
+    );
+    const measurement = normalizeMeasurement(measured, this.normalizedMeasurement);
     const state = this.pairStates.get(pairKey) || {
       firstId: first.id,
       secondId: second.id,
@@ -65,7 +87,9 @@ export class HonkContactSystem {
       contactFrames: 0,
       separationFrames: 0,
       overlapRatio: 0,
+      observedFrame: 0,
     };
+    state.observedFrame = this.updateFrame;
     state.overlapRatio = measurement.overlapRatio;
 
     if (!state.touching) {
@@ -91,6 +115,22 @@ export class HonkContactSystem {
     return state;
   }
 
+  getCachedPairKey(firstId, secondId) {
+    const first = String(firstId) < String(secondId) ? firstId : secondId;
+    const second = first === firstId ? secondId : firstId;
+    let secondIds = this.pairKeyCache.get(first);
+    if (!secondIds) {
+      secondIds = new Map();
+      this.pairKeyCache.set(first, secondIds);
+    }
+    let key = secondIds.get(second);
+    if (!key) {
+      key = canonicalPairKey(first, second);
+      secondIds.set(second, key);
+    }
+    return key;
+  }
+
   removeHonk(honkId) {
     this.graph.removeHonk(honkId);
     for (const [pairKey, state] of this.pairStates) {
@@ -98,70 +138,90 @@ export class HonkContactSystem {
         this.pairStates.delete(pairKey);
       }
     }
+    this.pairKeyCache.delete(honkId);
+    for (const secondIds of this.pairKeyCache.values()) secondIds.delete(honkId);
   }
 
   reset() {
     this.pairStates.clear();
+    this.pairKeyCache.clear();
+    this.candidates.length = 0;
+    this.activeIds.clear();
+    this.removedIds.length = 0;
     this.graph.clear();
   }
 }
 
-export function measureSphereOverlap(_first, _second, firstSphere, secondSphere) {
+export function measureSphereOverlap(_first, _second, firstSphere, secondSphere, output = {}) {
   if (!firstSphere || !secondSphere) {
-    return { touching: false, overlapRatio: 0 };
+    return setMeasurement(output, false, 0, Infinity, 0);
   }
   const firstRadius = Number(firstSphere.radius);
   const secondRadius = Number(secondSphere.radius);
   if (!(firstRadius > 0) || !(secondRadius > 0)) {
-    return { touching: false, overlapRatio: 0 };
+    return setMeasurement(output, false, 0, Infinity, 0);
   }
-  const firstCenter = readPoint(firstSphere.center);
-  const secondCenter = readPoint(secondSphere.center);
-  if (!firstCenter || !secondCenter) {
-    return { touching: false, overlapRatio: 0 };
+  const firstCenter = firstSphere.center;
+  const secondCenter = secondSphere.center;
+  const firstX = readCoordinate(firstCenter, 0, "x");
+  const firstY = readCoordinate(firstCenter, 1, "y");
+  const firstZ = readCoordinate(firstCenter, 2, "z");
+  const secondX = readCoordinate(secondCenter, 0, "x");
+  const secondY = readCoordinate(secondCenter, 1, "y");
+  const secondZ = readCoordinate(secondCenter, 2, "z");
+  if (
+    !Number.isFinite(firstX) ||
+    !Number.isFinite(firstY) ||
+    !Number.isFinite(firstZ) ||
+    !Number.isFinite(secondX) ||
+    !Number.isFinite(secondY) ||
+    !Number.isFinite(secondZ)
+  ) {
+    return setMeasurement(output, false, 0, Infinity, 0);
   }
   const distance = Math.hypot(
-    firstCenter[0] - secondCenter[0],
-    firstCenter[1] - secondCenter[1],
-    firstCenter[2] - secondCenter[2],
+    firstX - secondX,
+    firstY - secondY,
+    firstZ - secondZ,
   );
   const overlapDepth = firstRadius + secondRadius - distance;
   const overlapRatio = overlapDepth / Math.max(Math.min(firstRadius, secondRadius) * 2, 0.0001);
-  return {
-    touching: overlapDepth > 0,
-    overlapRatio: Math.max(overlapRatio, 0),
-    distance,
-    overlapDepth,
-  };
+  return setMeasurement(output, overlapDepth > 0, Math.max(overlapRatio, 0), distance, overlapDepth);
 }
 
 function defaultColliderSphereResolver(honk) {
   return honk?.getSqueezeColliderSphere?.() || honk?.squeezeColliderSphere || null;
 }
 
-function normalizeMeasurement(measurement) {
+function normalizeMeasurement(measurement, output = {}) {
   if (typeof measurement === "boolean") {
-    return { touching: measurement, overlapRatio: measurement ? 1 : 0 };
+    output.touching = measurement;
+    output.overlapRatio = measurement ? 1 : 0;
+    return output;
   }
   if (typeof measurement === "number") {
-    return { touching: measurement > 0, overlapRatio: Math.max(measurement, 0) };
+    output.touching = measurement > 0;
+    output.overlapRatio = Math.max(measurement, 0);
+    return output;
   }
-  return {
-    touching: Boolean(measurement?.touching),
-    overlapRatio: Number.isFinite(measurement?.overlapRatio) ? measurement.overlapRatio : 0,
-  };
+  output.touching = Boolean(measurement?.touching);
+  output.overlapRatio = Number.isFinite(measurement?.overlapRatio)
+    ? measurement.overlapRatio
+    : 0;
+  return output;
 }
 
-function readPoint(point) {
-  if (Array.isArray(point) || ArrayBuffer.isView(point)) {
-    return point.length >= 3 ? [point[0], point[1], point[2]] : null;
-  }
-  if (typeof point?.toArray === "function") {
-    return point.toArray();
-  }
-  return [point?.x, point?.y, point?.z].every(Number.isFinite)
-    ? [point.x, point.y, point.z]
-    : null;
+function readCoordinate(point, index, key) {
+  if (Array.isArray(point) || ArrayBuffer.isView(point)) return point[index];
+  return point?.[key];
+}
+
+function setMeasurement(output, touching, overlapRatio, distance, overlapDepth) {
+  output.touching = touching;
+  output.overlapRatio = overlapRatio;
+  output.distance = distance;
+  output.overlapDepth = overlapDepth;
+  return output;
 }
 
 function isContactCandidate(honk) {

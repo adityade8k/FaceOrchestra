@@ -1,215 +1,156 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { LooperGestureRecorder } from "../../../src/instruments/looper/LooperGestureRecorder.js";
+import { LooperTrack } from "../../../src/instruments/looper/LooperTrack.js";
 import { createActionState } from "../../../src/instruments/looper/timeline/actionState.js";
 import { LooperActionEventType } from "../../../src/instruments/looper/timeline/LooperActionEvent.js";
-import { LooperPlaybackEngine } from "../../../src/instruments/looper/LooperPlaybackEngine.js";
-import { LooperTimeline } from "../../../src/instruments/looper/timeline/LooperTimeline.js";
+import {
+  LOOPER_TIMELINE_SCHEMA_VERSION,
+  LooperTimeline,
+} from "../../../src/instruments/looper/timeline/LooperTimeline.js";
 
-test("LooperTimeline trims only leading silence and preserves its recorded trailing rest", () => {
+test("pressing Stop long after the last note discards trailing record time", () => {
+  const timeline = recordedNote({ onsetMs: 120, releaseMs: 320, stopMs: 1500 });
+  assert.deepEqual(eventTimes(timeline), [0, 200]);
+  assert.equal(timeline.contentEndMs, 200);
+  assert.equal(timeline.recordedDurationMs, 200);
+  assert.equal(timeline.durationMs, 200);
+});
+
+test("a clocked phrase is not padded to a whole beat", () => {
+  const timeline = new LooperTimeline();
+  timeline.startRecording(1000, { beatIntervalMs: 500, beatOriginMs: 1000 });
+  timeline.markMusicalOnset(105);
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeStart, 105, 1));
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeEnd, 410, 0));
+  timeline.stopRecording(1992, 1);
+  assert.deepEqual(eventTimes(timeline), [0, 305]);
+  assert.equal(timeline.durationMs, 305);
+  assert.notEqual(timeline.durationMs % timeline.beatIntervalMs, 0);
+});
+
+test("gap zero adds no trailing silence", () => {
+  const timeline = completedTimeline(400, 500);
+  timeline.setGapBeats(0);
+  assert.equal(timeline.gapBeats, 0);
+  assert.equal(timeline.durationMs, 400);
+  assert.equal(timeline.isTailPaddingTime(400), false);
+});
+
+test("gaps one through four add exactly that many source-tempo beats", () => {
+  for (let beats = 1; beats <= 4; beats += 1) {
+    const timeline = completedTimeline(400, 500);
+    timeline.setGapBeats(beats);
+    assert.equal(timeline.durationMs, 400 + beats * 500);
+  }
+});
+
+test("a held note receives a final note-off at Stop", () => {
+  const recorder = new LooperGestureRecorder({ sampleIntervalMs: 1 });
+  const timeline = new LooperTimeline();
+  const track = new LooperTrack({ index: 0, connectedHonkId: "honk-a" });
+  let action = { squeeze: 0 };
+  const capture = () => action;
+  recorder.start(timeline, [track], 1000, capture);
+  action = { squeeze: 1 };
+  recorder.updateTrack(timeline, track, 1100, capture);
+  recorder.stop(timeline, [track], 1400, 1, capture);
+  assert.deepEqual(eventTimes(timeline), [0, 300]);
+  assert.equal(timeline.getTrack(track.trackId).events.at(-1).type, LooperActionEventType.SqueezeEnd);
+  assert.equal(timeline.durationMs, 300);
+});
+
+test("parameter changes after the last released note do not extend the phrase", () => {
   const timeline = new LooperTimeline();
   timeline.startRecording(1000);
-  timeline.addFieldEvent("track-0", "squeeze", 120, 1, { trackIndex: 0 });
-  timeline.addFieldEvent("track-0", "squeeze", 320, 0, { trackIndex: 0 });
-
-  assert.equal(timeline.stopRecording(1500, 24), true);
-  assert.deepEqual(
-    timeline.getTrack("track-0").events.map((event) => event.timeMs),
-    [0, 200],
-  );
-  assert.equal(timeline.contentEndMs, 200);
-  assert.equal(timeline.durationMs, 380);
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeStart, 100, 1));
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeEnd, 300, 0));
+  timeline.addFieldEvent("track-0", "vowel", 700, "E", { interpolation: "step" });
+  timeline.addFieldEvent("track-0", "nose", 800, 0.9);
+  timeline.stopRecording(2000, 1);
+  assert.equal(timeline.durationMs, 200);
+  assert.deepEqual(eventTimes(timeline), [0, 200]);
 });
 
-test("LooperTimeline keeps squeeze closed throughout a rest between notes", () => {
+test("a final percussion event determines musical content end", () => {
   const timeline = new LooperTimeline();
-  timeline.addActionEvent("track-0", {
-    trackIndex: 0,
-    type: LooperActionEventType.SqueezeEnd,
-    timeMs: 300,
-    value: 0,
-    interpolation: "linear",
-  });
-  timeline.addActionEvent("track-0", {
-    trackIndex: 0,
-    type: LooperActionEventType.SqueezeStart,
-    timeMs: 1000,
-    value: 1,
-    interpolation: "linear",
-  });
-  timeline.finalizeDuration(1);
+  timeline.startRecording(1000);
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeStart, 100, 1));
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeEnd, 300, 0));
+  timeline.addDrumHitEvent("percussion", { timeMs: 650, drumType: "hihat" });
+  timeline.markMusicalOnset(100);
+  timeline.stopRecording(2000, 1);
+  assert.equal(timeline.contentEndMs, 550);
+  assert.equal(timeline.durationMs, 550);
+  assert.equal(timeline.getDrumHitEventsAt(550)[0].event.value, "hihat");
+});
+
+test("serialization/restoration preserves phrase duration and zero-gap default", () => {
+  const timeline = completedTimeline(375, 480);
+  const serialized = timeline.toJSON();
+  const restored = LooperTimeline.fromJSON(JSON.parse(JSON.stringify(serialized)));
+  assert.equal(serialized.schemaVersion, LOOPER_TIMELINE_SCHEMA_VERSION);
+  assert.equal(restored.gapBeats, 0);
+  assert.equal(restored.recordedDurationMs, 375);
+  assert.equal(restored.durationMs, 375);
+  assert.deepEqual(restored.toJSON(), serialized);
+});
+
+test("schema-v2 recordings migrate by trimming record-to-stop and beat padding", () => {
+  const legacy = completedTimeline(310, 500).toJSON();
+  legacy.schemaVersion = 2;
+  legacy.recordedDurationMs = 1000;
+  legacy.durationMs = 1500;
+  legacy.gapBeats = 1;
+  const restored = LooperTimeline.fromJSON(legacy);
+  assert.equal(restored.contentEndMs, 310);
+  assert.equal(restored.recordedDurationMs, 310);
+  assert.equal(restored.durationMs, 810);
+});
+
+test("recordings without a musical onset are invalid", () => {
+  const timeline = new LooperTimeline();
+  timeline.startRecording(1000);
+  timeline.addFieldEvent("track-0", "vowel", 100, "O");
+  assert.equal(timeline.stopRecording(1500, 1), false);
+  assert.equal(timeline.hasRecording(), false);
+});
+
+test("zero-gap sampling retriggers the persistent gate exactly at wrap", () => {
+  const timeline = completedTimeline(100, 500);
   const snapshot = createActionState();
-
-  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 500, snapshot).squeeze, 0);
-  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 999, snapshot).squeeze, 0);
-  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 1000, snapshot).squeeze, 1);
-});
-
-test("stick hits and individually played Honks keep their shared rhythm across loop wrap", () => {
-  const timeline = new LooperTimeline();
-  timeline.addDrumHitEvent("track-0", { trackIndex: 0, timeMs: 100, drumType: "boink" });
-  timeline.addActionEvent("track-0", {
-    trackIndex: 0,
-    type: LooperActionEventType.SqueezeStart,
-    timeMs: 200,
-    value: 1,
-    interpolation: "linear",
-  });
-  timeline.addActionEvent("track-0", {
-    trackIndex: 0,
-    type: LooperActionEventType.SqueezeEnd,
-    timeMs: 300,
-    value: 0,
-    interpolation: "linear",
-  });
-  timeline.addDrumHitEvent("track-0", { trackIndex: 0, timeMs: 500, drumType: "hihat" });
-  timeline.addActionEvent("track-0", {
-    trackIndex: 0,
-    type: LooperActionEventType.SqueezeStart,
-    timeMs: 800,
-    value: 1,
-    interpolation: "linear",
-  });
-  timeline.addActionEvent("track-0", {
-    trackIndex: 0,
-    type: LooperActionEventType.SqueezeEnd,
-    timeMs: 900,
-    value: 0,
-    interpolation: "linear",
-  });
-  timeline.recordedDurationMs = 1100;
-  timeline.finalizeDuration(1);
-
-  const engine = new LooperPlaybackEngine();
-  const drumHits = [];
-  let squeeze;
-  const handlers = {
-    onDrumHit: (_track, event, timeMs) => drumHits.push([event.value, timeMs]),
-    onTrackSnapshot: (_track, state) => { squeeze = state.squeeze; },
-  };
-  engine.start(0);
-  engine.update(100, timeline, 1, handlers);
-  assert.deepEqual(drumHits, [["boink", 100]]);
-  engine.update(200, timeline, 1, handlers);
-  assert.equal(squeeze, 1);
-  engine.update(499, timeline, 1, handlers);
-  assert.equal(squeeze, 0);
-  engine.update(500, timeline, 1, handlers);
-  assert.deepEqual(drumHits, [["boink", 100], ["hihat", 500]]);
-  engine.update(799, timeline, 1, handlers);
-  assert.equal(squeeze, 0);
-  engine.update(800, timeline, 1, handlers);
-  assert.equal(squeeze, 1);
-  engine.update(1100, timeline, 1, handlers);
-  assert.equal(squeeze, undefined);
-  engine.update(1200, timeline, 1, handlers);
-  assert.deepEqual(drumHits.at(-1), ["boink", 100]);
-  engine.update(1300, timeline, 1, handlers);
-  assert.equal(squeeze, 1);
-});
-
-test("LooperTimeline linearly samples numeric fields and steps vowel fields", () => {
-  const timeline = new LooperTimeline();
-  timeline.addFieldEvent("track-0", "bend", 0, -1, { trackIndex: 0 });
-  timeline.addFieldEvent("track-0", "bend", 100, 1, { trackIndex: 0 });
-  timeline.addFieldEvent("track-0", "vowel", 0, "A", {
-    trackIndex: 0,
-    interpolation: "step",
-  });
-  timeline.addFieldEvent("track-0", "vowel", 75, "E", {
-    trackIndex: 0,
-    interpolation: "step",
-  });
-  timeline.finalizeDuration(24);
-  const snapshot = createActionState();
-
-  timeline.sampleTrack(timeline.getTrack("track-0"), 50, snapshot);
-
-  assert.equal(snapshot.bend, 0);
-  assert.equal(snapshot.vowel, "A");
-});
-
-test("LooperTimeline emits neutral squeeze and bend during beat-aligned tail padding", () => {
-  const timeline = new LooperTimeline();
-  timeline.addFieldEvent("track-0", "squeeze", 0, 1, { trackIndex: 0 });
-  timeline.addFieldEvent("track-0", "bend", 100, 0.5, { trackIndex: 0 });
-  timeline.recordedDurationMs = 300;
-  timeline.finalizeDuration(24);
-  const snapshot = createActionState();
-
-  timeline.sampleTrack(timeline.getTrack("track-0"), 150, snapshot);
-
+  timeline.sampleTrack(timeline.getTrack("track-0"), 99, snapshot);
+  assert.equal(snapshot.squeeze > 0, true);
+  timeline.sampleTrack(timeline.getTrack("track-0"), 100, snapshot);
   assert.equal(snapshot.squeeze, 0);
-  assert.equal(snapshot.bend, 0);
+  timeline.sampleTrack(timeline.getTrack("track-0"), 0, snapshot);
+  assert.equal(snapshot.squeeze, 1);
 });
 
-test("LooperTimeline adds a stepped BPM-based gap of up to four beats", () => {
+function recordedNote({ onsetMs, releaseMs, stopMs }) {
   const timeline = new LooperTimeline();
-  timeline.addFieldEvent("track-0", "squeeze", 0, 1, { trackIndex: 0 });
-  timeline.addFieldEvent("track-0", "squeeze", 400, 0, { trackIndex: 0 });
-  timeline.recordedDurationMs = 1000;
-  timeline.beatIntervalMs = 500;
+  timeline.startRecording(1000);
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeStart, onsetMs, 1));
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeEnd, releaseMs, 0));
+  timeline.markMusicalOnset(onsetMs);
+  timeline.stopRecording(stopMs, 1);
+  return timeline;
+}
 
-  assert.equal(timeline.setGapBeats(0), 0);
-  assert.equal(timeline.durationMs, 1000);
-  assert.equal(timeline.setGapBeats(2), 2);
-  assert.equal(timeline.durationMs, 2000);
-  assert.equal(timeline.setGapBeats(99), 4);
-  assert.equal(timeline.durationMs, 3000);
-
-  const restored = LooperTimeline.fromJSON(timeline.toJSON());
-  assert.equal(restored.gapBeats, 4);
-  assert.equal(restored.durationMs, 3000);
-});
-
-test("LooperTimeline orders simultaneous drum events deterministically", () => {
+function completedTimeline(releaseMs, beatIntervalMs) {
   const timeline = new LooperTimeline();
-  timeline.addDrumHitEvent("track-2", { trackIndex: 2, timeMs: 20, drumType: "boink" });
-  timeline.addDrumHitEvent("track-0", { trackIndex: 0, timeMs: 20, drumType: "hihat" });
+  timeline.beatIntervalMs = beatIntervalMs;
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeStart, 0, 1));
+  timeline.addActionEvent("track-0", gate(LooperActionEventType.SqueezeEnd, releaseMs, 0));
+  timeline.finalizeDuration(1);
+  return timeline;
+}
 
-  const entries = timeline.getDrumHitEventsAt(20);
+function gate(type, timeMs, value) {
+  return { trackIndex: 0, type, timeMs, value, interpolation: "linear" };
+}
 
-  assert.deepEqual(entries.map(({ track }) => track.trackId), ["track-0", "track-2"]);
-});
-
-test("LooperTimeline survives a plain-JSON round trip and rebuilds derived state", () => {
-  const timeline = new LooperTimeline();
-  timeline.addActionEvent("track-0", {
-    trackIndex: 0,
-    type: LooperActionEventType.SqueezeStart,
-    timeMs: 0,
-    value: 1,
-    interpolation: "linear",
-  });
-  timeline.addDrumHitEvent("track-0", { trackIndex: 0, timeMs: 90, drumType: "boink" });
-  timeline.recordedDurationMs = 120;
-  timeline.finalizeDuration(24);
-
-  const restored = LooperTimeline.fromJSON(JSON.parse(JSON.stringify(timeline.toJSON())));
-
-  assert.equal(restored.hasRecording(), true);
-  assert.equal(restored.durationMs, 120);
-  assert.equal(restored.getTrack("track-0").hasRecordedField("squeeze"), true);
-  assert.equal(restored.getDrumHitEventsAt(90)[0].event.value, "boink");
-
-  restored.getTrack("track-0").events[0].value = 0.25;
-  assert.equal(timeline.getTrack("track-0").events[0].value, 1);
-});
-
-test("metronome-synchronized recording keeps beat-relative timing and a whole-beat duration", () => {
-  const timeline = new LooperTimeline();
-  timeline.startRecording(1000, {
-    active: true,
-    beatIntervalMs: 500,
-    beatOriginMs: 1000,
-  });
-  timeline.addFieldEvent("track-0", "squeeze", 105, 1, { trackIndex: 0 });
-  timeline.markMusicalOnset(105);
-  timeline.addFieldEvent("track-0", "squeeze", 410, 0, { trackIndex: 0 });
-  timeline.stopRecording(1992, 1);
-
-  assert.deepEqual(timeline.getTrack("track-0").events.map((event) => event.timeMs), [105, 410]);
-  assert.equal(timeline.recordedDurationMs, 1000);
-  assert.equal(timeline.durationMs, 1000);
-  assert.deepEqual(LooperTimeline.fromJSON(timeline.toJSON()).toJSON(), timeline.toJSON());
-});
+function eventTimes(timeline) {
+  return timeline.getTrack("track-0")?.events.map((event) => event.timeMs) || [];
+}

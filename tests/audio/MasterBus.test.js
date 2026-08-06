@@ -54,6 +54,14 @@ class FakeDynamicsCompressorNode extends FakeAudioNode {
   }
 }
 
+class FakeWaveShaperNode extends FakeAudioNode {
+  constructor() {
+    super("waveshaper");
+    this.curve = null;
+    this.oversample = "none";
+  }
+}
+
 class FakeAudioContext {
   constructor(sampleRate = 48000) {
     this.sampleRate = sampleRate;
@@ -78,25 +86,42 @@ class FakeAudioContext {
     this.created.push(node);
     return node;
   }
+
+  createWaveShaper() {
+    const node = new FakeWaveShaperNode();
+    this.created.push(node);
+    return node;
+  }
 }
 
-test("MasterBus builds a filtered, compressed, and peak-limited signal chain", () => {
+test("MasterBus layers conservative source buses into a cohesive safety chain", () => {
   const context = new FakeAudioContext();
   const bus = new MasterBus();
 
   assert.strictEqual(bus.initialize(context), bus.input);
-  assert.deepEqual(bus.input.connections, [bus.lowpass]);
+  assert.deepEqual(bus.honkInput.connections, [bus.input]);
+  assert.deepEqual(bus.percussionInput.connections, [bus.input]);
+  assert.deepEqual(bus.metronomeInput.connections, [bus.input]);
+  assert.deepEqual(bus.input.connections, [bus.highpass]);
+  assert.deepEqual(bus.highpass.connections, [bus.lowpass]);
   assert.deepEqual(bus.lowpass.connections, [bus.compressor]);
   assert.deepEqual(bus.compressor.connections, [bus.makeup]);
-  assert.deepEqual(bus.makeup.connections, [bus.limiter]);
+  assert.deepEqual(bus.makeup.connections, [bus.saturator]);
+  assert.deepEqual(bus.saturator.connections, [bus.limiter]);
   assert.deepEqual(bus.limiter.connections, [bus.output]);
   assert.deepEqual(bus.output.connections, [context.destination]);
 
   assert.equal(bus.input.gain.value, AUDIO_MASTER_BUS_SETTINGS.inputGain);
+  assert.equal(bus.honkInput.gain.value, AUDIO_MASTER_BUS_SETTINGS.buses.honk);
+  assert.equal(bus.percussionInput.gain.value, AUDIO_MASTER_BUS_SETTINGS.buses.percussion);
+  assert.equal(bus.metronomeInput.gain.value, AUDIO_MASTER_BUS_SETTINGS.buses.metronome);
+  assert.equal(bus.highpass.type, "highpass");
   assert.equal(bus.lowpass.type, "lowpass");
   assert.equal(bus.lowpass.frequency.value, AUDIO_MASTER_BUS_SETTINGS.lowpass.frequency);
   assert.equal(bus.lowpass.Q.value, AUDIO_MASTER_BUS_SETTINGS.lowpass.q);
   assert.equal(bus.makeup.gain.value, AUDIO_MASTER_BUS_SETTINGS.makeupGain);
+  assert.equal(bus.makeup.gain.value <= 1.5, true);
+  assert.equal(bus.saturator.curve.every(Number.isFinite), true);
   assert.equal(bus.output.gain.value, AUDIO_MASTER_BUS_SETTINGS.outputGain);
   assert.equal(bus.output.gain.value <= 1, true);
 });
@@ -132,10 +157,15 @@ test("MasterBus disconnects the old graph when the audio context changes", () =>
   const bus = new MasterBus();
   bus.initialize(firstContext);
   const oldNodes = [
+    bus.honkInput,
+    bus.percussionInput,
+    bus.metronomeInput,
     bus.input,
+    bus.highpass,
     bus.lowpass,
     bus.compressor,
     bus.makeup,
+    bus.saturator,
     bus.limiter,
     bus.output,
   ];

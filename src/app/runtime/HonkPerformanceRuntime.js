@@ -15,12 +15,15 @@ const tempBendEuler = new THREE.Euler();
 
 export const HonkPerformanceRuntimeMethods = {
     updateHorn(now = performance.now()) {
-      for (const state of this.instrumentStates) {
+      for (const state of this.honkRuntimeStates || this.instrumentStates) {
+        if (state.kind !== "honk") continue;
         state.hornHolders.clear();
         state.activeBends.clear();
       }
   
-      const activeHoldInteractions = [];
+      const activeHoldInteractions = this.activeHonkHoldInteractions ||
+        (this.activeHonkHoldInteractions = []);
+      activeHoldInteractions.length = 0;
       for (const controller of this.controllers) {
         const controllerState = this.controllerStates.get(controller);
         if (controllerState?.stickActive) {
@@ -39,7 +42,11 @@ export const HonkPerformanceRuntimeMethods = {
           interaction.instrumentState?.kind === "honk" &&
           interaction.instrumentState.root?.visible
         ) {
-          activeHoldInteractions.push({ interaction, controller });
+          const entry = controllerState.runtimeDirectHonkHoldEntry ||
+            (controllerState.runtimeDirectHonkHoldEntry = {});
+          entry.interaction = interaction;
+          entry.controller = controller;
+          activeHoldInteractions.push(entry);
         }
         const looperInteractionActive =
           interaction?.type === "looperWire" ||
@@ -58,15 +65,36 @@ export const HonkPerformanceRuntimeMethods = {
         ) {
           const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState);
           if (raySqueezeInteraction) {
-            activeHoldInteractions.push({ interaction: raySqueezeInteraction, controller });
+            const entry = controllerState.runtimeRayHonkHoldEntry ||
+              (controllerState.runtimeRayHonkHoldEntry = {});
+            entry.interaction = raySqueezeInteraction;
+            entry.controller = controller;
+            activeHoldInteractions.push(entry);
           }
         }
       }
   
-      for (const { interaction, controller } of activeHoldInteractions) {
-        const chain = this.getTouchingInstrumentChain(interaction.instrumentState);
-        const playableChain = chain.filter((chainState) => chainState.isPlayable());
-        const desiredVoiceIds = new Set();
+      for (const entry of activeHoldInteractions) {
+        const { interaction, controller } = entry;
+        const playableChain = interaction.runtimePlayableChain ||
+          (interaction.runtimePlayableChain = []);
+        const memberIds = interaction.runtimeMemberIds ||
+          (interaction.runtimeMemberIds = new Set());
+        const memberQueue = interaction.runtimeMemberQueue ||
+          (interaction.runtimeMemberQueue = []);
+        this.getTouchingInstrumentChain(
+          interaction.instrumentState,
+          playableChain,
+          memberIds,
+          memberQueue,
+        );
+        const previousVoiceIds = interaction.activeVoiceIds || new Set();
+        let desiredVoiceIds = interaction.runtimeNextVoiceIds;
+        if (!desiredVoiceIds || desiredVoiceIds === previousVoiceIds) {
+          desiredVoiceIds = new Set();
+          interaction.runtimeNextVoiceIds = desiredVoiceIds;
+        }
+        desiredVoiceIds.clear();
         const bendAmount = this.getControllerRollBend(controller, interaction);
   
         for (const chainState of playableChain) {
@@ -77,7 +105,7 @@ export const HonkPerformanceRuntimeMethods = {
           chainState.startAudioVoice(voiceId);
         }
   
-        for (const activeVoiceId of interaction.activeVoiceIds || []) {
+        for (const activeVoiceId of previousVoiceIds) {
           if (!desiredVoiceIds.has(activeVoiceId)) {
             this.releaseHonkVoice(activeVoiceId);
           }
@@ -90,11 +118,12 @@ export const HonkPerformanceRuntimeMethods = {
           }
         } else {
           interaction.activeVoiceIds = desiredVoiceIds;
+          interaction.runtimeNextVoiceIds = previousVoiceIds;
         }
         interaction.activeChain = playableChain;
       }
   
-      for (const state of this.instrumentStates) {
+      for (const state of this.honkRuntimeStates || this.instrumentStates) {
         if (state.kind !== "honk") {
           continue;
         }
@@ -105,52 +134,47 @@ export const HonkPerformanceRuntimeMethods = {
         }
         const liveSqueeze = state.hornHolders.size > 0 ? 1 : 0;
         const liveBend = liveSqueeze > 0 ? THREE.MathUtils.clamp(bendSum, -1, 1) : 0;
-        state.setLivePerformance?.({
-          squeeze: liveSqueeze,
-          bend: liveBend,
-        });
+        if (state.setLiveGateAndBend) {
+          state.setLiveGateAndBend(liveSqueeze, liveBend);
+        } else {
+          const liveState = state.runtimeLiveGateState ||
+            (state.runtimeLiveGateState = { squeeze: 0, bend: 0 });
+          liveState.squeeze = liveSqueeze;
+          liveState.bend = liveBend;
+          state.setLivePerformance?.(liveState);
+        }
       }
   
       this.updateLooperPlayback(now);
       this.applyResolvedHonkPerformanceStates();
-  
-      for (const { interaction } of activeHoldInteractions) {
-        for (const synthState of interaction.activeChain || []) {
-          const voiceId = this.getInstrumentVoiceId(interaction.voiceId, synthState);
-          synthState.updateAudioVoice(voiceId, {
-            squeeze: synthState.hornSqueezeValue,
-            bend: synthState.bendValue,
-            earLeft: synthState.getEarAmount("left"),
-            earRight: synthState.getEarAmount("right"),
-            nose: synthState.getMorphValue(MORPH_TARGET_NAMES.nose),
-            vowel: synthState.currentVowelLetter,
-          }, { gain: HONK_MASTER_GAIN });
-        }
-      }
-  
-      this.updateLooperPlaybackAudio();
     },
     clearLiveHornInteractionState() {
-      for (const state of this.instrumentStates) {
+      for (const state of this.honkRuntimeStates || this.instrumentStates) {
         if (state.kind !== "honk") {
           continue;
         }
   
         state.hornHolders.clear();
         state.activeBends.clear();
-        state.setLivePerformance?.({
-          squeeze: 0,
-          bend: 0,
-        });
+        if (state.setLiveGateAndBend) {
+          state.setLiveGateAndBend(0, 0);
+        } else {
+          const liveState = state.runtimeLiveGateState ||
+            (state.runtimeLiveGateState = { squeeze: 0, bend: 0 });
+          liveState.squeeze = 0;
+          liveState.bend = 0;
+          state.setLivePerformance?.(liveState);
+        }
       }
     },
     applyResolvedHonkPerformanceStates() {
-      for (const state of this.instrumentStates) {
+      for (const state of this.honkRuntimeStates || this.instrumentStates) {
         if (state.kind !== "honk") {
           continue;
         }
   
-        const resolved = state.getResolvedPerformanceState?.();
+        const resolved = state.resolvePerformanceState?.() ||
+          state.getResolvedPerformanceState?.();
         const targetSqueeze = resolved?.squeeze ?? (state.hornHolders.size > 0 ? 1 : 0);
         const targetBend = resolved?.bend ?? 0;
   
@@ -162,21 +186,26 @@ export const HonkPerformanceRuntimeMethods = {
         state.targetBendValue = targetBend;
         state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
         if (resolved) {
-          state.applyMorphPerformanceState({
-            ...resolved,
-            squeeze: state.hornSqueezeValue,
-            bend: state.bendValue,
-          });
+          const visualState = state.resolvedVisualPerformanceState ||
+            (state.resolvedVisualPerformanceState = {});
+          visualState.squeeze = state.hornSqueezeValue;
+          visualState.bend = state.bendValue;
+          visualState.earLeft = resolved.earLeft;
+          visualState.earRight = resolved.earRight;
+          visualState.nose = resolved.nose;
+          visualState.vowel = resolved.vowel;
+          state.applyMorphPerformanceState(visualState);
           this.applyResolvedHonkMorphState(state, resolved);
         }
         this.updateBendAlignedColliders(state);
   
         const pulse = 1 + state.hornSqueezeValue * 0.035;
         this.applyInstrumentVisualScale(state, pulse);
+        state.updateResolvedAudioRenderer?.(resolved, HONK_MASTER_GAIN);
       }
     },
     releaseHonkVoice(voiceId, options = {}) {
-      for (const honk of this.instrumentRegistry.getByKind("honk")) {
+      for (const honk of this.honkRuntimeStates || this.instrumentRegistry.getByKind("honk")) {
         if (!honk.activeVoiceIds?.has(voiceId)) continue;
         honk.releaseAudioVoice(voiceId, options);
         return true;
@@ -188,16 +217,20 @@ export const HonkPerformanceRuntimeMethods = {
         return null;
       }
   
-      const live = honkState.getLivePerformanceState?.();
-      return {
-        musicalOnset: Boolean((live?.squeeze || 0) > 0 || honkState.hornHolders?.size > 0),
-        squeeze: honkState.hornSqueezeValue || 0,
-        bend: honkState.bendValue || 0,
-        earLeft: live?.earLeft ?? honkState.getEarAmount("left"),
-        earRight: live?.earRight ?? honkState.getEarAmount("right"),
-        nose: live?.nose ?? honkState.getMorphValue(MORPH_TARGET_NAMES.nose),
-        vowel: live?.vowel ?? honkState.currentVowelLetter ?? "neutral",
-      };
+      const live = honkState.readLivePerformanceState?.() ||
+        honkState.getLivePerformanceState?.();
+      const capture = honkState.looperCaptureState ||
+        (honkState.looperCaptureState = {});
+      capture.musicalOnset = Boolean(
+        (live?.squeeze || 0) > 0 || honkState.hornHolders?.size > 0,
+      );
+      capture.squeeze = honkState.hornSqueezeValue || 0;
+      capture.bend = honkState.bendValue || 0;
+      capture.earLeft = live?.earLeft ?? honkState.getEarAmount("left");
+      capture.earRight = live?.earRight ?? honkState.getEarAmount("right");
+      capture.nose = live?.nose ?? honkState.getMorphValue(MORPH_TARGET_NAMES.nose);
+      capture.vowel = live?.vowel ?? honkState.currentVowelLetter ?? "neutral";
+      return capture;
     },
     setHonkAutomationLayer(honkState, layerId, snapshot) {
       if (!honkState?.setAutomationLayer) {
@@ -210,24 +243,6 @@ export const HonkPerformanceRuntimeMethods = {
     },
     getLooperAutomationLayerId(looperState, track) {
       return `looper-${looperState.id}:track-${track.index}`;
-    },
-    getLooperActionVoiceId(looperState, track, honkState) {
-      return `${this.getLooperAutomationLayerId(looperState, track)}:instrument-${honkState.id}:action`;
-    },
-    updateLooperActionVoice(voiceId, honkState, snapshot, volume) {
-      if (honkState?.kind !== "honk" || !honkState.root?.visible) {
-        this.releaseHonkVoice(voiceId);
-        return;
-      }
-  
-      honkState.updateAudioVoice(voiceId, {
-        squeeze: THREE.MathUtils.clamp(snapshot.squeeze || 0, 0, 1),
-        bend: honkState.bendValue,
-        earLeft: honkState.getEarAmount("left"),
-        earRight: honkState.getEarAmount("right"),
-        nose: honkState.getMorphValue(MORPH_TARGET_NAMES.nose),
-        vowel: honkState.currentVowelLetter,
-      }, { gain: HONK_MASTER_GAIN * volume });
     },
     applyResolvedHonkMorphState(honkState, resolved) {
       this.applyVowelLetterToState(resolved.vowel, honkState, { updateLiveState: false, updateAudio: false });
@@ -294,15 +309,16 @@ export const HonkPerformanceRuntimeMethods = {
         return null;
       }
   
-      return {
-        type: "holdSqueeze",
-        targetName: INTERACTION_TARGET_NAMES.horn,
-        instrumentState,
-        voiceId: controllerState.raySqueezeVoiceId || this.getControllerVoiceId(controller),
-        activeVoiceIds: controllerState.raySqueezeActiveVoiceIds,
-        bendStartInverseQuaternion: controllerState.raySqueezeStartInverseQuaternion,
-        isRaySqueeze: true,
-      };
+      const interaction = controllerState.raySqueezeInteraction ||
+        (controllerState.raySqueezeInteraction = {});
+      interaction.type = "holdSqueeze";
+      interaction.targetName = INTERACTION_TARGET_NAMES.horn;
+      interaction.instrumentState = instrumentState;
+      interaction.voiceId = controllerState.raySqueezeVoiceId || this.getControllerVoiceId(controller);
+      interaction.activeVoiceIds = controllerState.raySqueezeActiveVoiceIds;
+      interaction.bendStartInverseQuaternion = controllerState.raySqueezeStartInverseQuaternion;
+      interaction.isRaySqueeze = true;
+      return interaction;
     },
     updateBendAlignedColliders(state) {
       if (!state.bendAlignedColliderGroup) {
@@ -319,12 +335,22 @@ export const HonkPerformanceRuntimeMethods = {
       tempBendEuler.setFromQuaternion(tempBendQuaternion, "XYZ");
       return THREE.MathUtils.clamp(tempBendEuler.z * BEND_SENSITIVITY, -1, 1);
     },
-    getTouchingInstrumentChain(startState) {
-      if (startState?.kind !== "honk") return [];
-      const memberIds = this.honkContactGraph.getConnectedComponent(startState.id);
+    getTouchingInstrumentChain(startState, output = [], memberIds = new Set(), queue = []) {
+      output.length = 0;
+      if (startState?.kind !== "honk") return output;
+      if (this.honkContactGraph.fillConnectedComponent) {
+        this.honkContactGraph.fillConnectedComponent(startState.id, memberIds, queue);
+      } else {
+        memberIds.clear();
+        for (const id of this.honkContactGraph.getConnectedComponent(startState.id)) {
+          memberIds.add(id);
+        }
+      }
       if (memberIds.size === 0 && startState.root?.visible) memberIds.add(startState.id);
-      return [...memberIds]
-        .map((id) => this.instrumentRegistry.get(id))
-        .filter((honk) => honk?.kind === "honk" && honk.root?.visible);
+      for (const id of memberIds) {
+        const honk = this.instrumentRegistry.get(id);
+        if (honk?.kind === "honk" && honk.root?.visible && honk.isPlayable()) output.push(honk);
+      }
+      return output;
     },
 };

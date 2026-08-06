@@ -1,7 +1,18 @@
-export const HONK_MASTER_GAIN = 0.78;
+export const HONK_MASTER_GAIN = 0.62;
 export const HONK_NOTE_GAIN_SETTINGS = Object.freeze({
   minimumAtMaxNose: 0.22,
   smoothingSeconds: 0.035,
+});
+export const HONK_AUTOMATION_SETTINGS = Object.freeze({
+  gateAttackSeconds: 0.006,
+  gateReleaseSeconds: 0.01,
+  retriggerDipSeconds: 0.003,
+  parameterSmoothingSeconds: 0.012,
+  pitchSmoothingSeconds: 0.012,
+  detuneSmoothingSeconds: 0.012,
+  formantCrossfadeSeconds: 0.012,
+  disposeFadeSeconds: 0.012,
+  maxRetiringFormantBanks: 2,
 });
 
 export function getHonkNoteGainFromNose(nose = 0) {
@@ -19,32 +30,48 @@ export const LOOPER_ACTION_RELEASE_FADE_SECONDS =
   HONK_RELEASE_SETTINGS.looperActionFadeSeconds;
 
 export const AUDIO_MASTER_BUS_SETTINGS = {
-  inputGain: 0.9,
+  // Conservative source-bus trims leave roughly 6 dB of mix headroom before
+  // dynamics. Makeup stays at unity so the limiter catches rare peaks instead
+  // of supplying normal program loudness.
+  inputGain: 0.78,
+  buses: {
+    honk: 0.62,
+    percussion: 0.48,
+    metronome: 0.24,
+  },
+  highpass: {
+    frequency: 18,
+    q: 0.707,
+  },
   lowpass: {
-    frequency: 14000,
+    frequency: 15500,
     q: 0.707,
   },
   compressor: {
-    threshold: -18,
-    knee: 18,
-    ratio: 8,
-    attack: 0.004,
-    release: 0.18,
+    threshold: -12,
+    knee: 12,
+    ratio: 2.5,
+    attack: 0.012,
+    release: 0.16,
   },
-  makeupGain: 6.56,
+  makeupGain: 1,
+  saturation: {
+    enabled: true,
+    drive: 1.15,
+  },
   limiter: {
-    threshold: -1,
+    threshold: -1.5,
     knee: 0,
     ratio: 20,
     attack: 0.001,
-    release: 0.08,
+    release: 0.06,
   },
-  outputGain: 0.94,
+  outputGain: 0.92,
 };
 
 export const VOICE_GAIN_SETTINGS = {
-  baseGain: 0.42,
-  outputGain: 0.9,
+  baseGain: 0.3,
+  outputGain: 0.84,
   toneLowpassFrequency: 3200,
   toneLowpassQ: 0.45,
 };

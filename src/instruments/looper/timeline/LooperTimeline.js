@@ -1,7 +1,7 @@
 import { resetActionState } from "./actionState.js";
 import { LooperTrackTimeline } from "./LooperTrackTimeline.js";
 
-export const LOOPER_TIMELINE_SCHEMA_VERSION = 2;
+export const LOOPER_TIMELINE_SCHEMA_VERSION = 3;
 export const LooperTimingMode = Object.freeze({
   Ordinary: "ordinary",
   Metronome: "metronome",
@@ -48,28 +48,21 @@ export class LooperTimeline {
       return this.hasRecording();
     }
 
-    const elapsedMs = this.getElapsedMs(now);
     this.recording = false;
-    if (
-      this.timingMode === LooperTimingMode.Metronome &&
-      !Number.isFinite(this.firstOnsetElapsedMs)
-    ) {
+    const firstMusicalOnsetMs = Number.isFinite(this.firstOnsetElapsedMs)
+      ? this.firstOnsetElapsedMs
+      : this.getFirstMusicalOnsetMs();
+    if (!Number.isFinite(firstMusicalOnsetMs)) {
       this.tracks.clear();
       this.recordedDurationMs = 0;
       this.contentEndMs = 0;
       this.durationMs = 0;
       return false;
     }
-    if (this.timingMode === LooperTimingMode.Metronome) {
-      this.recordedDurationMs = this.quantizeDurationToBeats(
-        Math.max(elapsedMs, this.getContentEndMs()),
-      );
-    } else {
-      const firstActionMs = this.getFirstActionMs();
-      const leadingSilenceMs = Number.isFinite(firstActionMs) ? Math.max(firstActionMs, 0) : 0;
-      this.normalizeToFirstAction();
-      this.recordedDurationMs = Math.max(elapsedMs - leadingSilenceMs, 0);
-    }
+    this.normalizeToFirstMusicalOnset(firstMusicalOnsetMs);
+    this.contentEndMs = this.getMusicalContentEndMs();
+    this.discardEventsAfter(this.contentEndMs);
+    this.recordedDurationMs = this.contentEndMs;
     this.finalizeDuration(minDurationMs);
     this.sortTracks();
     return this.hasRecording();
@@ -222,15 +215,9 @@ export class LooperTimeline {
   }
 
   finalizeDuration(minDurationMs = 1) {
-    this.contentEndMs = this.getContentEndMs();
-    const unalignedBaseDurationMs = Math.max(
-      this.recordedDurationMs || this.contentEndMs,
-      this.contentEndMs,
-      minDurationMs,
-    );
-    const baseDurationMs = this.timingMode === LooperTimingMode.Metronome
-      ? this.quantizeDurationToBeats(unalignedBaseDurationMs)
-      : unalignedBaseDurationMs;
+    this.contentEndMs = this.getMusicalContentEndMs();
+    this.recordedDurationMs = this.contentEndMs;
+    const baseDurationMs = Math.max(this.contentEndMs, minDurationMs);
     const gapDurationMs = this.gapBeats * (this.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
     this.durationMs = this.getActiveTrackCount() > 0
       ? baseDurationMs + gapDurationMs
@@ -243,19 +230,26 @@ export class LooperTimeline {
     return this.gapBeats;
   }
 
-  quantizeDurationToBeats(durationMs, beatIntervalMs = this.beatIntervalMs) {
-    if (!(beatIntervalMs > 0)) return Math.max(durationMs, 0);
-    return Math.max(Math.ceil(durationMs / beatIntervalMs - 1e-9), 1) * beatIntervalMs;
+  getContentEndMs() {
+    return this.getMusicalContentEndMs();
   }
 
-  getContentEndMs() {
+  getMusicalContentEndMs() {
     let endMs = 0;
     for (const track of this.tracks.values()) {
       if (track.active) {
-        endMs = Math.max(endMs, track.getContentEndMs());
+        endMs = Math.max(endMs, track.getMusicalContentEndMs());
       }
     }
     return endMs;
+  }
+
+  getFirstMusicalOnsetMs() {
+    let firstOnsetMs = Infinity;
+    for (const track of this.tracks.values()) {
+      firstOnsetMs = Math.min(firstOnsetMs, track.getFirstMusicalOnsetMs());
+    }
+    return firstOnsetMs;
   }
 
   getFirstActionMs() {
@@ -268,14 +262,19 @@ export class LooperTimeline {
     return firstActionMs;
   }
 
-  normalizeToFirstAction() {
-    const firstActionMs = this.getFirstActionMs();
-    if (!Number.isFinite(firstActionMs) || firstActionMs <= 0) {
+  normalizeToFirstMusicalOnset(firstOnsetMs = this.getFirstMusicalOnsetMs()) {
+    if (!Number.isFinite(firstOnsetMs) || firstOnsetMs <= 0) {
       return;
     }
     for (const track of this.tracks.values()) {
-      track.normalize(firstActionMs);
+      track.discardEventsBefore(firstOnsetMs);
+      track.normalize(firstOnsetMs);
     }
+  }
+
+
+  discardEventsAfter(timeMs) {
+    for (const track of this.tracks.values()) track.discardEventsAfter(timeMs);
   }
 
   sortTracks() {
@@ -329,10 +328,6 @@ export class LooperTimeline {
       }
     }
 
-    timeline.recordedDurationMs = Math.max(
-      Number.isFinite(serialized.recordedDurationMs) ? serialized.recordedDurationMs : 0,
-      0,
-    );
     timeline.beatIntervalMs = Math.max(
       Number.isFinite(serialized.beatIntervalMs) ? serialized.beatIntervalMs : 0,
       0,
@@ -344,21 +339,12 @@ export class LooperTimeline {
       ? { ...serialized.beatAnalysis }
       : null;
     timeline.gapBeats = Math.min(Math.max(Math.round(serialized.gapBeats || 0), 0), 4);
-    timeline.contentEndMs = timeline.getContentEndMs();
-    const minimumSerializedDuration = Number.isFinite(serialized.durationMs)
-      ? Math.max(serialized.durationMs, 0)
-      : 0;
+    timeline.contentEndMs = timeline.getMusicalContentEndMs();
+    timeline.recordedDurationMs = timeline.contentEndMs;
+    timeline.discardEventsAfter(timeline.contentEndMs);
     const gapDurationMs = timeline.gapBeats * (timeline.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
-    const baseDurationMs = Math.max(
-      timeline.contentEndMs,
-      timeline.recordedDurationMs,
-      minimumSerializedDuration - gapDurationMs,
-    );
-    const alignedBaseDurationMs = timeline.timingMode === LooperTimingMode.Metronome
-      ? timeline.quantizeDurationToBeats(baseDurationMs)
-      : baseDurationMs;
     timeline.durationMs = timeline.getActiveTrackCount() > 0
-      ? alignedBaseDurationMs + gapDurationMs
+      ? Math.max(timeline.contentEndMs, 1) + gapDurationMs
       : 0;
     timeline.startedAtMs = 0;
     timeline.recording = false;

@@ -5,8 +5,9 @@ import { migrateSceneData } from "../../src/persistence/migrations/index.js";
 import { SceneRestorer } from "../../src/persistence/SceneRestorer.js";
 import { SceneSerializer } from "../../src/persistence/SceneSerializer.js";
 import { MetronomeConnectionManager } from "../../src/instruments/metronome/MetronomeConnectionManager.js";
+import { LooperTimeline } from "../../src/instruments/looper/timeline/LooperTimeline.js";
 
-test("v1 scenes migrate through the stable-ID schema to v3 without inventing relationships", () => {
+test("v1 scenes migrate through the stable-ID schema to v4 without inventing relationships", () => {
   const migrated = migrateSceneData({
     version: 1,
     instruments: [
@@ -15,7 +16,7 @@ test("v1 scenes migrate through the stable-ID schema to v3 without inventing rel
     ],
   });
 
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.deepEqual(migrated.instruments.map(({ id, kind }) => ({ id, kind })), [
     { id: "honk-1", kind: "honk" },
     { id: "looper-2", kind: "looper" },
@@ -26,7 +27,7 @@ test("v1 scenes migrate through the stable-ID schema to v3 without inventing rel
   assert.equal(migrated.instruments[1].appearance.locked, true);
 });
 
-test("v2-to-v3 migration preserves Gap, drops user speed, and adds Metronome relationships", () => {
+test("v2-to-v4 migration preserves Gap, drops user speed, and adds Metronome relationships", () => {
   const source = {
     schemaVersion: 2,
     instruments: [{
@@ -38,10 +39,46 @@ test("v2-to-v3 migration preserves Gap, drops user speed, and adds Metronome rel
   };
   const migrated = migrateSceneData(source);
 
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.deepEqual(migrated.instruments[0].controls, { volume: 0.25, gap: 0.5 });
   assert.deepEqual(migrated.relationships.metronomeConnections, []);
   assert.equal(source.instruments[0].controls.speed, -0.75);
+});
+
+test("v3-to-v4 migration derives phrase-end timing and discards legacy tail padding on restore", () => {
+  const source = {
+    schemaVersion: 3,
+    instruments: [{
+      id: "looper-current-schema",
+      kind: "looper",
+      controls: { volume: 0, gap: -1 },
+      timeline: {
+        schemaVersion: 2,
+        durationMs: 1000,
+        recordedDurationMs: 1000,
+        beatIntervalMs: 500,
+        gapBeats: 0,
+        tracks: [{
+          trackId: "track-0",
+          trackIndex: 0,
+          events: [
+            { id: 1, type: "squeezeStart", timeMs: 0, value: 1 },
+            { id: 2, type: "squeezeEnd", timeMs: 310, value: 0 },
+            { id: 3, type: "vowel", timeMs: 900, value: "O" },
+          ],
+        }],
+      },
+    }],
+    relationships: { honkLocks: [], looperConnections: [], metronomeConnections: [] },
+  };
+  const migrated = migrateSceneData(source);
+  const restoredTimeline = LooperTimeline.fromJSON(migrated.instruments[0].timeline);
+  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.instruments[0].timeline.schemaVersion, 3);
+  assert.equal(restoredTimeline.contentEndMs, 310);
+  assert.equal(restoredTimeline.durationMs, 310);
+  assert.equal(restoredTimeline.getTrack("track-0").events.some(({ timeMs }) => timeMs === 900), false);
+  assert.equal(source.instruments[0].timeline.durationMs, 1000);
 });
 
 test("serializer returns plain JSON and persists relationships by ID", () => {

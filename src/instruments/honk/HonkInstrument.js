@@ -46,6 +46,10 @@ export class HonkInstrument extends InstrumentEntity {
     this.tuning = createHonkTuning(tuning);
     this.noteLabelView = noteLabelView;
     this.activeVoiceIds = new Set();
+    this.audioRendererId = `honk-${this.id}`;
+    this.audioPerformanceState = createAudioPerformanceState();
+    this.audioTuning = { ...this.tuning, pitchSnap: this.tuning.pitchSnap || null };
+    this.audioRetriggerToken = 0;
     this.targetsByRole = new Map();
     this.lastResolvedPerformance = this.performance.getResolvedSnapshot();
     this.squeezeCollider = null;
@@ -129,12 +133,24 @@ export class HonkInstrument extends InstrumentEntity {
     return this.performance.setLiveState(values);
   }
 
+  setLiveGateAndBend(squeeze, bend) {
+    return this.performance.setLiveGateAndBend(squeeze, bend);
+  }
+
   getLivePerformanceState() {
     return this.performance.getLiveSnapshot();
   }
 
+  readLivePerformanceState() {
+    return this.performance.live;
+  }
+
   getResolvedPerformanceState() {
     return this.performance.getResolvedSnapshot();
+  }
+
+  resolvePerformanceState() {
+    return this.performance.resolve();
   }
 
   clearLiveInteractions() {
@@ -155,6 +171,7 @@ export class HonkInstrument extends InstrumentEntity {
       octaveControl: side === "right" ? value : this.tuning.octaveControl,
       note: null,
     });
+    copyTuning(this.audioTuning, this.tuning, this.pitchSnap);
     this.noteLabelView?.update?.(this);
   }
 
@@ -197,8 +214,8 @@ export class HonkInstrument extends InstrumentEntity {
     return this.setVowel(VOWELS[(currentIndex + 1) % VOWELS.length]);
   }
 
-  setAutomationLayer(layerId, snapshot) {
-    return this.performance.setAutomationLayer(layerId, snapshot);
+  setAutomationLayer(layerId, snapshot, options = {}) {
+    return this.performance.setAutomationLayer(layerId, snapshot, options);
   }
 
   clearAutomationLayer(layerId) {
@@ -207,6 +224,7 @@ export class HonkInstrument extends InstrumentEntity {
 
   applyTuning(tuning) {
     this.tuning = createHonkTuning(tuning);
+    copyTuning(this.audioTuning, this.tuning, this.pitchSnap);
     this.performance.setLiveState({
       earLeft: this.tuning.pitchControl,
       earRight: this.tuning.octaveControl,
@@ -227,9 +245,7 @@ export class HonkInstrument extends InstrumentEntity {
 
   updatePerformance() {
     const resolved = this.resolvePerformance();
-    for (const voiceId of this.activeVoiceIds) {
-      this.updateAudioVoice(voiceId, resolved);
-    }
+    this.updateResolvedAudioRenderer(resolved);
     return resolved;
   }
 
@@ -243,8 +259,9 @@ export class HonkInstrument extends InstrumentEntity {
   }
 
   startAudioVoice(voiceId) {
+    if (!voiceId || this.activeVoiceIds.has(voiceId)) return null;
     this.activeVoiceIds.add(voiceId);
-    return this.voiceService?.startVoice?.(voiceId, this.tuning, this);
+    return this.ensureAudioRenderer();
   }
 
   releaseVoice(sourceId = "main") {
@@ -257,28 +274,59 @@ export class HonkInstrument extends InstrumentEntity {
     this.releaseAudioVoice(voiceId);
   }
 
-  updateAudioVoice(voiceId, performanceState, { gain = HONK_MASTER_GAIN } = {}) {
+  updateAudioVoice(voiceId, performanceState, options = HONK_MASTER_GAIN) {
     if (!voiceId || !this.activeVoiceIds.has(voiceId)) return;
-    const tuning = {
-      ...this.tuning,
-      pitchSnap: this.pitchSnap || this.tuning.pitchSnap || null,
-    };
-    this.voiceService?.updateVoice?.(voiceId, performanceState, tuning, { gain }, this);
+    return this.updateAudioRenderer(performanceState, options);
   }
 
-  releaseAudioVoice(voiceId, options = {}) {
+  ensureAudioRenderer() {
+    return this.voiceService?.startVoice?.(this.audioRendererId, this.tuning, this);
+  }
+
+  updateResolvedAudioRenderer(
+    performanceState = this.getResolvedPerformanceState(),
+    options = HONK_MASTER_GAIN,
+  ) {
+    const gain = typeof options === "number" ? options : options?.gain ?? HONK_MASTER_GAIN;
+    const audioMix = this.performance.resolveAudioMix();
+    const audioState = this.audioPerformanceState;
+    copyAudioPerformanceState(audioState, performanceState);
+    audioState.squeeze = audioMix.gate;
+    audioState.retriggerToken = this.audioRetriggerToken;
+    return this.updateAudioRenderer(audioState, gain);
+  }
+
+  updateAudioRenderer(performanceState, options = HONK_MASTER_GAIN) {
+    const gain = typeof options === "number" ? options : options?.gain ?? HONK_MASTER_GAIN;
+    this.audioTuning.pitchSnap = this.pitchSnap || this.tuning.pitchSnap || null;
+    return this.voiceService?.updateVoice?.(
+      this.audioRendererId,
+      performanceState,
+      this.audioTuning,
+      gain,
+      this,
+    );
+  }
+
+  requestAudioRetrigger() {
+    if ((this.performance.live.squeeze || 0) > 0.025) return false;
+    this.audioRetriggerToken += 1;
+    return true;
+  }
+
+  releaseAudioVoice(voiceId, _options = {}) {
     if (!voiceId) return;
     this.activeVoiceIds.delete(voiceId);
-    this.voiceService?.releaseVoice?.(voiceId, options);
   }
 
   releaseAllAudioVoices() {
-    for (const voiceId of [...this.activeVoiceIds]) this.releaseAudioVoice(voiceId);
+    this.activeVoiceIds.clear();
+    this.voiceService?.releaseVoice?.(this.audioRendererId);
   }
 
   setAudioVowel(vowel) {
     const normalized = vowel && vowel !== "neutral" ? vowel : "A";
-    for (const voiceId of this.activeVoiceIds) this.voiceService?.setVoiceVowel?.(voiceId, normalized);
+    this.voiceService?.setVoiceVowel?.(this.audioRendererId, normalized);
   }
 
   getSqueezeColliderSphere() {
@@ -321,6 +369,7 @@ export class HonkInstrument extends InstrumentEntity {
       return;
     }
     this.releaseAllAudioVoices();
+    this.voiceService?.disposeVoice?.(this.audioRendererId);
     this.performance.clearAutomationLayers();
     this.performance.clearLiveInteractions();
     this.noteLabelView?.dispose?.();
@@ -329,6 +378,38 @@ export class HonkInstrument extends InstrumentEntity {
     this.targetsByRole.clear();
     super.dispose();
   }
+}
+
+function createAudioPerformanceState() {
+  return {
+    squeeze: 0,
+    bend: 0,
+    earLeft: 0,
+    earRight: 0,
+    nose: 0,
+    vowel: "neutral",
+    retriggerToken: 0,
+  };
+}
+
+function copyAudioPerformanceState(target, source = {}) {
+  target.squeeze = source.squeeze ?? 0;
+  target.bend = source.bend ?? 0;
+  target.earLeft = source.earLeft ?? 0;
+  target.earRight = source.earRight ?? 0;
+  target.nose = source.nose ?? 0;
+  target.vowel = source.vowel ?? "neutral";
+  target.retriggerToken = source.retriggerToken ?? target.retriggerToken ?? 0;
+  return target;
+}
+
+function copyTuning(target, source, pitchSnapOverride = null) {
+  for (const key of Object.keys(target)) {
+    if (!(key in source) && key !== "pitchSnap") delete target[key];
+  }
+  for (const key of Object.keys(source)) target[key] = source[key];
+  target.pitchSnap = pitchSnapOverride || source.pitchSnap || null;
+  return target;
 }
 
 function disposeOwnedResources(root) {

@@ -405,7 +405,7 @@ export const HonkPresentationRuntimeMethods = {
     applyVowelLetterToState(
       vowelLetter,
       state = this.activeInstrumentState,
-      { updateLiveState = true, updateAudio = true } = {},
+      { updateLiveState = true, updateAudio = false } = {},
     ) {
       if (!state) {
         return;

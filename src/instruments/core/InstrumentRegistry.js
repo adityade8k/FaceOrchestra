@@ -5,6 +5,7 @@ export class InstrumentRegistry {
   constructor() {
     this.instruments = new Map();
     this.idsByKind = new Map();
+    this.instrumentsByKind = new Map();
     this.idByRoot = new WeakMap();
     this.listeners = new Set();
   }
@@ -29,6 +30,12 @@ export class InstrumentRegistry {
       this.idsByKind.set(instrument.kind, kindIds);
     }
     kindIds.add(instrument.id);
+    let kindInstruments = this.instrumentsByKind.get(instrument.kind);
+    if (!kindInstruments) {
+      kindInstruments = [];
+      this.instrumentsByKind.set(instrument.kind, kindInstruments);
+    }
+    kindInstruments.push(instrument);
 
     if (initialize && instrument.lifecycle === INSTRUMENT_LIFECYCLE.created) {
       instrument.initialize?.();
@@ -51,6 +58,10 @@ export class InstrumentRegistry {
     if (kindIds?.size === 0) {
       this.idsByKind.delete(instrument.kind);
     }
+    const kindInstruments = this.instrumentsByKind.get(instrument.kind);
+    const kindIndex = kindInstruments?.indexOf(instrument) ?? -1;
+    if (kindIndex >= 0) kindInstruments.splice(kindIndex, 1);
+    if (kindInstruments?.length === 0) this.instrumentsByKind.delete(instrument.kind);
     this.emit({ type: "instrument.removed", instrument, instrumentId: instrument.id });
     if (dispose) {
       instrument.dispose?.();
@@ -67,9 +78,7 @@ export class InstrumentRegistry {
   }
 
   getByKind(kind) {
-    return [...(this.idsByKind.get(kind) || [])]
-      .map((instrumentId) => this.instruments.get(instrumentId))
-      .filter(Boolean);
+    return this.instrumentsByKind.get(kind) || EMPTY_INSTRUMENTS;
   }
 
   getByCapability(capability) {
@@ -129,3 +138,5 @@ export class InstrumentRegistry {
     }
   }
 }
+
+const EMPTY_INSTRUMENTS = Object.freeze([]);

@@ -17,7 +17,7 @@ const smartTiming = {
   nearestBeatMs: 1000,
 };
 
-test("clocked recording preserves event timing from the launch beat", () => {
+test("clocked recording trims launch-alignment time before its first onset", () => {
   const recorder = new LooperGestureRecorder({ sampleIntervalMs: 1 });
   const timeline = new LooperTimeline();
   const track = new LooperTrack({ index: 0, connectedHonkId: "honk-1" });
@@ -35,9 +35,9 @@ test("clocked recording preserves event timing from the launch beat", () => {
   recorder.updateTrack(timeline, track, 1275, capture);
   recorder.stop(timeline, [track], 1600, 1, capture);
 
-  assert.deepEqual(timeline.getTrack(track.trackId).events.map((event) => event.timeMs), [50, 275]);
-  assert.equal(timeline.contentEndMs, 275);
-  assert.equal(timeline.durationMs, 1000);
+  assert.deepEqual(timeline.getTrack(track.trackId).events.map((event) => event.timeMs), [0, 225]);
+  assert.equal(timeline.contentEndMs, 225);
+  assert.equal(timeline.durationMs, 225);
 });
 
 test("clocked recording rejects recordings with no musical onset", () => {
@@ -53,7 +53,7 @@ test("clocked recording rejects recordings with no musical onset", () => {
   action = { squeeze: 0 };
   recorder.updateTrack(timeline, track, 1100, capture);
   assert.equal(recorder.stop(timeline, [track], 1500, 1, capture), true);
-  assert.equal(timeline.durationMs, 1000);
+  assert.equal(timeline.durationMs, 125);
 
   const empty = new LooperTimeline();
   recorder.start(empty, [track], 2000, capture, smartTiming);
@@ -120,6 +120,6 @@ test("percussion timing stays relative to a clocked loop's launch beat", () => {
   timeline.addDrumHitEvent("percussion", { timeMs: 410, drumType: "hihat" });
   timeline.stopRecording(1800, 1);
 
-  assert.equal(timeline.contentEndMs, 410);
-  assert.equal(timeline.durationMs, 1000);
+  assert.equal(timeline.contentEndMs, 290);
+  assert.equal(timeline.durationMs, 290);
 });

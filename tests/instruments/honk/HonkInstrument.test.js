@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { HonkInstrument } from "../../../src/instruments/honk/HonkInstrument.js";
 
-test("honk owns stable live and automation audio voice routing", () => {
+test("one physical Honk routes every logical source through one renderer ID", () => {
   const calls = [];
   const voiceService = {
     startVoice: (voiceId) => calls.push(["start", voiceId]),
@@ -11,6 +11,7 @@ test("honk owns stable live and automation audio voice routing", () => {
       calls.push(["update", voiceId, performance, tuning, options]),
     setVoiceVowel: (voiceId, vowel) => calls.push(["vowel", voiceId, vowel]),
     releaseVoice: (voiceId) => calls.push(["release", voiceId]),
+    disposeVoice: (voiceId) => calls.push(["dispose", voiceId]),
   };
   const honk = new HonkInstrument({
     id: "honk-audio",
@@ -20,8 +21,10 @@ test("honk owns stable live and automation audio voice routing", () => {
     tuning: { pitchSnap: "cMajor" },
   });
   const voiceId = "right:instrument-honk-audio";
+  const looperVoiceId = "looper-a:track-0";
 
   honk.startAudioVoice(voiceId);
+  honk.startAudioVoice(looperVoiceId);
   honk.updateAudioVoice(voiceId, {
     squeeze: 0.8,
     bend: -0.25,
@@ -32,16 +35,41 @@ test("honk owns stable live and automation audio voice routing", () => {
   }, { gain: 0.5 });
   honk.setAudioVowel("I");
   honk.releaseAudioVoice(voiceId);
+  honk.releaseAudioVoice(looperVoiceId);
 
-  assert.deepEqual(calls[0], ["start", voiceId]);
-  assert.equal(calls[1][0], "update");
-  assert.equal(calls[1][1], voiceId);
-  assert.equal(calls[1][2].squeeze, 0.8);
-  assert.equal(calls[1][3].pitchSnap, "cMajor");
-  assert.deepEqual(calls[1][4], { gain: 0.5 });
-  assert.deepEqual(calls[2], ["vowel", voiceId, "I"]);
-  assert.deepEqual(calls[3], ["release", voiceId]);
+  assert.deepEqual(calls[0], ["start", "honk-honk-audio"]);
+  assert.deepEqual(calls[1], ["start", "honk-honk-audio"]);
+  assert.equal(calls[2][0], "update");
+  assert.equal(calls[2][1], "honk-honk-audio");
+  assert.equal(calls[2][2].squeeze, 0.8);
+  assert.equal(calls[2][3].pitchSnap, "cMajor");
+  assert.equal(calls[2][4], 0.5);
+  assert.deepEqual(calls[3], ["vowel", "honk-honk-audio", "I"]);
+  assert.equal(calls.some(([type]) => type === "release"), false);
   assert.equal(honk.activeVoiceIds.size, 0);
+});
+
+test("layer resolution caps overlapping sources and preserves looper volume", () => {
+  const updates = [];
+  const honk = new HonkInstrument({
+    id: "honk-mix",
+    root: object3D(),
+    voiceService: {
+      startVoice() {},
+      updateVoice: (_id, performance) => updates.push({ ...performance }),
+    },
+    morphController: morphController(),
+  });
+  honk.setLivePerformance({ squeeze: 0 });
+  honk.setAutomationLayer("looper-a", { squeeze: 1, nose: 0.8 }, { gain: 0.35 });
+  honk.setAutomationLayer("metronome-a", { squeeze: 0.6 }, { gain: 1 });
+  const resolved = honk.getResolvedPerformanceState();
+  honk.updateResolvedAudioRenderer(resolved);
+  assert.equal(updates.at(-1).squeeze, 0.6);
+  assert.equal(updates.at(-1).nose, 0.8);
+  honk.setLivePerformance({ squeeze: 1 });
+  honk.updateResolvedAudioRenderer(honk.getResolvedPerformanceState());
+  assert.equal(updates.at(-1).squeeze, 1);
 });
 
 function morphController() {

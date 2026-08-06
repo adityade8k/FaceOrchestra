@@ -91,11 +91,48 @@ export class LooperTrackTimeline {
   }
 
   getContentEndMs() {
+    return this.getMusicalContentEndMs();
+  }
+
+  getMusicalContentEndMs() {
+    this.sortEvents();
     let endMs = 0;
+    let squeezeActive = false;
+    let lastActiveSqueezeMs = 0;
     for (const event of this.events) {
-      endMs = Math.max(endMs, event.timeMs);
+      if (isDrumHitEvent(event)) {
+        endMs = Math.max(endMs, event.timeMs);
+        continue;
+      }
+      const squeeze = getEventFieldValue(event, "squeeze");
+      if (squeeze === undefined) continue;
+      const active = Number(squeeze) > 0.025;
+      if (active) {
+        squeezeActive = true;
+        lastActiveSqueezeMs = event.timeMs;
+      } else if (squeezeActive) {
+        squeezeActive = false;
+        endMs = Math.max(endMs, event.timeMs);
+      }
     }
+    // Legacy/incomplete data may lack a final release. Preserve a playable
+    // technical endpoint without letting unrelated parameter events extend it.
+    if (squeezeActive) endMs = Math.max(endMs, lastActiveSqueezeMs);
     return endMs;
+  }
+
+  getFirstMusicalOnsetMs() {
+    this.sortEvents();
+    let squeezeActive = false;
+    for (const event of this.events) {
+      if (isDrumHitEvent(event)) return event.timeMs;
+      const squeeze = getEventFieldValue(event, "squeeze");
+      if (squeeze === undefined) continue;
+      const active = Number(squeeze) > 0.025;
+      if (active && !squeezeActive) return event.timeMs;
+      squeezeActive = active;
+    }
+    return Infinity;
   }
 
   sortEvents() {
@@ -132,6 +169,12 @@ export class LooperTrackTimeline {
 
   discardEventsBefore(timeMs) {
     this.events = this.events.filter((event) => event.timeMs >= timeMs);
+    this.rebuildRecordedFields();
+    this.sorted = false;
+  }
+
+  discardEventsAfter(timeMs) {
+    this.events = this.events.filter((event) => event.timeMs <= timeMs);
     this.rebuildRecordedFields();
     this.sorted = false;
   }

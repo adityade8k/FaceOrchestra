@@ -44,7 +44,7 @@ test("beat correction leaves pitch actions continuous while snapping note gates"
   assert.equal(secondAttack.timeMs, analysis.originMs + analysis.beatIntervalMs);
 });
 
-test("beat correction preserves the full record-to-stop loop and its phrase gap", () => {
+test("beat correction re-derives the final musical note-off without Stop padding", () => {
   const timeline = new LooperTimeline();
   timeline.startRecording(1000);
   addNote(timeline, "track-0", 0, 300, 500);
@@ -61,8 +61,8 @@ test("beat correction preserves the full record-to-stop loop and its phrase gap"
     .map((event) => event.timeMs);
   assert.equal(attacks[0], 0);
   assert.equal(attacks[2] - attacks[1], 625);
-  assert.equal(timeline.durationMs, 1700);
-  assert.equal(timeline.durationMs - attacks.at(-1), 700);
+  assert.equal(timeline.durationMs, 1250);
+  assert.equal(timeline.durationMs - attacks.at(-1), 250);
 });
 
 function addNote(timeline, trackId, trackIndex, startMs, endMs) {

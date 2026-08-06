@@ -49,7 +49,6 @@ export class LooperBeatDetector {
   apply(timeline, analysis) {
     if (!timeline || !analysis) return false;
     const { originMs, subdivisionMs, beatIntervalMs } = analysis;
-    const recordedDurationMs = timeline.recordedDurationMs;
     for (const track of timeline.tracks.values()) {
       for (const event of track.events) {
         const relativeMs = event.timeMs - originMs;
@@ -63,11 +62,11 @@ export class LooperBeatDetector {
 
     timeline.beatIntervalMs = beatIntervalMs;
     timeline.beatAnalysis = { ...analysis };
-    timeline.contentEndMs = timeline.getContentEndMs();
-    timeline.recordedDurationMs = Math.max(recordedDurationMs, timeline.contentEndMs);
-    // Beat correction may adjust note gates, but the record-to-stop window is the
-    // loop. Preserve its leading and trailing rests instead of deriving a new
-    // boundary from the first and last played notes.
+    timeline.contentEndMs = timeline.getMusicalContentEndMs();
+    timeline.recordedDurationMs = timeline.contentEndMs;
+    timeline.discardEventsAfter(timeline.contentEndMs);
+    // Beat correction may move rhythmic gates, so phrase duration is always
+    // re-derived from the final audible note-off/percussion event.
     timeline.finalizeDuration(1);
     return true;
   }

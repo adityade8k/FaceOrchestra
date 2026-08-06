@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { MetronomeInstrument } from "../../../src/instruments/metronome/MetronomeInstrument.js";
 import { getMetronomePendulumAngle } from "../../../src/instruments/metronome/MetronomePendulumRig.js";
 
-test("metronome clamps controls, schedules clicks by BPM, and pauses", () => {
+test("metronome schedules one audible monitor tick per beat by default", () => {
   const clicks = [];
   const metronome = new MetronomeInstrument({
     id: "metro-1",
@@ -295,6 +295,22 @@ test("metronome playback keeps its schedule while the scene is in placement mode
   assert.equal(metronome.update(1500), true);
   assert.equal(clicks.length, 2);
   assert.equal(metronome.playing, true);
+});
+
+test("standalone monitor tick can still be disabled explicitly", () => {
+  const clicks = [];
+  const metronome = new MetronomeInstrument({
+    id: "metro-monitor",
+    root: object3D(),
+    audioSystem: { triggerMetronomeClick: (options) => clicks.push(options) },
+  });
+  metronome.setVolume(0.25);
+  metronome.setMonitorTickEnabled(false);
+  metronome.play(1000);
+  metronome.update(1000);
+  metronome.update(1000);
+  metronome.update(1500);
+  assert.deepEqual(clicks, []);
 });
 
 test("Play eye latches without restarting cadence and Pause eye resets playback", () => {

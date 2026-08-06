@@ -57,7 +57,7 @@ test("deleting a honk clears audio, contact state, locks, looper connections, an
   assert.equal(result.cleanup.removedFromLockGroup, true);
   assert.equal(result.cleanup.releasedAudio, true);
   assert.deepEqual(externallyReleased, [honkA.id]);
-  assert.deepEqual(voiceEvents.released, [`${honkA.id}:source-controller-left`]);
+  assert.deepEqual(voiceEvents.released, [`honk-${honkA.id}`]);
   assert.equal(graph.hasHonk(honkA.id), false);
   assert.equal(contactSystem.pairStates.size, 0);
   assert.equal(locks.getGroupForMember(honkB.id), null);
@@ -187,6 +187,7 @@ function createHonk(id, x, voiceEvents = { started: [], released: [] }) {
     voiceService: {
       startVoice(voiceId) { voiceEvents.started.push(voiceId); },
       releaseVoice(voiceId) { voiceEvents.released.push(voiceId); },
+      disposeVoice() {},
     },
   });
 }

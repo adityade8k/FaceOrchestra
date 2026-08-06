@@ -113,21 +113,19 @@ export class MetronomeConnectionManager {
     );
   }
 
-  getTimingForLooper(looperId, now = performance.now()) {
+  getTimingForLooper(looperId, now = performance.now(), target = {}) {
     const connection = this.getConnectionForTarget(METRONOME_CONNECTION_TARGET_KINDS.looper, looperId);
-    if (!connection) return inactiveTiming({ connected: false });
+    if (!connection) return writeInactiveTiming(target, false);
     const metronome = this.registry.get(connection.metronomeId);
     if (!isAvailableInstrument(metronome, "metronome")) {
-      return inactiveTiming({ connected: false });
+      return writeInactiveTiming(target, false);
     }
-    const timing = metronome.getBeatTiming?.(now) || {};
-    return {
-      ...timing,
-      active: Boolean(timing.active),
-      connected: true,
-      metronomeId: metronome.id,
-      portId: connection.portId,
-    };
+    const timing = metronome.getBeatTiming?.(now, target) || target;
+    timing.active = Boolean(timing.active);
+    timing.connected = true;
+    timing.metronomeId = metronome.id;
+    timing.portId = connection.portId;
+    return timing;
   }
 
   serialize(savedIds = null) {
@@ -226,19 +224,18 @@ function connectionsEqual(first, second) {
     first.targetPortId === second.targetPortId;
 }
 
-function inactiveTiming({ connected = false } = {}) {
-  return {
-    active: false,
-    clockAvailable: false,
-    connected,
-    metronomeId: null,
-    portId: null,
-    bpm: null,
-    beatIntervalMs: null,
-    beatOriginMs: null,
-    beatPosition: null,
-    nearestBeatMs: null,
-    lastBeatMs: null,
-    lastEmittedBeatOrdinal: null,
-  };
+function writeInactiveTiming(target, connected = false) {
+  target.active = false;
+  target.clockAvailable = false;
+  target.connected = connected;
+  target.metronomeId = null;
+  target.portId = null;
+  target.bpm = null;
+  target.beatIntervalMs = null;
+  target.beatOriginMs = null;
+  target.beatPosition = null;
+  target.nearestBeatMs = null;
+  target.lastBeatMs = null;
+  target.lastEmittedBeatOrdinal = null;
+  return target;
 }

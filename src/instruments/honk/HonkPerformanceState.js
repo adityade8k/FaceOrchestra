@@ -36,11 +36,25 @@ export class HonkPerformanceState {
     this.squeezeSources = new Map();
     this.bendSources = new Map();
     this.automationLayers = new Map();
+    this.audioMix = { gate: 0, sourceGain: 0 };
+    this.bestMorphLayers = {
+      earLeft: null,
+      earRight: null,
+      nose: null,
+      vowel: null,
+    };
     this.sequence = 0;
   }
 
   setLiveState(values = {}) {
     applyLiveValues(this.liveBase, values);
+    this.refreshLiveInteractionState();
+    return this.live;
+  }
+
+  setLiveGateAndBend(squeeze, bend) {
+    this.liveBase.squeeze = clamp(squeeze, 0, 1);
+    this.liveBase.bend = clamp(bend, -1, 1);
     this.refreshLiveInteractionState();
     return this.live;
   }
@@ -105,13 +119,12 @@ export class HonkPerformanceState {
     return this.live;
   }
 
-  setAutomationLayer(layerId, actionState) {
+  setAutomationLayer(layerId, actionState, options = undefined) {
     if (!layerId) {
       return null;
     }
 
-    const action = copyDefinedAction(actionState);
-    if (!hasAnyAction(action)) {
+    if (!hasAnyDefinedAction(actionState)) {
       this.automationLayers.delete(layerId);
       return null;
     }
@@ -120,8 +133,13 @@ export class HonkPerformanceState {
       id: layerId,
       action: createHonkActionState(),
       updatedAt: 0,
+      gain: 1,
     };
-    layer.action = action;
+    copyDefinedAction(layer.action, actionState);
+    const gain = typeof options === "number"
+      ? options
+      : options?.gain ?? actionState?.gain ?? 1;
+    layer.gain = clamp(gain, 0, 1);
     layer.updatedAt = ++this.sequence;
     this.automationLayers.set(layerId, layer);
     return layer;
@@ -153,12 +171,11 @@ export class HonkPerformanceState {
     const resolved = this.resolved;
     copyLiveState(resolved, this.live);
 
-    const bestMorphLayers = {
-      earLeft: null,
-      earRight: null,
-      nose: null,
-      vowel: null,
-    };
+    const bestMorphLayers = this.bestMorphLayers;
+    bestMorphLayers.earLeft = null;
+    bestMorphLayers.earRight = null;
+    bestMorphLayers.nose = null;
+    bestMorphLayers.vowel = null;
 
     for (const layer of this.automationLayers.values()) {
       const action = layer.action;
@@ -203,6 +220,21 @@ export class HonkPerformanceState {
     return { ...this.resolve() };
   }
 
+  resolveAudioMix() {
+    const mix = this.audioMix;
+    let effectiveGate = clamp(this.live.squeeze, 0, 1);
+    for (const layer of this.automationLayers.values()) {
+      if (layer.action.squeeze === undefined) continue;
+      effectiveGate = Math.max(
+        effectiveGate,
+        clamp(layer.action.squeeze, 0, 1) * clamp(layer.gain, 0, 1),
+      );
+    }
+    mix.gate = clamp(effectiveGate, 0, 1);
+    mix.sourceGain = mix.gate;
+    return mix;
+  }
+
   reset(initialState = {}) {
     this.liveBase = createLiveHonkState(initialState);
     this.live = createLiveHonkState(initialState);
@@ -210,6 +242,12 @@ export class HonkPerformanceState {
     this.squeezeSources.clear();
     this.bendSources.clear();
     this.automationLayers.clear();
+    this.audioMix.gate = 0;
+    this.audioMix.sourceGain = 0;
+    this.bestMorphLayers.earLeft = null;
+    this.bestMorphLayers.earRight = null;
+    this.bestMorphLayers.nose = null;
+    this.bestMorphLayers.vowel = null;
     this.sequence = 0;
   }
 }
@@ -230,21 +268,19 @@ function copyLiveState(target, source) {
   return target;
 }
 
-function copyDefinedAction(source) {
-  const target = createHonkActionState();
-  if (!source) {
-    return target;
-  }
+function copyDefinedAction(target, source) {
   for (const field of HONK_ACTION_FIELDS) {
-    if (source[field] !== undefined) {
-      target[field] = source[field];
-    }
+    target[field] = source?.[field] !== undefined ? source[field] : undefined;
   }
   return target;
 }
 
-function hasAnyAction(action) {
-  return HONK_ACTION_FIELDS.some((field) => action[field] !== undefined);
+function hasAnyDefinedAction(action) {
+  if (!action) return false;
+  for (const field of HONK_ACTION_FIELDS) {
+    if (action[field] !== undefined) return true;
+  }
+  return false;
 }
 
 function clamp(value, min, max) {

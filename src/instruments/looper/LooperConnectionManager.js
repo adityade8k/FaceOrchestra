@@ -15,6 +15,7 @@ export class LooperConnectionManager {
     }
 
     track.connect(honkId);
+    this.adapter.onTrackConnectionChanged?.(looperState, track, honkId);
     this.adapter.updateWireForTrack?.(looperState, track);
     this.adapter.updateVisuals?.(looperState);
     return track;
@@ -28,6 +29,7 @@ export class LooperConnectionManager {
 
     this.applier?.clearTrack(looperState, track);
     track.disconnect();
+    this.adapter.onTrackConnectionChanged?.(looperState, track, null);
     track.isRecording = false;
     track.isPlaying = false;
     if (track.wireMesh) {

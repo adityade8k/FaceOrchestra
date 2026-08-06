@@ -89,28 +89,22 @@ test("stopping transport clears applied Honk automation", () => {
   }]);
 });
 
-test("Looper note-off passes the configured action release fade", () => {
-  const releases = [];
+test("Looper note-off updates only its named performance layer", () => {
+  const layerUpdates = [];
   const applier = new LooperGestureApplier({
     isPlayableHonkId: (honkId) => honkId === "honk-a",
-    setAutomationLayerByHonkId() {},
-    startActionVoice() {},
-    releaseActionVoice: (voiceId, honkId, options) => {
-      releases.push({ voiceId, honkId, options });
+    setAutomationLayerByHonkId: (honkId, layerId, snapshot) => {
+      layerUpdates.push({ honkId, layerId, squeeze: snapshot.squeeze });
     },
-    updateActionVoiceByHonkId() {},
   });
   const track = new LooperTrack({ index: 0, connectedHonkId: "honk-a" });
   const looper = { id: "looper-a", looperData: { tracks: [track] } };
 
   applier.applyTrackSnapshot(looper, track, { squeeze: 0.75 });
-  applier.updateAudio();
   applier.applyTrackSnapshot(looper, track, { squeeze: 0 });
-  applier.updateAudio();
 
-  assert.deepEqual(releases, [{
-    voiceId: "looper-looper-a:track-0:instrument-honk-a:action",
-    honkId: "honk-a",
-    options: { fadeSeconds: HONK_RELEASE_SETTINGS.looperActionFadeSeconds },
-  }]);
+  assert.deepEqual(layerUpdates, [
+    { honkId: "honk-a", layerId: "looper-looper-a:track-0", squeeze: 0.75 },
+    { honkId: "honk-a", layerId: "looper-looper-a:track-0", squeeze: 0 },
+  ]);
 });

@@ -29,6 +29,7 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.onTransportChange = onTransportChange;
     this.bpm = clamp(bpm, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm);
     this.volume = clamp(volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
+    this.monitorTickEnabled = METRONOME_SETTINGS.monitorTickEnabledByDefault;
     this.playing = false;
     this.nextTickMs = null;
     this.nextBeatIndex = null;
@@ -37,6 +38,7 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.beatOriginMs = null;
     this.targetsByRole = new Map();
     this.connectionPorts = new Map();
+    this.timingSnapshot = {};
     for (const [role, target] of Object.entries(targets)) {
       if (!target) continue;
       const interactionRole = target.userData?.interactionRole || role;
@@ -151,8 +153,15 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.lastTickMs = this.beatOriginMs + dueBeatOrdinal * interval;
     this.nextBeatIndex = dueBeatOrdinal + 1;
     this.nextTickMs = this.beatOriginMs + this.nextBeatIndex * interval;
-    this.audioSystem?.triggerMetronomeClick?.({ volume: this.volume });
+    if (this.monitorTickEnabled) {
+      this.audioSystem?.triggerMetronomeClick?.({ volume: this.volume });
+    }
     return true;
+  }
+
+  setMonitorTickEnabled(enabled) {
+    this.monitorTickEnabled = Boolean(enabled);
+    return this.monitorTickEnabled;
   }
 
   updatePendulum(now = performance.now()) {
@@ -164,35 +173,33 @@ export class MetronomeInstrument extends InstrumentEntity {
     }) ?? 0;
   }
 
-  getBeatTiming(now = performance.now()) {
+  getBeatTiming(now = performance.now(), target = this.timingSnapshot) {
     const beatIntervalMs = 60000 / this.bpm;
     if (!Number.isFinite(this.beatOriginMs)) {
-      return {
-        active: false,
-        clockAvailable: false,
-        bpm: this.bpm,
-        beatIntervalMs,
-        beatOriginMs: null,
-        nearestBeatMs: now,
-        beatPosition: null,
-        lastBeatMs: null,
-        lastEmittedBeatOrdinal: null,
-      };
+      target.active = false;
+      target.clockAvailable = false;
+      target.bpm = this.bpm;
+      target.beatIntervalMs = beatIntervalMs;
+      target.beatOriginMs = null;
+      target.nearestBeatMs = now;
+      target.beatPosition = null;
+      target.lastBeatMs = null;
+      target.lastEmittedBeatOrdinal = null;
+      return target;
     }
     const beatPosition = (now - this.beatOriginMs) / beatIntervalMs;
     const beatIndex = Math.round(beatPosition);
     const currentBeatOrdinal = Math.floor(beatPosition + 1e-9);
-    return {
-      active: this.playing,
-      clockAvailable: true,
-      bpm: this.bpm,
-      beatIntervalMs,
-      beatOriginMs: this.beatOriginMs,
-      nearestBeatMs: this.beatOriginMs + beatIndex * beatIntervalMs,
-      beatPosition,
-      lastBeatMs: this.beatOriginMs + currentBeatOrdinal * beatIntervalMs,
-      lastEmittedBeatOrdinal: this.lastEmittedBeatOrdinal,
-    };
+    target.active = this.playing;
+    target.clockAvailable = true;
+    target.bpm = this.bpm;
+    target.beatIntervalMs = beatIntervalMs;
+    target.beatOriginMs = this.beatOriginMs;
+    target.nearestBeatMs = this.beatOriginMs + beatIndex * beatIntervalMs;
+    target.beatPosition = beatPosition;
+    target.lastBeatMs = this.beatOriginMs + currentBeatOrdinal * beatIntervalMs;
+    target.lastEmittedBeatOrdinal = this.lastEmittedBeatOrdinal;
+    return target;
   }
 
   getConnectionPortTarget(portId) {

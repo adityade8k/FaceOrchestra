@@ -125,10 +125,10 @@ test("ScenePersistence writes only when its explicit exit save is invoked", asyn
   const writes = [];
   const persistence = new ScenePersistence({
     store: {
-      load: () => ({ schemaVersion: 3, instruments: [] }),
+      load: () => ({ schemaVersion: 4, instruments: [] }),
       save: (scene) => { writes.push(scene); return true; },
     },
-    serializer: { serialize: () => ({ schemaVersion: 3, instruments: [{ id: "honk-1" }] }) },
+    serializer: { serialize: () => ({ schemaVersion: 4, instruments: [{ id: "honk-1" }] }) },
     restorer: { restore: async () => ({ instruments: [], skipped: [] }) },
   });
 
@@ -162,7 +162,7 @@ test("loading a legacy scene migrates in memory without an eager storage write",
 
   const migrated = store.load();
 
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.equal(migrated.instruments.length, 1);
   assert.equal(values.has(SCENE_STORAGE_KEY), false);
   assert.deepEqual(writes, []);
@@ -181,7 +181,7 @@ test("PersistenceStore reports a rejected browser write without breaking teardow
       },
     });
 
-    assert.equal(store.save({ schemaVersion: 3 }), false);
+    assert.equal(store.save({ schemaVersion: 4 }), false);
     assert.equal(warnings.length, 1);
   } finally {
     console.warn = originalWarn;

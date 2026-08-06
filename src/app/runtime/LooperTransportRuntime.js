@@ -228,13 +228,16 @@ export const LooperTransportRuntimeMethods = {
         return null;
       }
 
-      return (
-        this.instrumentRegistry?.get?.(honkId) ||
-        this.instrumentStates?.find?.((instrumentState) => instrumentState.id === honkId) ||
-        null
-      );
+      return this.instrumentRegistry?.get?.(honkId) || null;
     },
     getLooperRuntimeEntries() {
+      if (this.looperRuntimeEntries) {
+        if (this.runtimeProfilingEnabled && this.runtimePerformanceCounters) {
+          this.runtimePerformanceCounters.looperEntryReads += 1;
+        }
+        return this.looperRuntimeEntries;
+      }
+      // Compatibility fallback for small isolated test/runtime hosts.
       const candidates = [
         ...(this.instrumentStates || []),
         ...(this.instrumentRegistry?.getByKind?.("looper") || []),
@@ -352,7 +355,7 @@ export const LooperTransportRuntimeMethods = {
       });
     },
     updateLooperMorphAnimations(now = performance.now()) {
-      for (const looperState of this.instrumentStates) {
+      for (const looperState of this.looperRuntimeStates || this.instrumentStates) {
         const data = this.getLooperData(looperState);
         if (!data || !looperState.root?.visible) {
           continue;
@@ -459,30 +462,20 @@ export const LooperTransportRuntimeMethods = {
     },
     updatePlayback(delta = 0, time = performance.now()) {
       this.updateLooperPlayback(time);
-      this.updateLooperPlaybackAudio();
     },
     updateLooperRecordings(now = performance.now()) {
       for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
-        controller.updateRecordings([looperState], now);
+        controller.updateRecording(looperState, now);
       }
     },
     updateClockedLooperTransports(now = performance.now()) {
       for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
-        controller.updateClockedTransports([looperState], now);
+        controller.updateClockedTransport(looperState, now);
       }
     },
     updateLooperPlayback(now = performance.now()) {
       for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
-        controller.updatePlayback([looperState], now);
-      }
-    },
-    updateLooperPlaybackAudio() {
-      const updatedControllers = new Set();
-      for (const { controller } of this.getLooperRuntimeEntries()) {
-        if (!updatedControllers.has(controller)) {
-          controller.updateAutomationAudio();
-          updatedControllers.add(controller);
-        }
+        controller.updatePlaybackForLooper(looperState, now);
       }
     },
     connectLooperTrackToHonk(looperState, trackIndexOrId, honkOrId) {

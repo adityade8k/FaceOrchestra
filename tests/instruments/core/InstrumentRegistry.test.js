@@ -32,6 +32,23 @@ test("registry rejects duplicate stable IDs and disposes exactly once on removal
   assert.equal(disposalCount, 1);
 });
 
+test("per-kind registry indexes are stable and update only on lifecycle changes", () => {
+  const registry = new InstrumentRegistry();
+  const empty = registry.getByKind(INSTRUMENT_KINDS.honk);
+  const first = new InstrumentEntity({ id: "honk-1", kind: INSTRUMENT_KINDS.honk, root: object3D() });
+  registry.add(first);
+  const index = registry.getByKind(INSTRUMENT_KINDS.honk);
+  assert.notStrictEqual(index, empty);
+  assert.strictEqual(registry.getByKind(INSTRUMENT_KINDS.honk), index);
+  const second = new InstrumentEntity({ id: "honk-2", kind: INSTRUMENT_KINDS.honk, root: object3D() });
+  registry.add(second);
+  assert.strictEqual(registry.getByKind(INSTRUMENT_KINDS.honk), index);
+  assert.deepEqual(index, [first, second]);
+  registry.remove(first.id, { dispose: false });
+  assert.strictEqual(registry.getByKind(INSTRUMENT_KINDS.honk), index);
+  assert.deepEqual(index, [second]);
+});
+
 test("interaction targets store a small descriptor on meshes and resolve handlers through the registry", () => {
   const targets = new InteractionTargetRegistry({ idFactory: () => "target-1" });
   const mesh = object3D();

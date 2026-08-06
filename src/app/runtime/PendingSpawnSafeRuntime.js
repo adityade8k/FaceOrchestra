@@ -8,7 +8,6 @@ export const PendingSpawnSafeRuntimeMethods = {
     this.updateLooperPlayback(now);
     this.updateMetronomeConnections(now);
     this.applyResolvedHonkPerformanceStates();
-    this.updateLooperPlaybackAudio();
     this.updateLooperMorphAnimations(now);
     this.updateLooperWires();
     this.updateMetronomeConnectionWires();

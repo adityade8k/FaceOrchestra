@@ -1,4 +1,5 @@
 import {
+  HONK_AUTOMATION_SETTINGS,
   HONK_NOTE_GAIN_SETTINGS,
   HONK_RELEASE_SETTINGS,
   VOICE_GAIN_SETTINGS,
@@ -7,19 +8,38 @@ import { clamp } from "../audioMath.js";
 import { FORMANTS, VOWEL_ROUNDNESS } from "./formantData.js";
 import { F4_FREQUENCY, getHonkFrequency } from "./pitch.js";
 
+const SILENT_GAIN = 0;
+const PARAMETER_EPSILON = 1e-5;
+
 export class HonkVoice {
   constructor({ context, destination, vowel = "A" }) {
     this.context = context;
     this.destination = destination || context.destination;
+    this.currentBank = null;
+    this.retiringBanks = new Set();
     this.formantNodes = [];
     this.roundnessNode = null;
     this.vowel = null;
     this.pitchBendSemitones = 0;
+    this.lastRetriggerToken = 0;
     this.disconnected = false;
-    this.releaseState = null;
+    this.disposing = false;
+    this.started = false;
+    this.lastTargets = {
+      frequency: NaN,
+      detune: NaN,
+      vibratoFrequency: NaN,
+      gain: 0,
+    };
+    this.performanceCounters = {
+      parameterTransitions: 0,
+      duplicateUpdatesSkipped: 0,
+      formantCrossfades: 0,
+      formantBanksDisposed: 0,
+    };
 
     this.createNodes();
-    this.rebuildFormants(vowel);
+    this.rebuildFormants(vowel, { initial: true });
   }
 
   createNodes() {
@@ -32,83 +52,131 @@ export class HonkVoice {
     this.output = this.context.createGain();
 
     this.source.type = "sawtooth";
-    this.source.frequency.setValueAtTime(F4_FREQUENCY, now);
+    setInitialValue(this.source.frequency, F4_FREQUENCY, now);
     this.toneFilter.type = "lowpass";
-    this.toneFilter.frequency.setValueAtTime(VOICE_GAIN_SETTINGS.toneLowpassFrequency, now);
-    this.toneFilter.Q.setValueAtTime(VOICE_GAIN_SETTINGS.toneLowpassQ, now);
+    setInitialValue(this.toneFilter.frequency, VOICE_GAIN_SETTINGS.toneLowpassFrequency, now);
+    setInitialValue(this.toneFilter.Q, VOICE_GAIN_SETTINGS.toneLowpassQ, now);
     this.source.connect(this.toneFilter);
 
     this.vibrato.type = "sine";
-    this.vibrato.frequency.setValueAtTime(5.2, now);
-    this.vibratoGain.gain.setValueAtTime(7, now);
+    setInitialValue(this.vibrato.frequency, 5.2, now);
+    setInitialValue(this.vibratoGain.gain, 7, now);
     this.vibrato.connect(this.vibratoGain);
     this.vibratoGain.connect(this.source.detune);
 
-    this.master.gain.setValueAtTime(0.0001, now);
-    this.output.gain.setValueAtTime(VOICE_GAIN_SETTINGS.outputGain, now);
-
+    setInitialValue(this.master.gain, SILENT_GAIN, now);
+    setInitialValue(this.output.gain, VOICE_GAIN_SETTINGS.outputGain, now);
     this.master.connect(this.output);
     this.output.connect(this.destination);
   }
 
   start() {
+    if (this.started || this.disconnected) return false;
     const now = this.context.currentTime;
     this.source.start(now);
     this.vibrato.start(now);
+    this.started = true;
+    return true;
   }
 
-  rebuildFormants(vowel) {
-    const oldNodes = [...this.formantNodes];
-    if (this.roundnessNode) {
-      oldNodes.push(this.roundnessNode);
-    }
+  rebuildFormants(vowel, { initial = false } = {}) {
+    const normalizedVowel = FORMANTS[vowel] ? vowel : "A";
+    if (!initial && this.vowel === normalizedVowel) return false;
+    const now = this.context.currentTime;
+    const bank = this.createFormantBank(normalizedVowel, initial ? 1 : 0);
+    const oldBank = this.currentBank;
+    this.currentBank = bank;
+    this.formantNodes = bank.formants;
+    this.roundnessNode = bank.roundness;
+    this.vowel = normalizedVowel;
+    if (!oldBank || initial) return true;
 
-    for (const nodeSet of oldNodes) {
+    this.performanceCounters.formantCrossfades += 1;
+    const fadeSeconds = HONK_AUTOMATION_SETTINGS.formantCrossfadeSeconds;
+    smoothAudioParam(bank.output.gain, 1, now, fadeSeconds);
+    smoothAudioParam(oldBank.output.gain, 0, now, fadeSeconds);
+    this.retiringBanks.add(oldBank);
+    while (this.retiringBanks.size > HONK_AUTOMATION_SETTINGS.maxRetiringFormantBanks) {
+      const oldest = this.retiringBanks.values().next().value;
+      this.disposeFormantBank(oldest);
+    }
+    const cleanup = () => this.disposeFormantBank(oldBank);
+    oldBank.cleanupTimer = globalThis.setTimeout?.(
+      cleanup,
+      Math.ceil((fadeSeconds + 0.004) * 1000),
+    ) ?? null;
+    oldBank.cleanupTimer?.unref?.();
+    return true;
+  }
+
+  createFormantBank(vowel, initialGain) {
+    const now = this.context.currentTime;
+    const formants = FORMANTS[vowel] || FORMANTS.A;
+    const output = this.context.createGain();
+    setInitialValue(output.gain, initialGain, now);
+    output.connect(this.master);
+    const nodes = formants.freq.map((frequency, index) => {
+      const filter = this.context.createBiquadFilter();
+      const gain = this.context.createGain();
+      filter.type = "bandpass";
+      setInitialValue(filter.frequency, frequency, now);
+      setInitialValue(filter.Q, formants.q[index], now);
+      setInitialValue(gain.gain, formants.gain[index], now);
+      this.toneFilter.connect(filter);
+      filter.connect(gain);
+      gain.connect(output);
+      return { filter, gain };
+    });
+    let roundness = null;
+    const roundnessSettings = VOWEL_ROUNDNESS[vowel];
+    if (roundnessSettings) {
+      const filter = this.context.createBiquadFilter();
+      const gain = this.context.createGain();
+      filter.type = "bandpass";
+      setInitialValue(filter.frequency, roundnessSettings.freq, now);
+      setInitialValue(filter.Q, roundnessSettings.q, now);
+      setInitialValue(gain.gain, roundnessSettings.gain, now);
+      this.toneFilter.connect(filter);
+      filter.connect(gain);
+      gain.connect(output);
+      roundness = { filter, gain };
+    }
+    return { vowel, output, formants: nodes, roundness, cleanupTimer: null };
+  }
+
+  disposeFormantBank(bank) {
+    if (!bank || bank.disposed) return false;
+    bank.disposed = true;
+    if (bank.cleanupTimer !== null) {
+      globalThis.clearTimeout?.(bank.cleanupTimer);
+      bank.cleanupTimer = null;
+    }
+    disconnectNode(bank.output);
+    for (const nodeSet of bank.formants) {
       disconnectNode(this.toneFilter, nodeSet.filter);
+      disconnectNode(nodeSet.filter, nodeSet.gain);
+      disconnectNode(nodeSet.gain, bank.output);
       disconnectNode(nodeSet.filter);
       disconnectNode(nodeSet.gain);
     }
-
-    const formants = FORMANTS[vowel] || FORMANTS.A;
-    this.formantNodes = formants.freq.map((frequency, index) => {
-      const filter = this.context.createBiquadFilter();
-      const gain = this.context.createGain();
-      filter.type = "bandpass";
-      filter.frequency.value = frequency;
-      filter.Q.value = formants.q[index];
-      gain.gain.value = formants.gain[index];
-      this.toneFilter.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.master);
-      return { filter, gain };
-    });
-
-    this.roundnessNode = null;
-    const roundness = VOWEL_ROUNDNESS[vowel];
-    if (roundness) {
-      const filter = this.context.createBiquadFilter();
-      const gain = this.context.createGain();
-      filter.type = "bandpass";
-      filter.frequency.value = roundness.freq;
-      filter.Q.value = roundness.q;
-      gain.gain.value = roundness.gain;
-      this.toneFilter.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.master);
-      this.roundnessNode = { filter, gain };
+    if (bank.roundness) {
+      disconnectNode(this.toneFilter, bank.roundness.filter);
+      disconnectNode(bank.roundness.filter, bank.roundness.gain);
+      disconnectNode(bank.roundness.gain, bank.output);
+      disconnectNode(bank.roundness.filter);
+      disconnectNode(bank.roundness.gain);
     }
-
-    this.vowel = vowel;
+    this.retiringBanks.delete(bank);
+    this.performanceCounters.formantBanksDisposed += 1;
+    return true;
   }
 
   setVowel(vowel) {
-    if (this.vowel !== vowel) {
-      this.rebuildFormants(vowel);
-    }
+    return this.rebuildFormants(vowel);
   }
 
   setPitchBend(semitones) {
-    this.pitchBendSemitones = semitones;
+    this.pitchBendSemitones = Number.isFinite(semitones) ? semitones : 0;
   }
 
   update({
@@ -119,115 +187,130 @@ export class HonkVoice {
     noteGain = 1,
     pitchBendSemitones = null,
     pitchSnap = null,
-    activeVoiceCount = 1,
+    retriggerToken = 0,
   }) {
+    if (this.disconnected || this.disposing) return false;
     const now = this.context.currentTime;
     const frequency = getHonkFrequency({ leftEar, rightEar, pitchSnap });
-    if (pitchBendSemitones !== null) {
-      this.pitchBendSemitones = pitchBendSemitones;
-    }
+    if (pitchBendSemitones !== null) this.setPitchBend(pitchBendSemitones);
     const detune = this.pitchBendSemitones * 100;
-    const polyphonyScale = 1 / Math.sqrt(Math.max(activeVoiceCount, 1));
     const gain = Math.max(
-      0.0001,
-      hornAmount *
+      SILENT_GAIN,
+      clamp(hornAmount, 0, 1) *
         VOICE_GAIN_SETTINGS.baseGain *
         Math.max(masterGain, 0) *
-        clamp(noteGain, 0, 1) *
-        polyphonyScale,
+        clamp(noteGain, 0, 1),
     );
-
-    this.source.frequency.setTargetAtTime(frequency, now, 0.035);
-    this.source.detune.setTargetAtTime(detune, now, 0.045);
-    this.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);
-    this.master.gain.setTargetAtTime(gain, now, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
+    let changed = false;
+    changed = this.scheduleTarget(
+      "frequency",
+      this.source.frequency,
+      frequency,
+      now,
+      HONK_AUTOMATION_SETTINGS.pitchSmoothingSeconds,
+    ) || changed;
+    changed = this.scheduleTarget(
+      "detune",
+      this.source.detune,
+      detune,
+      now,
+      HONK_AUTOMATION_SETTINGS.detuneSmoothingSeconds,
+    ) || changed;
+    changed = this.scheduleTarget(
+      "vibratoFrequency",
+      this.vibrato.frequency,
+      5.2,
+      now,
+      HONK_AUTOMATION_SETTINGS.parameterSmoothingSeconds,
+    ) || changed;
+    const shouldRetrigger = Number.isFinite(retriggerToken) &&
+      retriggerToken !== this.lastRetriggerToken &&
+      gain > SILENT_GAIN;
+    this.lastRetriggerToken = Number.isFinite(retriggerToken)
+      ? retriggerToken
+      : this.lastRetriggerToken;
+    if (shouldRetrigger) {
+      changed = this.scheduleRetrigger(gain, now) || changed;
+    } else {
+      const gainSeconds = gain > this.lastTargets.gain
+        ? HONK_AUTOMATION_SETTINGS.gateAttackSeconds
+        : HONK_AUTOMATION_SETTINGS.gateReleaseSeconds;
+      changed = this.scheduleTarget("gain", this.master.gain, gain, now, gainSeconds) || changed;
+    }
+    if (!changed) this.performanceCounters.duplicateUpdatesSkipped += 1;
+    return changed;
   }
 
-  release(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded) {
-    if (this.releaseState) {
-      return this.releaseState;
-    }
+  scheduleTarget(key, parameter, value, now, seconds) {
+    if (Math.abs(this.lastTargets[key] - value) <= PARAMETER_EPSILON) return false;
+    smoothAudioParam(parameter, value, now, seconds);
+    this.lastTargets[key] = value;
+    this.performanceCounters.parameterTransitions += 1;
+    return true;
+  }
 
-    const now = this.context.currentTime;
-    const requestedFade = Number.isFinite(fadeSeconds)
+  scheduleRetrigger(targetGain, now) {
+    holdAudioParam(this.master.gain, now, targetGain);
+    const dipAt = now + HONK_AUTOMATION_SETTINGS.retriggerDipSeconds;
+    const attackAt = dipAt + HONK_AUTOMATION_SETTINGS.gateAttackSeconds;
+    this.master.gain.linearRampToValueAtTime?.(0.0001, dipAt);
+    this.master.gain.linearRampToValueAtTime?.(targetGain, attackAt);
+    this.lastTargets.gain = targetGain;
+    this.performanceCounters.parameterTransitions += 1;
+    return true;
+  }
+
+  silence(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds) {
+    if (this.disconnected) return false;
+    const requested = Number.isFinite(fadeSeconds)
       ? fadeSeconds
       : HONK_RELEASE_SETTINGS.liveFadeSeconds;
-    const safeFadeSeconds = Math.max(
-      requestedFade,
-      HONK_RELEASE_SETTINGS.minimumFadeSeconds,
-    );
-    const silentAt = now + safeFadeSeconds;
-    const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
-    let completed = false;
-    let fallbackTimer = null;
-    const completeRelease = () => {
-      if (completed) {
-        return;
-      }
-      completed = true;
-      if (fallbackTimer !== null) {
-        globalThis.clearTimeout?.(fallbackTimer);
-        fallbackTimer = null;
-      }
-      this.disconnect();
-      onEnded?.();
-    };
-    const handleSourceEnded = () => {
-      completeRelease();
-    };
-
-    this.releaseState = {
-      releaseStart: now,
-      silentAt,
-      stopAt,
-    };
+    const safeFade = Math.max(requested, HONK_AUTOMATION_SETTINGS.gateReleaseSeconds);
+    if (this.lastTargets.gain === SILENT_GAIN) return false;
+    smoothAudioParam(this.master.gain, SILENT_GAIN, this.context.currentTime, safeFade);
+    this.lastTargets.gain = SILENT_GAIN;
     this.pitchBendSemitones = 0;
-    if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
-      this.master.gain.cancelAndHoldAtTime(now);
-    } else {
-      const currentGain = Number.isFinite(this.master.gain.value)
-        ? Math.max(this.master.gain.value, 0)
-        : 0.0001;
-      this.master.gain.cancelScheduledValues(now);
-      this.master.gain.setValueAtTime(currentGain, now);
-    }
-    this.master.gain.linearRampToValueAtTime(0, silentAt);
-    this.source.onended = handleSourceEnded;
+    return true;
+  }
 
-    try {
-      this.source.stop(stopAt);
-    } catch {
-      const delayMilliseconds = Math.max(
-        0,
-        Math.ceil((stopAt - this.context.currentTime) * 1000),
-      );
-      fallbackTimer = globalThis.setTimeout?.(handleSourceEnded, delayMilliseconds) ?? null;
-      fallbackTimer?.unref?.();
-    }
-    try {
-      this.vibrato.stop(stopAt);
-    } catch {
-      // Source cleanup is enough if vibrato was already stopped.
-    }
+  // Kept as a compatibility alias; ordinary note-off no longer destroys the graph.
+  release(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded = null) {
+    const changed = this.silence(fadeSeconds);
+    onEnded?.();
+    return { persistent: true, changed };
+  }
 
-    return this.releaseState;
+  dispose() {
+    if (this.disconnected || this.disposing) return false;
+    this.disposing = true;
+    const now = this.context.currentTime;
+    const stopAt = now + HONK_AUTOMATION_SETTINGS.disposeFadeSeconds;
+    smoothAudioParam(
+      this.master.gain,
+      SILENT_GAIN,
+      now,
+      HONK_AUTOMATION_SETTINGS.disposeFadeSeconds,
+    );
+    const finish = () => this.disconnect();
+    this.source.onended = finish;
+    try { this.source.stop(stopAt); } catch { finish(); }
+    try { this.vibrato.stop(stopAt); } catch { /* already stopped */ }
+    const timer = globalThis.setTimeout?.(
+      finish,
+      Math.ceil((HONK_AUTOMATION_SETTINGS.disposeFadeSeconds + 0.01) * 1000),
+    );
+    timer?.unref?.();
+    return true;
   }
 
   disconnect() {
-    if (this.disconnected) {
-      return;
-    }
+    if (this.disconnected) return;
     this.disconnected = true;
-
-    const formantNodes = [...this.formantNodes];
-    if (this.roundnessNode) {
-      formantNodes.push(this.roundnessNode);
+    this.disposeFormantBank(this.currentBank);
+    this.currentBank = null;
+    while (this.retiringBanks.size > 0) {
+      this.disposeFormantBank(this.retiringBanks.values().next().value);
     }
-    for (const nodeSet of formantNodes) {
-      disconnectNode(nodeSet.filter);
-      disconnectNode(nodeSet.gain);
-    }
-
     disconnectNode(this.source);
     disconnectNode(this.toneFilter);
     disconnectNode(this.vibrato);
@@ -237,16 +320,54 @@ export class HonkVoice {
     this.formantNodes.length = 0;
     this.roundnessNode = null;
   }
+
+  getTrackedAudioNodeCount() {
+    let count = 6; // carrier, tone filter, vibrato, vibrato gain, master, output
+    if (this.currentBank) count += countFormantBankNodes(this.currentBank);
+    for (const bank of this.retiringBanks) count += countFormantBankNodes(bank);
+    return count;
+  }
+}
+
+export function smoothAudioParam(parameter, value, now, durationSeconds) {
+  if (!parameter) return false;
+  const target = Number.isFinite(value) ? value : 0;
+  const duration = Math.max(Number.isFinite(durationSeconds) ? durationSeconds : 0, 0.003);
+  if (typeof parameter.cancelAndHoldAtTime === "function") {
+    parameter.cancelAndHoldAtTime(now);
+  } else {
+    const current = Number.isFinite(parameter.value) ? parameter.value : target;
+    parameter.cancelScheduledValues?.(now);
+    parameter.setValueAtTime?.(current, now);
+  }
+  parameter.linearRampToValueAtTime?.(target, now + duration);
+  return true;
+}
+
+function holdAudioParam(parameter, now, fallbackValue) {
+  if (typeof parameter?.cancelAndHoldAtTime === "function") {
+    parameter.cancelAndHoldAtTime(now);
+    return;
+  }
+  const current = Number.isFinite(parameter?.value) ? parameter.value : fallbackValue;
+  parameter?.cancelScheduledValues?.(now);
+  parameter?.setValueAtTime?.(current, now);
+}
+
+function setInitialValue(parameter, value, now) {
+  if (parameter?.setValueAtTime) parameter.setValueAtTime(value, now);
+  else if (parameter) parameter.value = value;
 }
 
 function disconnectNode(node, destination = undefined) {
   try {
-    if (destination) {
-      node?.disconnect?.(destination);
-    } else {
-      node?.disconnect?.();
-    }
+    if (destination) node?.disconnect?.(destination);
+    else node?.disconnect?.();
   } catch {
     // Already disconnected.
   }
+}
+
+function countFormantBankNodes(bank) {
+  return 1 + bank.formants.length * 2 + (bank.roundness ? 2 : 0);
 }

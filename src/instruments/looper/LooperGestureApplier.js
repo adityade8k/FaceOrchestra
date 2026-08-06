@@ -1,4 +1,3 @@
-import { LOOPER_ACTION_RELEASE_FADE_SECONDS } from "../../config/audio.js";
 import { copyActionState, createActionState, resetActionState } from "./timeline/actionState.js";
 
 const ACTION_SQUEEZE_THRESHOLD = 0.015;
@@ -8,6 +7,7 @@ export class LooperGestureApplier {
     this.adapter = adapter;
     this.appliedTracks = new Map();
     this.applyFrame = 0;
+    this.fallbackTargetIds = [null];
   }
 
   applyTrackSnapshot(looperState, track, snapshot, { volume = 1 } = {}) {
@@ -61,9 +61,7 @@ export class LooperGestureApplier {
       if (!targetEntry) {
         targetEntry = {
           honkId: targetHonkId,
-          voiceId: this.getActionVoiceId(looperState, track, targetHonkId),
           snapshot: createActionState(),
-          voiceActive: false,
           seenFrame: 0,
         };
         entry.targetEntries.set(targetHonkId, targetEntry);
@@ -76,7 +74,7 @@ export class LooperGestureApplier {
       } else {
         this.copyChordFollowerAction(targetEntry.snapshot, snapshot);
       }
-      this.setAutomationLayer(targetHonkId, layerId, targetEntry.snapshot);
+      this.setAutomationLayer(targetHonkId, layerId, targetEntry.snapshot, volume);
     }
 
     for (const [targetHonkId, targetEntry] of entry.targetEntries) {
@@ -130,30 +128,13 @@ export class LooperGestureApplier {
     }
   }
 
-  updateAudio() {
+  prepareLoopBoundary(looperState) {
+    const prefix = `looper-${looperState?.id}:`;
     for (const entry of this.appliedTracks.values()) {
-      for (const [honkId, targetEntry] of entry.targetEntries) {
-        const { voiceId, snapshot } = targetEntry;
-        if (!this.isPlayableHonkId(honkId)) {
-          this.releaseTargetEntry(entry.layerId, targetEntry);
-          entry.targetEntries.delete(honkId);
-          continue;
-        }
-
-        const squeeze = snapshot.squeeze || 0;
-        if (squeeze <= ACTION_SQUEEZE_THRESHOLD) {
-          if (targetEntry.voiceActive) {
-            this.releaseActionVoice(voiceId, honkId);
-            targetEntry.voiceActive = false;
-          }
-          continue;
-        }
-
-        if (!targetEntry.voiceActive) {
-          this.adapter.startActionVoice?.(voiceId, honkId);
-          targetEntry.voiceActive = true;
-        }
-        this.updateActionVoice(voiceId, honkId, snapshot, entry.volume);
+      if (!entry.layerId.startsWith(prefix)) continue;
+      for (const targetEntry of entry.targetEntries.values()) {
+        if ((targetEntry.snapshot.squeeze || 0) <= ACTION_SQUEEZE_THRESHOLD) continue;
+        this.adapter.requestAudioRetriggerByHonkId?.(targetEntry.honkId);
       }
     }
   }
@@ -179,38 +160,18 @@ export class LooperGestureApplier {
   }
 
   getPlaybackTargetIds(track, connectedHonkId) {
-    const targetValues = this.adapter.getPlaybackTargetIds?.(track, connectedHonkId) || [connectedHonkId];
-
-    const targetIds = new Set();
-    for (const targetId of targetValues) {
-      if (typeof targetId === "string" || typeof targetId === "number") {
-        targetIds.add(targetId);
-      }
-    }
-    return targetIds;
+    const targetValues = this.adapter.getPlaybackTargetIds?.(track, connectedHonkId);
+    if (targetValues) return targetValues;
+    this.fallbackTargetIds[0] = connectedHonkId;
+    return this.fallbackTargetIds;
   }
 
-  getActionVoiceId(looperState, track, honkId) {
-    return this.adapter.getActionVoiceIdForHonkId?.(looperState, track, honkId) ||
-      `${this.getLayerId(looperState, track)}:instrument-${honkId}:action`;
-  }
-
-  setAutomationLayer(honkId, layerId, snapshot) {
-    this.adapter.setAutomationLayerByHonkId?.(honkId, layerId, snapshot);
+  setAutomationLayer(honkId, layerId, snapshot, gain = 1) {
+    this.adapter.setAutomationLayerByHonkId?.(honkId, layerId, snapshot, gain);
   }
 
   clearAutomationLayer(honkId, layerId) {
     this.adapter.clearAutomationLayerByHonkId?.(honkId, layerId);
-  }
-
-  updateActionVoice(voiceId, honkId, snapshot, volume) {
-    this.adapter.updateActionVoiceByHonkId?.(voiceId, honkId, snapshot, volume);
-  }
-
-  releaseActionVoice(voiceId, honkId) {
-    this.adapter.releaseActionVoice?.(voiceId, honkId, {
-      fadeSeconds: LOOPER_ACTION_RELEASE_FADE_SECONDS,
-    });
   }
 
   copyChordFollowerAction(target, source) {
@@ -230,12 +191,6 @@ export class LooperGestureApplier {
   releaseTargetEntry(layerId, targetEntry) {
     if (targetEntry?.honkId !== null && targetEntry?.honkId !== undefined) {
       this.clearAutomationLayer(targetEntry.honkId, layerId);
-    }
-    if (targetEntry?.voiceId) {
-      this.releaseActionVoice(targetEntry.voiceId, targetEntry.honkId);
-    }
-    if (targetEntry) {
-      targetEntry.voiceActive = false;
     }
   }
 

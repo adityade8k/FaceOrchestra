@@ -99,6 +99,7 @@ export class FaceOrchestraApp {
     const runtime = this.runtime;
 
     this.frameScheduler.add("INPUT", (frame) => {
+      runtime.beginRuntimeFrame?.();
       frame.hadPendingSpawn = Boolean(runtime.pendingSpawnPlacement);
       runtime.pollControllers(frame.now);
     }, { label: "poll XR hardware" });

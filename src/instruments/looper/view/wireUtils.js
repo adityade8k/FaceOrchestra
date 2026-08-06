@@ -1,6 +1,16 @@
 import * as THREE from "three";
 import { LOOPER_WIRE_SETTINGS } from "../../../config/looper.js";
 import { createWirePathPlan } from "./wirePath.js";
+import {
+  WIRE_PERFORMANCE_COUNTERS,
+  readSetting,
+  resetWirePerformanceCounters,
+  updateWireGeometryIfDirtyValues,
+} from "./wireDirtyCache.js";
+
+function createCachedWireVector() {
+  return new THREE.Vector3();
+}
 
 export function createWireMaterial(color, textures = {}) {
   const material = new THREE.MeshStandardMaterial({
@@ -22,55 +32,22 @@ export function updateWireMeshGeometry(
     startTangent = null,
     endTangent = null,
     settings = LOOPER_WIRE_SETTINGS,
+    planner = createWirePathPlan,
+    geometryFactory = createTubeGeometryFromPlan,
   } = {},
 ) {
-  if (!wireMesh) {
-    return false;
-  }
-
-  const resolvedSettings = { ...LOOPER_WIRE_SETTINGS, ...(settings || {}) };
-  const plan = createWirePathPlan(start, end, {
-    startTangent,
-    endTangent,
-    settings: resolvedSettings,
-  });
-  const positionEpsilonSquared = Math.pow(resolvedSettings.positionEpsilon || 0.00035, 2);
-  const directionEpsilonSquared = Math.pow(resolvedSettings.directionEpsilon || 0.002, 2);
-  const unchanged = hasMatchingWireCache(
+  return updateWireGeometryIfDirtyValues(
     wireMesh,
     start,
     end,
-    plan.startTangent,
-    plan.endTangent,
-    positionEpsilonSquared,
-    directionEpsilonSquared,
+    startTangent,
+    endTangent,
+    settings,
+    LOOPER_WIRE_SETTINGS,
+    planner,
+    geometryFactory,
+    createCachedWireVector,
   );
-
-  if (plan.spanCount === 0) {
-    wireMesh.visible = false;
-    cacheWireState(wireMesh, start, end, plan);
-    return false;
-  }
-
-  if (unchanged && wireMesh.visible) {
-    return false;
-  }
-
-  const curve = createWireCurveFromPlan(plan);
-  const geometry = new THREE.TubeGeometry(
-    curve,
-    plan.tubularSegments,
-    resolvedSettings.radius,
-    resolvedSettings.radialSegments,
-    false,
-  );
-  geometry.userData.disposeOnInstrumentDelete = true;
-  geometry.userData.wireSpanCount = plan.spanCount;
-  wireMesh.geometry?.dispose?.();
-  wireMesh.geometry = geometry;
-  wireMesh.visible = true;
-  cacheWireState(wireMesh, start, end, plan);
-  return true;
 }
 
 export function createWireCurve(start, end, options = {}) {
@@ -91,44 +68,18 @@ function createWireCurveFromPlan(plan) {
   return curve;
 }
 
-function hasMatchingWireCache(
-  wireMesh,
-  start,
-  end,
-  startTangent,
-  endTangent,
-  positionEpsilonSquared,
-  directionEpsilonSquared,
-) {
-  const data = wireMesh.userData;
-  return Boolean(
-    data.lastWireStart &&
-    data.lastWireEnd &&
-    data.lastWireStartTangent &&
-    data.lastWireEndTangent &&
-    data.lastWireStart.distanceToSquared(start) <= positionEpsilonSquared &&
-    data.lastWireEnd.distanceToSquared(end) <= positionEpsilonSquared &&
-    data.lastWireStartTangent.distanceToSquared(startTangent) <= directionEpsilonSquared &&
-    data.lastWireEndTangent.distanceToSquared(endTangent) <= directionEpsilonSquared
+function createTubeGeometryFromPlan(plan, settings, fallbackSettings) {
+  const curve = createWireCurveFromPlan(plan);
+  const geometry = new THREE.TubeGeometry(
+    curve,
+    plan.tubularSegments,
+    readSetting(settings, fallbackSettings, "radius", 0.004),
+    readSetting(settings, fallbackSettings, "radialSegments", 8),
+    false,
   );
-}
-
-function cacheWireState(wireMesh, start, end, plan) {
-  const data = wireMesh.userData;
-  data.lastWireStart = copyCachedVector(data.lastWireStart, start);
-  data.lastWireEnd = copyCachedVector(data.lastWireEnd, end);
-  data.lastWireStartTangent = copyCachedVector(
-    data.lastWireStartTangent,
-    plan.startTangent,
-  );
-  data.lastWireEndTangent = copyCachedVector(data.lastWireEndTangent, plan.endTangent);
-  data.wirePathPlan = plan;
-}
-
-function copyCachedVector(target, value) {
-  const vector = target || new THREE.Vector3();
-  vector.set(value?.x || 0, value?.y || 0, value?.z || 0);
-  return vector;
+  geometry.userData.disposeOnInstrumentDelete = true;
+  geometry.userData.wireSpanCount = plan.spanCount;
+  return geometry;
 }
 
 function toVector3(point) {
@@ -147,3 +98,5 @@ export function disposeWireMesh(wireMesh) {
     material?.dispose?.();
   }
 }
+
+export { WIRE_PERFORMANCE_COUNTERS, resetWirePerformanceCounters };

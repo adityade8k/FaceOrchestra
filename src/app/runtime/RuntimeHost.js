@@ -72,12 +72,33 @@ export class RuntimeHost {
     this.assetRepository = assetRepository || new AssetRepository();
 
     this.instrumentRegistry = new InstrumentRegistry();
+    this.runtimeInstrumentStates = [];
+    this.honkRuntimeStates = [];
+    this.looperRuntimeStates = [];
+    this.metronomeRuntimeStates = [];
+    this.looperRuntimeEntries = [];
+    this.looperTimingFrameCache = new Map();
+    this.metronomeTimingFrameCache = new Map();
+    this.runtimeIndexRevision = 0;
+    this.runtimeFrameSequence = 0;
+    this.runtimePerformanceCounters = {
+      frames: 0,
+      runtimeIndexRebuilds: 0,
+      looperEntryReads: 0,
+    };
+    this.runtimeProfilingEnabled = false;
+    this.unsubscribeRuntimeIndexes = this.instrumentRegistry.subscribe(() => {
+      this.rebuildRuntimeIndexes();
+    });
     this.interactionTargetRegistry = new InteractionTargetRegistry();
     this.instrumentFactory = new InstrumentFactory({
       registry: this.instrumentRegistry,
       interactionTargetRegistry: this.interactionTargetRegistry,
     });
     this.metronomeConnectionWires = new Map();
+    this.metronomeConnectionRuntimeEntries = new Map();
+    this.metronomeConnectionsNeedValidation = false;
+    this.lastMetronomeSafetyValidationMs = -Infinity;
     this.metronomePulseStates = new Map();
     this.metronomeConnectionManager = new MetronomeConnectionManager({
       registry: this.instrumentRegistry,
@@ -176,9 +197,84 @@ export class RuntimeHost {
   }
 
   get instrumentStates() {
-    return [...this.instrumentRegistry.values()].filter(
-      ({ kind }) => kind === "honk" || kind === "looper" || kind === "metronome",
-    );
+    return this.runtimeInstrumentStates;
+  }
+
+  rebuildRuntimeIndexes() {
+    this.runtimeInstrumentStates.length = 0;
+    this.honkRuntimeStates.length = 0;
+    this.looperRuntimeStates.length = 0;
+    this.metronomeRuntimeStates.length = 0;
+    this.looperRuntimeEntries.length = 0;
+    this.looperTimingFrameCache.clear();
+    this.metronomeTimingFrameCache.clear();
+    for (const instrument of this.instrumentRegistry.values()) {
+      if (
+        instrument.kind !== "honk" &&
+        instrument.kind !== "looper" &&
+        instrument.kind !== "metronome"
+      ) continue;
+      this.runtimeInstrumentStates.push(instrument);
+      if (instrument.kind === "honk") {
+        this.honkRuntimeStates.push(instrument);
+      } else if (instrument.kind === "looper") {
+        this.looperRuntimeStates.push(instrument);
+        if (instrument.looperController && instrument.looperData) {
+          this.looperRuntimeEntries.push({
+            looperState: instrument,
+            controller: instrument.looperController,
+          });
+        }
+      } else {
+        this.metronomeRuntimeStates.push(instrument);
+      }
+    }
+    this.runtimeIndexRevision += 1;
+    if (this.runtimeProfilingEnabled) this.runtimePerformanceCounters.runtimeIndexRebuilds += 1;
+  }
+
+  beginRuntimeFrame() {
+    this.runtimeFrameSequence += 1;
+    if (this.runtimeProfilingEnabled) this.runtimePerformanceCounters.frames += 1;
+    return this.runtimeIndexRevision;
+  }
+
+  getRuntimePerformanceCounters() {
+    return { ...this.runtimePerformanceCounters, runtimeIndexRevision: this.runtimeIndexRevision };
+  }
+
+  setRuntimeProfilingEnabled(enabled = true) {
+    this.runtimeProfilingEnabled = Boolean(enabled);
+    this.runtimePerformanceCounters.frames = 0;
+    this.runtimePerformanceCounters.runtimeIndexRebuilds = 0;
+    this.runtimePerformanceCounters.looperEntryReads = 0;
+    return this.runtimeProfilingEnabled;
+  }
+
+  getCachedLooperTiming(looperId, now) {
+    let entry = this.looperTimingFrameCache.get(looperId);
+    if (!entry) {
+      entry = { frame: -1, timing: {} };
+      this.looperTimingFrameCache.set(looperId, entry);
+    }
+    if (entry.frame !== this.runtimeFrameSequence) {
+      this.metronomeConnectionManager.getTimingForLooper(looperId, now, entry.timing);
+      entry.frame = this.runtimeFrameSequence;
+    }
+    return entry.timing;
+  }
+
+  getCachedMetronomeTiming(metronomeId, now) {
+    let entry = this.metronomeTimingFrameCache.get(metronomeId);
+    if (!entry) {
+      entry = { frame: -1, timing: {} };
+      this.metronomeTimingFrameCache.set(metronomeId, entry);
+    }
+    if (entry.frame !== this.runtimeFrameSequence) {
+      this.instrumentRegistry.get(metronomeId)?.getBeatTiming?.(now, entry.timing);
+      entry.frame = this.runtimeFrameSequence;
+    }
+    return entry.timing;
   }
 
   get controllers() {
@@ -348,32 +444,21 @@ export class RuntimeHost {
       resolveHonk: (honkId) => this.instrumentRegistry.get(honkId),
       isPlayableHonkId: (honkId) => this.instrumentRegistry.get(honkId)?.isPlayable?.() || false,
       captureActionByHonkId: (honkId) => this.captureLooperActionFromHonk(this.instrumentRegistry.get(honkId)),
-      getPlaybackTargetIds: (_track, honkId) => {
-        const component = this.honkContactGraph.getConnectedComponent(honkId);
-        return component.size > 0 ? [...component] : [honkId];
-      },
+      getPlaybackTargetIds: (track, honkId) =>
+        this.getCachedLooperPlaybackTargetIds(track, honkId),
       getAutomationLayerId: (looper, track) => this.getLooperAutomationLayerId(looper, track),
-      getActionVoiceIdForHonkId: (looper, track, honkId) =>
-        `${this.getLooperAutomationLayerId(looper, track)}:instrument-${honkId}:action`,
-      setAutomationLayerByHonkId: (honkId, layerId, snapshot) =>
-        this.instrumentRegistry.get(honkId)?.setAutomationLayer(layerId, snapshot),
+      setAutomationLayerByHonkId: (honkId, layerId, snapshot, gain) =>
+        this.instrumentRegistry.get(honkId)?.setAutomationLayer(layerId, snapshot, gain),
       clearAutomationLayerByHonkId: (honkId, layerId) =>
         this.instrumentRegistry.get(honkId)?.clearAutomationLayer(layerId),
-      startActionVoice: (voiceId, honkId) =>
-        this.instrumentRegistry.get(honkId)?.startAudioVoice(voiceId),
-      releaseActionVoice: (voiceId, honkId, options = {}) => {
-        const honk = this.instrumentRegistry.get(honkId);
-        if (honk?.activeVoiceIds?.has(voiceId)) {
-          honk.releaseAudioVoice(voiceId, options);
-        }
-        else this.releaseHonkVoice(voiceId, options);
-      },
-      updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume) =>
-        this.updateLooperActionVoice(voiceId, this.instrumentRegistry.get(honkId), snapshot, volume),
+      requestAudioRetriggerByHonkId: (honkId) =>
+        this.instrumentRegistry.get(honkId)?.requestAudioRetrigger?.(),
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
       getTimingForLooper: (looperId, now) =>
-        this.metronomeConnectionManager.getTimingForLooper(looperId, now),
+        this.getCachedLooperTiming(looperId, now),
       updateWireForTrack: (looper, track) => this.updateLooperWireForTrack(looper, track),
+      onTrackConnectionChanged: (looper, track) =>
+        this.cacheLooperTrackConnectionTargets(looper, track),
       disposeWireMesh: (wire) => this.disposeWireMesh(wire),
       updateVisuals: (looper) => this.updateLooperVisuals(looper),
     };
@@ -455,8 +540,11 @@ export class RuntimeHost {
     this.metronomeConnectionManager.dispose();
     this.instrumentLifecycle.dispose();
     this.instrumentRegistry.clear();
+    this.unsubscribeRuntimeIndexes?.();
+    this.unsubscribeRuntimeIndexes = null;
     this.interactionTargetRegistry.clear();
     this.assetRepository.clear();
+    this.audioSystem.dispose?.();
   }
 }
 
