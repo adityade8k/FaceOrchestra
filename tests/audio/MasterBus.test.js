@@ -35,14 +35,6 @@ class FakeGainNode extends FakeAudioNode {
   }
 }
 
-class FakeBiquadFilterNode extends FakeAudioNode {
-  constructor() {
-    super("biquad");
-    this.Q = new FakeAudioParam();
-    this.frequency = new FakeAudioParam();
-  }
-}
-
 class FakeDynamicsCompressorNode extends FakeAudioNode {
   constructor() {
     super("compressor");
@@ -55,20 +47,13 @@ class FakeDynamicsCompressorNode extends FakeAudioNode {
 }
 
 class FakeAudioContext {
-  constructor(sampleRate = 48000) {
-    this.sampleRate = sampleRate;
+  constructor() {
     this.destination = new FakeAudioNode("destination");
     this.created = [];
   }
 
   createGain() {
     const node = new FakeGainNode();
-    this.created.push(node);
-    return node;
-  }
-
-  createBiquadFilter() {
-    const node = new FakeBiquadFilterNode();
     this.created.push(node);
     return node;
   }
@@ -80,36 +65,51 @@ class FakeAudioContext {
   }
 }
 
-test("MasterBus builds a filtered, compressed, and peak-limited signal chain", () => {
+test("master settings exactly match the Ver-5 gain staging and compressor", () => {
+  assert.deepEqual(AUDIO_MASTER_BUS_SETTINGS, {
+    inputGain: 0.9,
+    outputGain: 0.82,
+    compressor: {
+      threshold: -18,
+      knee: 18,
+      ratio: 8,
+      attack: 0.004,
+      release: 0.18,
+    },
+  });
+});
+
+test("MasterBus builds exactly the Ver-5 input, compressor, and output chain", () => {
   const context = new FakeAudioContext();
   const bus = new MasterBus();
 
   assert.strictEqual(bus.initialize(context), bus.input);
-  assert.deepEqual(bus.input.connections, [bus.lowpass]);
-  assert.deepEqual(bus.lowpass.connections, [bus.compressor]);
-  assert.deepEqual(bus.compressor.connections, [bus.makeup]);
-  assert.deepEqual(bus.makeup.connections, [bus.limiter]);
-  assert.deepEqual(bus.limiter.connections, [bus.output]);
+  assert.deepEqual(bus.input.connections, [bus.compressor]);
+  assert.deepEqual(bus.compressor.connections, [bus.output]);
   assert.deepEqual(bus.output.connections, [context.destination]);
+  assert.deepEqual(context.created.map((node) => node.type), [
+    "gain",
+    "compressor",
+    "gain",
+  ]);
 
   assert.equal(bus.input.gain.value, AUDIO_MASTER_BUS_SETTINGS.inputGain);
-  assert.equal(bus.lowpass.type, "lowpass");
-  assert.equal(bus.lowpass.frequency.value, AUDIO_MASTER_BUS_SETTINGS.lowpass.frequency);
-  assert.equal(bus.lowpass.Q.value, AUDIO_MASTER_BUS_SETTINGS.lowpass.q);
-  assert.equal(bus.makeup.gain.value, AUDIO_MASTER_BUS_SETTINGS.makeupGain);
-  assert.equal(bus.output.gain.value, AUDIO_MASTER_BUS_SETTINGS.outputGain);
-  assert.equal(bus.output.gain.value <= 1, true);
+  assert.equal(bus.input.gain.value, 0.9);
+  assert.equal(bus.output.gain.value, 0.82);
+  assert.equal("lowpass" in bus, false);
+  assert.equal("makeup" in bus, false);
+  assert.equal("limiter" in bus, false);
+  assert.equal("lowpass" in AUDIO_MASTER_BUS_SETTINGS, false);
+  assert.equal("makeupGain" in AUDIO_MASTER_BUS_SETTINGS, false);
+  assert.equal("limiter" in AUDIO_MASTER_BUS_SETTINGS, false);
 });
 
-test("MasterBus applies compressor and limiter dynamics settings", () => {
+test("MasterBus applies the Ver-5 compressor dynamics settings", () => {
   const bus = new MasterBus();
   bus.initialize(new FakeAudioContext());
 
   for (const [parameter, expected] of Object.entries(AUDIO_MASTER_BUS_SETTINGS.compressor)) {
     assert.equal(bus.compressor[parameter].value, expected);
-  }
-  for (const [parameter, expected] of Object.entries(AUDIO_MASTER_BUS_SETTINGS.limiter)) {
-    assert.equal(bus.limiter[parameter].value, expected);
   }
 });
 
@@ -131,14 +131,7 @@ test("MasterBus disconnects the old graph when the audio context changes", () =>
   const secondContext = new FakeAudioContext();
   const bus = new MasterBus();
   bus.initialize(firstContext);
-  const oldNodes = [
-    bus.input,
-    bus.lowpass,
-    bus.compressor,
-    bus.makeup,
-    bus.limiter,
-    bus.output,
-  ];
+  const oldNodes = [bus.input, bus.compressor, bus.output];
 
   const secondInput = bus.initialize(secondContext);
 
@@ -162,12 +155,4 @@ test("MasterBus can reconnect after an explicit disconnect", () => {
   assert.equal(bus.input, null);
   assert.equal(firstInput.disconnectCount, 1);
   assert.notStrictEqual(bus.initialize(context), firstInput);
-});
-
-test("MasterBus keeps its low-pass cutoff below Nyquist on low-rate contexts", () => {
-  const context = new FakeAudioContext(22050);
-  const bus = new MasterBus();
-  bus.initialize(context);
-
-  assert.equal(bus.lowpass.frequency.value, context.sampleRate * 0.45);
 });

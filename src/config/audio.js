@@ -8,19 +8,15 @@ export const NASALITY_SETTINGS = {
 export const HONK_MASTER_GAIN = 0.78;
 export const HONK_RELEASE_SETTINGS = Object.freeze({
   liveFadeSeconds: 0.12,
-  looperActionFadeSeconds: 0.035,
+  looperActionFadeSeconds: 0.12,
   minimumFadeSeconds: 0.01,
-  stopPaddingSeconds: 0.008,
 });
 export const LOOPER_ACTION_RELEASE_FADE_SECONDS =
   HONK_RELEASE_SETTINGS.looperActionFadeSeconds;
 
 export const AUDIO_MASTER_BUS_SETTINGS = {
   inputGain: 0.9,
-  lowpass: {
-    frequency: 14000,
-    q: 0.707,
-  },
+  outputGain: 0.82,
   compressor: {
     threshold: -18,
     knee: 18,
@@ -28,15 +24,6 @@ export const AUDIO_MASTER_BUS_SETTINGS = {
     attack: 0.004,
     release: 0.18,
   },
-  makeupGain: 6.56,
-  limiter: {
-    threshold: -1,
-    knee: 0,
-    ratio: 20,
-    attack: 0.001,
-    release: 0.08,
-  },
-  outputGain: 0.94,
 };
 
 export const VOICE_GAIN_SETTINGS = {

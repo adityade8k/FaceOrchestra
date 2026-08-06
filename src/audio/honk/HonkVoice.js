@@ -198,8 +198,7 @@ export class HonkVoice {
       requestedFade,
       HONK_RELEASE_SETTINGS.minimumFadeSeconds,
     );
-    const silentAt = now + safeFadeSeconds;
-    const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
+    const stopAt = now + safeFadeSeconds;
     let completed = false;
     let fallbackTimer = null;
     const completeRelease = () => {
@@ -220,20 +219,11 @@ export class HonkVoice {
 
     this.releaseState = {
       releaseStart: now,
-      silentAt,
       stopAt,
     };
     this.pitchBendSemitones = 0;
-    if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
-      this.master.gain.cancelAndHoldAtTime(now);
-    } else {
-      const currentGain = Number.isFinite(this.master.gain.value)
-        ? Math.max(this.master.gain.value, 0)
-        : 0.0001;
-      this.master.gain.cancelScheduledValues(now);
-      this.master.gain.setValueAtTime(currentGain, now);
-    }
-    this.master.gain.linearRampToValueAtTime(0, silentAt);
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setTargetAtTime(0.0001, now, 0.04);
     this.source.onended = handleSourceEnded;
 
     try {

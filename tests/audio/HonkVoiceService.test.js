@@ -101,7 +101,9 @@ test("multiple rapid retriggers clean up every independent release generation", 
 
   for (let generation = 0; generation < 5; generation += 1) {
     await service.startVoice("played-voice");
-    service.releaseVoice("played-voice", { fadeSeconds: 0.035 });
+    service.releaseVoice("played-voice", {
+      fadeSeconds: HONK_RELEASE_SETTINGS.liveFadeSeconds,
+    });
   }
 
   assert.equal(service.voices.has("played-voice"), false);

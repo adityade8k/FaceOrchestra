@@ -90,6 +90,12 @@ test("stopping transport clears applied Honk automation", () => {
 });
 
 test("Looper note-off passes the configured action release fade", () => {
+  assert.equal(HONK_RELEASE_SETTINGS.looperActionFadeSeconds, 0.12);
+  assert.equal(
+    HONK_RELEASE_SETTINGS.looperActionFadeSeconds,
+    HONK_RELEASE_SETTINGS.liveFadeSeconds,
+  );
+
   const releases = [];
   const applier = new LooperGestureApplier({
     isPlayableHonkId: (honkId) => honkId === "honk-a",

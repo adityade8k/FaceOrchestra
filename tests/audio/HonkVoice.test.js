@@ -5,32 +5,29 @@ import test from "node:test";
 import { HonkVoice } from "../../src/audio/honk/HonkVoice.js";
 import { HONK_RELEASE_SETTINGS } from "../../src/config/audio.js";
 
-test("release ramps the held master gain to exact zero before stopping oscillators", () => {
+test("release uses the Ver-5 target curve and stops oscillators after 0.12 seconds", () => {
   const context = createAudioContext({ currentTime: 4 });
   const voice = new HonkVoice({ context });
   let completionCount = 0;
   voice.master.gain.value = 0.37;
 
-  const releaseState = voice.release(0.04, () => {
+  const releaseState = voice.release(undefined, () => {
     completionCount += 1;
   });
-  const hold = lastEventOfType(voice.master.gain, "cancelAndHoldAtTime");
-  const ramp = lastEventOfType(voice.master.gain, "linearRampToValueAtTime");
+  const cancel = lastEventOfType(voice.master.gain, "cancelScheduledValues");
+  const target = lastEventOfType(voice.master.gain, "setTargetAtTime");
 
-  assert.deepEqual(hold, { type: "cancelAndHoldAtTime", time: 4 });
-  assert.deepEqual(ramp, {
-    type: "linearRampToValueAtTime",
-    value: 0,
-    time: releaseState.silentAt,
+  assert.deepEqual(cancel, { type: "cancelScheduledValues", time: 4 });
+  assert.deepEqual(target, {
+    type: "setTargetAtTime",
+    value: 0.0001,
+    time: 4,
+    timeConstant: 0.04,
   });
-  assert.equal(releaseState.silentAt, 4.04);
-  assert.equal(
-    releaseState.stopAt,
-    releaseState.silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds,
-  );
+  assert.equal(eventCount(voice.master.gain, "cancelAndHoldAtTime"), 0);
+  assert.equal(releaseState.stopAt, 4.12);
   assert.deepEqual(voice.source.stopCalls, [releaseState.stopAt]);
   assert.deepEqual(voice.vibrato.stopCalls, [releaseState.stopAt]);
-  assert.equal(voice.source.stopCalls[0] > ramp.time, true);
   assert.equal(voice.disconnected, false);
   assert.equal(completionCount, 0);
 
@@ -41,7 +38,7 @@ test("release ramps the held master gain to exact zero before stopping oscillato
   assert.equal(completionCount, 1);
 });
 
-test("release fallback cancels automation and anchors the current gain before ramping", () => {
+test("release cancels scheduled automation before applying the target curve", () => {
   const context = createAudioContext({
     currentTime: 2,
     supportsCancelAndHold: false,
@@ -51,11 +48,11 @@ test("release fallback cancels automation and anchors the current gain before ra
 
   voice.release(0.03);
 
-  assert.deepEqual(voice.master.gain.events.slice(-3), [
+  assert.deepEqual(voice.master.gain.events.slice(-2), [
     { type: "cancelScheduledValues", time: 2 },
-    { type: "setValueAtTime", value: 0.23, time: 2 },
-    { type: "linearRampToValueAtTime", value: 0, time: 2.03 },
+    { type: "setTargetAtTime", value: 0.0001, time: 2, timeConstant: 0.04 },
   ]);
+  assert.deepEqual(voice.source.stopCalls, [2.03]);
 });
 
 test("release is idempotent and completes cleanup only once", () => {
@@ -72,7 +69,7 @@ test("release is idempotent and completes cleanup only once", () => {
   });
 
   assert.equal(secondState, firstState);
-  assert.equal(eventCount(voice.master.gain, "linearRampToValueAtTime"), 1);
+  assert.equal(eventCount(voice.master.gain, "setTargetAtTime"), 1);
   assert.equal(voice.source.stopCalls.length, 1);
   assert.equal(voice.vibrato.stopCalls.length, 1);
 
@@ -84,7 +81,7 @@ test("release is idempotent and completes cleanup only once", () => {
   assert.equal(secondCompletionCount, 0);
 });
 
-test("a source-stop error waits through the silent point before fallback cleanup", async () => {
+test("a source-stop error waits until the scheduled stop before fallback cleanup", async () => {
   const context = createAudioContext({ sourceStopThrows: true });
   const voice = new HonkVoice({ context });
   let completionCount = 0;
@@ -94,7 +91,7 @@ test("a source-stop error waits through the silent point before fallback cleanup
   });
 
   assert.equal(
-    releaseState.silentAt,
+    releaseState.stopAt,
     HONK_RELEASE_SETTINGS.minimumFadeSeconds,
   );
   assert.equal(voice.disconnected, false);

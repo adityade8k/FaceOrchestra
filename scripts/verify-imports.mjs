@@ -57,8 +57,18 @@ for (const [label, pattern] of [
   if (pattern.test(interactionLayerSource)) errors.push(`forbidden ownership leak remains: ${label}`);
 }
 
-for (const privatePath of ["certs/localhost-key.pem", "certs/localhost.pem"]) {
-  if (existsSync(privatePath)) errors.push(`tracked/private certificate material still exists: ${privatePath}`);
+const privatePaths = ["certs/localhost-key.pem", "certs/localhost.pem"];
+const trackedPrivatePaths = new Set(
+  spawnSync("git", ["ls-files", "--", ...privatePaths], { encoding: "utf8" })
+    .stdout
+    .trim()
+    .split("\n")
+    .filter(Boolean),
+);
+for (const privatePath of privatePaths) {
+  if (trackedPrivatePaths.has(privatePath)) {
+    errors.push(`tracked/private certificate material still exists: ${privatePath}`);
+  }
 }
 
 if (errors.length > 0) {
