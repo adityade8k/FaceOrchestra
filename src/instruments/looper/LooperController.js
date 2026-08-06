@@ -1,8 +1,8 @@
-import * as THREE from "three";
 import {
   LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
   LOOPER_MAX_RECORDING_DURATION_MS,
   LOOPER_BEAT_DETECTION_SETTINGS,
+  LOOPER_CONTROL_DEFAULT_VALUES,
   LOOPER_MIN_ACTION_DURATION_MS,
   LOOPER_TRACK_COUNT,
 } from "../../config/looper.js";
@@ -12,10 +12,7 @@ import { LooperControlMapping } from "./looperControlMapping.js";
 import { LooperGestureApplier } from "./LooperGestureApplier.js";
 import { LooperGestureRecorder } from "./LooperGestureRecorder.js";
 import { getLooperNodeName } from "./looperNames.js";
-import {
-  LooperPlaybackEngine,
-  getSynchronizedPlaybackStart,
-} from "./LooperPlaybackEngine.js";
+import { LooperPlaybackEngine } from "./LooperPlaybackEngine.js";
 import { LooperTrack } from "./LooperTrack.js";
 import { LooperTransport } from "./LooperTransport.js";
 import { LooperTimeline } from "./timeline/LooperTimeline.js";
@@ -35,6 +32,22 @@ function exposeTransportState(data) {
     paused: {
       enumerable: true,
       get: () => data.transport.paused,
+    },
+    armed: {
+      enumerable: true,
+      get: () => data.transport.armed || data.armedAction === "pause",
+    },
+    recordArmed: {
+      enumerable: true,
+      get: () => data.transport.recordArmed,
+    },
+    playArmed: {
+      enumerable: true,
+      get: () => data.transport.playArmed,
+    },
+    pauseArmed: {
+      enumerable: true,
+      get: () => data.armedAction === "pause",
     },
   });
   return data;
@@ -81,14 +94,17 @@ export class LooperController {
       lastPlayingHeadMorphUpdateMs: 0,
       lastPlaybackUpdateMs: 0,
       recordingBeatIntervalMs: 0,
-      volumeControlValue: 0,
-      gapControlValue: -1,
+      armedAction: null,
+      armedAfterBeatOrdinal: null,
+      armedAtMs: 0,
+      clockMetronomeId: null,
+      clockPlaybackStartBeatPosition: null,
+      volumeControlValue: LOOPER_CONTROL_DEFAULT_VALUES.volume,
+      gapControlValue: LOOPER_CONTROL_DEFAULT_VALUES.gap,
       gapBeats: 0,
-      speedControlValue: 0,
-      volume: LooperControlMapping.getVolumeFromControl(0),
-      speed: LooperControlMapping.getSpeedFromControl(0),
-      lastPosition: new THREE.Vector3(),
-      lastQuaternion: new THREE.Quaternion(),
+      volume: LooperControlMapping.getVolumeFromControl(LOOPER_CONTROL_DEFAULT_VALUES.volume),
+      lastPosition: looperState.root?.position?.clone?.() || null,
+      lastQuaternion: looperState.root?.quaternion?.clone?.() || null,
     });
   }
 
@@ -111,6 +127,26 @@ export class LooperController {
       return false;
     }
 
+    const timing = this.getTimingForLooper(looperState, now);
+    if (timing.connected) return this.armRecording(looperState, now, timing);
+    return this.beginRecording(looperState, now, null);
+  }
+
+  armRecording(looperState, now, timing) {
+    const data = looperState.looperData;
+    this.stopPlayback(looperState);
+    data.armedAction = "record";
+    data.armedAtMs = now;
+    data.armedAfterBeatOrdinal = null;
+    data.clockMetronomeId = timing.metronomeId;
+    data.transport.armRecord();
+    this.adapter.updateVisuals?.(looperState);
+    return true;
+  }
+
+  beginRecording(looperState, now, timing = null) {
+    const data = looperState.looperData;
+
     this.stopPlayback(looperState);
     data.timeline = new LooperTimeline();
     data.hasRecording = false;
@@ -121,8 +157,7 @@ export class LooperController {
       track.resetRuntimeState();
     }
 
-    const timing = this.getMetronomeTiming(now);
-    data.recordingBeatIntervalMs = timing?.active ? timing.beatIntervalMs : 0;
+    data.recordingBeatIntervalMs = hasBeatGrid(timing) ? timing.beatIntervalMs : 0;
     this.recorder.start(
       data.timeline,
       data.tracks,
@@ -136,6 +171,10 @@ export class LooperController {
 
   stopRecording(looperState, now = performance.now()) {
     const data = looperState?.looperData;
+    if (data?.transport.recordArmed) {
+      this.cancelArmedStart(looperState);
+      return false;
+    }
     if (!data?.transport.recording) {
       return false;
     }
@@ -185,6 +224,9 @@ export class LooperController {
       return false;
     }
 
+    const timing = this.getTimingForLooper(looperState, now);
+    if (timing.connected) return this.armPlayback(looperState, now, timing);
+
     const shouldResume = resume && data.transport.paused;
     const transition = data.transport.play({ restart: !shouldResume });
     if (!transition.accepted) {
@@ -200,17 +242,24 @@ export class LooperController {
     }
 
     data.lastPlaybackUpdateMs = now;
-    const timing = this.getMetronomeTiming(now);
-    const playbackOriginMs = !shouldResume && timing?.active &&
-      data.timeline.timingMode === "metronome"
-      ? getSynchronizedPlaybackStart(
-        now,
-        timing,
-        data.timeline.firstOnsetPhaseMs,
-      )
-      : now;
-    data.playbackEngine.start(playbackOriginMs, { resume: shouldResume });
+    data.clockPlaybackStartBeatPosition = null;
+    data.playbackEngine.start(now, { resume: shouldResume });
     this.updatePlaybackForLooper(looperState, now);
+    this.adapter.updateVisuals?.(looperState);
+    return true;
+  }
+
+  armPlayback(looperState, now, timing) {
+    const data = looperState.looperData;
+    this.adapter.ensureAudio?.();
+    this.stopPlayback(looperState);
+    data.armedAction = "play";
+    data.armedAtMs = now;
+    data.armedAfterBeatOrdinal = hasBeatGrid(timing)
+      ? Math.floor(timing.beatPosition + 1e-9)
+      : null;
+    data.clockMetronomeId = timing.metronomeId;
+    data.transport.armPlay();
     this.adapter.updateVisuals?.(looperState);
     return true;
   }
@@ -219,11 +268,32 @@ export class LooperController {
     return this.startPlayback(looperState, now, { resume: true });
   }
 
-  pausePlayback(looperState) {
+  pausePlayback(looperState, now = performance.now()) {
     const data = looperState?.looperData;
+    if (data?.transport.armed || data?.pauseArmed) {
+      this.cancelArmedStart(looperState);
+      return true;
+    }
     if (!data?.transport.playing) {
       return false;
     }
+
+    const timing = this.getTimingForLooper(looperState, now);
+    if (timing.connected && hasBeatGrid(timing)) {
+      data.armedAction = "pause";
+      data.armedAtMs = now;
+      data.armedAfterBeatOrdinal = Math.floor(timing.beatPosition + 1e-9);
+      data.clockMetronomeId = timing.metronomeId;
+      this.adapter.updateVisuals?.(looperState);
+      return true;
+    }
+
+    return this.pausePlaybackImmediately(looperState);
+  }
+
+  pausePlaybackImmediately(looperState) {
+    const data = looperState?.looperData;
+    if (!data?.transport.playing) return false;
 
     data.playbackEngine.pause({
       onReleaseTrack: (trackId) => this.releaseTrackById(looperState, trackId),
@@ -251,6 +321,8 @@ export class LooperController {
       data.transport.stop();
     }
     data.lastPlaybackUpdateMs = 0;
+    data.clockPlaybackStartBeatPosition = null;
+    this.clearArmedState(data);
     for (const track of data.tracks) {
       track.isPlaying = false;
     }
@@ -260,9 +332,15 @@ export class LooperController {
   updateRecordings(looperStates, now = performance.now()) {
     for (const looperState of looperStates) {
       const data = looperState.looperData;
-      if (!data?.transport.recording || !looperState.root?.visible) {
+      if (!data || !looperState.root?.visible) {
         continue;
       }
+
+      if (data.transport.recordArmed) {
+        if (!this.hasArmedTrackOnset(data)) continue;
+        if (!this.beginArmedRecordingFromOnset(looperState, now)) continue;
+      }
+      if (!data.transport.recording) continue;
 
       if (data.timeline.getElapsedMs(now) >= LOOPER_MAX_RECORDING_DURATION_MS) {
         this.stopRecording(looperState, now);
@@ -279,6 +357,24 @@ export class LooperController {
       }
       this.adapter.updateVisuals?.(looperState);
     }
+  }
+
+  hasArmedTrackOnset(data) {
+    return data.tracks.some((track) =>
+      this.recorder.isMusicalOnset(
+        this.captureActionByHonkId(track.connectedHonkId),
+      ),
+    );
+  }
+
+  beginArmedRecordingFromOnset(looperState, now) {
+    const data = looperState?.looperData;
+    if (!data?.transport.recordArmed) return false;
+    const timing = this.getTimingForLooper(looperState, now);
+    if (!timing.connected || !hasBeatGrid(timing)) return false;
+    const beatOrdinal = Math.floor(timing.beatPosition + 1e-9);
+    const beatStartMs = timing.beatOriginMs + beatOrdinal * timing.beatIntervalMs;
+    return this.beginRecording(looperState, beatStartMs, timing);
   }
 
   updatePlayback(looperStates, now = performance.now()) {
@@ -298,7 +394,7 @@ export class LooperController {
       return;
     }
 
-    data.playbackEngine.update(now, data.timeline, data.speed, {
+    const handlers = {
       onTrackSnapshot: (trackTimeline, snapshot) => {
         const track = this.getTrack(looperState, trackTimeline.trackIndex);
         if (track) {
@@ -315,15 +411,99 @@ export class LooperController {
       },
       onReleaseTrack: (trackId) => this.releaseTrackById(looperState, trackId),
       onLoopBoundary: () => this.handleLoopBoundary(looperState),
-    });
+    };
+    const timing = this.getTimingForLooper(looperState, now);
+    if (timing.connected) {
+      if (!hasBeatGrid(timing) || !Number.isFinite(data.clockPlaybackStartBeatPosition)) return;
+      const recordedBeatIntervalMs = data.timeline.beatIntervalMs || timing.beatIntervalMs;
+      const totalElapsedMs = Math.max(
+        timing.beatPosition - data.clockPlaybackStartBeatPosition,
+        0,
+      ) * recordedBeatIntervalMs;
+      data.playbackEngine.updateFromClock(totalElapsedMs, data.timeline, handlers);
+      return;
+    }
+    data.playbackEngine.update(now, data.timeline, 1, handlers);
   }
 
   updateAutomationAudio() {
     this.applier.updateAudio();
   }
 
-  getMetronomeTiming(now = performance.now()) {
-    return this.adapter.getMetronomeTiming?.(now) || null;
+  getTimingForLooper(looperState, now = performance.now()) {
+    return this.adapter.getTimingForLooper?.(looperState?.id, now) || {
+      active: false,
+      connected: false,
+    };
+  }
+
+  updateClockedTransports(looperStates, now = performance.now()) {
+    for (const looperState of looperStates) {
+      const data = looperState?.looperData;
+      if (!data || looperState.root?.visible === false) continue;
+      const timing = this.getTimingForLooper(looperState, now);
+      if (!timing.connected) {
+        continue;
+      }
+      data.clockMetronomeId = timing.metronomeId;
+      if (!hasBeatGrid(timing)) continue;
+      if (data.armedAction !== "record" && data.armed && this.isArmedBeatDue(data, timing)) {
+        this.launchArmedStart(looperState, timing, now);
+      }
+    }
+  }
+
+  isArmedBeatDue(data, timing) {
+    const dueOrdinal = Math.floor(timing.beatPosition + 1e-9);
+    return data.armedAfterBeatOrdinal === null || dueOrdinal > data.armedAfterBeatOrdinal;
+  }
+
+  launchArmedStart(looperState, timing, now) {
+    const data = looperState.looperData;
+    const action = data.armedAction;
+    const beatOrdinal = Math.floor(timing.beatPosition + 1e-9);
+    const beatStartMs = timing.beatOriginMs + beatOrdinal * timing.beatIntervalMs;
+    this.clearArmedState(data);
+    if (action === "pause") {
+      this.pausePlaybackImmediately(looperState);
+      return;
+    }
+    if (action === "play") {
+      data.transport.play({ restart: true });
+      data.playbackEngine.start(beatStartMs);
+      data.clockPlaybackStartBeatPosition = beatOrdinal;
+      data.lastPlaybackUpdateMs = now;
+      this.updatePlaybackForLooper(looperState, now);
+      this.adapter.updateVisuals?.(looperState);
+    }
+  }
+
+  cancelArmedStart(looperState) {
+    const data = looperState?.looperData;
+    if (!data?.armed) return false;
+    const pauseWasArmed = data.pauseArmed;
+    this.clearArmedState(data);
+    if (!pauseWasArmed) data.transport.stop();
+    this.adapter.updateVisuals?.(looperState);
+    return true;
+  }
+
+  clearArmedState(data) {
+    data.armedAction = null;
+    data.armedAfterBeatOrdinal = null;
+    data.armedAtMs = 0;
+  }
+
+  handleClockDisconnected(looperState) {
+    const data = looperState?.looperData;
+    if (!data) return;
+    if (data.transport.recording) {
+      this.stopRecording(looperState);
+    } else if (data.transport.recordArmed) {
+      this.cancelArmedStart(looperState);
+    }
+    this.stopPlayback(looperState);
+    data.clockMetronomeId = null;
   }
 
   handleLoopBoundary(looperState) {
@@ -369,7 +549,13 @@ export class LooperController {
 
   recordTrackDrumHit(looperState, track, drumType, now = performance.now()) {
     const data = looperState?.looperData;
-    if (!data?.transport.recording || !track || !drumType) {
+    if (!data || !track || !drumType) {
+      return false;
+    }
+    if (data.transport.recordArmed && !this.beginArmedRecordingFromOnset(looperState, now)) {
+      return false;
+    }
+    if (!data.transport.recording) {
       return false;
     }
 
@@ -393,7 +579,13 @@ export class LooperController {
 
   recordSelfDrumHit(looperState, drumType, now = performance.now()) {
     const data = looperState?.looperData;
-    if (!data?.transport.recording || !drumType) {
+    if (!data || !drumType) {
+      return false;
+    }
+    if (data.transport.recordArmed && !this.beginArmedRecordingFromOnset(looperState, now)) {
+      return false;
+    }
+    if (!data.transport.recording) {
       return false;
     }
 
@@ -418,10 +610,7 @@ export class LooperController {
       return null;
     }
     const clamped = Math.min(Math.max(value, -1), 1);
-    if (control === "speed") {
-      data.speedControlValue = clamped;
-      data.speed = LooperControlMapping.getSpeedFromControl(clamped);
-    } else if (control === "gap") {
+    if (control === "gap") {
       data.gapBeats = LooperControlMapping.getGapBeatsFromControl(clamped);
       data.gapControlValue = LooperControlMapping.getGapControlFromBeats(data.gapBeats);
       if (!data.transport.recording && data.timeline?.hasRecording()) {
@@ -447,7 +636,6 @@ export class LooperController {
       controls: {
         volume: data.volumeControlValue,
         gap: data.gapControlValue,
-        speed: data.speedControlValue,
       },
       timeline: data.timeline.toJSON(),
       connections: this.connections.serializeConnections(looperState),
@@ -478,9 +666,16 @@ export class LooperController {
     this.syncTrackActivityFromTimeline(looperState);
 
     const controls = serialized.controls || {};
-    this.setControlValue(looperState, "volume", controls.volume ?? 0);
-    this.setControlValue(looperState, "gap", controls.gap ?? -1);
-    this.setControlValue(looperState, "speed", controls.speed ?? 0);
+    this.setControlValue(
+      looperState,
+      "volume",
+      controls.volume ?? LOOPER_CONTROL_DEFAULT_VALUES.volume,
+    );
+    this.setControlValue(
+      looperState,
+      "gap",
+      controls.gap ?? LOOPER_CONTROL_DEFAULT_VALUES.gap,
+    );
 
     if (restoreConnections) {
       this.restoreConnections(looperState, serialized.connections);
@@ -512,6 +707,9 @@ export class LooperController {
     this.stopPlayback(looperState);
     data.timeline.recording = false;
     data.transport.reset();
+    this.clearArmedState(data);
+    data.clockMetronomeId = null;
+    data.clockPlaybackStartBeatPosition = null;
     data.buttonMorphReleaseTimes.clear();
     for (const track of data.tracks) {
       track.resetRuntimeState();
@@ -541,4 +739,13 @@ export class LooperController {
   captureActionByHonkId(honkId) {
     return this.adapter.captureActionByHonkId?.(honkId) || null;
   }
+}
+
+function hasBeatGrid(timing) {
+  return Boolean(
+    timing?.connected &&
+    timing.beatIntervalMs > 0 &&
+    Number.isFinite(timing.beatOriginMs) &&
+    Number.isFinite(timing.beatPosition)
+  );
 }

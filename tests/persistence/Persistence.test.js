@@ -4,8 +4,9 @@ import assert from "node:assert/strict";
 import { migrateSceneData } from "../../src/persistence/migrations/index.js";
 import { SceneRestorer } from "../../src/persistence/SceneRestorer.js";
 import { SceneSerializer } from "../../src/persistence/SceneSerializer.js";
+import { MetronomeConnectionManager } from "../../src/instruments/metronome/MetronomeConnectionManager.js";
 
-test("v1 scenes migrate to stable-ID schema v2 without inventing relationships", () => {
+test("v1 scenes migrate through the stable-ID schema to v3 without inventing relationships", () => {
   const migrated = migrateSceneData({
     version: 1,
     instruments: [
@@ -14,14 +15,33 @@ test("v1 scenes migrate to stable-ID schema v2 without inventing relationships",
     ],
   });
 
-  assert.equal(migrated.schemaVersion, 2);
+  assert.equal(migrated.schemaVersion, 3);
   assert.deepEqual(migrated.instruments.map(({ id, kind }) => ({ id, kind })), [
     { id: "honk-1", kind: "honk" },
     { id: "looper-2", kind: "looper" },
   ]);
   assert.deepEqual(migrated.relationships.honkLocks, []);
+  assert.deepEqual(migrated.relationships.metronomeConnections, []);
   assert.equal(migrated.instruments[0].appearance.legacyLocked, true);
   assert.equal(migrated.instruments[1].appearance.locked, true);
+});
+
+test("v2-to-v3 migration preserves Gap, drops user speed, and adds Metronome relationships", () => {
+  const source = {
+    schemaVersion: 2,
+    instruments: [{
+      id: "looper-legacy",
+      kind: "looper",
+      controls: { volume: 0.25, gap: 0.5, speed: -0.75 },
+    }],
+    relationships: { honkLocks: [], looperConnections: [] },
+  };
+  const migrated = migrateSceneData(source);
+
+  assert.equal(migrated.schemaVersion, 3);
+  assert.deepEqual(migrated.instruments[0].controls, { volume: 0.25, gap: 0.5 });
+  assert.deepEqual(migrated.relationships.metronomeConnections, []);
+  assert.equal(source.instruments[0].controls.speed, -0.75);
 });
 
 test("serializer returns plain JSON and persists relationships by ID", () => {
@@ -42,6 +62,29 @@ test("serializer returns plain JSON and persists relationships by ID", () => {
   assert.equal(Object.getPrototypeOf(saved), Object.prototype);
 });
 
+test("serializer includes only Metronome relationships whose endpoints are saved", () => {
+  const metronome = fakeInstrument("metro-saved", "metronome");
+  const honk = fakeInstrument("honk-saved", "honk");
+  const pending = fakeInstrument("honk-pending", "honk");
+  pending.pendingPlacement = true;
+  const allConnections = [
+    { metronomeId: metronome.id, portId: "port-0", targetKind: "honk", targetId: honk.id, targetPortId: "honk.looper-connector" },
+    { metronomeId: metronome.id, portId: "port-1", targetKind: "honk", targetId: pending.id, targetPortId: "honk.looper-connector" },
+  ];
+  const serializer = new SceneSerializer({
+    registry: fakeRegistry([metronome, honk, pending]),
+    lockService: { serialize: () => [] },
+    metronomeConnectionManager: {
+      serialize(savedIds) {
+        return allConnections.filter(({ metronomeId, targetId }) =>
+          savedIds.has(metronomeId) && savedIds.has(targetId));
+      },
+    },
+  });
+
+  assert.deepEqual(serializer.serialize().relationships.metronomeConnections, [allConnections[0]]);
+});
+
 test("serializer keeps durable Looper data but excludes transport state", () => {
   const looper = fakeInstrument("looper-1", "looper");
   looper.root.visible = false;
@@ -51,7 +94,7 @@ test("serializer keeps durable Looper data but excludes transport state", () => 
     id: looper.id,
     kind: looper.kind,
     appearance: { locked: true },
-    controls: { volume: 0.4, gap: -0.25, speed: 0.6 },
+    controls: { volume: 0.4, gap: -0.25 },
     timeline: { schemaVersion: 1, durationMs: 480, tracks: [{ trackId: "track-0", events: [] }] },
     transport: { state: "paused" },
     recording: false,
@@ -103,7 +146,14 @@ test("restorer creates all instruments before lock and looper relationships", as
       events.push(`locks:${groups.length}`);
     },
   };
-  const restorer = new SceneRestorer({ registry, createInstrument, lockService });
+  const restorer = new SceneRestorer({
+    registry,
+    createInstrument,
+    lockService,
+    metronomeConnectionManager: {
+      restore: (connections) => events.push(`metronome:${connections.length}`),
+    },
+  });
 
   await restorer.restore({
     instruments: [
@@ -114,6 +164,7 @@ test("restorer creates all instruments before lock and looper relationships", as
     relationships: {
       honkLocks: [{ id: "lock-1", anchorId: "honk-1", memberIds: ["honk-1", "honk-2"] }],
       looperConnections: [{ looperId: "looper-1", trackId: "track-0", honkId: "honk-2" }],
+      metronomeConnections: [{ metronomeId: "missing", portId: "port-0", targetKind: "looper", targetId: "looper-1", targetPortId: "track-0" }],
     },
   });
 
@@ -125,6 +176,7 @@ test("restorer creates all instruments before lock and looper relationships", as
     "locks:1",
     "connect:0:honk-2",
     "timeline:looper-1",
+    "metronome:1",
   ]);
 });
 
@@ -215,6 +267,54 @@ test("restorer recreates every saved metronome and leaves each paused", async ()
     { bpm: 90, volume: 0.2, playing: false },
     { bpm: 180, volume: 0.8, playing: false },
   ]);
+});
+
+test("restorer recreates valid Metronome relationships and skips missing endpoints", async () => {
+  const instruments = new Map();
+  const registry = {
+    get: (id) => instruments.get(id) || null,
+    has: (id) => instruments.has(id),
+    add: (instrument) => instruments.set(instrument.id, instrument),
+  };
+  const manager = new MetronomeConnectionManager({ registry });
+  const restorer = new SceneRestorer({
+    registry,
+    lockService: { restore() {} },
+    metronomeConnectionManager: manager,
+    createInstrument: async (saved) => {
+      const instrument = fakeInstrument(saved.id, saved.kind);
+      if (saved.kind === "metronome") {
+        instrument.hasConnectionPort = (portId) => portId === "port-0";
+      }
+      if (saved.kind === "looper") {
+        instrument.tracks = [{ trackId: "track-0", nodeTarget: { visible: true } }];
+        instrument.restoreEntity = () => {};
+        instrument.restoreTimeline = () => {};
+      }
+      instruments.set(saved.id, instrument);
+      return instrument;
+    },
+  });
+
+  await restorer.restore({
+    instruments: [
+      { id: "metro-a", kind: "metronome" },
+      { id: "looper-a", kind: "looper" },
+    ],
+    relationships: {
+      honkLocks: [],
+      looperConnections: [],
+      metronomeConnections: [
+        { metronomeId: "missing", portId: "port-0", targetKind: "looper", targetId: "looper-a", targetPortId: "track-0" },
+        { metronomeId: "metro-a", portId: "port-0", targetKind: "looper", targetId: "looper-a", targetPortId: "track-0" },
+      ],
+    },
+  });
+
+  assert.deepEqual(manager.serialize(), [
+    { metronomeId: "metro-a", portId: "port-0", targetKind: "looper", targetId: "looper-a", targetPortId: "track-0" },
+  ]);
+  manager.dispose();
 });
 
 function fakeInstrument(id, kind) {

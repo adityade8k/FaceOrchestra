@@ -1,7 +1,10 @@
-import { createEmptySceneData } from "../schema.js";
-
 export function migrateV1ToV2(source = {}) {
-  const migrated = createEmptySceneData();
+  const migrated = {
+    schemaVersion: 2,
+    instruments: [],
+    relationships: { honkLocks: [], looperConnections: [] },
+    equipment: { preferredStickType: "default" },
+  };
   const usedIds = new Set();
 
   migrated.instruments = (Array.isArray(source.instruments) ? source.instruments : []).flatMap((saved, index) => {

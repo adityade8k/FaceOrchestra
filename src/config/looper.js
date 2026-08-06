@@ -60,7 +60,6 @@ export const LOOPER_DEBUG_COLORS = {
   playing: 0xf7d04a,
   controlVolume: 0x9e8cff,
   controlGap: 0x5ac8fa,
-  controlSpeed: 0xf0a23c,
 };
 
 export const LOOPER_MORPH_TARGET_NAMES = {
@@ -68,8 +67,6 @@ export const LOOPER_MORPH_TARGET_NAMES = {
   buttonStop: "button_stop_recording",
   buttonPlay: "button_play",
   buttonPause: "button_pause",
-  bottomHandleDown: "bottom_handle_down",
-  bottomHandleUp: "bottom_handle_up",
   rightHandleDown: "Right_handle_down",
   rightHandleUp: "right_handle_up",
   leftHandleUp: "Left_handle_up",
@@ -90,14 +87,15 @@ export const LOOPER_CONTROL_MORPH_TARGETS = {
     up: LOOPER_MORPH_TARGET_NAMES.leftHandleUp,
   },
   gap: {
-    down: LOOPER_MORPH_TARGET_NAMES.bottomHandleDown,
-    up: LOOPER_MORPH_TARGET_NAMES.bottomHandleUp,
-  },
-  speed: {
     down: LOOPER_MORPH_TARGET_NAMES.rightHandleDown,
     up: LOOPER_MORPH_TARGET_NAMES.rightHandleUp,
   },
 };
+
+export const LOOPER_CONTROL_DEFAULT_VALUES = Object.freeze({
+  volume: 0,
+  gap: -1,
+});
 
 export const LOOPER_MORPH_SETTINGS = {
   buttonPressDurationMs: 140,
@@ -212,16 +210,6 @@ export const LOOPER_CONTROL_COLLIDERS = {
     morphTargets: LOOPER_CONTROL_MORPH_TARGETS.volume,
   },
   gap: {
-    x: 0.29,
-    y: -0.27,
-    z: 0,
-    rotationDegrees: { x: 0, y: 0, z: 0 },
-    scale: { x: 0.9, y: 0.9, z: 0.9 },
-    movementRange: 0.065,
-    dragSensitivity: 0.8,
-    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.gap,
-  },
-  speed: {
     x: 0.18,
     y: 0.16,
     z: 0,
@@ -236,6 +224,6 @@ export const LOOPER_CONTROL_COLLIDERS = {
       minDegrees: -20,
       maxDegrees: 20,
     },
-    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.speed,
+    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.gap,
   },
 };

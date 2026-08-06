@@ -34,6 +34,5 @@ export function getInteractionTargetColor(targetOrName) {
     [getLooperButtonName("stop")]: LOOPER_DEBUG_COLORS.button.stop,
     [getLooperControlName("volume")]: LOOPER_DEBUG_COLORS.controlVolume,
     [getLooperControlName("gap")]: LOOPER_DEBUG_COLORS.controlGap,
-    [getLooperControlName("speed")]: LOOPER_DEBUG_COLORS.controlSpeed,
   }[name] || 0xffffff;
 }

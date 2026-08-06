@@ -10,6 +10,7 @@ import {
   LOOPER_COLLIDER_GEOMETRY,
   LOOPER_COLLIDER_TRANSFORM_DEFAULTS,
   LOOPER_CONTROL_COLLIDERS,
+  LOOPER_CONTROL_DEFAULT_VALUES,
   LOOPER_CONTROL_MOTION_DEFAULTS,
   LOOPER_DEBUG_COLORS,
   LOOPER_NODE_COLLIDER_LAYOUT,
@@ -20,6 +21,7 @@ import {
   getLooperControlName,
   getLooperNodeName,
 } from "./looperNames.js";
+import { getLooperControlColliderPosition } from "./view/looperControlPresentation.js";
 
 const tempBox = new THREE.Box3();
 const tempBoxCenter = new THREE.Vector3();
@@ -146,7 +148,6 @@ export class LooperColliderFactory {
     const controlColors = {
       volume: LOOPER_DEBUG_COLORS.controlVolume,
       gap: LOOPER_DEBUG_COLORS.controlGap,
-      speed: LOOPER_DEBUG_COLORS.controlSpeed,
     };
     for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
       const color = controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
@@ -177,6 +178,11 @@ export class LooperColliderFactory {
         minY: controlPosition.y - tempBoxSize.y * movementRange,
         maxY: controlPosition.y + tempBoxSize.y * movementRange,
       });
+      const defaultPosition = getLooperControlColliderPosition(
+        controlSphere.userData,
+        LOOPER_CONTROL_DEFAULT_VALUES[control] ?? 0,
+      );
+      controlSphere.position.set(defaultPosition.x, defaultPosition.y, defaultPosition.z);
       createControlArcDebug(root, getLooperControlName(control), color, controlSphere.userData);
       createColliderTransformDebug(
         controlSphere,

@@ -17,6 +17,7 @@ import {
   disposeWireMesh as disposeWireMeshUtility,
   updateWireMeshGeometry as updateWireMeshGeometryUtility,
 } from "../../instruments/looper/view/wireUtils.js";
+import { getWireSocketTangent } from "../../instruments/core/view/connectionWirePresentation.js";
 
 const tempLooperCurrentPosition = new THREE.Vector3();
 const tempLooperCurrentQuaternion = new THREE.Quaternion();
@@ -28,7 +29,6 @@ const tempShakePosition = new THREE.Vector3();
 const tempShakeRange = new THREE.Vector3();
 const tempWireEnd = new THREE.Vector3();
 const tempWireEndTangent = new THREE.Vector3();
-const tempWireOwnerPosition = new THREE.Vector3();
 const tempWireStart = new THREE.Vector3();
 const tempWireStartTangent = new THREE.Vector3();
 
@@ -65,7 +65,7 @@ export const LooperConnectionRuntimeMethods = {
       if (hit?.object?.userData.isHonkConnectionTarget) {
         tempWireEnd.copy(hit.point);
         const honkState = this.instrumentRegistry?.getFromObject3D?.(hit.object) || null;
-        setWireSocketTangent(
+        getWireSocketTangent(
           hit.object,
           honkState?.root,
           tempWireEnd,
@@ -77,7 +77,7 @@ export const LooperConnectionRuntimeMethods = {
         tempWireEndTangent.copy(tempWireEnd).sub(tempWireStart).normalize();
       }
 
-      setWireSocketTangent(
+      getWireSocketTangent(
         interaction.track.nodeTarget,
         interaction.looperState?.root,
         tempWireStart,
@@ -210,13 +210,13 @@ export const LooperConnectionRuntimeMethods = {
         controllerState.shakeDisconnectLastPosition.copy(tempShakePosition);
         controllerState.shakeDisconnectLastSampleTime = now;
         controllerState.shakeDisconnectHasLastPosition = true;
-        samples.push({ time: now, position: tempShakePosition.clone(), speed: 0 });
+        samples.push({ time: now, position: tempShakePosition.clone(), velocity: 0 });
         return;
       }
   
       const elapsedSeconds = Math.max((now - controllerState.shakeDisconnectLastSampleTime) / 1000, 0.0001);
-      const speed = tempShakePosition.distanceTo(controllerState.shakeDisconnectLastPosition) / elapsedSeconds;
-      samples.push({ time: now, position: tempShakePosition.clone(), speed });
+      const velocity = tempShakePosition.distanceTo(controllerState.shakeDisconnectLastPosition) / elapsedSeconds;
+      samples.push({ time: now, position: tempShakePosition.clone(), velocity });
       controllerState.shakeDisconnectLastPosition.copy(tempShakePosition);
       controllerState.shakeDisconnectLastSampleTime = now;
   
@@ -244,12 +244,12 @@ export const LooperConnectionRuntimeMethods = {
         return false;
       }
   
-      let speedSum = 0;
+      let velocitySum = 0;
       for (const sample of samples) {
-        speedSum += sample.speed || 0;
+        velocitySum += sample.velocity || 0;
       }
-      const averageSpeed = speedSum / Math.max(samples.length - 1, 1);
-      if (averageSpeed < Math.max(settings.intensity || 0, 0)) {
+      const averageVelocity = velocitySum / Math.max(samples.length - 1, 1);
+      if (averageVelocity < Math.max(settings.intensity || 0, 0)) {
         return false;
       }
   
@@ -394,13 +394,13 @@ export const LooperConnectionRuntimeMethods = {
   
       track.nodeTarget.getWorldPosition(tempWireStart);
       honkTarget.getWorldPosition(tempWireEnd);
-      setWireSocketTangent(
+      getWireSocketTangent(
         track.nodeTarget,
         looperState.root,
         tempWireStart,
         tempWireStartTangent,
       );
-      setWireSocketTangent(
+      getWireSocketTangent(
         honkTarget,
         honkState.root,
         tempWireEnd,
@@ -444,7 +444,6 @@ export const LooperConnectionRuntimeMethods = {
       for (const [control, value] of [
         ["volume", data.volumeControlValue],
         ["gap", data.gapControlValue],
-        ["speed", data.speedControlValue],
       ]) {
         this.applyLooperControlMorphValue(looperState, control, value);
         const sphere = looperState.hitTargets[getLooperControlName(control)];
@@ -452,14 +451,21 @@ export const LooperConnectionRuntimeMethods = {
           this.positionControlColliderFromValue(sphere, value);
         }
       }
+
+      this.setLooperButtonMorph(looperState, "record", data.recording || data.recordArmed ? 1 : 0);
+      this.setLooperButtonMorph(
+        looperState,
+        "play",
+        (data.playing && !data.paused) || data.playArmed ? 1 : 0,
+      );
   
       for (const action of LOOPER_BUTTON_ACTIONS) {
         const target = looperState.hitTargets[getLooperButtonName(action)];
         const active =
-          (action === "record" && data.recording) ||
-          (action === "play" && data.playing && !data.paused) ||
-          (action === "pause" && data.paused) ||
-          (action === "stop" && !data.playing && !data.paused && !data.recording);
+          (action === "record" && (data.recording || data.recordArmed)) ||
+          (action === "play" && ((data.playing && !data.paused) || data.playArmed)) ||
+          (action === "pause" && (data.paused || data.pauseArmed)) ||
+          (action === "stop" && !data.playing && !data.paused && !data.recording && !data.armed);
         this.setHitTargetDebugColor(
           target,
           active ? LOOPER_DEBUG_COLORS.buttonActive : LOOPER_DEBUG_COLORS.button[action],
@@ -494,11 +500,6 @@ export const LooperConnectionRuntimeMethods = {
         LOOPER_DEBUG_COLORS.controlGap,
         LOOPER_COLLIDER_OPACITY,
       );
-      this.setHitTargetDebugColor(
-        looperState.hitTargets[getLooperControlName("speed")],
-        LOOPER_DEBUG_COLORS.controlSpeed,
-        LOOPER_COLLIDER_OPACITY,
-      );
     },
     setHitTargetDebugColor(target, color, opacity = null) {
       if (!target?.material) {
@@ -514,29 +515,3 @@ export const LooperConnectionRuntimeMethods = {
       }
     },
 };
-
-function setWireSocketTangent(
-  target,
-  ownerRoot,
-  endpoint,
-  output,
-  arriving = false,
-) {
-  const socketOutward = target?.userData?.wireSocketOutward;
-  if (socketOutward && target?.parent) {
-    target.parent.updateWorldMatrix?.(true, false);
-    output
-      .set(socketOutward.x || 0, socketOutward.y || 0, socketOutward.z || 0)
-      .transformDirection(target.parent.matrixWorld);
-  } else if (ownerRoot?.getWorldPosition) {
-    ownerRoot.getWorldPosition(tempWireOwnerPosition);
-    output.copy(endpoint).sub(tempWireOwnerPosition).normalize();
-  } else {
-    output.set(0, 0, 0);
-  }
-
-  if (arriving) {
-    output.negate();
-  }
-  return output;
-}

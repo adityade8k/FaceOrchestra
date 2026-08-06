@@ -50,6 +50,6 @@ function isDuplicableInstrument(source) {
     source?.root?.visible &&
     !source.disposed &&
     !source.pendingPlacement &&
-    (source.kind === "honk" || source.kind === "looper")
+    (source.kind === "honk" || source.kind === "looper" || source.kind === "metronome")
   );
 }

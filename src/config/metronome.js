@@ -29,7 +29,52 @@ export const METRONOME_SETTINGS = Object.freeze({
   minScale: 0.5,
   maxScale: 6,
   scaleStep: 0.25,
+  connectionWireColor: 0x8b5cf6,
+  connectionWirePreviewColor: 0xc4b5fd,
+  connectionWireRenderOrder: 16,
+  connectionWirePreviewRenderOrder: 17,
+  honkBeatGateRatio: 0.24,
+  honkBeatGateMinSeconds: 0.035,
+  honkBeatGateMaxSeconds: 0.16,
+  honkBeatReleaseFadeSeconds: 0.018,
 });
+
+export const METRONOME_CONNECTION_ROLE = "metronome.connection-port";
+
+export const METRONOME_CONNECTION_PORTS = Object.freeze([
+  Object.freeze({
+    portId: "port-0",
+    name: "HIT_metronome_connection_port_0",
+    position: Object.freeze({ x: -0.3, y: -0.34, z: 0.42 }),
+    colliderScale: 0.042,
+    colliderColor: 0x8b5cf6,
+    socketDirection: Object.freeze({ x: 0, y: 0, z: 1 }),
+  }),
+  Object.freeze({
+    portId: "port-1",
+    name: "HIT_metronome_connection_port_1",
+    position: Object.freeze({ x: -0.1, y: -0.38, z: 0.44 }),
+    colliderScale: 0.042,
+    colliderColor: 0xa78bfa,
+    socketDirection: Object.freeze({ x: 0, y: 0, z: 1 }),
+  }),
+  Object.freeze({
+    portId: "port-2",
+    name: "HIT_metronome_connection_port_2",
+    position: Object.freeze({ x: 0.1, y: -0.38, z: 0.44 }),
+    colliderScale: 0.042,
+    colliderColor: 0xc084fc,
+    socketDirection: Object.freeze({ x: 0, y: 0, z: 1 }),
+  }),
+  Object.freeze({
+    portId: "port-3",
+    name: "HIT_metronome_connection_port_3",
+    position: Object.freeze({ x: 0.3, y: -0.34, z: 0.42 }),
+    colliderScale: 0.042,
+    colliderColor: 0xe879f9,
+    socketDirection: Object.freeze({ x: 0, y: 0, z: 1 }),
+  }),
+]);
 
 export const METRONOME_BUTTON_ACTIONS = Object.freeze({
   play: "play",

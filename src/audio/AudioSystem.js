@@ -1,6 +1,6 @@
 import { AudioContextService } from "./AudioContextService.js";
 import { MasterBus } from "./MasterBus.js";
-import { HONK_MASTER_GAIN } from "../config/audio.js";
+import { getHonkNoteGainFromNose, HONK_MASTER_GAIN } from "../config/audio.js";
 import { MAX_PITCH_BEND_SEMITONES } from "../config/honk.js";
 import { HonkVoiceService } from "./honk/HonkVoiceService.js";
 import { PercussionVoiceService } from "./percussion/PercussionVoiceService.js";
@@ -39,7 +39,7 @@ export class AudioSystem {
       masterGain: gain,
       leftEar: performanceState.earLeft ?? tuning.pitchControl ?? 0,
       rightEar: performanceState.earRight ?? tuning.octaveControl ?? 0,
-      nose: performanceState.nose ?? 0,
+      noteGain: getHonkNoteGainFromNose(performanceState.nose ?? 0),
       vowel: performanceState.vowel && performanceState.vowel !== "neutral"
         ? performanceState.vowel
         : "A",

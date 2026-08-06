@@ -15,7 +15,11 @@ import {
   INTERACTION_TARGET_NAMES,
   MORPH_TARGET_NAMES,
 } from "../../config/honk.js";
-import { LOOPER_COMPONENT_ID, LOOPER_TRACK_COUNT } from "../../config/looper.js";
+import {
+  LOOPER_COMPONENT_ID,
+  LOOPER_CONTROL_DEFAULT_VALUES,
+  LOOPER_TRACK_COUNT,
+} from "../../config/looper.js";
 import { METRONOME_COMPONENT_ID, METRONOME_SETTINGS } from "../../config/metronome.js";
 import { SPAWN_CATALOG_ENTRIES } from "../../config/spawning.js";
 import { STICK_SETTINGS } from "../../config/stick.js";
@@ -202,9 +206,8 @@ export const InstrumentAssetRuntimeMethods = {
     state.root.updateMatrixWorld(true);
     state.root.getWorldPosition(state.looperData.lastPosition);
     state.root.getWorldQuaternion(state.looperData.lastQuaternion);
-    state.setControl("volume", 0);
-    state.setControl("gap", -1);
-    state.setControl("speed", 0);
+    state.setControl("volume", LOOPER_CONTROL_DEFAULT_VALUES.volume);
+    state.setControl("gap", LOOPER_CONTROL_DEFAULT_VALUES.gap);
     this.updateLooperVisuals(state);
   },
 

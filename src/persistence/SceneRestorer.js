@@ -3,12 +3,14 @@ export class SceneRestorer {
     registry,
     createInstrument,
     lockService,
+    metronomeConnectionManager = null,
     onEquipment = () => {},
     onInstrumentRestored = () => {},
   }) {
     this.registry = registry;
     this.createInstrument = createInstrument;
     this.lockService = lockService;
+    this.metronomeConnectionManager = metronomeConnectionManager;
     this.onEquipment = onEquipment;
     this.onInstrumentRestored = onInstrumentRestored;
   }
@@ -69,6 +71,9 @@ export class SceneRestorer {
         preserveConnections: true,
       });
     }
+    this.metronomeConnectionManager?.restore?.(
+      sceneData.relationships?.metronomeConnections || [],
+    );
     this.onEquipment(sceneData.equipment || {});
     return { instruments, skipped };
   }

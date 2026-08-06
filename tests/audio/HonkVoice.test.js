@@ -3,7 +3,36 @@ import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 
 import { HonkVoice } from "../../src/audio/honk/HonkVoice.js";
-import { HONK_RELEASE_SETTINGS } from "../../src/config/audio.js";
+import {
+  getHonkNoteGainFromNose,
+  HONK_NOTE_GAIN_SETTINGS,
+  HONK_RELEASE_SETTINGS,
+  VOICE_GAIN_SETTINGS,
+} from "../../src/config/audio.js";
+
+test("nose uses a legacy-safe note-gain mapping without changing the filter graph", () => {
+  assert.equal(getHonkNoteGainFromNose(0), 1);
+  assert.equal(getHonkNoteGainFromNose(1), HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose);
+  assert.equal(getHonkNoteGainFromNose(-5), 1);
+  assert.equal(getHonkNoteGainFromNose(5), HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose);
+
+  const context = createAudioContext({ currentTime: 3 });
+  const voice = new HonkVoice({ context });
+  voice.update({
+    hornAmount: 1,
+    masterGain: 0.5,
+    noteGain: 0.25,
+    activeVoiceCount: 4,
+    nose: 1,
+  });
+
+  const gainEvent = lastEventOfType(voice.master.gain, "setTargetAtTime");
+  assert.ok(Math.abs(
+    gainEvent.value - VOICE_GAIN_SETTINGS.baseGain * 0.5 * 0.25 * 0.5,
+  ) < 1e-12);
+  assert.equal(gainEvent.timeConstant, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
+  assert.equal(context.filters.length, 4);
+});
 
 test("release ramps the held master gain to exact zero before stopping oscillators", () => {
   const context = createAudioContext({ currentTime: 4 });
@@ -115,8 +144,10 @@ function createAudioContext({
   sourceStopThrows = false,
 } = {}) {
   const oscillators = [];
+  const filters = [];
   const context = {
     currentTime,
+    filters,
     destination: createAudioNode({ supportsCancelAndHold }),
     createOscillator() {
       const oscillatorIndex = oscillators.length;
@@ -136,7 +167,9 @@ function createAudioContext({
       return node;
     },
     createBiquadFilter() {
-      return createAudioNode({ supportsCancelAndHold });
+      const filter = createAudioNode({ supportsCancelAndHold });
+      filters.push(filter);
+      return filter;
     },
     createGain() {
       return createAudioNode({ supportsCancelAndHold });

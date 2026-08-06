@@ -1,11 +1,14 @@
-export const NASALITY_SETTINGS = {
-  oralReductionAtMax: 0.5,
-  lowGainAtMax: 0.78,
-  highGainAtMax: 0.28,
-  highFrequencyLiftAtMax: 150,
-};
-
 export const HONK_MASTER_GAIN = 0.78;
+export const HONK_NOTE_GAIN_SETTINGS = Object.freeze({
+  minimumAtMaxNose: 0.22,
+  smoothingSeconds: 0.035,
+});
+
+export function getHonkNoteGainFromNose(nose = 0) {
+  const normalized = Math.min(Math.max(Number.isFinite(nose) ? nose : 0, 0), 1);
+  return HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose +
+    (1 - normalized) * (1 - HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose);
+}
 export const HONK_RELEASE_SETTINGS = Object.freeze({
   liveFadeSeconds: 0.12,
   looperActionFadeSeconds: 0.035,

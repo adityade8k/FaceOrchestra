@@ -116,6 +116,7 @@ export class FaceOrchestraApp {
         return;
       }
       if (frame.hadPendingSpawn) {
+        runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
         frame.skipRemaining = true;
         return;
       }
@@ -132,9 +133,12 @@ export class FaceOrchestraApp {
     }, { label: "honk contacts and stick strikes" });
 
     this.frameScheduler.add("RELATIONSHIPS", (frame) => {
+      runtime.validateMetronomeConnections();
       runtime.updateLooperFollowerTransforms();
       runtime.updateLockedHonkGroupTransforms();
       runtime.updateShakeDisconnect(frame.now);
+      runtime.updateMetronomes(frame.now);
+      runtime.updateClockedLooperTransports(frame.now);
     }, { label: "locks and looper assignments" });
 
     this.frameScheduler.add("AUTOMATION", (frame) => {
@@ -142,13 +146,14 @@ export class FaceOrchestraApp {
     }, { label: "record and advance looper transport" });
 
     this.frameScheduler.add("PERFORMANCE", (frame) => {
+      runtime.updateMetronomeConnections(frame.now);
       runtime.updateHorn(frame.now);
-      runtime.updateMetronomes(frame.now);
     }, { label: "resolve live input plus automation" });
 
     this.frameScheduler.add("PRESENTATION", (frame) => {
       runtime.updateLooperMorphAnimations(frame.now);
       runtime.updateLooperWires();
+      runtime.updateMetronomeConnectionWires();
     }, { label: "morphs, audio, wires, and UI" });
   }
 }

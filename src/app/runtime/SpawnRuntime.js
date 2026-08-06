@@ -145,9 +145,12 @@ export const SpawnRuntimeMethods = {
         controllerState.raycastContactTarget = null;
   
         const interaction = controllerState.activeTriggerInteraction;
-        if (interaction?.type === "looperWire") {
-          this.disposeWireMesh(interaction.wireMesh);
-          interaction.wireMesh = null;
+        if (interaction?.type === "looperWire" || interaction?.type === "metronomeWire") {
+          if (interaction.type === "metronomeWire") this.cancelMetronomeWireInteraction(interaction);
+          else {
+            this.disposeWireMesh(interaction.wireMesh);
+            interaction.wireMesh = null;
+          }
         }
         controllerState.activeTriggerInteraction = null;
   
@@ -416,7 +419,6 @@ export const SpawnRuntimeMethods = {
   
       this.setLooperControlValue(targetState, "volume", sourceData.volumeControlValue);
       this.setLooperControlValue(targetState, "gap", sourceData.gapControlValue);
-      this.setLooperControlValue(targetState, "speed", sourceData.speedControlValue);
       this.updateLooperVisuals(targetState);
     },
     spawnInstrumentInFrontOfCamera() {

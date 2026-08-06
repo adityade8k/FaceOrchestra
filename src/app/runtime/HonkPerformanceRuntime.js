@@ -43,7 +43,8 @@ export const HonkPerformanceRuntimeMethods = {
         }
         const looperInteractionActive =
           interaction?.type === "looperWire" ||
-          interaction?.type === "looperControlDrag";
+          interaction?.type === "looperControlDrag" ||
+          interaction?.type === "metronomeWire";
         const triggerBlockedByLooper =
           controllerState?.trigger && this.isLooperColliderTarget(this.getCurrentHit(controller)?.object);
         if (controllerState?.trigger && (looperInteractionActive || triggerBlockedByLooper)) {
@@ -189,6 +190,7 @@ export const HonkPerformanceRuntimeMethods = {
   
       const live = honkState.getLivePerformanceState?.();
       return {
+        musicalOnset: Boolean((live?.squeeze || 0) > 0 || honkState.hornHolders?.size > 0),
         squeeze: honkState.hornSqueezeValue || 0,
         bend: honkState.bendValue || 0,
         earLeft: live?.earLeft ?? honkState.getEarAmount("left"),

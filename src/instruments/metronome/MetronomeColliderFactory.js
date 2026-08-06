@@ -1,5 +1,9 @@
 import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
-import { METRONOME_SETTINGS } from "../../config/metronome.js";
+import {
+  METRONOME_CONNECTION_PORTS,
+  METRONOME_CONNECTION_ROLE,
+  METRONOME_SETTINGS,
+} from "../../config/metronome.js";
 import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
 import { MetronomeButtonRig } from "./MetronomeButtonRig.js";
 import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
@@ -14,6 +18,7 @@ export class MetronomeColliderFactory {
   create(root) {
     const targets = {};
     const bodyTargets = {};
+    const modelBounds = new this.THREE.Box3().setFromObject(root);
     const bodyTarget = createBodyGripTarget(root, bodyTargets, {
       makeHitTargetMaterial: () => this.createMaterial(0xffffff),
       hitMarkerOpacity: this.showDebug ? METRONOME_SETTINGS.debugOpacity : 0,
@@ -60,7 +65,47 @@ export class MetronomeColliderFactory {
       showDebug: this.showDebug,
     });
     Object.assign(targets, handleRig.targets);
+    this.createConnectionPorts(root, targets, modelBounds);
     return { targets, handleRig, buttonRig };
+  }
+
+  createConnectionPorts(root, targets, bounds) {
+    const center = bounds.getCenter(new this.THREE.Vector3());
+    const size = bounds.getSize(new this.THREE.Vector3());
+    const maxSize = Math.max(size.x, size.y, size.z, 0.1);
+    for (const config of METRONOME_CONNECTION_PORTS) {
+      const geometry = new this.THREE.SphereGeometry(
+        maxSize * config.colliderScale,
+        METRONOME_SETTINGS.sphereSegments,
+        METRONOME_SETTINGS.sphereRings,
+      );
+      geometry.userData ||= {};
+      geometry.userData.disposeWithOwner = true;
+      const collider = new this.THREE.Mesh(
+        geometry,
+        this.createMaterial(config.colliderColor),
+      );
+      collider.name = config.name;
+      collider.position.set(
+        center.x + size.x * config.position.x,
+        center.y + size.y * config.position.y,
+        center.z + size.z * config.position.z,
+      );
+      collider.renderOrder = METRONOME_SETTINGS.renderOrder;
+      Object.assign(collider.userData, {
+        isHitTarget: true,
+        isBodyGripTarget: false,
+        isMetronomeTarget: true,
+        isMetronomeConnectionPort: true,
+        metronomePortId: config.portId,
+        interactionRole: METRONOME_CONNECTION_ROLE,
+        wireSocketOutward: { ...config.socketDirection },
+        baseHitOpacity: this.showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
+        hitColor: config.colliderColor,
+      });
+      root.add(collider);
+      targets[`connectionPort:${config.portId}`] = collider;
+    }
   }
 
   createMaterial(color) {

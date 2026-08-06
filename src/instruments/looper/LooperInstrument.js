@@ -79,8 +79,8 @@ export class LooperInstrument extends InstrumentEntity {
     return this.looperController.resumePlayback(this, now);
   }
 
-  pause() {
-    return this.looperController.pausePlayback(this);
+  pause(now = performance.now()) {
+    return this.looperController.pausePlayback(this, now);
   }
 
   stop() {

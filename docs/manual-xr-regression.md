@@ -18,7 +18,7 @@ Do not mark a section passing from code inspection alone.
 | Host OS |  |
 | Serving URL |  |
 | Audio output |  |
-| Starting storage state | Fresh / migrated v1 / existing v2 |
+| Starting storage state | Fresh / migrated v1 or v2 / existing v3 |
 | Debug flags changed |  |
 | Overall result | PASS / FAIL / BLOCKED |
 
@@ -39,7 +39,7 @@ Capture a short video for transform/collider/audio timing failures and a screens
 - [ ] Confirm `unpkg.com` is reachable so Three.js, addons, and the note-label font can load.
 - [ ] Open remote browser developer tools and keep the console visible during the pass.
 - [ ] Back up any scene needed for migration testing before clearing local storage.
-- [ ] For a clean run, remove only `face-orchestra:scene:v2`, then reload.
+- [ ] For a clean run, remove only `face-orchestra:scene:v3`, then reload. Preserve the v2 key for a migration run.
 - [ ] Keep both controllers awake and verify handedness is reported correctly.
 - [ ] Confirm headset and browser volume are audible. Web Audio must be unlocked by a user gesture.
 - [ ] Leave `DEBUG_SHOW_COLLIDERS` off for the primary experience pass. If collider placement fails, repeat the affected section with it enabled and restore the flag afterward.
@@ -51,7 +51,7 @@ The expected Quest-style map is:
 | Input | Expected intent |
 | --- | --- |
 | Right A press/release | Open/confirm spawn menu |
-| Grip held + Right A press | Duplicate the actively gripped Honk or Looper; never open the menu |
+| Grip held + Right A press | Duplicate the actively gripped Honk, Looper, or Metronome; never open the menu |
 | Right B press | Contextual Honk formation or Looper lock toggle |
 | Left X press | Delete pointed instrument |
 | Trigger press/release | Place preview or interact with the current ray target |
@@ -84,9 +84,9 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Spawn formation recipe** — Place a known triad such as `C Maj`. Expected: exactly three separately registered Honks appear at centered configured offsets, each has its own stable ID/performance/audio state, and there is no composite chord scene entity. A scale recipe should create eight independent Honks.
 
-- [ ] **Spawn looper** — Select `Looper`, preview, and place it. Expected: one Looper appears with eight track nodes, transport buttons, volume/gap/speed targets, body grip target, and no active wire.
+- [ ] **Spawn looper** — Select `Looper`, preview, and place it. Expected: one Looper appears with eight track nodes, transport buttons, Volume and right-hand Gap targets, body grip target, and no active wire. The authored bottom handle remains visible but has no collider or reaction.
 
-- [ ] **Spawn and run metronome** — Select `Metro`, preview, and place it. Trigger the left Play eye, then the right Pause eye. Expected: only the eye targets control transport; Play moves inward and stays latched while beats sound, and the pendulum starts from center and swings around the model-local Z axis at the selected BPM (one side-to-side cycle every two beats). Pause immediately restores Play, moves inward momentarily, always pops back, and returns the pendulum exactly to its authored rest pose. Triggering the body does not start or stop playback. Confirm BPM changes alter the swing speed without jumping to the other side, and that the volume handle still works while unlocked.
+- [ ] **Spawn and run metronome** — Select `Metro`, preview, and place it. Expected: exactly four procedural connection ports appear in debug mode. Trigger the left Play eye, then the right Pause eye. Only the eye targets control transport; Play latches while clicks sound, the pendulum completes one side-to-side cycle every two beats, and Pause immediately restores the authored rest pose. Confirm live BPM changes alter its rate without a phase jump and Volume still works while unlocked.
 
 - [ ] **Equip stick** — Point away from instrument transform targets and hold Grip. Expected: the Stick attaches to that controller using the configured local transform, the ray hides, its strike collider activates, and it disappears/clears contacts on Grip release.
 
@@ -98,11 +98,13 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] Open the radial menu and press Grip before releasing A. Expected: the menu cancels without creating a preview, then closes cleanly.
 
-- [ ] Begin a preview while a Looper is already playing. Expected: ordinary ray/grip/collision interactions pause during preview, but Looper playback/audio/presentation continues through the preview-safe update path.
+- [ ] Begin a preview while a Metronome is running linked Loopers and direct Honk pulses. Expected: ordinary ray/grip/collision interactions pause, but the Metronome clock, linked recording/playback, pulse voices, and both wire types continue through the preview-safe path without timing discontinuity.
 
 - [ ] **Duplicate Honk** — Grip an unlocked Honk, then press Right A without releasing Grip. Expected: exactly one immediate duplicate receives a new stable ID at the same transform, the radial menu and spawn preview remain closed, and Grip transfers to the duplicate so moving the controller peels it away from the unchanged original. Press A again and confirm the newest duplicate—not the original—is copied.
 
-- [ ] **Duplicate Looper** — Grip an unlocked Looper, then press Right A. Expected: exactly one new Looper copies the timeline and volume/gap/speed controls but starts stopped, unlocked, and without copied Honk connections, wires, automation, voices, or live transport state.
+- [ ] **Duplicate Looper** — Grip an unlocked Looper, then press Right A. Expected: exactly one new Looper copies the timeline, Volume, and Gap, with its right Gap handle at the copied position. It starts stopped, unlocked, unarmed, and without copied Honk or Metronome connections, wires, automation, or voices.
+
+- [ ] **Duplicate Metronome** — Grip an unlocked Metronome, then press Right A. Expected: the duplicate copies BPM, Volume, transform, and scale but starts stopped with no connection relationships, wires, beat origin/ordinal, or pulse voices.
 
 - [ ] Hold Grip with no duplicable transform target and press Right A. Expected: the radial menu remains disabled and no instrument or preview is created. Grip release followed by Right A opens the menu normally.
 
@@ -134,7 +136,7 @@ Use one isolated Honk first so contact-chain behavior does not obscure the resul
 
 - [ ] **Manipulate ears** — Trigger-drag each ear vertically through its range. Expected: the matching ear morph/collider follows, left ear changes pitch control, right ear changes octave control, the note label updates, and the opposite ear does not move.
 
-- [ ] **Manipulate nose** — Trigger-drag the nose vertically through its range. Expected: the nose collider/morph follows, audio formant/nasal character updates without pitch jumps, and release ends the drag.
+- [ ] **Manipulate nose** — Trigger-drag the nose vertically through its range while playing the Honk. Expected: the nose collider/morph follows and increasing the control smoothly reduces note loudness toward a still-audible minimum without changing vowel/timbre or pitch. Repeat with Looper automation and a Metronome pulse.
 
 - [ ] **Release all interactions** — Release both Triggers and Grips and move rays off targets. Expected: no active squeeze holder, bend source, ray squeeze, drag, action voice, or haptic remains; latched vowel/ear/nose values may remain by design.
 
@@ -182,7 +184,7 @@ Use a scene containing at least one Honk and one Looper. Hold Grip away from tra
 
 ## 7. Looper connections, transport, and recording
 
-Use a Looper plus at least two Honks. Keep one track visually identifiable throughout replacement and restoration.
+Use two Metronomes, several Loopers, and at least two Honks. Keep one Looper track visually identifiable throughout replacement and restoration.
 
 - [ ] **Connect honk to looper** — Pull Trigger on an open track node, hold it while aiming the temporary wire at a Honk connector, then release. Expected: the track stores that Honk’s stable ID, a persistent wire appears with the track color, and both endpoints follow transforms.
 
@@ -192,6 +194,24 @@ Use a Looper plus at least two Honks. Keep one track visually identifiable throu
 
 - [ ] Reconnect a Honk, move and scale both endpoints, and observe the wire from short, long, side, and rear angles. Expected: no detached endpoint, stale geometry, or duplicate wire appears; the cable leaves and enters along the socket directions, uses additional smooth spans for longer/sharper routes, and sags downward instead of forming a fixed upward arch.
 
+- [ ] **Draw both Metronome connection types** — Pull Trigger on each of the four Metronome ports and move the ray before releasing. Connect one port to any Looper track node and another to a Honk connector. Expected: a temporary adaptive wire follows every frame, release creates a purple clock/pulse wire, cancellation or an invalid release removes the preview, and the Looper node’s existing track recording/`connectedHonkId` is unchanged.
+
+- [ ] **Reconnect and enforce one incoming clock** — Reconnect one source port to a new target, then connect a second Metronome to the first target. Expected: the old relationship and wire disappear exactly once, the new one replaces it, repeating the identical connection is visually idempotent, and each target has only one incoming Metronome.
+
+- [ ] **Move, rotate, and scale clock endpoints** — Transform both the Metronome and its target Looper/Honk through several scales and orientations. Expected: both wire endpoints and socket directions remain attached with no stale or duplicate geometry.
+
+- [ ] **Start several linked Loopers together** — Connect several recorded Loopers to different ports on one Metronome. Press Play on each between beats. Expected: each shows armed/silent until the next beat, every playhead begins at zero together, and their internal event offsets remain intact rather than snapping each note to a beat.
+
+- [ ] **First-sound recording origin** — With the Metronome running, press Record just after a beat, wait several beats without performing, then squeeze a connected Honk halfway between two beats and stop later. Expected: Record remains armed until the squeeze, the recorded timeline starts at the beat immediately before that squeeze, the first note retains its within-beat offset, and none of the pre-performance wait is included. Repeat with a Stick/percussion onset and press Stop before any sound to confirm clean cancellation.
+
+- [ ] **Independent beat-quantized Looper transport** — While a linked Looper is playing, pause the Metronome between beats. Expected: clicks, pendulum motion, and direct Honk pulses stop immediately, but the Looper continues on the silent clock grid. Press the Looper’s Pause between beats; expected: it keeps playing until the next beat, then silences. Press Looper Play while the Metronome remains off; expected: it waits for the next grid beat and restarts at playhead zero. Restarting the Metronome resumes clicks on the same phase without starting, stopping, or restarting the Looper.
+
+- [ ] **Long-running drift and live BPM** — Let several linked Loopers repeat for at least ten minutes while comparing loop boundaries to clicks. Change BPM several times during playback. Expected: boundaries remain beat-aligned with no accumulating drift, phase stays continuous through BPM changes, and no Looper restarts solely because BPM changed.
+
+- [ ] **Independent Metronomes** — Run both Metronomes at distinct BPM values with different linked Loopers. Expected: each Looper follows only its wired clock; starting/stopping either Metronome has no effect on the other group.
+
+- [ ] **Pulse a touching Honk chord per beat** — Wire a Metronome port to an isolated Honk. Expected: it visibly squeezes and sounds once per beat in addition to the normal click. While the Metronome runs, bring a second Honk into contact with the wired Honk; expected: both Honks visibly squeeze and sound on the pulse, and bending the wired Honk bends both voices while each member retains its own pitch, octave, vowel, and nose note volume. Separate them again and confirm the next pulse returns to the wired Honk alone. Low/high BPM stays discrete and a tracking/frame hitch does not produce a catch-up burst.
+
 - [ ] **Record squeeze** — Connect a track, press Record, squeeze/release the Honk for longer than the minimum action duration, then stop recording. Expected: the track becomes active and playback reproduces squeeze timing plus the configured loop gap.
 
 - [ ] **Record bend** — During recording, squeeze and roll through positive and negative bends. Expected: playback reproduces bend direction/amount and returns to neutral during the loop gap.
@@ -200,17 +220,17 @@ Use a Looper plus at least two Honks. Keep one track visually identifiable throu
 
 - [ ] **Record stick percussion** — While recording, strike the connected Honk and the Looper. Expected: Honk `boink` is recorded on the connected track, Looper `hihat` on the self-percussion track, and playback fires deterministic events once per loop.
 
-- [ ] **Play** — Press Play from stopped state. Expected: recorded tracks enter playing state, the head animates, automation/audio starts, and ordinary Play restarts rather than silently resuming an old paused offset.
+- [ ] **Standalone Play** — Disconnect the Looper clock and press Play from stopped state. Expected: recorded tracks enter playing state immediately, the head animates, and standalone behavior remains independent of any globally playing Metronome.
 
 - [ ] **Stress the mix** — Play several recorded tracks, sustain multiple live Honks, and strike both percussion sounds concurrently. Expected: the shared low-pass retains useful brightness, peak limiting prevents digital crackle/clipping, and the mix remains responsive without pumping or a large loudness jump.
 
-- [ ] **Pause** — Press Pause during playback. Expected: playhead progression stops, applied automation/action voices release, tracks stop presenting playback, and the transport reports paused.
+- [ ] **Pause** — Press Pause during playback. Expected: an unconnected Looper pauses immediately. A connected Looper remains audible until the next beat-grid boundary, then its playhead stops, applied automation/action voices release, tracks stop presenting playback, and the transport reports paused.
 
-- [ ] **Resume** — Resume through the intended play/resume path. Expected: playback continues from the paused position without an unintended restart and automation returns cleanly.
+- [ ] **Standalone resume** — With no Metronome connection, resume through the intended play/resume path. Expected: playback continues from the paused position. With a clock connected, pressing Play after Pause instead arms a restart at playhead zero on the next beat.
 
 - [ ] **Stop** — Press Stop while playing, paused, and recording in separate trials. Expected: transport becomes stopped, voices/layers clear, recording finalizes safely, and invalid/repeated stop does not corrupt timeline state.
 
-- [ ] Drag volume, gap, and speed through their ranges. Expected: controls/morphs track the gesture, values clamp, volume changes mix only, gap changes silent loop spacing, speed changes playback rate, and saved values restore.
+- [ ] **Gap lever direction and retired controls** — Spawn a fresh Looper before touching any controls. Expected: both the right-hand Gap handle and its collider begin at the physical bottom endpoint, normalized `-1`/zero beats, rather than at the middle. Drag it to the top/four beats and back; its right-handle up/down morph must agree with collider travel. Confirm the old bottom handle is inert and no Speed control remains anywhere in interaction/debug presentation.
 
 - [ ] **Interact with honk during playback** — While Looper automation plays, squeeze, bend, change a morph, and release. Expected: live squeeze combines by maximum, bend combines additively, direct input remains responsive, and ending live input leaves automation running.
 
@@ -226,6 +246,8 @@ Use disposable fixtures; do not destroy the scene intended for persistence tests
 
 - [ ] **Delete looper during playback** — Start playback, then delete the Looper with Left X. Expected: recording/playback stops, every automation layer and action voice clears, all connections/wires/targets/view resources dispose, the Looper registry/root disappears, and connected Honks remain interactive.
 
+- [ ] **Delete Metronome connection endpoints** — In separate trials, delete a running Metronome, its linked Looper, and the Honk anchoring a touching-chord pulse. Expected: affected armed/automation/pulse voices and transient squeeze layers on every chord member release immediately, stable relationships disappear, preview/persistent wires dispose once, and unrelated clocks/targets continue.
+
 - [ ] **Delete or unequip stick** — Release Grip to exercise normal unequip; if an instrument-deletion path for Stick is exposed in the tested build, exercise it too. Expected: controller attachment/maps and contact IDs clear, collider disables, resources/targets dispose on deletion, and no late haptic/audio event fires.
 
 - [ ] Delete an instrument currently hovered or gripped by the other controller. Expected: both controller states release their references and no subsequent frame accesses a disposed root.
@@ -234,9 +256,9 @@ Use disposable fixtures; do not destroy the scene intended for persistence tests
 
 ## 9. Persistence and restoration
 
-Create a deliberate fixture: two tuned Honks in a locked group, one separate unlocked touching pair, one Looper with at least one connection and recorded gesture/percussion, non-default Looper controls, and a Stick preference.
+Create a deliberate fixture: two tuned Honks in a locked group, one separate unlocked touching pair, several Loopers with recorded gesture/percussion, two Metronomes, both Metronome target kinds, non-default Looper controls, and a Stick preference.
 
-- [ ] **Exit-only save** — Note the current `face-orchestra:scene:v2` value, then spawn/delete/transform Honks and Loopers, change Honk ears/nose/vowel, record and connect a Looper, adjust its controls, and lock a formation. Expected: storage does not change during these actions. Exit XR once; exactly one write produces parseable plain JSON with `schemaVersion: 2`, stable instrument IDs, canonical transforms/scales, Honk state, complete Looper timelines/controls, lock relationships, connection IDs, and equipment preference.
+- [ ] **Exit-only save** — Note the current `face-orchestra:scene:v3` value, then change instruments and relationships. Expected: storage does not change during those actions. Exit XR once; exactly one write produces plain JSON with `schemaVersion: 3`, stable instrument IDs, canonical transforms/scales, Honk state, complete Looper timelines/Volume/Gap, Metronome BPM/Volume, lock/Looper/Metronome connection IDs, and equipment preference.
 
 - [ ] **Exit during recording** — Start a Looper recording, perform a held squeeze/bend and a percussion hit, then exit XR without pressing Stop. Expected: the final sample and neutral release events are committed, timeline duration is non-zero and normalized, the recording restores and plays fully, and no recording/playing/paused transport flag is stored.
 
@@ -244,11 +266,13 @@ Create a deliberate fixture: two tuned Honks in a locked group, one separate unl
 
 - [ ] **Restore honks** — Compare count, stable IDs, transforms, scales, tuning/note labels, and saved defaults. Expected: every valid Honk restores once; pending previews and transient live squeeze/bend do not restore.
 
-- [ ] **Restore loopers** — Compare count, stable IDs, transforms, controls, timeline duration/events, and stopped runtime state. Expected: Loopers restore once with their recordings intact, always stopped regardless of their exit-time play/pause state, with no stale action voice or preview wire.
+- [ ] **Restore loopers and Metronomes** — Compare counts, stable IDs, transforms, controls, timeline duration/events, BPM/Volume, and stopped state. Expected: all restore once with durable state intact; Loopers are stopped/unarmed and Metronomes stopped regardless of exit-time state, with no stale voice, beat state, or preview wire.
 
 - [ ] **Restore locked groups** — Compare group ID, anchor, members, and relative layout. Expected: lock visuals and transform targeting return; moving/scaling any member moves the restored group without a jump.
 
 - [ ] **Restore looper connections** — Compare `{looperId, trackId, honkId}` records and visible wires. Expected: every valid endpoint reconnects by ID after both entities exist, missing endpoints are skipped, and no direct Honk object is present in saved data.
+
+- [ ] **Restore Metronome connections** — Compare `{metronomeId, portId, targetKind, targetId, targetPortId}` records and recreated purple wires. Expected: relationships restore only after all entities and Looper assignments exist; missing endpoint/port records are skipped without aborting, and no wire mesh or live object appears in JSON.
 
 - [ ] **Confirm unlocked chord formations recalculate from contact** — Reload with an unlocked pair placed in collider overlap. Expected: no unlocked membership exists in JSON; the contact system rebuilds the edge/component from current geometry after its entry debounce. Move them apart and confirm exit recalculation.
 
@@ -260,7 +284,9 @@ Create a deliberate fixture: two tuned Honks in a locked group, one separate unl
 
 Run this section separately with a backed-up storage profile.
 
-- [ ] Place a representative v1 payload under `face-orchestra:spawned-instruments:v1` with no v2 key, then reload. Expected: Honk/Looper records migrate in memory with unique stable IDs and plain transforms/tuning; no write occurs until XR exit, when the v2 key is written once.
+- [ ] Place a representative v2 payload under `face-orchestra:scene:v2` with a Looper containing saved `controls.gap` plus the retired control, and no v3 key. Expected: migration occurs only in memory, Gap moves the new right-hand lever to its saved value, the retired value is dropped, and `metronomeConnections` starts empty. XR exit writes the v3 key once.
+
+- [ ] Place a representative v1 payload under `face-orchestra:spawned-instruments:v1` with no newer key, then reload. Expected: Honk/Looper records migrate through v2 to v3 in memory with unique stable IDs and plain transforms/tuning; no write occurs until XR exit, when the v3 key is written once.
 
 - [ ] Confirm migration does not invent lock memberships or Looper connections that were not recoverable from v1. Legacy appearance flags may remain as migration evidence.
 

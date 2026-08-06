@@ -1,9 +1,15 @@
 import { createEmptySceneData } from "./schema.js";
 
 export class SceneSerializer {
-  constructor({ registry, lockService, getEquipment = () => ({ preferredStickType: "default" }) }) {
+  constructor({
+    registry,
+    lockService,
+    metronomeConnectionManager = null,
+    getEquipment = () => ({ preferredStickType: "default" }),
+  }) {
     this.registry = registry;
     this.lockService = lockService;
+    this.metronomeConnectionManager = metronomeConnectionManager;
     this.getEquipment = getEquipment;
   }
 
@@ -14,6 +20,9 @@ export class SceneSerializer {
       .map((instrument) => this.serializeInstrument(instrument));
     scene.relationships.honkLocks = this.lockService?.serialize?.() || [];
     scene.relationships.looperConnections = this.serializeLooperConnections(scene.instruments);
+    const savedIds = new Set(scene.instruments.map(({ id }) => id));
+    scene.relationships.metronomeConnections =
+      this.metronomeConnectionManager?.serialize?.(savedIds) || [];
     scene.equipment = { ...scene.equipment, ...this.getEquipment() };
     return assertPlainScene(scene);
   }

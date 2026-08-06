@@ -1,5 +1,7 @@
 export const LooperTransportState = Object.freeze({
   STOPPED: "stopped",
+  ARMED_RECORDING: "armed-recording",
+  ARMED_PLAYBACK: "armed-playback",
   RECORDING: "recording",
   PLAYING: "playing",
   PAUSED: "paused",
@@ -7,6 +9,8 @@ export const LooperTransportState = Object.freeze({
 
 export const LooperTransportAction = Object.freeze({
   RECORD: "record",
+  ARM_RECORD: "armRecord",
+  ARM_PLAY: "armPlay",
   FINISH_RECORDING: "finishRecording",
   PLAY: "play",
   PAUSE: "pause",
@@ -38,6 +42,18 @@ export class LooperTransport {
     return this.state === LooperTransportState.RECORDING;
   }
 
+  get recordArmed() {
+    return this.state === LooperTransportState.ARMED_RECORDING;
+  }
+
+  get playArmed() {
+    return this.state === LooperTransportState.ARMED_PLAYBACK;
+  }
+
+  get armed() {
+    return this.recordArmed || this.playArmed;
+  }
+
   get playing() {
     return this.state === LooperTransportState.PLAYING;
   }
@@ -55,6 +71,22 @@ export class LooperTransport {
     this.state = LooperTransportState.RECORDING;
     return createResult(LooperTransportAction.RECORD, previousState, this.state, {
       restarted: previousState === LooperTransportState.RECORDING,
+    });
+  }
+
+  armRecord() {
+    const previousState = this.state;
+    this.state = LooperTransportState.ARMED_RECORDING;
+    return createResult(LooperTransportAction.ARM_RECORD, previousState, this.state, {
+      restarted: previousState === LooperTransportState.ARMED_RECORDING,
+    });
+  }
+
+  armPlay() {
+    const previousState = this.state;
+    this.state = LooperTransportState.ARMED_PLAYBACK;
+    return createResult(LooperTransportAction.ARM_PLAY, previousState, this.state, {
+      restarted: true,
     });
   }
 

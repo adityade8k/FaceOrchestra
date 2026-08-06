@@ -14,6 +14,7 @@ export const LifecycleRuntimeMethods = {
       this.deleteInstrument(instrumentState);
     },
     deleteInstrument(instrumentState) {
+      this.cancelAllMetronomeWireInteractions();
       for (const controller of this.controllers) {
         const controllerState = this.controllerStates.get(controller);
         const interaction = controllerState?.activeTriggerInteraction;

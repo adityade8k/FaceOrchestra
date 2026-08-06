@@ -29,8 +29,8 @@ function createProfileWrapper(source) {
   return resolver.resolve(source);
 }
 
-test("Grip+A duplicates the canonical Honk or Looper behind a transform wrapper", () => {
-  for (const kind of ["honk", "looper"]) {
+test("Grip+A duplicates the canonical Honk, Looper, or Metronome behind a transform wrapper", () => {
+  for (const kind of ["honk", "looper", "metronome"]) {
     const source = createInstrument(kind);
     const wrapper = createProfileWrapper(source);
     assert.notStrictEqual(wrapper, source);

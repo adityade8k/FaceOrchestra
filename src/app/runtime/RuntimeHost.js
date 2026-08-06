@@ -17,6 +17,7 @@ import { HonkInstrument } from "../../instruments/honk/HonkInstrument.js";
 import { METRONOME_SETTINGS } from "../../config/metronome.js";
 import { LooperInstrument } from "../../instruments/looper/LooperInstrument.js";
 import { MetronomeColliderFactory } from "../../instruments/metronome/MetronomeColliderFactory.js";
+import { MetronomeConnectionManager } from "../../instruments/metronome/MetronomeConnectionManager.js";
 import { MetronomeInstrument } from "../../instruments/metronome/MetronomeInstrument.js";
 import { StickColliderFactory } from "../../instruments/stick/StickColliderFactory.js";
 import { StickCollisionSystem, ThreeStickCollisionAdapter } from "../../instruments/stick/StickCollisionSystem.js";
@@ -45,6 +46,9 @@ import { InstrumentAssetRuntimeMethods } from "./InstrumentAssetRuntime.js";
 import { LifecycleRuntimeMethods } from "./LifecycleRuntime.js";
 import { LooperConnectionRuntimeMethods } from "./LooperConnectionRuntime.js";
 import { LooperTransportRuntimeMethods } from "./LooperTransportRuntime.js";
+import { MetronomeConnectionRuntimeMethods } from "./MetronomeConnectionRuntime.js";
+import { MetronomePulseRuntimeMethods } from "./MetronomePulseRuntime.js";
+import { PendingSpawnSafeRuntimeMethods } from "./PendingSpawnSafeRuntime.js";
 import { RelationshipRuntimeMethods } from "./RelationshipRuntime.js";
 import { SessionRuntimeMethods } from "./SessionRuntime.js";
 import { SpawnRuntimeMethods } from "./SpawnRuntime.js";
@@ -72,6 +76,14 @@ export class RuntimeHost {
     this.instrumentFactory = new InstrumentFactory({
       registry: this.instrumentRegistry,
       interactionTargetRegistry: this.interactionTargetRegistry,
+    });
+    this.metronomeConnectionWires = new Map();
+    this.metronomePulseStates = new Map();
+    this.metronomeConnectionManager = new MetronomeConnectionManager({
+      registry: this.instrumentRegistry,
+      onConnectionAdded: (connection) => this.handleMetronomeConnectionAdded(connection),
+      onConnectionRemoved: (connection, reason) =>
+        this.handleMetronomeConnectionRemoved(connection, reason),
     });
 
     this.honkContactGraph = new HonkContactGraph();
@@ -113,6 +125,7 @@ export class RuntimeHost {
       releaseInstrumentAudio: (instrument) => {
         instrument.releaseAllAudioVoices?.();
       },
+      sessionResetters: [() => this.resetMetronomeConnectionRuntime({ clearRelationships: true })],
     });
 
     this.spawnCatalog = new SpawnCatalog();
@@ -191,6 +204,10 @@ export class RuntimeHost {
       .register("metronome", (options) => new MetronomeInstrument({
         ...options,
         audioSystem: this.audioSystem,
+        onTransportChange: ({ metronome, playing }) => {
+          if (playing) return;
+          this.releaseMetronomePulsesForMetronome(metronome.id);
+        },
       }));
   }
 
@@ -252,11 +269,13 @@ export class RuntimeHost {
     this.sceneSerializer = new SceneSerializer({
       registry: this.instrumentRegistry,
       lockService: this.honkLockService,
+      metronomeConnectionManager: this.metronomeConnectionManager,
       getEquipment: () => this.stickEquipmentSystem.getEquipmentPreference(),
     });
     this.sceneRestorer = new SceneRestorer({
       registry: this.instrumentRegistry,
       lockService: this.honkLockService,
+      metronomeConnectionManager: this.metronomeConnectionManager,
       createInstrument: async (saved) => {
         const componentId = saved.kind === "looper" || saved.kind === "metronome"
           ? saved.kind
@@ -316,6 +335,11 @@ export class RuntimeHost {
       if (event.type === "honk-lock.created") this.applyLockGroupVisualState(event.group, true);
       if (event.type === "honk-lock.removed") this.applyLockGroupVisualState(event.group, false);
     });
+    this.instrumentLifecycle.subscribe((event) => {
+      if (event.type === "instrument.deleting") {
+        this.metronomeConnectionManager.disconnectInstrument(event.instrumentId, "endpoint-deleting");
+      }
+    });
   }
 
   createLooperAdapter() {
@@ -347,15 +371,8 @@ export class RuntimeHost {
       updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume) =>
         this.updateLooperActionVoice(voiceId, this.instrumentRegistry.get(honkId), snapshot, volume),
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
-      getMetronomeTiming: (now) => {
-        const metronomes = this.instrumentRegistry.getByKind("metronome").filter(
-          (metronome) =>
-            !metronome.disposed &&
-            metronome.root?.visible &&
-            metronome.playing,
-        );
-        return metronomes.length === 1 ? metronomes[0].getBeatTiming(now) : null;
-      },
+      getTimingForLooper: (looperId, now) =>
+        this.metronomeConnectionManager.getTimingForLooper(looperId, now),
       updateWireForTrack: (looper, track) => this.updateLooperWireForTrack(looper, track),
       disposeWireMesh: (wire) => this.disposeWireMesh(wire),
       updateVisuals: (looper) => this.updateLooperVisuals(looper),
@@ -413,6 +430,7 @@ export class RuntimeHost {
       this.closeRadialMenu(controller);
     }
     for (const looper of this.instrumentRegistry.getByKind("looper")) looper.stop();
+    this.resetMetronomeConnectionRuntime({ clearRelationships: true });
     for (const honk of this.instrumentRegistry.getByKind("honk")) {
       honk.hornHolders?.clear();
       honk.activeBends?.clear();
@@ -434,6 +452,7 @@ export class RuntimeHost {
     this.resetSubsystemsAfterSession();
     this.honkContactSystem.reset();
     this.honkLockService.dispose();
+    this.metronomeConnectionManager.dispose();
     this.instrumentLifecycle.dispose();
     this.instrumentRegistry.clear();
     this.interactionTargetRegistry.clear();
@@ -450,6 +469,9 @@ Object.assign(
   XRInteractionRuntimeMethods,
   StickRuntimeMethods,
   LooperTransportRuntimeMethods,
+  MetronomeConnectionRuntimeMethods,
+  MetronomePulseRuntimeMethods,
+  PendingSpawnSafeRuntimeMethods,
   LooperConnectionRuntimeMethods,
   HonkPerformanceRuntimeMethods,
   HonkPresentationRuntimeMethods,

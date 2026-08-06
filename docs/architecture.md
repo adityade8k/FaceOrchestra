@@ -4,18 +4,19 @@ This document describes the runtime architecture as implemented. It focuses on o
 
 ## Domain vocabulary and invariants
 
-Face Orchestra has exactly three instrument kinds:
+Face Orchestra has four instrument kinds:
 
 ```text
 InstrumentEntity
 ├── HonkInstrument
 ├── StickInstrument
-└── LooperInstrument
+├── LooperInstrument
+└── MetronomeInstrument
 ```
 
 These terms are intentionally distinct:
 
-- **Instrument kind** — `honk`, `stick`, or `looper`.
+- **Instrument kind** — `honk`, `stick`, `looper`, or `metronome`.
 - **Honk tuning** — pitch, octave, note label, and snapping configuration for one Honk.
 - **Formation recipe** — a spawn command whose members become independent Honks at configured offsets.
 - **Contact formation** — transient runtime state: a connected component in the graph of touching Honk squeeze colliders.
@@ -28,6 +29,7 @@ Other invariants:
 - Every instrument has a stable ID and an exact kind.
 - `InstrumentRegistry` is the only authoritative instrument collection.
 - Looper tracks store Honk IDs, never live Honk objects.
+- Metronome connections store source/target/port IDs, never live instruments or wire meshes.
 - Lock groups store member IDs, never duplicated leader/follower fields on each member.
 - Three.js `userData` contains small ownership/role descriptors, not full mutable application state.
 - Persistence is versioned plain JSON and contains no Three.js objects, audio nodes, functions, or class instances.
@@ -44,7 +46,7 @@ flowchart TD
     App --> Scheduler[FrameScheduler]
     App --> Host[RuntimeHost]
     Host --> Registries[Instrument + interaction registries]
-    Host --> Domains[Honk / Stick / Looper / formations]
+    Host --> Domains[Honk / Stick / Looper / Metronome / formations]
     Host --> XR[XR input + intent + interaction systems]
     Host --> Spawn[Spawn catalog + placement]
     Host --> Audio[AudioSystem]
@@ -79,8 +81,11 @@ The runtime method slices are:
 | `HonkPresentationRuntime` | Honk visual/morph helpers and note-label presentation. |
 | `RelationshipRuntime` | Runtime-facing lock, unlock, group visuals, and transform-following calls. |
 | `StickRuntime` | Behavior-preserving Stick model/presentation helpers around the Stick domain services. |
-| `LooperConnectionRuntime` | Wire interaction, shake disconnect, wire geometry, and connection presentation. |
+| `LooperConnectionRuntime` | Looper/Honk wire interaction, shake disconnect, and connection presentation. |
 | `LooperTransportRuntime` | Looper buttons, controls, record/play calls, and visual state. |
+| `MetronomeConnectionRuntime` | Metronome port gestures and persistent clock/pulse wire presentation. |
+| `MetronomePulseRuntime` | Stable anchored-Honk beat performance, transient contact-formation expansion, and cleanup. |
+| `PendingSpawnSafeRuntime` | Ordered clock, automation, voice, and wire advancement while preview interactions are isolated. |
 | `LifecycleRuntime` | Controller-state detachment around the central instrument deletion pipeline. |
 | `SessionRuntime` | Instruction/session behavior and controller-facing session cleanup. |
 
@@ -119,6 +124,7 @@ Default capabilities are:
 | Honk | `placeable`, `transformable`, `playable`, `morphable`, `chord-capable`, `looper-connectable`, `persistable` |
 | Looper | `placeable`, `transformable`, `playable`, `recordable`, `persistable` |
 | Stick | `equippable`, `playable`, `collision-driven`, `recordable-source`, `persistable-preference` |
+| Metronome | `placeable`, `transformable`, `playable`, `persistable` |
 
 `InstrumentRegistry` owns add/remove/lookup and kind/capability indexes. It resolves an Object3D by walking ancestors and reading only a stable descriptor or registered root. Registry removal emits an event before calling idempotent disposal; this lets relationship subscribers release references while the entity is still available to the removal event.
 
@@ -132,9 +138,9 @@ Default capabilities are:
 }
 ```
 
-Roles include `honk.body`, `honk.mouth`, `honk.squeeze`, ears, nose, connector, Looper buttons/controls/nodes, and `stick.strike-volume`.
+Roles include `honk.body`, `honk.mouth`, `honk.squeeze`, ears, nose, connector, Looper buttons/controls/nodes, `metronome.connection-port`, Metronome controls/buttons, and `stick.strike-volume`.
 
-`InstrumentFactory` is a registered creator map for the three exact kinds. `RuntimeHost` injects the shared registries and registers creators for `HonkInstrument`, `LooperInstrument`, and `StickInstrument`. Deserialization preserves the supplied stable ID before relationships are restored.
+`InstrumentFactory` is a registered creator map for the four exact kinds. `RuntimeHost` injects the shared registries and registers creators for `HonkInstrument`, `LooperInstrument`, `StickInstrument`, and `MetronomeInstrument`. Deserialization preserves the supplied stable ID before relationships are restored.
 
 `TransformTargetResolver` first resolves a source Object3D/entity/ID to its instrument, then asks `FormationTransformResolver` whether that Honk belongs to a lock group, then wraps the result in the appropriate scale profile. A Looper therefore does not inherit Honk scale bounds, and a locked member resolves to the group proxy rather than moving alone.
 
@@ -245,7 +251,7 @@ The Stick is not a world-persisted entity. Persistence stores only `preferredSti
 - `LooperConnectionManager`;
 - controls, transient wire references, serialization, and cleanup.
 
-The transport state machine has four states: `stopped`, `recording`, `playing`, and `paused`. It validates transitions. Ordinary play restarts; the explicit resume path continues a paused playhead. Recording resets the prior recording; pause is accepted only during playback; stop and reset return to stopped state safely.
+The transport state machine has `stopped`, `armed-recording`, `recording`, `armed-playback`, `playing`, and `paused` states, with a pending clocked-Pause action layered over active playback until its boundary arrives. Ordinary unclocked play keeps its explicit resume path. Connected Play always arms a restart at playhead zero on the next clock-grid beat, and connected Pause lets the current loop continue until the next grid beat before silencing it. Connected Record stays armed until the first squeeze onset or percussion hit, then starts the timeline at the beat immediately preceding that sound. Stop cancels any pending action.
 
 Each track has a stable `trackId` and nullable `connectedHonkId`. Connecting validates the ID through an injected registry adapter. Replacing a connection first clears that track’s automation. Disconnecting clears automation/playback state and disposes its wire. Deleting a Honk explicitly disconnects matching tracks before the registry removes the Honk, so the target can still be resolved while automation and action voices are released.
 
@@ -267,7 +273,19 @@ Gripping and shaking a connected Honk can disconnect its matching tracks; thresh
 
 The timeline records sampled Honk action snapshots and deterministic percussion events. Playback applies an automation layer whose ID is derived from Looper and track IDs. `HonkPerformanceState` combines that layer with live input instead of replacing it. Playback can target the current contact component, but persisted assignment remains the one connected Honk ID.
 
-`looperControlMapping.js` maps control values to volume, gap, and speed; it is not an audio engine. Web Audio remains in the audio layer.
+`looperControlMapping.js` maps control values to volume and zero-through-four whole Gap beats; it is not an audio engine. Gap uses the model’s authored right-handle morphs and defaults to normalized `-1`. The old bottom handle has no collider or runtime behavior.
+
+Clocked timelines retain events relative to the beat preceding their first musical onset. This preserves silence between that beat and the first sound without including the time between pressing Record and performing. Final duration is rounded up to an integer number of recorded-clock beats, never shorter than content, and Gap adds whole beats. Playback derives its authoritative loop position from the connected Metronome’s continuous beat position and the timeline’s recorded beat interval; it does not accumulate render-frame deltas or add a separate first-onset launch phase.
+
+### Metronome connections and clock ownership
+
+`MetronomeConnectionManager` owns stable relationships shaped as `{ metronomeId, portId, targetKind, targetId, targetPortId }`. Each of the four procedural source ports owns at most one relationship, and each target Looper or Honk accepts only one incoming Metronome. Replacing either side removes the old relationship before creating the new one; an identical reconnect is idempotent. Missing, hidden, disposed, pending-placement, unsupported, and invalid-port endpoints are rejected.
+
+A Looper’s `getTimingForLooper(looperId, now)` lookup starts from this manager. There is no scan for a globally playing Metronome. Consequently several Metronomes can run independently, while all Loopers connected to one Metronome share its origin and continuous BPM phase. Pausing the Metronome silences its clicks and direct Honk pulses but retains a silent phase-continuous clock grid. Linked Loopers therefore keep playing, recording, and accepting beat-quantized Play/Pause commands independently. Restarting the Metronome resumes clicks on that existing grid rather than resetting Looper transport.
+
+The same adaptive spline/material/disposal helpers serve Looper/Honk and Metronome connection presentation, but the two relationship types remain independent. A Metronome clock wire may end on a Looper track node without changing that track’s `connectedHonkId` or recording. Clock wires use their own centralized color treatment and are recreated only from stable relationships.
+
+For a Honk target, the relationship persists only the wired Honk as its stable anchor. On each beat, `MetronomePulseRuntime` expands that anchor through the current `HonkContactGraph` component, writes transient squeeze performance layers, and gives each participating Honk a distinct stable voice ID. Every member keeps its own pitch, octave, vowel, morph, and nose note gain, while the anchor's current bend is applied across the chord just like a live formation gesture. Members joining or leaving contact are reflected during the active gate without changing persistence. Gate duration is capped, every retrigger releases the previous generation, and pause, disconnect, or deletion clears every member layer and voice. A skipped render interval emits only the current due ordinal, never a burst of stale beats.
 
 ### Audio
 
@@ -275,11 +293,11 @@ The timeline records sampled Honk action snapshots and deterministic percussion 
 
 - `AudioContextService` — lazy creation/resume after a user gesture;
 - `MasterBus` — input gain, master low-pass, bus compressor, makeup gain, peak limiter, safety output gain, and destination;
-- `HonkVoiceService` and `HonkVoice` — per-ID oscillator/formant/nasal voice behavior;
+- `HonkVoiceService` and `HonkVoice` — per-ID oscillator/formant voice behavior and smoothed note gain;
 - `PercussionVoiceService` — Stick percussion voices;
 - pitch/formant/audio math modules.
 
-Voice IDs encode the source/controller, stable instrument ID, and Looper automation layer where applicable. This permits targeted cleanup without placing audio nodes in entities or persistence. `AudioSystem.releaseAll()` is the session/application safety net.
+Voice IDs encode the source/controller, stable instrument ID, Looper automation layer, or Metronome port where applicable. This permits targeted cleanup without placing audio nodes in entities or persistence. Nose is mapped centrally to a note-gain multiplier: legacy/default zero is full gain and increasing the control attenuates toward a nonzero minimum without changing the filter graph. Base Honk gain, nose note gain, optional Looper volume, and polyphony compensation compose multiplicatively. `AudioSystem.releaseAll()` is the session/application safety net.
 
 No Tone.js dependency is used. Looper controls never reach into audio graph internals; adapters translate resolved domain state into stable AudioSystem calls.
 
@@ -312,29 +330,30 @@ Gamepad/XR controller
 
 | Flow | Route and owner |
 | --- | --- |
-| Application boot | `main.js` → `createFaceOrchestraApp` → `FaceOrchestraApp.initialize` → controller setup, instruction view, asset loads, two-pass restore → animation loop. |
+| Application boot | `main.js` → `createFaceOrchestraApp` → `FaceOrchestraApp.initialize` → controller setup, instruction view, asset loads, entity-first relationship-ordered restore → animation loop. |
 | Desktop fallback | `SceneRuntime` uses the perspective camera, opaque background, fallback environment, lights, resize listener, and normal render loop. |
 | Enter XR | AR/VR button starts the session → `FaceOrchestraApp.onXRSessionStart` sets blend mode → session runtime shows or suppresses instructions. |
 | Exit XR | Session event → discard pending previews → take one final Looper recording sample → finalize recordings and stop transports → write one scene snapshot → release controller/live interaction state and voices → subsystem resets → `SceneRuntime.resetAfterXR`. Persisted instruments remain for the next session. |
 | Dismiss instructions | Trigger raycast resolves the close button → instruction view hides → spawn flow becomes available. |
 | Open/select spawn menu | Right A with Grip released → `spawn.menu.open` → `SpawnMenuController`/radial view; controller orientation selects an entry. A release confirms. Any active Grip suppresses this route. |
-| Duplicate gripped instrument | Grip transform owns a single unlocked Honk/Looper → Right A press → resolve canonical `gripSourceInstrumentState` behind the transform-profile wrapper → create a fresh-ID copy → copy durable instrument state only → retarget Grip to the duplicate. No radial menu or spawn preview is created. |
+| Duplicate gripped instrument | Grip transform owns a single unlocked Honk/Looper/Metronome → Right A press → resolve canonical `gripSourceInstrumentState` behind the transform-profile wrapper → create a fresh-ID copy → copy durable instrument state only → retarget Grip to the duplicate. Metronome connections/beat state and Looper connections/transport state are not copied. |
 | Preview/place/cancel | Catalog action creates one entity or several recipe Honks → preview attaches roots to a controller-local group → thumbstick scales → Trigger preserves world transforms and places; Grip/lifecycle cancellation removes preview entities. |
 | Spawn formation recipe | `SpawnCatalog` resolves a recipe ID → each `FormationSpawner`/runtime recipe member creates an ordinary Honk with its own stable ID and tuning. |
 | Raycast Honk interactions | Ray target descriptor → owning Honk → semantic squeeze/vowel/ear/nose method → performance state; presentation applies morph/audio later in the frame. |
-| Raycast Metronome interactions | Cloned eye-geometry target → owning Metronome → left Play latch or momentary right Pause action; playback drives an independent model-local-Z pendulum rig from the beat phase, while the body remains a transform target and does not control transport. |
+| Raycast Metronome interactions | Eye target → owning Metronome → left Play latch or momentary right Pause action; playback drives its click and model-local-Z pendulum from one continuous beat phase. Pausing releases direct pulse voices and stops clicks/pendulum while the silent clock grid and linked Looper transports continue. |
+| Connect/replace Metronome target | Trigger one of four procedural source ports → adaptive preview wire → release on a Looper node or Honk connector → stable-ID validation → `MetronomeConnectionManager.connect`; source-port and incoming-target replacement both dispose the previous wire/voice state. |
 | Grip move/rotate/scale | Ray/grip hit → registry owner → `TransformTargetResolver` → entity or lock proxy → `GripTransformSystem`; relationship phase updates group followers. |
 | Contact formation | Collision phase measures squeeze spheres → debounced graph edge changes → `ChordFormationService` derives connected components. |
 | Lock/unlock | Right secondary intent on a Honk → full connected component → `HonkLockService`; visual state updates via relationship events. |
 | Equip/strike Stick | Grip with no transform hit → equipment service/controller attachment → active collider → collision enter → semantic strike → independent haptic/audio/Looper consumers. Grip release clears contacts and unequips. |
 | Connect/replace Looper track | Trigger track node → temporary wire → release on Honk connector → stable ID validation → `LooperConnectionManager.connect`; replacement clears old automation first. |
 | Disconnect Looper track | Connection manager explicit disconnect, connected-Honk deletion, or configured grip-shake gesture → clear layer/voice → disconnect ID → dispose wire. |
-| Record Honk gestures | Record button → transport recording → automation phase samples live snapshots by connected Honk ID into the track timeline. |
+| Record Honk gestures | Record button → armed onset detection → first sound selects its preceding clock-grid beat → recording phase samples live snapshots by connected Honk ID into the track timeline. |
 | Record Stick percussion | Strike subscriber finds recording self/connected track → adds a deterministic percussion event through Looper public methods. |
-| Play/pause/resume/stop | Looper button → controller → validated transport transition → playback engine/layer application → presentation morphs and audio. |
+| Play/pause/resume/stop | Looper button → controller → validated transport transition. Unclocked transport remains immediate; connected Play and Pause are independently quantized to the next grid beat, while connected Record waits for its first sound. Clocked Play always restarts at playhead zero. |
 | Live interaction during playback | XR updates live state while Looper updates its own automation layer; Honk resolution combines both before presentation. |
 | Delete instrument | Delete intent → controller references detached → `InstrumentLifecycleService` relationship/audio cleanup → registry removal → entity-owned resource disposal. The in-memory scene is saved at XR exit. |
-| Restore scene | Store parses/migrates plain JSON → pass 1 creates every stable-ID entity and restores state → pass 2 restores lock groups and Looper connections → equipment preference. |
+| Restore scene | Store parses/migrates plain JSON → create every stable-ID entity → restore lock groups → Looper/Honk assignments and timelines → Metronome connections/wires → equipment preference. All restored transports remain stopped and unarmed. |
 
 ## Deterministic frame phases
 
@@ -344,14 +363,14 @@ Gamepad/XR controller
 | ---: | --- | --- |
 | 1 | `INPUT` | Record whether a preview already existed; poll XR hardware and enqueue transitions/axis steps. |
 | 2 | `INTENT` | Flush queued input through intent mapping and runtime handlers. |
-| 3 | `TRANSFORM` | Update scene objects and instruction placement. If previewing, update the preview and advance Looper playback through the preview-safe path. Otherwise update radial menus, hover, active trigger drags, and grip transforms. |
+| 3 | `TRANSFORM` | Update scene objects and instruction placement. If previewing, update the preview and run the isolated clock/Looper/pulse/wire path. Otherwise update radial menus, hover, active trigger drags, and grip transforms. |
 | 4 | `COLLISION` | Update Honk contact graph; sample camera position; update Stick collision/strike events. |
-| 5 | `RELATIONSHIPS` | Update Looper follower transforms, locked Honk followers, and shake-disconnect validation. |
-| 6 | `AUTOMATION` | Sample active Looper recordings. |
-| 7 | `PERFORMANCE` | Collect live Honk interactions, advance Looper playback, resolve live plus automation state, and update Honk/action voices. |
-| 8 | `PRESENTATION` | Update Looper morph animations and wires; Honk morph/audio application occurs as part of the performance resolver used by the behavior-preserving runtime. |
+| 5 | `RELATIONSHIPS` | Update Looper follower transforms, locked Honk followers, and shake-disconnect validation; then advance Metronome clocks and apply due quantized Looper Play/Pause actions. |
+| 6 | `AUTOMATION` | Detect first sound for armed recordings, anchor it to the preceding beat, and sample active Looper recordings. |
+| 7 | `PERFORMANCE` | Advance Looper playback, refresh due Metronome pulse layers and their current contact formations, then collect live input, resolve live plus automation state, and update Honk/action voices. |
+| 8 | `PRESENTATION` | Update Looper morph animations plus both Looper/Honk and Metronome connection wires from current world transforms. |
 
-Preview mode deliberately short-circuits the remaining normal phases after its transform callback. It explicitly uses a preview-safe Looper playback path before setting `skipRemaining`, which prevents ray/grip/collision side effects while keeping existing loops audible and animated.
+Preview mode deliberately short-circuits the remaining normal phases after its transform callback. Its explicit safe path preserves the same essential order—Metronome clock, armed transport, recording/playback automation, Metronome pulse layers, resolved Honk performance/audio, presentation—while blocking normal ray, grip, and collision side effects.
 
 The scheduler accepts an `order` within each phase and exposes `describe()` for debugging. A callback can set `skipRemaining` or `skipToPhase`; those controls should remain exceptional and visible in the composition root.
 
@@ -362,19 +381,20 @@ The scheduler accepts an `order` within each phase and exposes `describe()` for 
 Current storage:
 
 ```text
-schemaVersion: 2
-key: face-orchestra:scene:v2
-legacy key: face-orchestra:spawned-instruments:v1
+schemaVersion: 3
+key: face-orchestra:scene:v3
+legacy keys: face-orchestra:scene:v2, face-orchestra:spawned-instruments:v1
 ```
 
 Conceptual payload:
 
 ```js
 {
-  schemaVersion: 2,
+  schemaVersion: 3,
   instruments: [
     { id, kind: "honk", transform, tuning, performanceDefaults },
-    { id, kind: "looper", transform, appearance, controls, timeline }
+    { id, kind: "looper", transform, appearance, controls, timeline },
+    { id, kind: "metronome", transform, bpm, volume }
   ],
   relationships: {
     honkLocks: [
@@ -382,6 +402,9 @@ Conceptual payload:
     ],
     looperConnections: [
       { looperId, trackId, honkId }
+    ],
+    metronomeConnections: [
+      { metronomeId, portId, targetKind, targetId, targetPortId }
     ]
   },
   equipment: {
@@ -392,18 +415,19 @@ Conceptual payload:
 
 Serialization includes every placed, persistable entity and excludes pending previews. Stick entities are excluded because their capability is `persistable-preference`, not `persistable`. Unlocked contact formations are excluded because the contact graph is derived from current colliders.
 
-Looper timelines contain the durable recording data: baselines, gesture events, percussion events, duration, and loop gap. Controls, locked appearance, transforms, and stable-ID connections are also stored. Runtime transport fields—including recording, playing, paused, playback position, playback engine state, automation layers, and active voices—are explicitly omitted, and restoration resets the transport to stopped. An active recording is sampled and finalized before serialization so its terminal release events and normalized duration are durable.
+Looper timelines contain the durable recording data: baselines, gesture events, percussion events, duration, and whole-beat Gap. Volume/Gap controls, locked appearance, transforms, and stable-ID connections are stored. Runtime transport fields—including armed, recording, playing, paused, playback position, playback engine state, automation layers, and active voices—are explicitly omitted, and restoration resets transport to stopped. Metronome BPM/volume and stable connection IDs persist, but playback origin, beat ordinal, wires, and pulse voices do not.
 
 Honk transforms use the canonical user-set `baseScale`, not the temporary squeeze pulse applied to the rendered root. Restoration synchronizes that scale plus tuning, ear/nose values, vowel metadata, morph presentation, procedural colliders, and note labels. Live squeeze/bend sources, voices, and Looper automation layers remain transient.
 
-Restore uses two passes:
+Restore is relationship-ordered:
 
 1. Validate every instrument record, create it with its saved ID, apply transforms, and restore relationship-free entity state. Looper timelines are explicitly deferred.
-2. Filter missing/wrong-kind targets, restore valid lock groups, connect valid Looper track/Honk pairs, restore deferred timelines without replacing those ID connections, then restore equipment preferences.
+2. Filter missing/wrong-kind targets, restore valid lock groups, connect valid Looper track/Honk pairs, and restore deferred timelines without replacing those ID connections.
+3. Restore valid Metronome connections, which recreate transient wires through runtime callbacks, then restore equipment preference.
 
 Missing relationship endpoints are skipped rather than failing the whole scene.
 
-The v1 migrator maps legacy components to `honk` or `looper`, creates unique deterministic IDs for that migration run, converts position/quaternion/base scale into a plain transform, moves legacy scale notes into tuning, and marks legacy lock appearance. It cannot reconstruct lock memberships or object-reference Looper connections that the legacy payload did not contain, so it does not invent relationships.
+The v1 migrator first creates the stable-ID v2 form. The v2-to-v3 migrator preserves each Looper’s saved `controls.gap`, drops the former user control removed in v3, adds an empty `metronomeConnections` relationship list, and leaves storage untouched until XR exit. Neither migration invents relationships it cannot recover.
 
 ## Lifecycle and deletion
 
@@ -412,7 +436,7 @@ Deletion is coordinated before registry disposal so cross-domain services can st
 Honk deletion:
 
 ```text
-disconnect every matching Looper track while Honk is resolvable
+disconnect every matching Looper track and incoming Metronome pulse while Honk is resolvable
 → clear track automation/action voices and dispose wires
 → remove contact graph node and debounce pairs
 → remove lock membership/reanchor/dissolve as required
@@ -424,7 +448,8 @@ disconnect every matching Looper track while Honk is resolvable
 Looper deletion:
 
 ```text
-registry removal
+disconnect incoming Metronome clock and dispose its wire
+→ registry removal
 → LooperInstrument.dispose
 → stop recording/playback
 → clear applied automation/action voices
@@ -432,6 +457,15 @@ registry removal
 → dispose wires and owned collider/view resources
 → clear controller/timeline runtime data and targets
 → detach scene root
+```
+
+Metronome deletion:
+
+```text
+disconnect every source-port relationship while endpoints remain resolvable
+→ release linked Looper automation/armed starts and direct Honk pulse voices
+→ dispose persistent and preview wires
+→ registry removal and entity-owned collider/rig disposal
 ```
 
 Stick unequip/deletion:
@@ -445,7 +479,7 @@ equipment system clears controller maps/attachment
 
 Deleting an entity that was already directly disposed still removes the stale registry entry without double-disposal. Deletion and session-reset events are observable for UI/persistence integration.
 
-Ordinary XR exit preserves placed instruments, so it saves the scene and calls interaction subsystem resets rather than deleting the registry. A full `InstrumentLifecycleService.resetSession()` contract is available for cases that intentionally clear all entities; it deletes in Honk→Stick→Looper order, then invokes injected contact, lock, equipment, audio, and external resetters.
+Ordinary XR exit preserves placed instruments, so it saves the scene and calls interaction subsystem resets rather than deleting the registry. Those resets remove in-memory Metronome relationships after saving and release pulses, automation, armed starts, and preview wires. A full `InstrumentLifecycleService.resetSession()` contract is available for cases that intentionally clear all entities; it deletes in Honk→Stick→Looper→Metronome order, then invokes injected contact, lock, equipment, audio, and external resetters.
 
 ## Dependency rules
 
@@ -457,6 +491,7 @@ Ordinary XR exit preserves placed instruments, so it saves the scene and calls i
 | `instruments/honk/` | Own Honk tuning, performance, morph, collider, voice-facing behavior. | Know Quest button names or import XR hardware. |
 | `instruments/stick/` | Own equipment, contacts, strike events, haptic adapter boundary. | Write Looper timelines directly. |
 | `instruments/looper/` | Resolve Honks by stable ID through an injected adapter; own recording/playback. | Own, serialize, or persist live Honk objects. |
+| `instruments/metronome/` | Own beat phase, four-port stable relationships, validation, and explicit Looper timing resolution. | Store live endpoint objects, wire meshes, or XR controller state as relationships. |
 | `instruments/formations/` | Work with Honk IDs, collider measurements, components, and transforms. | Create a chord instrument or persist unlocked membership. |
 | `persistence/` | Store/migrate/version plain data; resolve IDs during restore. | Store Three.js objects, Web Audio nodes, mutable runtime state, or class instances. |
 | `scene/` | Own renderer environment and assets. | Contain instrument-specific interaction rules. |
@@ -475,8 +510,9 @@ The repository deliberately uses Node’s built-in test runner rather than a bro
 - registry and interaction descriptors;
 - lifecycle/deletion coordination;
 - Stick contact-entry events and percussion routing;
-- Looper transport, connections, timeline sampling/events, and JSON round trips;
-- schema migration and two-pass persistence;
+- Looper standalone/clocked transport, arming, no-drift playback, connections, timeline sampling/events, and JSON round trips;
+- Metronome ports, relationship replacement, explicit timing, anchored-Honk contact-formation pulse scheduling, and cleanup;
+- schema migration and relationship-ordered persistence;
 - pitch mapping.
 
 `scripts/verify-imports.mjs` checks JavaScript syntax, every relative import, forbidden legacy patterns, and local certificate material. It does not instantiate browser-only Three.js modules in Node.
@@ -492,7 +528,7 @@ Local TLS material belongs under ignored `certs/`. `scripts/serve-https.py` read
 Several files remain near the repository’s 500-line review guideline:
 
 - `SpawnRuntime` retains the tightly coupled glass-preview, placement, cancellation, duplication, and camera-relative presentation details while delegating canonical selection, recipes, and preview state to the spawning services.
-- `LooperTransportRuntime` and `LooperConnectionRuntime` retain the model-specific controls, wire gestures, shake-disconnect presentation, and visual feedback needed to preserve the existing Looper UX. Canonical transport, tracks, connections, recording, and playback remain in the Looper domain.
+- `LooperTransportRuntime` and `LooperConnectionRuntime` retain the model-specific controls, Looper/Honk wire gesture, shake-disconnect presentation, and visual feedback needed to preserve the existing Looper UX. Generic adaptive wire presentation is shared; Metronome port interaction and pulse scheduling have separate runtime slices. Canonical transport, tracks, connections, recording, and playback remain in the Looper domain.
 - `LooperController` is the orchestration boundary for transport, recorder, applier, playback, tracks, and timeline. The underlying concepts are already split into focused modules, so its remaining size reflects the cohesive Looper use-case API.
 
 The former flat runtime binding bridge and generic collider builder were removed. Body-grip construction now belongs to `instruments/core/BodyGripTargetFactory`, Looper geometry belongs to `instruments/looper/LooperColliderFactory`, and other presentation helpers live with Honk, spawning, Looper view, or UI ownership.

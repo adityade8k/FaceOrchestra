@@ -70,9 +70,24 @@ export const XRInteractionRuntimeMethods = {
       }
 
       const metronomeState = this.instrumentRegistry.getFromObject3D(hit?.object);
+      const metronomePortId = hit?.object?.userData.metronomePortId;
+      if (metronomeState?.kind === "metronome" && metronomePortId) {
+        controllerState.activeTriggerInteraction = this.startMetronomeWireInteraction(
+          controller,
+          metronomeState,
+          metronomePortId,
+        );
+        this.activeInstrumentState = metronomeState;
+        return;
+      }
       const metronomeButtonAction = hit?.object?.userData.metronomeButtonAction;
       if (metronomeState?.kind === "metronome" && metronomeButtonAction) {
-        metronomeState.pressButton(metronomeButtonAction, performance.now());
+        const now = performance.now();
+        metronomeState.pressButton(metronomeButtonAction, now);
+        if (metronomeButtonAction === "pause") {
+          this.updateClockedLooperTransports(now);
+          this.updateMetronomeConnections(now);
+        }
         controllerState.activeTriggerInteraction = null;
         this.activeInstrumentState = metronomeState;
         return;
@@ -176,6 +191,12 @@ export const XRInteractionRuntimeMethods = {
         controllerState.activeTriggerInteraction = null;
         return;
       }
+
+      if (interaction?.type === "metronomeWire") {
+        this.finishMetronomeWireInteraction(controller, interaction);
+        controllerState.activeTriggerInteraction = null;
+        return;
+      }
   
       if (interaction?.type === "looperControlDrag") {
         controllerState.activeTriggerInteraction = null;
@@ -226,6 +247,11 @@ export const XRInteractionRuntimeMethods = {
   
         if (interaction.type === "looperWire") {
           this.updateActiveLooperWire(controller, interaction);
+          continue;
+        }
+
+        if (interaction.type === "metronomeWire") {
+          this.updateActiveMetronomeWire(controller, interaction);
           continue;
         }
   

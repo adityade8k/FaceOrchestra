@@ -53,6 +53,11 @@ export class LooperGestureRecorder {
     this.epsilons = { ...DEFAULT_EPSILONS, ...epsilons };
   }
 
+  isMusicalOnset(action) {
+    if (typeof action?.musicalOnset === "boolean") return action.musicalOnset;
+    return Number(action?.squeeze || 0) > SQUEEZE_GATE_EPSILON;
+  }
+
   start(timeline, tracks, now, captureActionByHonkId, timing = null) {
     timeline.startRecording(now, timing);
     for (const track of tracks) {

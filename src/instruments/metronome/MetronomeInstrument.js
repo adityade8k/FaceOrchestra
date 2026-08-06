@@ -1,5 +1,6 @@
 import {
   METRONOME_BUTTON_ACTIONS,
+  METRONOME_CONNECTION_ROLE,
   METRONOME_SETTINGS,
 } from "../../config/metronome.js";
 import { INSTRUMENT_KINDS } from "../core/capabilities.js";
@@ -11,31 +12,39 @@ export const METRONOME_INTERACTION_ROLES = Object.freeze({
   pause: "metronome.pause",
   bpm: "metronome.bpm",
   volume: "metronome.volume",
+  connectionPort: METRONOME_CONNECTION_ROLE,
 });
 
 export class MetronomeInstrument extends InstrumentEntity {
   constructor({ id, root, interactionTargetRegistry = null, targets = {}, audioSystem = null,
     bpm = METRONOME_SETTINGS.defaultBpm, volume = METRONOME_SETTINGS.defaultVolume,
     componentId = "metronome", handleRig = null, buttonRig = null, pendulumRig = null,
-    metadata = {} } = {}) {
+    onTransportChange = null, metadata = {} } = {}) {
     super({ id, kind: INSTRUMENT_KINDS.metronome, root, interactionTargetRegistry, metadata });
     this.componentId = componentId;
     this.audioSystem = audioSystem;
     this.handleRig = handleRig;
     this.buttonRig = buttonRig;
     this.pendulumRig = pendulumRig;
+    this.onTransportChange = onTransportChange;
     this.bpm = clamp(bpm, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm);
     this.volume = clamp(volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
     this.playing = false;
     this.nextTickMs = null;
     this.nextBeatIndex = null;
     this.lastTickMs = null;
+    this.lastEmittedBeatOrdinal = null;
     this.beatOriginMs = null;
     this.targetsByRole = new Map();
+    this.connectionPorts = new Map();
     for (const [role, target] of Object.entries(targets)) {
       if (!target) continue;
+      const interactionRole = target.userData?.interactionRole || role;
       this.targetsByRole.set(role, target);
-      if (interactionTargetRegistry) this.registerInteractionTarget(role, target);
+      if (target.userData?.isMetronomeConnectionPort && target.userData.metronomePortId) {
+        this.connectionPorts.set(target.userData.metronomePortId, target);
+      }
+      if (interactionTargetRegistry) this.registerInteractionTarget(interactionRole, target);
     }
   }
 
@@ -43,21 +52,16 @@ export class MetronomeInstrument extends InstrumentEntity {
     const previousBpm = this.bpm;
     const nextBpm = Math.round(clamp(value, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm));
     let now = null;
-    if (
-      this.playing &&
-      Number.isFinite(this.nextTickMs) &&
-      Number.isFinite(this.beatOriginMs)
-    ) {
+    if (Number.isFinite(this.beatOriginMs)) {
       now = performance.now();
       const previousInterval = 60000 / previousBpm;
       const nextInterval = 60000 / nextBpm;
       const beatPhase = (now - this.beatOriginMs) / previousInterval;
-      const nextBeatIndex = Number.isInteger(this.nextBeatIndex)
-        ? this.nextBeatIndex
-        : Math.round((this.nextTickMs - this.beatOriginMs) / previousInterval);
       this.beatOriginMs = now - beatPhase * nextInterval;
-      this.nextBeatIndex = nextBeatIndex;
-      this.nextTickMs = this.beatOriginMs + nextBeatIndex * nextInterval;
+      if (this.playing) {
+        this.nextBeatIndex = Math.ceil(beatPhase - 1e-9);
+        this.nextTickMs = this.beatOriginMs + this.nextBeatIndex * nextInterval;
+      }
     }
     this.bpm = nextBpm;
     this.handleRig?.setValue("bpm", this.bpm);
@@ -80,37 +84,48 @@ export class MetronomeInstrument extends InstrumentEntity {
     }
     this.playing = true;
     this.lastTickMs = null;
-    this.nextTickMs = now;
-    this.nextBeatIndex = 0;
-    this.beatOriginMs = now;
+    this.lastEmittedBeatOrdinal = null;
+    const beatIntervalMs = 60000 / this.bpm;
+    if (Number.isFinite(this.beatOriginMs)) {
+      const beatPosition = (now - this.beatOriginMs) / beatIntervalMs;
+      this.nextBeatIndex = Math.ceil(beatPosition - 1e-9);
+      this.nextTickMs = this.beatOriginMs + this.nextBeatIndex * beatIntervalMs;
+    } else {
+      this.nextTickMs = now;
+      this.nextBeatIndex = 0;
+      this.beatOriginMs = now;
+    }
     this.buttonRig?.setPressed(METRONOME_BUTTON_ACTIONS.pause, false);
     this.buttonRig?.press(METRONOME_BUTTON_ACTIONS.play, now);
     this.updatePendulum(now);
+    this.onTransportChange?.({ metronome: this, playing: true, now });
     return true;
   }
 
-  pause() {
+  pause(now = performance.now()) {
+    const wasPlaying = this.playing;
     this.playing = false;
     this.nextTickMs = null;
     this.nextBeatIndex = null;
     this.lastTickMs = null;
-    this.beatOriginMs = null;
+    this.lastEmittedBeatOrdinal = null;
     this.buttonRig?.reset();
     this.pendulumRig?.reset();
+    if (wasPlaying) this.onTransportChange?.({ metronome: this, playing: false, now });
     return false;
   }
 
   pressButton(action, now = performance.now()) {
     if (action === METRONOME_BUTTON_ACTIONS.play) return this.play(now);
     if (action === METRONOME_BUTTON_ACTIONS.pause) {
-      this.pause();
+      this.pause(now);
       this.buttonRig?.press(METRONOME_BUTTON_ACTIONS.pause, now);
     }
     return this.playing;
   }
 
   toggle(now = performance.now()) {
-    return this.playing ? this.pause() : this.play(now);
+    return this.playing ? this.pause(now) : this.play(now);
   }
 
   update(now = performance.now()) {
@@ -127,14 +142,16 @@ export class MetronomeInstrument extends InstrumentEntity {
       this.beatOriginMs = now;
     }
     if (now < this.nextTickMs) return false;
-    this.audioSystem?.triggerMetronomeClick?.({ volume: this.volume });
     const interval = 60000 / this.bpm;
-    this.lastTickMs = this.nextTickMs;
-    do {
-      this.nextBeatIndex += 1;
-      this.nextTickMs = this.beatOriginMs + this.nextBeatIndex * interval;
-    }
-    while (this.nextTickMs <= now);
+    const dueBeatOrdinal = Math.max(
+      this.nextBeatIndex,
+      Math.floor((now - this.beatOriginMs) / interval + 1e-9),
+    );
+    this.lastEmittedBeatOrdinal = dueBeatOrdinal;
+    this.lastTickMs = this.beatOriginMs + dueBeatOrdinal * interval;
+    this.nextBeatIndex = dueBeatOrdinal + 1;
+    this.nextTickMs = this.beatOriginMs + this.nextBeatIndex * interval;
+    this.audioSystem?.triggerMetronomeClick?.({ volume: this.volume });
     return true;
   }
 
@@ -149,23 +166,41 @@ export class MetronomeInstrument extends InstrumentEntity {
 
   getBeatTiming(now = performance.now()) {
     const beatIntervalMs = 60000 / this.bpm;
-    if (!this.playing || !Number.isFinite(this.beatOriginMs)) {
+    if (!Number.isFinite(this.beatOriginMs)) {
       return {
         active: false,
+        clockAvailable: false,
         bpm: this.bpm,
         beatIntervalMs,
         beatOriginMs: null,
         nearestBeatMs: now,
+        beatPosition: null,
+        lastBeatMs: null,
+        lastEmittedBeatOrdinal: null,
       };
     }
-    const beatIndex = Math.round((now - this.beatOriginMs) / beatIntervalMs);
+    const beatPosition = (now - this.beatOriginMs) / beatIntervalMs;
+    const beatIndex = Math.round(beatPosition);
+    const currentBeatOrdinal = Math.floor(beatPosition + 1e-9);
     return {
-      active: true,
+      active: this.playing,
+      clockAvailable: true,
       bpm: this.bpm,
       beatIntervalMs,
       beatOriginMs: this.beatOriginMs,
       nearestBeatMs: this.beatOriginMs + beatIndex * beatIntervalMs,
+      beatPosition,
+      lastBeatMs: this.beatOriginMs + currentBeatOrdinal * beatIntervalMs,
+      lastEmittedBeatOrdinal: this.lastEmittedBeatOrdinal,
     };
+  }
+
+  getConnectionPortTarget(portId) {
+    return this.connectionPorts.get(portId) || null;
+  }
+
+  hasConnectionPort(portId) {
+    return this.connectionPorts.has(portId);
   }
 
   serialize() {
@@ -189,6 +224,7 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.pendulumRig?.dispose?.();
     this.pendulumRig = null;
     this.targetsByRole.clear();
+    this.connectionPorts.clear();
     this.metronomeLabelTexture?.dispose?.();
     this.metronomeLabelTexture = null;
     this.metronomeLabelCanvas = null;

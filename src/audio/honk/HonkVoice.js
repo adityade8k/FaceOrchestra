@@ -1,6 +1,6 @@
 import {
+  HONK_NOTE_GAIN_SETTINGS,
   HONK_RELEASE_SETTINGS,
-  NASALITY_SETTINGS,
   VOICE_GAIN_SETTINGS,
 } from "../../config/audio.js";
 import { clamp } from "../audioMath.js";
@@ -30,11 +30,6 @@ export class HonkVoice {
     this.vibratoGain = this.context.createGain();
     this.master = this.context.createGain();
     this.output = this.context.createGain();
-    this.oralMix = this.context.createGain();
-    this.nasalLow = this.context.createBiquadFilter();
-    this.nasalLowGain = this.context.createGain();
-    this.nasalHigh = this.context.createBiquadFilter();
-    this.nasalHighGain = this.context.createGain();
 
     this.source.type = "sawtooth";
     this.source.frequency.setValueAtTime(F4_FREQUENCY, now);
@@ -51,29 +46,9 @@ export class HonkVoice {
 
     this.master.gain.setValueAtTime(0.0001, now);
     this.output.gain.setValueAtTime(VOICE_GAIN_SETTINGS.outputGain, now);
-    this.oralMix.gain.setValueAtTime(1, now);
 
-    this.oralMix.connect(this.master);
     this.master.connect(this.output);
     this.output.connect(this.destination);
-
-    this.nasalLow.type = "bandpass";
-    this.nasalLow.frequency.setValueAtTime(260, now);
-    this.nasalLow.Q.setValueAtTime(7, now);
-    this.nasalLowGain.gain.setValueAtTime(0.0001, now);
-
-    this.nasalHigh.type = "bandpass";
-    this.nasalHigh.frequency.setValueAtTime(1150, now);
-    this.nasalHigh.Q.setValueAtTime(13, now);
-    this.nasalHighGain.gain.setValueAtTime(0.0001, now);
-
-    this.toneFilter.connect(this.nasalLow);
-    this.nasalLow.connect(this.nasalLowGain);
-    this.nasalLowGain.connect(this.master);
-
-    this.toneFilter.connect(this.nasalHigh);
-    this.nasalHigh.connect(this.nasalHighGain);
-    this.nasalHighGain.connect(this.master);
   }
 
   start() {
@@ -104,7 +79,7 @@ export class HonkVoice {
       gain.gain.value = formants.gain[index];
       this.toneFilter.connect(filter);
       filter.connect(gain);
-      gain.connect(this.oralMix);
+      gain.connect(this.master);
       return { filter, gain };
     });
 
@@ -119,7 +94,7 @@ export class HonkVoice {
       gain.gain.value = roundness.gain;
       this.toneFilter.connect(filter);
       filter.connect(gain);
-      gain.connect(this.oralMix);
+      gain.connect(this.master);
       this.roundnessNode = { filter, gain };
     }
 
@@ -141,13 +116,12 @@ export class HonkVoice {
     masterGain = 1,
     leftEar,
     rightEar,
-    nose,
+    noteGain = 1,
     pitchBendSemitones = null,
     pitchSnap = null,
     activeVoiceCount = 1,
   }) {
     const now = this.context.currentTime;
-    const nasalAmount = clamp(nose, 0, 1);
     const frequency = getHonkFrequency({ leftEar, rightEar, pitchSnap });
     if (pitchBendSemitones !== null) {
       this.pitchBendSemitones = pitchBendSemitones;
@@ -156,33 +130,17 @@ export class HonkVoice {
     const polyphonyScale = 1 / Math.sqrt(Math.max(activeVoiceCount, 1));
     const gain = Math.max(
       0.0001,
-      hornAmount * VOICE_GAIN_SETTINGS.baseGain * Math.max(masterGain, 0) * polyphonyScale,
+      hornAmount *
+        VOICE_GAIN_SETTINGS.baseGain *
+        Math.max(masterGain, 0) *
+        clamp(noteGain, 0, 1) *
+        polyphonyScale,
     );
 
     this.source.frequency.setTargetAtTime(frequency, now, 0.035);
     this.source.detune.setTargetAtTime(detune, now, 0.045);
     this.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);
-    this.master.gain.setTargetAtTime(gain, now, 0.035);
-    this.oralMix.gain.setTargetAtTime(
-      1 - nasalAmount * NASALITY_SETTINGS.oralReductionAtMax,
-      now,
-      0.05,
-    );
-    this.nasalLowGain.gain.setTargetAtTime(
-      0.0001 + nasalAmount * NASALITY_SETTINGS.lowGainAtMax,
-      now,
-      0.05,
-    );
-    this.nasalHigh.frequency.setTargetAtTime(
-      1150 + nasalAmount * NASALITY_SETTINGS.highFrequencyLiftAtMax,
-      now,
-      0.05,
-    );
-    this.nasalHighGain.gain.setTargetAtTime(
-      0.0001 + nasalAmount * NASALITY_SETTINGS.highGainAtMax,
-      now,
-      0.05,
-    );
+    this.master.gain.setTargetAtTime(gain, now, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
   }
 
   release(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded) {
@@ -274,11 +232,6 @@ export class HonkVoice {
     disconnectNode(this.toneFilter);
     disconnectNode(this.vibrato);
     disconnectNode(this.vibratoGain);
-    disconnectNode(this.nasalLow);
-    disconnectNode(this.nasalLowGain);
-    disconnectNode(this.nasalHigh);
-    disconnectNode(this.nasalHighGain);
-    disconnectNode(this.oralMix);
     disconnectNode(this.master);
     disconnectNode(this.output);
     this.formantNodes.length = 0;

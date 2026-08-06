@@ -22,6 +22,77 @@ test("metronome clamps controls, schedules clicks by BPM, and pauses", () => {
   assert.equal(metronome.update(2000), false);
 });
 
+test("transport observers report pause immediately for direct pulse cleanup", () => {
+  const events = [];
+  const metronome = new MetronomeInstrument({
+    id: "metro-lifecycle",
+    root: object3D(),
+    onTransportChange: ({ metronome: source, playing, now }) => {
+      events.push({ id: source.id, playing, now });
+    },
+  });
+
+  metronome.play(1000);
+  metronome.pause(1250);
+  assert.deepEqual(events, [
+    { id: "metro-lifecycle", playing: true, now: 1000 },
+    { id: "metro-lifecycle", playing: false, now: 1250 },
+  ]);
+});
+
+test("pause silences clicks but preserves a phase-continuous clock for linked Loopers", () => {
+  const clicks = [];
+  const metronome = new MetronomeInstrument({
+    id: "metro-silent-grid",
+    root: object3D(),
+    audioSystem: { triggerMetronomeClick: () => clicks.push(true) },
+  });
+  metronome.setBpm(120);
+  metronome.play(1000);
+  metronome.update(1000);
+  metronome.pause(1250);
+
+  assert.deepEqual(metronome.getBeatTiming(1750), {
+    active: false,
+    clockAvailable: true,
+    bpm: 120,
+    beatIntervalMs: 500,
+    beatOriginMs: 1000,
+    nearestBeatMs: 2000,
+    beatPosition: 1.5,
+    lastBeatMs: 1500,
+    lastEmittedBeatOrdinal: null,
+  });
+  assert.equal(metronome.update(1750), false);
+  assert.equal(clicks.length, 1);
+
+  metronome.play(1750);
+  assert.equal(metronome.nextTickMs, 2000);
+  assert.equal(metronome.update(1999), false);
+  assert.equal(metronome.update(2000), true);
+  assert.equal(clicks.length, 2);
+});
+
+test("BPM changes preserve the silent paused clock phase", () => {
+  const metronome = new MetronomeInstrument({ id: "metro-paused-bpm", root: object3D() });
+  const originalNow = performance.now;
+  performance.now = () => 1750;
+  try {
+    metronome.setBpm(120);
+    metronome.play(1000);
+    metronome.pause(1250);
+    const before = metronome.getBeatTiming(1750).beatPosition;
+    metronome.setBpm(60);
+    const after = metronome.getBeatTiming(1750);
+    assert.equal(after.active, false);
+    assert.equal(after.clockAvailable, true);
+    assert.equal(after.beatPosition, before);
+    assert.equal(after.beatOriginMs, 250);
+  } finally {
+    performance.now = originalNow;
+  }
+});
+
 test("metronome persists BPM and volume but restores paused", () => {
   const metronome = new MetronomeInstrument({ id: "metro-2", root: object3D() });
   metronome.restore({ bpm: 999, volume: -2 });

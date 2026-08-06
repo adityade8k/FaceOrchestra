@@ -8,6 +8,10 @@ import {
 } from "../../config/looper.js";
 import { LooperControlMapping } from "../../instruments/looper/looperControlMapping.js";
 import {
+  getLooperControlColliderPosition,
+  getLooperControlMorphWeights,
+} from "../../instruments/looper/view/looperControlPresentation.js";
+import {
   getLooperButtonName,
   getLooperControlName,
 } from "../../instruments/looper/looperNames.js";
@@ -99,7 +103,8 @@ export const LooperTransportRuntimeMethods = {
         const wasIdle =
           !looperState.looperData.recording &&
           !looperState.looperData.playing &&
-          !looperState.looperData.paused;
+          !looperState.looperData.paused &&
+          !looperState.looperData.armed;
         this.triggerLooperButtonMorph(looperState, "stop", performance.now(), morphName);
         this.setLooperButtonMorph(looperState, "record", 0);
         this.setLooperButtonMorph(looperState, "play", 0);
@@ -189,33 +194,8 @@ export const LooperTransportRuntimeMethods = {
       if (!sphere) {
         return;
       }
-  
-      const clamped = THREE.MathUtils.clamp(value, -1, 1);
-      if (sphere.userData.movementMode === "arc") {
-        const angle = THREE.MathUtils.mapLinear(
-          clamped,
-          -1,
-          1,
-          sphere.userData.arcMinAngle,
-          sphere.userData.arcMaxAngle,
-        );
-        const midpointAngle = THREE.MathUtils.lerp(sphere.userData.arcMinAngle, sphere.userData.arcMaxAngle, 0.5);
-        const midpointX = -sphere.userData.arcSide * Math.cos(midpointAngle) * sphere.userData.arcRadius;
-        const midpointY = Math.sin(midpointAngle) * sphere.userData.arcRadius;
-        const localX = -sphere.userData.arcSide * Math.cos(angle) * sphere.userData.arcRadius - midpointX;
-        const localY = Math.sin(angle) * sphere.userData.arcRadius - midpointY;
-        const rotationZ = sphere.userData.arcRotationZ || 0;
-        const rotationCos = Math.cos(rotationZ);
-        const rotationSin = Math.sin(rotationZ);
-        sphere.position.set(
-          sphere.userData.neutralX + localX * rotationCos - localY * rotationSin,
-          sphere.userData.neutralY + localX * rotationSin + localY * rotationCos,
-          sphere.userData.neutralZ,
-        );
-        return;
-      }
-  
-      sphere.position.y = THREE.MathUtils.mapLinear(clamped, -1, 1, sphere.userData.minY, sphere.userData.maxY);
+      const position = getLooperControlColliderPosition(sphere.userData, value);
+      sphere.position.set(position.x, position.y, position.z);
     },
     isLooperRuntimeState(instrumentState) {
       return Boolean(
@@ -295,9 +275,6 @@ export const LooperTransportRuntimeMethods = {
         return 0;
       }
   
-      if (control === "speed") {
-        return data.speedControlValue;
-      }
       if (control === "gap") {
         return data.gapControlValue;
       }
@@ -329,9 +306,6 @@ export const LooperTransportRuntimeMethods = {
     getLooperVolumeFromControl(value) {
       return LooperControlMapping.getVolumeFromControl(value);
     },
-    getLooperSpeedFromControl(value) {
-      return LooperControlMapping.getSpeedFromControl(value);
-    },
     getLooperGapBeatsFromControl(value) {
       return LooperControlMapping.getGapBeatsFromControl(value);
     },
@@ -341,9 +315,9 @@ export const LooperTransportRuntimeMethods = {
         return;
       }
   
-      const clamped = THREE.MathUtils.clamp(value, -1, 1);
-      this.setMorph(morphTargets.up, Math.max(clamped, 0), looperState);
-      this.setMorph(morphTargets.down, Math.max(-clamped, 0), looperState);
+      const weights = getLooperControlMorphWeights(value);
+      this.setMorph(morphTargets.up, weights.up, looperState);
+      this.setMorph(morphTargets.down, weights.down, looperState);
     },
     setLooperButtonMorph(looperState, action, value, morphNameOverride = null) {
       const data = this.getLooperData(looperState);
@@ -475,9 +449,9 @@ export const LooperTransportRuntimeMethods = {
       const runtimeState = this.getLooperRuntimeState(looperState);
       return runtimeState?.looperController?.startPlayback(runtimeState, now) ?? false;
     },
-    pausePlayback(looperState) {
+    pausePlayback(looperState, now = performance.now()) {
       const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.pausePlayback(runtimeState) ?? false;
+      return runtimeState?.looperController?.pausePlayback(runtimeState, now) ?? false;
     },
     stopPlayback(looperState) {
       const runtimeState = this.getLooperRuntimeState(looperState);
@@ -487,17 +461,14 @@ export const LooperTransportRuntimeMethods = {
       this.updateLooperPlayback(time);
       this.updateLooperPlaybackAudio();
     },
-    updateLooperPlaybackDuringPendingSpawn(now = performance.now()) {
-      this.clearLiveHornInteractionState();
-      this.updateLooperPlayback(now);
-      this.applyResolvedHonkPerformanceStates();
-      this.updateLooperPlaybackAudio();
-      this.updateLooperMorphAnimations(now);
-      this.updateMetronomes(now);
-    },
     updateLooperRecordings(now = performance.now()) {
       for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
         controller.updateRecordings([looperState], now);
+      }
+    },
+    updateClockedLooperTransports(now = performance.now()) {
+      for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
+        controller.updateClockedTransports([looperState], now);
       }
     },
     updateLooperPlayback(now = performance.now()) {
