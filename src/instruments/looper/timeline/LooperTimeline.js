@@ -48,7 +48,6 @@ export class LooperTimeline {
       return this.hasRecording();
     }
 
-    const elapsedMs = this.getElapsedMs(now);
     this.recording = false;
     if (
       this.timingMode === LooperTimingMode.Metronome &&
@@ -60,15 +59,8 @@ export class LooperTimeline {
       this.durationMs = 0;
       return false;
     }
-    if (this.timingMode === LooperTimingMode.Metronome) {
-      this.recordedDurationMs = this.quantizeDurationToBeats(
-        Math.max(elapsedMs, this.getContentEndMs()),
-      );
-    } else {
-      const firstActionMs = this.getFirstActionMs();
-      const leadingSilenceMs = Number.isFinite(firstActionMs) ? Math.max(firstActionMs, 0) : 0;
+    if (this.timingMode !== LooperTimingMode.Metronome) {
       this.normalizeToFirstAction();
-      this.recordedDurationMs = Math.max(elapsedMs - leadingSilenceMs, 0);
     }
     this.finalizeDuration(minDurationMs);
     this.sortTracks();
@@ -223,14 +215,14 @@ export class LooperTimeline {
 
   finalizeDuration(minDurationMs = 1) {
     this.contentEndMs = this.getContentEndMs();
-    const unalignedBaseDurationMs = Math.max(
-      this.recordedDurationMs || this.contentEndMs,
-      this.contentEndMs,
-      minDurationMs,
-    );
-    const baseDurationMs = this.timingMode === LooperTimingMode.Metronome
+    const minimumBaseDurationMs = this.contentEndMs > 0
+      ? minDurationMs
+      : Math.max(minDurationMs, this.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
+    const unalignedBaseDurationMs = Math.max(this.contentEndMs, minimumBaseDurationMs);
+    const baseDurationMs = this.beatIntervalMs > 0
       ? this.quantizeDurationToBeats(unalignedBaseDurationMs)
       : unalignedBaseDurationMs;
+    this.recordedDurationMs = this.getActiveTrackCount() > 0 ? baseDurationMs : 0;
     const gapDurationMs = this.gapBeats * (this.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
     this.durationMs = this.getActiveTrackCount() > 0
       ? baseDurationMs + gapDurationMs
@@ -349,14 +341,25 @@ export class LooperTimeline {
       ? Math.max(serialized.durationMs, 0)
       : 0;
     const gapDurationMs = timeline.gapBeats * (timeline.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
-    const baseDurationMs = Math.max(
-      timeline.contentEndMs,
+    // Older snapshots stored the full record-to-Stop window in durationMs and
+    // recordedDurationMs. Once content exists after time zero, derive the loop
+    // boundary from that content so restored recordings do not retain a stale
+    // trailing rest. A time-zero-only recording keeps its serialized minimum so
+    // it still has a usable (non-zero) duration.
+    const serializedBaseDurationMs = Math.max(
       timeline.recordedDurationMs,
       minimumSerializedDuration - gapDurationMs,
+      1,
     );
-    const alignedBaseDurationMs = timeline.timingMode === LooperTimingMode.Metronome
-      ? timeline.quantizeDurationToBeats(baseDurationMs)
-      : baseDurationMs;
+    const unalignedBaseDurationMs = timeline.contentEndMs > 0
+      ? timeline.contentEndMs
+      : Math.max(serializedBaseDurationMs, timeline.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
+    const alignedBaseDurationMs = timeline.beatIntervalMs > 0
+      ? timeline.quantizeDurationToBeats(unalignedBaseDurationMs)
+      : unalignedBaseDurationMs;
+    timeline.recordedDurationMs = timeline.getActiveTrackCount() > 0
+      ? alignedBaseDurationMs
+      : 0;
     timeline.durationMs = timeline.getActiveTrackCount() > 0
       ? alignedBaseDurationMs + gapDurationMs
       : 0;

@@ -37,7 +37,7 @@ test("clocked recording preserves event timing from the launch beat", () => {
 
   assert.deepEqual(timeline.getTrack(track.trackId).events.map((event) => event.timeMs), [50, 275]);
   assert.equal(timeline.contentEndMs, 275);
-  assert.equal(timeline.durationMs, 1000);
+  assert.equal(timeline.durationMs, 500);
 });
 
 test("clocked recording rejects recordings with no musical onset", () => {
@@ -121,5 +121,5 @@ test("percussion timing stays relative to a clocked loop's launch beat", () => {
   timeline.stopRecording(1800, 1);
 
   assert.equal(timeline.contentEndMs, 410);
-  assert.equal(timeline.durationMs, 1000);
+  assert.equal(timeline.durationMs, 500);
 });

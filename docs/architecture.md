@@ -275,7 +275,7 @@ The timeline records sampled Honk action snapshots and deterministic percussion 
 
 `looperControlMapping.js` maps control values to volume and zero-through-four whole Gap beats; it is not an audio engine. Gap uses the model’s authored right-handle morphs and defaults to normalized `-1`. The old bottom handle has no collider or runtime behavior.
 
-Clocked timelines retain events relative to the beat preceding their first musical onset. This preserves silence between that beat and the first sound without including the time between pressing Record and performing. Final duration is rounded up to an integer number of recorded-clock beats, never shorter than content, and Gap adds whole beats. Playback derives its authoritative loop position from the connected Metronome’s continuous beat position and the timeline’s recorded beat interval; it does not accumulate render-frame deltas or add a separate first-onset launch phase.
+Clocked timelines retain events relative to the beat preceding their first musical onset. This preserves silence between that beat and the first sound without including the time between pressing Record and performing. The recording ends at its final recorded sound rather than at the later Stop press. Final duration is rounded up to the next recorded-clock beat, never shorter than content, and Gap adds whole beats after that boundary; Gap defaults to zero, so the first note returns on the beat immediately following the final note. Playback derives its authoritative loop position from the connected Metronome’s continuous beat position and the timeline’s recorded beat interval; it does not accumulate render-frame deltas or add a separate first-onset launch phase.
 
 ### Metronome connections and clock ownership
 

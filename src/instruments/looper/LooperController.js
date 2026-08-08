@@ -101,7 +101,9 @@ export class LooperController {
       clockPlaybackStartBeatPosition: null,
       volumeControlValue: LOOPER_CONTROL_DEFAULT_VALUES.volume,
       gapControlValue: LOOPER_CONTROL_DEFAULT_VALUES.gap,
-      gapBeats: 0,
+      gapBeats: LooperControlMapping.getGapBeatsFromControl(
+        LOOPER_CONTROL_DEFAULT_VALUES.gap,
+      ),
       volume: LooperControlMapping.getVolumeFromControl(LOOPER_CONTROL_DEFAULT_VALUES.volume),
       lastPosition: looperState.root?.position?.clone?.() || null,
       lastQuaternion: looperState.root?.quaternion?.clone?.() || null,
