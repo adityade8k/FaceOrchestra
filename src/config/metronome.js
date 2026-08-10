@@ -31,6 +31,7 @@ export const METRONOME_SETTINGS = Object.freeze({
   scaleStep: 0.25,
   connectionWireColor: 0x8b5cf6,
   connectionWirePreviewColor: 0xc4b5fd,
+  connectionPortOpacity: 0.32,
   connectionWireRenderOrder: 16,
   connectionWirePreviewRenderOrder: 17,
   honkBeatGateRatio: 0.24,

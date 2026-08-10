@@ -6,6 +6,7 @@ import {
 } from "../../config/metronome.js";
 import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
 import { MetronomeButtonRig } from "./MetronomeButtonRig.js";
+import { createMetronomeConnectionPortMaterial } from "./metronomeConnectionPortPresentation.js";
 import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
 import { MetronomeHandleRig } from "./MetronomeHandleRig.js";
 
@@ -83,7 +84,11 @@ export class MetronomeColliderFactory {
       geometry.userData.disposeWithOwner = true;
       const collider = new this.THREE.Mesh(
         geometry,
-        this.createMaterial(config.colliderColor),
+        createMetronomeConnectionPortMaterial({
+          THREE: this.THREE,
+          color: config.colliderColor,
+          showDebug: this.showDebug,
+        }),
       );
       collider.name = config.name;
       collider.position.set(
@@ -100,7 +105,7 @@ export class MetronomeColliderFactory {
         metronomePortId: config.portId,
         interactionRole: METRONOME_CONNECTION_ROLE,
         wireSocketOutward: { ...config.socketDirection },
-        baseHitOpacity: this.showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
+        baseHitOpacity: METRONOME_SETTINGS.connectionPortOpacity,
         hitColor: config.colliderColor,
       });
       root.add(collider);
