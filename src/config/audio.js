@@ -31,7 +31,7 @@ export const AUDIO_MASTER_BUS_SETTINGS = {
     attack: 0.004,
     release: 0.18,
   },
-  makeupGain: 6.56,
+  makeupGain: 2.56,
   limiter: {
     threshold: -1,
     knee: 0,
