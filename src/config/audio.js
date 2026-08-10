@@ -1,4 +1,4 @@
-export const HONK_MASTER_GAIN = 0.28;
+export const HONK_MASTER_GAIN = 0.58;
 export const HONK_NOTE_GAIN_SETTINGS = Object.freeze({
   minimumAtMaxNose: 0.22,
   smoothingSeconds: 0.035,
@@ -31,7 +31,7 @@ export const AUDIO_MASTER_BUS_SETTINGS = {
     attack: 0.004,
     release: 0.18,
   },
-  makeupGain: 0.56,
+  makeupGain: 0,
   limiter: {
     threshold: -1,
     knee: 0,
@@ -39,7 +39,7 @@ export const AUDIO_MASTER_BUS_SETTINGS = {
     attack: 0.001,
     release: 0.08,
   },
-  outputGain: 0.94,
+  outputGain: 0.74,
 };
 
 export const VOICE_GAIN_SETTINGS = {
