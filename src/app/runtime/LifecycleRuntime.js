@@ -1,5 +1,7 @@
 
 
+import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
+
 export const LifecycleRuntimeMethods = {
     handleInstrumentDeleteIntent(controller) {
       if (this.pendingSpawnPlacement) {
@@ -19,12 +21,15 @@ export const LifecycleRuntimeMethods = {
         const controllerState = this.controllerStates.get(controller);
         const interaction = controllerState?.activeTriggerInteraction;
         if (interaction?.activeVoiceIds?.has(this.getInstrumentVoiceId(interaction.voiceId, instrumentState))) {
-          this.releaseHonkVoice(this.getInstrumentVoiceId(interaction.voiceId, instrumentState));
+          releaseControllerHonkVoice(
+            this,
+            this.getInstrumentVoiceId(interaction.voiceId, instrumentState),
+          );
         }
   
         for (const activeVoiceId of controllerState?.raySqueezeActiveVoiceIds || []) {
           if (activeVoiceId === this.getInstrumentVoiceId(controllerState.raySqueezeVoiceId, instrumentState)) {
-            this.releaseHonkVoice(activeVoiceId);
+            releaseControllerHonkVoice(this, activeVoiceId);
             controllerState.raySqueezeActiveVoiceIds.delete(activeVoiceId);
           }
         }
@@ -32,7 +37,7 @@ export const LifecycleRuntimeMethods = {
         if (interaction?.instrumentState === instrumentState) {
           if (interaction.type === "holdSqueeze") {
             for (const activeVoiceId of interaction.activeVoiceIds || []) {
-              this.releaseHonkVoice(activeVoiceId);
+              releaseControllerHonkVoice(this, activeVoiceId);
             }
           }
           controllerState.activeTriggerInteraction = null;

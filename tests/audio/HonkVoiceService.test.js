@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { HonkVoiceService } from "../../src/audio/honk/HonkVoiceService.js";
+import { HONK_RELEASE_ORIGINS } from "../../src/audio/honk/HonkReleaseProfile.js";
 import { HONK_RELEASE_SETTINGS } from "../../src/config/audio.js";
 
 test("release cancels a voice whose audio context is still starting", async () => {
@@ -22,19 +23,22 @@ test("release cancels a voice whose audio context is still starting", async () =
   assert.equal(service.voices.has("pending-voice"), false);
 });
 
-test("release accepts fade options without leaving a voice active", () => {
+test("automation fade options preserve the default release profile", () => {
   const releases = [];
   const service = new HonkVoiceService({
     ensureAudio: async () => ({}),
     getDestination: () => null,
   });
   service.voices.set("played-voice", {
-    release: (fadeSeconds) => releases.push(fadeSeconds),
+    release: (fadeSeconds, _onEnded, options) => releases.push({ fadeSeconds, options }),
   });
 
   service.releaseVoice("played-voice", { fadeSeconds: 0.03 });
 
-  assert.deepEqual(releases, [0.03]);
+  assert.deepEqual(releases, [{
+    fadeSeconds: 0.03,
+    options: { fadeSeconds: 0.03 },
+  }]);
   assert.equal(service.voices.has("played-voice"), false);
   assert.equal(service.releasingVoices.get("played-voice").size, 1);
 });
@@ -55,12 +59,60 @@ test("release uses the configured live fade for an empty options object", () => 
   assert.equal(service.voices.has("played-voice"), false);
 });
 
+test("controller origin and live fade propagate to the voice release", () => {
+  const releases = [];
+  const service = new HonkVoiceService({
+    ensureAudio: async () => ({}),
+    getDestination: () => null,
+  });
+  service.voices.set("controller-voice", {
+    release: (fadeSeconds, _onEnded, options) => releases.push({ fadeSeconds, options }),
+  });
+
+  service.releaseVoice("controller-voice", {
+    origin: HONK_RELEASE_ORIGINS.controller,
+  });
+
+  assert.deepEqual(releases, [{
+    fadeSeconds: HONK_RELEASE_SETTINGS.liveFadeSeconds,
+    options: {
+      origin: HONK_RELEASE_ORIGINS.controller,
+      fadeSeconds: HONK_RELEASE_SETTINGS.liveFadeSeconds,
+    },
+  }]);
+});
+
+test("controller release safely cancels a pending asynchronous voice start", async () => {
+  let finishAudioStart;
+  let createCount = 0;
+  const service = new HonkVoiceService({
+    ensureAudio: () => new Promise((resolve) => { finishAudioStart = resolve; }),
+    getDestination: () => null,
+    createVoice: () => {
+      createCount += 1;
+      return createControllableVoice();
+    },
+  });
+
+  const starting = service.startVoice("pending-controller-voice");
+  service.releaseVoice("pending-controller-voice", {
+    origin: HONK_RELEASE_ORIGINS.controller,
+  });
+  finishAudioStart({});
+  await starting;
+
+  assert.equal(createCount, 0);
+  assert.equal(service.startTokens.size, 0);
+  assert.equal(service.startingVoices.size, 0);
+  assert.equal(service.voices.size, 0);
+});
+
 test("retrigger leaves the prior release generation connected while a new voice becomes active", async () => {
   const { service, createdVoices } = createServiceWithControllableVoices();
 
   await service.startVoice("played-voice");
   const priorVoice = createdVoices[0];
-  service.releaseVoice("played-voice");
+  service.releaseVoice("played-voice", { origin: HONK_RELEASE_ORIGINS.controller });
   await service.startVoice("played-voice");
   const currentVoice = createdVoices[1];
 
@@ -68,6 +120,13 @@ test("retrigger leaves the prior release generation connected while a new voice 
   assert.equal(service.releasingVoices.get("played-voice").has(priorVoice), true);
   assert.equal(service.voices.get("played-voice"), currentVoice);
   assert.equal(priorVoice.releaseCalls.length, 1);
+  assert.deepEqual(priorVoice.releaseCalls[0], {
+    fadeSeconds: HONK_RELEASE_SETTINGS.liveFadeSeconds,
+    options: {
+      origin: HONK_RELEASE_ORIGINS.controller,
+      fadeSeconds: HONK_RELEASE_SETTINGS.liveFadeSeconds,
+    },
+  });
 });
 
 test("an old completion cannot remove newer active or releasing generations", async () => {
@@ -187,8 +246,8 @@ function createControllableVoice() {
     start() {
       this.startCount += 1;
     },
-    release(fadeSeconds, onEnded) {
-      this.releaseCalls.push(fadeSeconds);
+    release(fadeSeconds, onEnded, options) {
+      this.releaseCalls.push({ fadeSeconds, options });
       this.releaseCompletion = onEnded;
     },
     finishRelease() {

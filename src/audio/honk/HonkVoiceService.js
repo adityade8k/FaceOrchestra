@@ -71,9 +71,12 @@ export class HonkVoiceService {
     const fadeSeconds = Number.isFinite(requestedFade)
       ? Math.max(requestedFade, 0)
       : HONK_RELEASE_SETTINGS.liveFadeSeconds;
+    const releaseOptions = typeof options === "object" && options !== null
+      ? { ...options, fadeSeconds }
+      : { fadeSeconds };
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
-    this.stopVoice(voiceId, fadeSeconds);
+    this.stopVoice(voiceId, releaseOptions);
   }
 
   releaseAll() {
@@ -83,11 +86,15 @@ export class HonkVoiceService {
     }
   }
 
-  stopVoice(voiceId, fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds) {
+  stopVoice(voiceId, options = {}) {
     const voice = this.voices.get(voiceId);
     if (!voice) {
       return;
     }
+
+    const fadeSeconds = Number.isFinite(options.fadeSeconds)
+      ? options.fadeSeconds
+      : HONK_RELEASE_SETTINGS.liveFadeSeconds;
 
     this.voices.delete(voiceId);
     this.startTokens.delete(voiceId);
@@ -107,6 +114,6 @@ export class HonkVoiceService {
       if (currentGenerations.size === 0 && this.releasingVoices.get(voiceId) === currentGenerations) {
         this.releasingVoices.delete(voiceId);
       }
-    });
+    }, options);
   }
 }

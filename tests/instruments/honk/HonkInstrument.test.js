@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { HONK_RELEASE_ORIGINS } from "../../../src/audio/honk/HonkReleaseProfile.js";
 import { HonkInstrument } from "../../../src/instruments/honk/HonkInstrument.js";
 
 test("honk owns stable live and automation audio voice routing", () => {
@@ -10,7 +11,7 @@ test("honk owns stable live and automation audio voice routing", () => {
     updateVoice: (voiceId, performance, tuning, options) =>
       calls.push(["update", voiceId, performance, tuning, options]),
     setVoiceVowel: (voiceId, vowel) => calls.push(["vowel", voiceId, vowel]),
-    releaseVoice: (voiceId) => calls.push(["release", voiceId]),
+    releaseVoice: (voiceId, options) => calls.push(["release", voiceId, options]),
   };
   const honk = new HonkInstrument({
     id: "honk-audio",
@@ -31,7 +32,8 @@ test("honk owns stable live and automation audio voice routing", () => {
     vowel: "O",
   }, { gain: 0.5 });
   honk.setAudioVowel("I");
-  honk.releaseAudioVoice(voiceId);
+  const releaseOptions = { origin: HONK_RELEASE_ORIGINS.controller };
+  honk.releaseAudioVoice(voiceId, releaseOptions);
 
   assert.deepEqual(calls[0], ["start", voiceId]);
   assert.equal(calls[1][0], "update");
@@ -40,7 +42,7 @@ test("honk owns stable live and automation audio voice routing", () => {
   assert.equal(calls[1][3].pitchSnap, "cMajor");
   assert.deepEqual(calls[1][4], { gain: 0.5 });
   assert.deepEqual(calls[2], ["vowel", voiceId, "I"]);
-  assert.deepEqual(calls[3], ["release", voiceId]);
+  assert.deepEqual(calls[3], ["release", voiceId, releaseOptions]);
   assert.equal(honk.activeVoiceIds.size, 0);
 });
 

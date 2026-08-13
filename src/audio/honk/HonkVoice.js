@@ -5,6 +5,10 @@ import {
 } from "../../config/audio.js";
 import { clamp } from "../audioMath.js";
 import { FORMANTS, VOWEL_ROUNDNESS } from "./formantData.js";
+import {
+  CONTROLLER_HONK_RELEASE_SETTINGS,
+  HONK_RELEASE_ORIGINS,
+} from "./HonkReleaseProfile.js";
 import { F4_FREQUENCY, getHonkFrequency } from "./pitch.js";
 
 export class HonkVoice {
@@ -143,7 +147,7 @@ export class HonkVoice {
     this.master.gain.setTargetAtTime(gain, now, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
   }
 
-  release(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded) {
+  release(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded, options = {}) {
     if (this.releaseState) {
       return this.releaseState;
     }
@@ -182,16 +186,11 @@ export class HonkVoice {
       stopAt,
     };
     this.pitchBendSemitones = 0;
-    if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
-      this.master.gain.cancelAndHoldAtTime(now);
+    if (options?.origin === HONK_RELEASE_ORIGINS.controller) {
+      this.scheduleControllerRelease(now, silentAt);
     } else {
-      const currentGain = Number.isFinite(this.master.gain.value)
-        ? Math.max(this.master.gain.value, 0)
-        : 0.0001;
-      this.master.gain.cancelScheduledValues(now);
-      this.master.gain.setValueAtTime(currentGain, now);
+      this.scheduleDefaultRelease(now, silentAt);
     }
-    this.master.gain.linearRampToValueAtTime(0, silentAt);
     this.source.onended = handleSourceEnded;
 
     try {
@@ -211,6 +210,38 @@ export class HonkVoice {
     }
 
     return this.releaseState;
+  }
+
+  scheduleControllerRelease(now, silentAt) {
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setTargetAtTime(
+      CONTROLLER_HONK_RELEASE_SETTINGS.silentFloor,
+      now,
+      CONTROLLER_HONK_RELEASE_SETTINGS.targetTimeConstantSeconds,
+    );
+
+    const outputGain = Number.isFinite(this.output.gain.value)
+      ? Math.max(this.output.gain.value, 0)
+      : VOICE_GAIN_SETTINGS.outputGain;
+    const zeroRampStart = Math.max(
+      now,
+      silentAt - CONTROLLER_HONK_RELEASE_SETTINGS.finalZeroRampSeconds,
+    );
+    this.output.gain.setValueAtTime(outputGain, zeroRampStart);
+    this.output.gain.linearRampToValueAtTime(0, silentAt);
+  }
+
+  scheduleDefaultRelease(now, silentAt) {
+    if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
+      this.master.gain.cancelAndHoldAtTime(now);
+    } else {
+      const currentGain = Number.isFinite(this.master.gain.value)
+        ? Math.max(this.master.gain.value, 0)
+        : 0.0001;
+      this.master.gain.cancelScheduledValues(now);
+      this.master.gain.setValueAtTime(currentGain, now);
+    }
+    this.master.gain.linearRampToValueAtTime(0, silentAt);
   }
 
   disconnect() {

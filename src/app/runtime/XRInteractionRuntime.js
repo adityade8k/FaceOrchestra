@@ -14,6 +14,7 @@ import {
   getInteractionTargetColor,
 } from "../../ui/interactionTargetPresentation.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
+import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
 const tempScale = new THREE.Vector3();
 const tempMetronomeRayOrigin = new THREE.Vector3();
 const tempMetronomeRayDirection = new THREE.Vector3();
@@ -206,7 +207,7 @@ export const XRInteractionRuntimeMethods = {
       this.releaseRaySqueeze(controllerState);
       if (interaction?.type === "holdSqueeze") {
         for (const activeVoiceId of interaction.activeVoiceIds || []) {
-          this.releaseHonkVoice(activeVoiceId);
+          releaseControllerHonkVoice(this, activeVoiceId);
         }
         interaction.instrumentState?.activeBends?.delete(interaction.voiceId);
       }
@@ -232,7 +233,7 @@ export const XRInteractionRuntimeMethods = {
       }
   
       for (const activeVoiceId of controllerState.raySqueezeActiveVoiceIds || []) {
-        this.releaseHonkVoice(activeVoiceId);
+        releaseControllerHonkVoice(this, activeVoiceId);
       }
       controllerState.raySqueezeActiveVoiceIds.clear();
       controllerState.raySqueezeInstrumentState = null;

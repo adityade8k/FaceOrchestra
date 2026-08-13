@@ -142,6 +142,16 @@ Use one isolated Honk first so contact-chain behavior does not obscure the resul
 
 - [ ] Squeeze the same Honk from both controllers, release one, then release the other. Expected: squeeze remains active until the last live source ends and audio does not double-release.
 
+### Controller Honk release de-click acceptance
+
+Run these checks on the target headset and browser with headphones or the normal target audio output. Listen specifically at Trigger release; do not count visual smoothness as evidence that the audio passed.
+
+- [ ] Perform very fast Trigger taps, including taps shorter than one XR frame, with the left controller and then the right controller. Expected: every attack begins immediately and every release is free of a click or abrupt cutoff.
+- [ ] Hold long notes and release them with each controller. Expected: the release is smooth and the attack, held timbre, loudness, pitch, formants, and spatial behavior match the `Ver-8` baseline.
+- [ ] Perform repeated rapid taps and immediate release/retrigger sequences. Expected: no hard cutoff, doubled or stuck voice, missing retrigger, or accumulating release tail/graph.
+- [ ] Repeat the fast-tap, long-note, and retrigger checks on an isolated Honk and on connected Honk chains. Expected: every chain member releases cleanly and remains independently pitched.
+- [ ] Repeat controller playing while Looper playback and direct Metronome Honk pulses are active. Expected: controller releases remain click-free while Looper timing/volume and its 35 ms action fade, and Metronome gate timing/volume and its 18 ms release, remain unchanged.
+
 ## 5. Contact formations and locks
 
 For precise diagnosis, optionally repeat failures with collider debug visuals. Contact entry requires two qualifying updates; exit requires three separated updates and uses a lower overlap threshold.
