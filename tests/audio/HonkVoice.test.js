@@ -4,6 +4,10 @@ import test from "node:test";
 
 import { HonkVoice } from "../../src/audio/honk/HonkVoice.js";
 import {
+  CONTROLLER_HONK_RELEASE_SETTINGS,
+  HONK_RELEASE_ORIGINS,
+} from "../../src/audio/honk/HonkReleaseProfile.js";
+import {
   getHonkNoteGainFromNose,
   HONK_NOTE_GAIN_SETTINGS,
   HONK_RELEASE_SETTINGS,
@@ -32,6 +36,109 @@ test("nose uses a legacy-safe note-gain mapping without changing the filter grap
   ) < 1e-12);
   assert.equal(gainEvent.timeConstant, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
   assert.equal(context.filters.length, 4);
+});
+
+test("createNodes and held updates retain the Ver-8 oscillator and gain behavior", () => {
+  const context = createAudioContext({ currentTime: 1.5 });
+  const voice = new HonkVoice({ context });
+
+  assert.equal(voice.source.type, "sawtooth");
+  assert.equal(voice.vibrato.type, "sine");
+  assert.equal(voice.toneFilter.type, "lowpass");
+  assert.equal(voice.toneFilter.frequency.value, VOICE_GAIN_SETTINGS.toneLowpassFrequency);
+  assert.equal(voice.toneFilter.Q.value, VOICE_GAIN_SETTINGS.toneLowpassQ);
+  assert.deepEqual(lastEventOfType(voice.master.gain, "setValueAtTime"), {
+    type: "setValueAtTime",
+    value: 0.0001,
+    time: 1.5,
+  });
+  assert.deepEqual(lastEventOfType(voice.output.gain, "setValueAtTime"), {
+    type: "setValueAtTime",
+    value: VOICE_GAIN_SETTINGS.outputGain,
+    time: 1.5,
+  });
+
+  voice.update({
+    hornAmount: 0.8,
+    masterGain: 0.75,
+    noteGain: 0.5,
+    activeVoiceCount: 4,
+    pitchBendSemitones: 0.25,
+  });
+
+  assert.deepEqual(lastEventOfType(voice.source.detune, "setTargetAtTime"), {
+    type: "setTargetAtTime",
+    value: 25,
+    time: 1.5,
+    timeConstant: 0.045,
+  });
+  assert.deepEqual(lastEventOfType(voice.master.gain, "setTargetAtTime"), {
+    type: "setTargetAtTime",
+    value: 0.8 * VOICE_GAIN_SETTINGS.baseGain * 0.75 * 0.5 * 0.5,
+    time: 1.5,
+    timeConstant: HONK_NOTE_GAIN_SETTINGS.smoothingSeconds,
+  });
+});
+
+test("controller release within one XR frame uses the legacy target tail while attack settles", () => {
+  const context = createAudioContext({ currentTime: 0 });
+  const voice = new HonkVoice({ context });
+  voice.start();
+  voice.update({ hornAmount: 1, masterGain: 1, noteGain: 1 });
+  context.currentTime = 0.011;
+
+  const releaseState = voice.release(
+    HONK_RELEASE_SETTINGS.liveFadeSeconds,
+    undefined,
+    { origin: HONK_RELEASE_ORIGINS.controller },
+  );
+  const releaseEvents = voice.master.gain.events.slice(-2);
+  const outputHold = voice.output.gain.events.at(-2);
+  const outputRamp = voice.output.gain.events.at(-1);
+
+  assert.deepEqual(releaseEvents, [
+    { type: "cancelScheduledValues", time: 0.011 },
+    {
+      type: "setTargetAtTime",
+      value: CONTROLLER_HONK_RELEASE_SETTINGS.silentFloor,
+      time: 0.011,
+      timeConstant: CONTROLLER_HONK_RELEASE_SETTINGS.targetTimeConstantSeconds,
+    },
+  ]);
+  assert.equal(eventCount(voice.master.gain, "cancelAndHoldAtTime"), 0);
+  assert.equal(eventCount(voice.master.gain, "linearRampToValueAtTime"), 0);
+  assert.deepEqual(outputHold, {
+    type: "setValueAtTime",
+    value: VOICE_GAIN_SETTINGS.outputGain,
+    time: releaseState.silentAt - CONTROLLER_HONK_RELEASE_SETTINGS.finalZeroRampSeconds,
+  });
+  assert.deepEqual(outputRamp, {
+    type: "linearRampToValueAtTime",
+    value: 0,
+    time: releaseState.silentAt,
+  });
+  assert.equal(outputHold.time > releaseState.releaseStart, true);
+  assert.equal(outputRamp.time < releaseState.stopAt, true);
+  assert.equal(voice.source.stopCalls[0], releaseState.stopAt);
+  assert.equal(voice.disconnected, false);
+
+  voice.source.onended();
+  assert.equal(voice.disconnected, true);
+});
+
+test("duplicate controller release remains idempotent", () => {
+  const context = createAudioContext({ currentTime: 0.005 });
+  const voice = new HonkVoice({ context });
+  const options = { origin: HONK_RELEASE_ORIGINS.controller };
+
+  const first = voice.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, undefined, options);
+  const second = voice.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, undefined, options);
+
+  assert.equal(second, first);
+  assert.equal(eventCount(voice.master.gain, "setTargetAtTime"), 1);
+  assert.equal(eventCount(voice.output.gain, "linearRampToValueAtTime"), 1);
+  assert.equal(voice.source.stopCalls.length, 1);
+  assert.equal(voice.vibrato.stopCalls.length, 1);
 });
 
 test("release ramps the held master gain to exact zero before stopping oscillators", () => {

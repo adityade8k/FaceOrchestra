@@ -5,6 +5,7 @@ import { STICK_SETTINGS } from "../../config/stick.js";
 import { INTERACTION_TARGET_NAMES } from "../../config/honk.js";
 import { HONK_INTERACTION_PROFILE } from "../../instruments/honk/HonkInteractionProfile.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
+import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
 
 const userPosition = new THREE.Vector3();
 
@@ -68,7 +69,9 @@ export const StickRuntimeMethods = {
       interaction.wireMesh = null;
     }
     if (interaction?.type === "holdSqueeze") {
-      for (const voiceId of interaction.activeVoiceIds || []) this.releaseHonkVoice(voiceId);
+      for (const voiceId of interaction.activeVoiceIds || []) {
+        releaseControllerHonkVoice(this, voiceId);
+      }
     }
     controllerState.activeTriggerInteraction = null;
     this.releaseRaySqueeze(controllerState);

@@ -54,7 +54,7 @@ export class AudioSystem {
 
   releaseVoice(voiceId = "main", options = {}) {
     this.honkVoices.setVoicePitchBend(voiceId, 0);
-    this.honkVoices.releaseVoice(voiceId, options.fadeSeconds);
+    this.honkVoices.releaseVoice(voiceId, options);
   }
 
   releaseAll() {

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { MetronomePulseRuntimeMethods } from "../../../src/app/runtime/MetronomePulseRuntime.js";
+import { METRONOME_SETTINGS } from "../../../src/config/metronome.js";
 
 test("a connected Honk receives one stable-ID pulse per current due beat", async () => {
   const context = createPulseContext();
@@ -26,6 +27,9 @@ test("a connected Honk receives one stable-ID pulse per current due beat", async
   context.updateMetronomeHonkPulse(connection, 1500);
   assert.equal(honk.started.length, 2);
   assert.equal(honk.released.length, 1);
+  assert.deepEqual(honk.released[0].options, {
+    fadeSeconds: METRONOME_SETTINGS.honkBeatReleaseFadeSeconds,
+  });
 });
 
 test("a beat pulse squeezes the wired Honk and dynamically joins its touching chord", () => {

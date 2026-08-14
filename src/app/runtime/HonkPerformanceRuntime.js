@@ -9,6 +9,7 @@ import {
   SQUEEZE_SENSITIVITY,
 } from "../../config/honk.js";
 import { HONK_INTERACTION_PROFILE } from "../../instruments/honk/HonkInteractionProfile.js";
+import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
 
 const tempBendQuaternion = new THREE.Quaternion();
 const tempBendEuler = new THREE.Euler();
@@ -79,7 +80,7 @@ export const HonkPerformanceRuntimeMethods = {
   
         for (const activeVoiceId of interaction.activeVoiceIds || []) {
           if (!desiredVoiceIds.has(activeVoiceId)) {
-            this.releaseHonkVoice(activeVoiceId);
+            releaseControllerHonkVoice(this, activeVoiceId);
           }
         }
   
