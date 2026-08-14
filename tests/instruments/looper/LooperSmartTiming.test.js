@@ -53,7 +53,7 @@ test("clocked recording rejects recordings with no musical onset", () => {
   action = { squeeze: 0 };
   recorder.updateTrack(timeline, track, 1100, capture);
   assert.equal(recorder.stop(timeline, [track], 1500, 1, capture), true);
-  assert.equal(timeline.durationMs, 1000);
+  assert.equal(timeline.durationMs, 500);
 
   const empty = new LooperTimeline();
   recorder.start(empty, [track], 2000, capture, smartTiming);

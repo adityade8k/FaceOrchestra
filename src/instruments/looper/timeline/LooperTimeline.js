@@ -1,7 +1,7 @@
 import { resetActionState } from "./actionState.js";
 import { LooperTrackTimeline } from "./LooperTrackTimeline.js";
 
-export const LOOPER_TIMELINE_SCHEMA_VERSION = 2;
+export const LOOPER_TIMELINE_SCHEMA_VERSION = 3;
 export const LooperTimingMode = Object.freeze({
   Ordinary: "ordinary",
   Metronome: "metronome",
@@ -215,13 +215,14 @@ export class LooperTimeline {
 
   finalizeDuration(minDurationMs = 1) {
     this.contentEndMs = this.getContentEndMs();
-    const minimumBaseDurationMs = this.contentEndMs > 0
-      ? minDurationMs
-      : Math.max(minDurationMs, this.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
-    const unalignedBaseDurationMs = Math.max(this.contentEndMs, minimumBaseDurationMs);
     const baseDurationMs = this.beatIntervalMs > 0
-      ? this.quantizeDurationToBeats(unalignedBaseDurationMs)
-      : unalignedBaseDurationMs;
+      ? this.getBeatPhraseBoundaryMs(minDurationMs)
+      : Math.max(
+          this.contentEndMs,
+          this.contentEndMs > 0
+            ? minDurationMs
+            : Math.max(minDurationMs, DEFAULT_BEAT_INTERVAL_MS),
+        );
     this.recordedDurationMs = this.getActiveTrackCount() > 0 ? baseDurationMs : 0;
     const gapDurationMs = this.gapBeats * (this.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
     this.durationMs = this.getActiveTrackCount() > 0
@@ -238,6 +239,29 @@ export class LooperTimeline {
   quantizeDurationToBeats(durationMs, beatIntervalMs = this.beatIntervalMs) {
     if (!(beatIntervalMs > 0)) return Math.max(durationMs, 0);
     return Math.max(Math.ceil(durationMs / beatIntervalMs - 1e-9), 1) * beatIntervalMs;
+  }
+
+  getBeatPhraseBoundaryMs(minDurationMs = 1) {
+    const lastOnsetMs = this.getLastMusicalOnsetMs();
+    if (!Number.isFinite(lastOnsetMs)) {
+      return this.quantizeDurationToBeats(minDurationMs);
+    }
+    const beatIndex = Math.floor(lastOnsetMs / this.beatIntervalMs) + 1;
+    return Math.max(beatIndex, 1) * this.beatIntervalMs;
+  }
+
+  getMusicalOnsetTimes() {
+    const onsets = [];
+    for (const track of this.tracks.values()) {
+      if (track.active) {
+        onsets.push(...track.getMusicalOnsetTimes());
+      }
+    }
+    return onsets.sort((first, second) => first - second);
+  }
+
+  getLastMusicalOnsetMs() {
+    return this.getMusicalOnsetTimes().at(-1) ?? -Infinity;
   }
 
   getContentEndMs() {
@@ -277,6 +301,9 @@ export class LooperTimeline {
   }
 
   isTailPaddingTime(timeMs) {
+    if (this.beatIntervalMs > 0) {
+      return this.durationMs > this.recordedDurationMs && timeMs >= this.recordedDurationMs;
+    }
     return this.durationMs > this.contentEndMs && this.contentEndMs > 0 && timeMs > this.contentEndMs;
   }
 
@@ -321,7 +348,7 @@ export class LooperTimeline {
       }
     }
 
-    timeline.recordedDurationMs = Math.max(
+    const serializedRecordedDurationMs = Math.max(
       Number.isFinite(serialized.recordedDurationMs) ? serialized.recordedDurationMs : 0,
       0,
     );
@@ -336,33 +363,24 @@ export class LooperTimeline {
       ? { ...serialized.beatAnalysis }
       : null;
     timeline.gapBeats = Math.min(Math.max(Math.round(serialized.gapBeats || 0), 0), 4);
-    timeline.contentEndMs = timeline.getContentEndMs();
     const minimumSerializedDuration = Number.isFinite(serialized.durationMs)
       ? Math.max(serialized.durationMs, 0)
       : 0;
     const gapDurationMs = timeline.gapBeats * (timeline.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
     // Older snapshots stored the full record-to-Stop window in durationMs and
-    // recordedDurationMs. Once content exists after time zero, derive the loop
-    // boundary from that content so restored recordings do not retain a stale
-    // trailing rest. A time-zero-only recording keeps its serialized minimum so
-    // it still has a usable (non-zero) duration.
+    // recordedDurationMs. finalizeDuration repairs beat-aware recordings from
+    // their musical onsets. A non-beat time-zero-only recording keeps its
+    // serialized minimum so it still has a usable (non-zero) duration.
     const serializedBaseDurationMs = Math.max(
-      timeline.recordedDurationMs,
+      serializedRecordedDurationMs,
       minimumSerializedDuration - gapDurationMs,
       1,
     );
-    const unalignedBaseDurationMs = timeline.contentEndMs > 0
-      ? timeline.contentEndMs
+    timeline.contentEndMs = timeline.getContentEndMs();
+    const minDurationMs = timeline.contentEndMs > 0
+      ? 1
       : Math.max(serializedBaseDurationMs, timeline.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
-    const alignedBaseDurationMs = timeline.beatIntervalMs > 0
-      ? timeline.quantizeDurationToBeats(unalignedBaseDurationMs)
-      : unalignedBaseDurationMs;
-    timeline.recordedDurationMs = timeline.getActiveTrackCount() > 0
-      ? alignedBaseDurationMs
-      : 0;
-    timeline.durationMs = timeline.getActiveTrackCount() > 0
-      ? alignedBaseDurationMs + gapDurationMs
-      : 0;
+    timeline.finalizeDuration(minDurationMs);
     timeline.startedAtMs = 0;
     timeline.recording = false;
     timeline.sortTracks();

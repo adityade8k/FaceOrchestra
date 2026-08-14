@@ -1,7 +1,5 @@
 import { LooperActionEventType, isDrumHitEvent } from "./timeline/LooperActionEvent.js";
 
-const SQUEEZE_THRESHOLD = 0.025;
-
 export const DEFAULT_BEAT_DETECTION_SETTINGS = Object.freeze({
   minBpm: 60,
   maxBpm: 200,
@@ -62,30 +60,14 @@ export class LooperBeatDetector {
 
     timeline.beatIntervalMs = beatIntervalMs;
     timeline.beatAnalysis = { ...analysis };
-    // Snapped gates can move the final sound. Rebuild the loop boundary from the
-    // corrected content and align it to the next inferred beat; Stop time does
-    // not add an implicit trailing gap.
+    // Snapped gates can move the final attack. Rebuild the phrase boundary from
+    // the corrected onsets; releases and Stop time do not add an implicit gap.
     timeline.finalizeDuration(1);
     return true;
   }
 
   collectOnsets(timeline) {
-    const onsets = [];
-    for (const track of timeline?.tracks?.values?.() || []) {
-      let squeezeActive = false;
-      track.sortEvents();
-      for (const event of track.events) {
-        if (isDrumHitEvent(event)) {
-          onsets.push(event.timeMs);
-          continue;
-        }
-        if (!isSqueezeEvent(event)) continue;
-        const active = (event.value || 0) > SQUEEZE_THRESHOLD;
-        if (active && !squeezeActive) onsets.push(event.timeMs);
-        squeezeActive = active;
-      }
-    }
-    return onsets.sort((first, second) => first - second);
+    return timeline?.getMusicalOnsetTimes?.() || [];
   }
 
   estimateBeatInterval(clusters) {
@@ -107,12 +89,6 @@ export class LooperBeatDetector {
       ? folded[middle]
       : (folded[middle - 1] + folded[middle]) * 0.5;
   }
-}
-
-function isSqueezeEvent(event) {
-  return event?.type === LooperActionEventType.Squeeze ||
-    event?.type === LooperActionEventType.SqueezeStart ||
-    event?.type === LooperActionEventType.SqueezeEnd;
 }
 
 function isRhythmicGate(event) {
