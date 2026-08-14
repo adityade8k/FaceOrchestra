@@ -129,15 +129,15 @@ test("LooperTimeline linearly samples numeric fields and steps vowel fields", ()
   assert.equal(snapshot.vowel, "A");
 });
 
-test("LooperTimeline emits neutral squeeze and bend during beat-aligned tail padding", () => {
+test("LooperTimeline emits neutral squeeze and bend during an intentional beat gap", () => {
   const timeline = new LooperTimeline();
   timeline.addFieldEvent("track-0", "squeeze", 0, 1, { trackIndex: 0 });
   timeline.addFieldEvent("track-0", "bend", 100, 0.5, { trackIndex: 0 });
   timeline.beatIntervalMs = 300;
-  timeline.finalizeDuration(24);
+  timeline.setGapBeats(1, 24);
   const snapshot = createActionState();
 
-  timeline.sampleTrack(timeline.getTrack("track-0"), 150, snapshot);
+  timeline.sampleTrack(timeline.getTrack("track-0"), 300, snapshot);
 
   assert.equal(snapshot.squeeze, 0);
   assert.equal(snapshot.bend, 0);

@@ -116,6 +116,7 @@ export class LooperPlaybackEngine {
       if (segmentMs <= 0) {
         nextElapsedMs = 0;
         wrapped = true;
+        this.releaseTracks(handlers);
         handlers.onLoopBoundary?.();
         this.emitDrumHitEventsAt(timeline, 0, handlers);
         continue;
@@ -127,6 +128,7 @@ export class LooperPlaybackEngine {
       if (segmentEndMs >= durationMs) {
         nextElapsedMs = 0;
         wrapped = true;
+        this.releaseTracks(handlers);
         handlers.onLoopBoundary?.();
         this.emitDrumHitEventsAt(timeline, 0, handlers);
       } else {

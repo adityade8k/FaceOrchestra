@@ -24,8 +24,9 @@ test("beat detector infers tempo, clusters chords, and stabilizes the loop bound
     timeline.getTrack("track-1").events[0].timeMs,
   ];
   assert.deepEqual(firstChordTimes, [analysis.originMs, analysis.originMs]);
-  assert.ok(timeline.durationMs >= timeline.contentEndMs);
-  assert.ok(Math.abs(timeline.durationMs / analysis.beatIntervalMs - 4) < 1e-9);
+  assert.equal(timeline.durationMs, analysis.beatIntervalMs * 3);
+  assert.ok(timeline.contentEndMs > timeline.durationMs);
+  assert.ok(Math.abs(timeline.durationMs / analysis.beatIntervalMs - 3) < 1e-9);
 });
 
 test("beat correction leaves pitch actions continuous while snapping note gates", () => {

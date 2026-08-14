@@ -13,6 +13,8 @@ import {
   isDrumHitEvent,
 } from "./LooperActionEvent.js";
 
+const SQUEEZE_ONSET_THRESHOLD = 0.025;
+
 export class LooperTrackTimeline {
   constructor({ trackId, nodeId = null, trackIndex = null } = {}) {
     this.trackId = trackId;
@@ -96,6 +98,35 @@ export class LooperTrackTimeline {
       endMs = Math.max(endMs, event.timeMs);
     }
     return endMs;
+  }
+
+  getMusicalOnsetTimes() {
+    this.sortEvents();
+    const onsets = [];
+    let squeezeActive = false;
+
+    for (const event of this.events) {
+      if (isDrumHitEvent(event)) {
+        onsets.push(event.timeMs);
+        continue;
+      }
+
+      const squeeze = getEventFieldValue(event, "squeeze");
+      if (squeeze === undefined) {
+        continue;
+      }
+
+      const active = Number(squeeze) > SQUEEZE_ONSET_THRESHOLD;
+      if (
+        event.type === LooperActionEventType.SqueezeStart ||
+        (active && !squeezeActive)
+      ) {
+        onsets.push(event.timeMs);
+      }
+      squeezeActive = active;
+    }
+
+    return onsets;
   }
 
   sortEvents() {
