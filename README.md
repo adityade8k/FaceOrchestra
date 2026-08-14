@@ -1,48 +1,40 @@
 # Face Orchestra XR
 
-Face Orchestra is a browser-based WebXR musical playground built with Three.js and the Web Audio API. In a headset, you can place expressive horn faces (“Honks”), arrange and lock them into spatial chord formations, record their gestures with Loopers, clock them from Metronomes, and strike Honks or Loopers with an equipped Stick.
+Face Orchestra is a browser-based WebXR instrument for building music in space. Place expressive horn faces (“Honks”), arrange them into chords, record performances with Loopers, drive the room from one or more Metronomes, and play percussion with a handheld Stick.
 
-The runtime has four instrument kinds:
+This page is the user manual. Developers should use [the architecture document](docs/architecture.md) and [the manual XR regression checklist](docs/manual-xr-regression.md).
 
-- **Honk** — a placeable, transformable, playable instrument with tuning, morphs, colliders, and its own resolved performance state.
-- **Looper** — a placeable recorder/player with tracks, transport, controls, timelines, stable-ID Honk connections, and adaptive spline wires.
-- **Stick** — an equippable collision-driven instrument that emits semantic percussion events.
-- **Metronome** — a placeable beat clock with four stable output ports that can clock Loopers or pulse a wired Honk and its current touching chord.
+## What you need
 
-A chord is not an instrument. An unlocked chord formation is a transient connected component derived from touching Honk squeeze colliders. A locked formation is a persistent relationship between ordinary Honks.
+- A Quest-style headset and controllers for the full experience. The controller map is designed around Meta Quest button names and handedness.
+- A WebXR browser with WebGL and Web Audio. Passthrough AR is preferred when available; immersive VR is the fallback.
+- A development computer on the same network as the headset.
+- Python 3 for the included web servers.
+- Node.js 20 or newer only if you want to run the automated checks.
+- Internet access when the page loads. Three.js, its browser addons, and the note-label font are loaded from `unpkg.com`.
 
-For implementation details, see [Architecture](docs/architecture.md). Before merging behavior changes, run the [manual XR regression checklist](docs/manual-xr-regression.md).
+There are no npm runtime packages to install. The browser import map pins Three.js `0.164.1`.
 
-## Requirements
+## Start the app
 
-- A modern browser with ES modules, WebGL, and Web Audio.
-- A WebXR-capable browser/headset for immersive interaction. The current controller map targets Quest-style controllers.
-- Python 3 for the included HTTP/HTTPS development servers.
-- Node.js 20 or newer is recommended for verification.
-- Network access while loading the page. Three.js, Three.js addons, and the note-label font are loaded from `unpkg.com`.
-
-There are currently no npm runtime dependencies to install; the browser import map pins Three.js to `0.164.1`.
-
-## Run locally
-
-For the desktop fallback:
+For a desktop boot and asset check:
 
 ```sh
 npm run dev
 ```
 
-Open <http://localhost:5173>. The desktop view verifies boot, asset loading, fallback lighting/environment, resize behavior, and scene restoration. Full interaction requires XR controllers.
+Open <http://localhost:5173>. The desktop view can confirm that the scene, assets, lighting, saved scene, and resize handling load. Performing and placing instruments require XR controllers.
 
-### Run on a headset
+### Start HTTPS for a headset
 
-Immersive WebXR requires a secure context. The included HTTPS server expects these untracked local files:
+WebXR on a headset requires a secure context. The HTTPS server reads two local, Git-ignored files:
 
 ```text
 certs/localhost.pem
 certs/localhost-key.pem
 ```
 
-Create certificates trusted by both the development machine and headset. One local option is `mkcert`:
+Create a certificate trusted by both the computer and headset. For example, with `mkcert`:
 
 ```sh
 mkdir -p certs
@@ -51,173 +43,169 @@ mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhos
 npm run dev:https
 ```
 
-Then open `https://YOUR_LAN_IP:8443` in the headset browser. Replace `YOUR_LAN_IP` with the development machine’s address on the shared network. The headset must trust the issuing certificate authority; accepting an untrusted warning is not sufficient on every WebXR browser.
+Open `https://YOUR_LAN_IP:8443` in the headset browser. The headset and computer must share a network, the firewall must allow port `8443`, and the headset must trust the certificate authority. Never commit the certificate or private key.
 
-Certificates and private keys are ignored by Git. Never commit them.
+When XR begins, Face Orchestra restores the last saved scene. If that scene has no Metronome, one Metronome is placed automatically in front of you. More Metronomes can be spawned from the menu.
 
-The entry point prefers immersive AR/passthrough when supported and falls back to immersive VR. Requested optional XR features are `local-floor`, `bounded-floor`, and `dom-overlay`.
+The optional in-headset instruction panel is currently disabled because `SHOW_INSTRUCTION_PANEL` is `false`. If a developer enables it, close it with Trigger before the automatic Metronome appears and the spawn menu becomes available.
 
 ## Quest-style controls
 
-Hardware button indices live in [`src/xr/controllerBindings.js`](src/xr/controllerBindings.js). Hardware transitions become semantic intents in `XRIntentMapper` before runtime behavior is invoked.
+Trigger and Grip work on either hand. Menu, lock, and delete actions have fixed handedness.
 
-| Input | Context | Behavior |
-| --- | --- | --- |
-| Right A, hold | Instructions dismissed, no preview, Grip released | Open the radial spawn menu. Rotate the controller to select. |
-| Right A, release | Spawn menu open | Confirm the selected catalog entry and create a translucent placement preview. |
-| Grip + Right A press | Actively gripping an unlocked Honk, Looper, or Metronome | Create one immediate duplicate and transfer the active grip to it. The radial menu stays closed. |
-| Trigger | Spawn preview active | Place the preview. |
-| Grip | Spawn menu or preview active | Cancel the menu or preview. |
-| Right thumbstick Y | Preview active | Scale every instrument in the preview one step at a time. |
-| Trigger | Honk target | Squeeze, bend, cycle the vowel, or drag an ear/nose target according to the hit target. |
-| Grip, hold | Pointing at a transform target | Move and rotate the instrument; a locked Honk resolves to its lock-group transform target. |
-| Right thumbstick Y | Grip transform active | Scale the current transform target. Honks and Loopers use separate scale profiles. |
-| Grip, hold | No transform target under the ray | Equip the Stick; releasing Grip unequips it. |
-| Right B | Pointing at a Honk | Lock its full current contact formation, or unlock its existing group. |
-| Right B | Pointing at a Looper | Toggle its lock state. Triggering a locked Looper toggles play/pause. |
-| Left X | Pointing at an instrument | Delete the instrument through the lifecycle pipeline. |
-| Trigger | Looper button/control/node | Press transport buttons, drag controls, or start a track wire. |
-| Trigger release | Track wire aimed at a Honk connector | Connect or replace that track’s stable Honk ID. |
-| Trigger | Metronome connection port | Start a clock/pulse wire from that stable output port. |
-| Trigger release | Metronome wire aimed at a Looper node or Honk connector | Clock that Looper or anchor beat pulses at that Honk; its current touching chord joins the pulse, and replacing either endpoint cleans up the prior relationship. |
+| Control | What it does |
+| --- | --- |
+| Hold **Right A** | Open the radial spawn menu. Rotate the right controller to highlight an item. |
+| Release **Right A** | Confirm the highlighted item and create its placement preview. |
+| **Trigger** during preview | Place the preview. |
+| **Grip** during menu or preview | Cancel it. |
+| Right thumbstick up/down during preview | Scale the entire preview in steps. |
+| Hold **Grip** on an instrument | Move and rotate it with that controller. |
+| Thumbstick up/down on the gripping hand | Scale the current instrument or locked Honk group in steps. |
+| **Grip + Right A** | Duplicate the unlocked Honk, Looper, or Metronome being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated. |
+| **Right B** | Lock or unlock the pointed Honk formation, Looper, or Metronome. |
+| **Left X** | Delete the pointed instrument and clean up its audio and connections. |
+| Hold **Grip** where no transform target is pointed at | Equip the Stick; release Grip to put it away. |
 
-The Stick maps Honk strikes to `boink` and Looper strikes to `hihat`. A persistent contact produces one strike; the objects must separate before the same pair can trigger again.
+The radial menu is suppressed whenever Grip is active, including a Grip+A duplication. If placement is cancelled, every instrument in that preview is removed.
 
-## Typical session
+## Spawn menu
 
-1. Enter AR or VR and dismiss the instruction panel with its raycast close button.
-2. Hold Right A, rotate to a catalog entry, release A, aim the preview, optionally scale with the right thumbstick, and pull Trigger to place.
-3. Use Trigger on Honk targets to perform. Hold Grip on an instrument to transform it.
-4. Move Honks until their squeeze colliders overlap. Point at a member and press Right B to lock the complete connected formation.
-5. Spawn a Looper. Pull Trigger on a track node, aim the temporary wire at a Honk’s connector, and release Trigger.
-6. Optionally wire a Metronome port to any Looper node, then use the Looper’s record/play/pause/stop buttons and volume/Gap controls. Record waits for the first sound and anchors it to the preceding beat; Play and Pause take effect on beat boundaries independently of the Metronome click transport.
-7. Hold Grip away from a transform target to equip the Stick, then strike a Honk or Looper.
-8. Exit XR. The current scene is saved, live interactions are released, and XR subsystems reset.
+The current radial catalog contains:
 
-## Spawn catalog and formation recipes
+- **Metro** — one Metronome.
+- **Honk** — one untuned/default Honk centered on F4.
+- **Honk C** — an eight-Honk C major row: C, D, E, F, G, A, B, C.
+- **Honk Fm** — an eight-Honk F natural minor row: F, G, A-flat, B-flat, C, D-flat, E-flat, F.
+- **Honk F#m** — an eight-Honk F-sharp natural minor row: F-sharp, G-sharp, A, B, C-sharp, D, E, F-sharp.
+- **C Maj**, **G Maj**, **F Maj**, and **A Min** — three-Honk chord rows.
+- **Looper** — one eight-track Looper.
 
-The radial catalog is configured in [`src/config/spawning.js`](src/config/spawning.js). It currently exposes:
+Rows and chords are placement recipes. Their Honks remain independent instruments after placement; you can retune, move, connect, lock, duplicate, or delete them individually. The Stick is equipment, so it is not shown in the radial menu.
 
-- a basic Honk;
-- a Metronome with separate Play/Pause eye controls;
-- C major, F natural minor, and F-sharp natural minor Honk rows;
-- C major, G major, F major, and A minor triad recipes;
-- a Looper.
+## Play a Honk
 
-The Stick is a catalog capability but is equipped through Grip rather than placed as a world object.
+Aim at a Honk control and use Trigger:
 
-Formation recipes in [`src/instruments/formations/formationRecipes.js`](src/instruments/formations/formationRecipes.js) are spawn commands. Each member becomes an independent `HonkInstrument`; the recipe itself never enters the instrument registry and is never persisted.
+- **Horn:** hold Trigger to squeeze and sound the Honk. Roll the controller while holding to bend pitch, up to four semitones in either direction. Release Trigger to end the controller-held note with its controller-specific de-click release.
+- **Mouth:** press Trigger to cycle through A, E, I, O, and U vowels.
+- **Left ear:** hold Trigger and move vertically to tune from five semitones below F through seven semitones above F. Preset rows keep their configured scale tuning until you move the ear.
+- **Right ear:** hold Trigger and move vertically to select the octave range from octave 2 through octave 6.
+- **Nose:** hold Trigger and move vertically to shape the nose and the note’s gain; the legacy/default nose position preserves full note gain.
 
-## Architecture at a glance
+The label above each Honk shows the nearest chromatic note and octave, such as `F4`. Ear changes update it immediately.
 
-`src/main.js` creates a `FaceOrchestraApp` from a `SceneRuntime`, `AudioSystem`, and composed `RuntimeHost`. The app initializes assets and persistence, starts the renderer loop, and advances an explicit `FrameScheduler`:
+### Touching and locked formations
 
-```text
-INPUT → INTENT → TRANSFORM → COLLISION → RELATIONSHIPS
-      → AUTOMATION → PERFORMANCE → PRESENTATION
-```
+When squeeze colliders overlap steadily, touching Honks form a live contact chain. Squeezing any member plays the entire connected chain while each Honk keeps its own pitch, vowel, nose level, and identity. Moving the Honks apart removes the live relationship after a short separation debounce.
 
-Core ownership rules:
+Point at a touching member and press Right B to lock the complete connected component. A locked group keeps its member IDs and relative layout even after the colliders separate, and gripping or scaling any member transforms the group. Touching another Honk does not silently add it to an existing locked group. Press Right B on a member again to unlock without moving the Honks.
 
-- `InstrumentRegistry` is the single source of truth for instrument entities.
-- `InteractionTargetRegistry` keeps mutable handlers out of Three.js `userData`; scene objects carry only small descriptors.
-- `InstrumentFactory` creates exactly `honk`, `stick`, `looper`, or `metronome` entities.
-- Honk, Stick, Looper, and Metronome behavior lives under their respective `src/instruments/` domains.
-- Contact formations and lock relationships live under `src/instruments/formations/`.
-- XR input emits semantic intent and does not mutate audio nodes, morph meshes, or timelines directly.
-- Persistence stores versioned plain JSON and restores entities before relationships.
-- `InstrumentLifecycleService` coordinates cross-domain deletion and session reset while each instrument disposes the resources it owns.
+## Record with a Looper
 
-See [docs/architecture.md](docs/architecture.md) for module responsibilities, dependency rules, flow routing, persistence shape, and frame-phase details.
+Each Looper has eight track nodes, four transport buttons, and two controls:
 
-## Project layout
+- **Record** starts or arms capture.
+- **Stop** finishes recording or stops playback. Pressing Stop again while fully idle clears the recording.
+- **Play** starts immediately when unconnected, or arms playback for the next beat when clocked.
+- **Pause** pauses immediately when unconnected, or on the next clock beat when clocked.
+- **Volume** controls Looper playback level.
+- **Gap** chooses 0, 1, 2, 3, or 4 extra whole beats between repetitions. A new Looper starts at Gap 0 with the right-hand Gap handle at its bottom endpoint.
 
-```text
-src/
-├── app/                 composition root, runtime bridge, frame scheduler
-├── audio/               Web Audio context, bus, Honk and percussion voices
-├── config/              assets and domain-specific tuning/interaction settings
-├── instruments/
-│   ├── core/            entity, capabilities, registries, factory, lifecycle
-│   ├── formations/      Honk contact graph and persistent lock relationships
-│   ├── honk/            Honk state, tuning, morphs, colliders
-│   ├── looper/          transport, tracks, timeline, recorder, playback, wires
-│   ├── metronome/       beat clock, controls, ports, stable connection ownership
-│   └── stick/           equipment, collisions, haptics, percussion mapping
-├── persistence/         schema v3, store, serializer, restorer, migrations
-├── scene/               renderer, camera, lighting, environment, assets
-├── spawning/            catalog, menu, preview, placement, recipe spawning
-├── ui/                  instruction and radial-menu views
-└── xr/                  hardware input, intent mapping, raycast, grip, haptics
+### Connect tracks
 
-scripts/                 HTTPS server and source/import verification
-tests/                  pure Node test suites
-```
+Pull Trigger on a track node, aim the temporary wire at a Honk connector, and release Trigger. Reconnecting the same node replaces its previous Honk. The wire follows both endpoints while they move and scale.
 
-## Persistence
+To disconnect a Honk from Loopers, Grip the connected Honk and shake it through the configured gesture. Matching track assignments and wires are removed cleanly. Duplicated Loopers copy their controls, scale, and timeline into independent runtime state; track connections are intentionally left disconnected on the copy.
 
-Scenes use schema version `3` under the local-storage key `face-orchestra:scene:v3`. The payload contains:
+### Record and finish a phrase
 
-- persistable Honks, Loopers, and Metronomes with stable IDs and plain transforms;
-- Honk tuning/performance defaults;
-- Looper controls and timeline data;
-- locked Honk groups by member ID and relative transform;
-- Looper track connections as `{ looperId, trackId, honkId }`;
-- Metronome connections as `{ metronomeId, portId, targetKind, targetId, targetPortId }`;
+A Metronome-connected Looper waits for the first Honk attack or Stick strike, then launches the recording timeline at the beat immediately before that onset. This removes the wait before the performance while preserving the first note’s real position inside its beat. An unconnected Looper starts recording immediately; after Stop, it uses the existing beat detector when a reliable beat can be inferred and otherwise keeps the ordinary non-tempo fallback.
+
+Stop always remains under the musician’s control. Recording does not automatically stop after the final note, so you may wait and play another note whenever you choose.
+
+When you do press Stop:
+
+- Stop ends capture but does not add trailing silence.
+- The base loop boundary is the beat immediately after the final played onset—Honk attack or percussion strike—not the time Stop was pressed.
+- The first note keeps its original position within the beat on every repetition.
+- Gap 0 adds no extra beat. Gap 1–4 adds exactly that many whole beats.
+- Waiting one second or twenty seconds before Stop does not change the finished rhythm.
+- A held final Honk is safely released at Stop, but that safety release does not lengthen the phrase.
+
+Recorded attacks, releases, bends, vowels, nose/ear motion, and percussion keep their captured timing apart from the existing small rhythmic-gate correction used by beat analysis.
+
+### Record Stick hits
+
+Strike a connected Honk while its Looper records to place that percussion event on the matching track. Strike the Looper itself to record its self-percussion track. Playback reproduces the hit times deterministically with the recorded Honk gestures.
+
+Locked Loopers can still be triggered from their body to toggle Play/Pause. Right B changes lock state without changing the Looper’s authored normal/locked texture policy.
+
+## Use a Metronome
+
+Every Metronome has:
+
+- a left **Play** eye and right **Pause** eye;
+- a left **BPM** handle, adjustable from 30 to 240 BPM;
+- a right **Volume** handle;
+- a live BPM label;
+- a swinging pendulum;
+- four independent output ports.
+
+Pull Trigger on a port, aim at any Looper track node or Honk connector, and release Trigger. Each port owns at most one connection, and each target accepts at most one incoming Metronome; making a replacement removes the prior wire.
+
+A Looper follows only its wired Metronome. Multiple Metronomes can run at different tempos without becoming a global clock. A Honk connection pulses that Honk once per beat; any Honks touching it at that moment join the pulse. Frame hitches do not create a catch-up burst.
+
+Pausing a Metronome silences its clicks, stops its pendulum, and releases direct Honk pulses immediately. Its clock phase remains available, so connected Loopers continue on the same silent grid. Changing BPM preserves phase rather than restarting linked playback. Play resumes audible clicks on that phase.
+
+Right B can lock or unlock a Metronome. Lock changes must leave its authored material and texture untouched. Play, Pause, BPM, Volume, ports, wires, duplication, placement, and pendulum behavior remain the same.
+
+## Use the Stick
+
+Hold Grip while pointing away from an instrument transform target. The Stick attaches to that controller and its ray is hidden until Grip is released.
+
+- Strike a Honk for a `boink`.
+- Strike a Looper for a `hihat`.
+
+One continuous contact creates one strike and one haptic pulse. Separate the Stick and target before striking again. Stick hits can be recorded by an active Looper as described above.
+
+## Saving and restoring
+
+Face Orchestra saves once when you exit immersive XR. If a Looper is still recording, exit finalizes it through the same Stop path before serialization. The next load restores:
+
+- Honks, Loopers, and Metronomes with stable IDs, transforms, and scales;
+- Honk tuning, note defaults, ears, nose, and vowel;
+- locked Honk groups and Looper locked appearance;
+- Looper timelines, Volume, Gap, Honk track assignments, and wires;
+- Metronome BPM, Volume, target connections, and wires;
 - the preferred Stick type.
 
-The browser writes this snapshot once, when the immersive XR session exits. Spawning, deleting, transforming, recording, and adjusting controls only change the in-memory scene during the session. If a Looper is still recording at exit, its last sample and release events are finalized before the snapshot is written.
+Loopers restore stopped and unarmed. Metronomes restore paused and unlocked. Live Trigger holds, audio nodes, temporary contact formations, menu/placement previews, controller state, pendulum phase, and other transient XR state are not saved.
 
-Looper recordings, volume/Gap controls, locked appearance, and connections persist. Transport and armed state do not, so every restored Looper starts stopped and unarmed. Metronomes restore BPM, volume, transform, and connections but start stopped. Honk transforms, user-set scale, tuning, ear/nose values, and vowel persist; held squeeze/bend gestures remain transient. Nose remains a recorded visual gesture and controls per-note loudness, with legacy `nose = 0` preserving full note gain.
-
-Unlocked contact formations, pending previews, transport state, Three.js objects, audio nodes, colliders, wires, and class instances are not serialized. Restoration creates every entity first, then restores Honk locks, Looper/Honk assignments, deferred timelines, and Metronome connections from stable IDs. The v2-to-v3 migration preserves `controls.gap`, drops the removed legacy playback-rate control, and adds an empty `metronomeConnections` array. Migration stays in memory until the next XR-exit save.
-
-To clear only the current v3 scene during development:
+To clear only the current saved scene during development:
 
 ```js
 localStorage.removeItem("face-orchestra:scene:v3");
 ```
 
-## Verification
+## Troubleshooting
+
+- **No Enter AR/VR button:** use a WebXR-capable browser. Desktop browsers without `navigator.xr` can only show the fallback scene.
+- **Headset refuses XR over the LAN:** use `https://`, confirm the headset trusts the certificate authority, and open port `8443` on the computer firewall.
+- **Blank model or missing note labels:** confirm the headset has internet access and check the console for failed GLB, texture, Three.js CDN, or font requests.
+- **No sound:** interact once to allow the browser to start Web Audio, raise the relevant Honk/Looper/Metronome volume, and confirm the headset is not muted.
+- **A opens no menu:** release Grip, finish or cancel any active placement, and remember the menu is bound to the right-hand primary button.
+- **A preview will not place:** use Trigger; Grip cancels it. The right thumbstick changes preview scale.
+- **Cannot transform an object:** aim at its body transform target and hold Grip. If no target is selected, Grip intentionally equips the Stick.
+- **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Stop-time waiting should never become a loop gap; use the XR regression checklist if it does.
+- **Looper has no tempo when unconnected:** beat inference needs a usable rhythmic pattern. If it cannot infer one, the Looper deliberately keeps its ordinary fallback instead of inventing a BPM.
+- **Saved scene did not update:** saving occurs on immersive XR exit, not on each edit. Exit XR cleanly and inspect browser storage for `face-orchestra:scene:v3`.
+- **Metronome appearance changes after Right B:** that is a regression. Its map identity should remain authored through repeated lock/unlock; follow the Metronome section of the XR checklist.
+
+For automated checks:
 
 ```sh
 npm run check
 npm test
 npm run verify
 ```
-
-- `npm run check` checks JavaScript syntax, resolves every relative import, rejects forbidden legacy architecture patterns, and verifies that local certificate material is absent.
-- `npm test` runs the lightweight Node test suites for contact/lock relationships, performance layering, registries/lifecycle, Stick events, Looper transport/timeline/connections/wire paths, the master audio bus, pitch, and persistence.
-- `npm run verify` runs both checks in order.
-
-Automated tests intentionally focus on pure domain logic. Rendering, WebXR controller mappings, headset tracking, haptics, spatial collision feel, model morphs, and audible output require the manual headset pass.
-
-## Configuration
-
-- `src/config/assets.js` — central model, texture, and font manifest.
-- `src/config/audio.js` — gain, master filtering/limiting, synthesis, and percussion settings.
-- `src/config/honk.js` — morph names, collider layout, drag sensitivity, and Honk scale limits.
-- `src/config/looper.js` — tracks, controls, collider layout, transport presentation, adaptive wire geometry, and shake-disconnect thresholds.
-- `src/config/metronome.js` — clock/pulse timing, handle and four-port layouts, wire colors, gate duration, and Metronome scale limits.
-- `src/config/stick.js` — equipment transform, strike collider, range, and haptics.
-- `src/config/formations.js` — contact hysteresis, minimum lock size, and recipe spacing.
-- `src/config/spawning.js` — catalog actions and placement defaults.
-- `src/config/ui.js` — instruction, label, menu, and thumbstick UI settings.
-- `src/config/xr.js` — optional XR features and raycast haptics.
-- `src/config/debug.js` — collider/ray visibility and diagnostics.
-
-Keep headset-sensitive values in configuration rather than scattering constants through runtime systems.
-
-## Troubleshooting
-
-- **No XR entry button:** confirm the browser exposes `navigator.xr`, the page is in a secure context, and immersive AR or VR is supported.
-- **The headset cannot open the page:** use the machine’s LAN address, allow port `8443` through the firewall, keep both devices on the same network, and verify certificate trust.
-- **Models or labels do not load:** inspect the browser console and network panel. Model files are local, while Three.js and the note-label font require access to `unpkg.com`.
-- **No sound:** Web Audio starts only after a user gesture. Interact with the spawn menu or an instrument and confirm the browser has not muted the page.
-- **Old or unexpected objects restore:** inspect or clear the v3 local-storage key. Preserve the v2 key when testing migration behavior.
-- **Contact formations flicker:** verify headset tracking and collider placement before changing `src/config/formations.js`; entry and exit already use separate thresholds and frame debounce.
-- **A Stick repeats too rapidly:** verify that the collider fully separates from the same target before striking again.
-
-## Manual verification boundary
-
-Run [docs/manual-xr-regression.md](docs/manual-xr-regression.md) on real target hardware after changes to XR input, models, colliders, transforms, audio, spawning, persistence, lifecycle, or Looper behavior. Record headset/browser versions and evidence; a passing Node suite does not replace this check.

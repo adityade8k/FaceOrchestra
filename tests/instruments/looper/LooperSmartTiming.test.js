@@ -61,7 +61,7 @@ test("clocked recording rejects recordings with no musical onset", () => {
   assert.equal(empty.hasRecording(), false);
 });
 
-test("a held final note is safely released at Stop and makes Stop its real endpoint", () => {
+test("a held final note is safely released without making Stop the phrase boundary", () => {
   const recorder = new LooperGestureRecorder({ sampleIntervalMs: 1 });
   const timeline = new LooperTimeline();
   const track = new LooperTrack({ index: 0, connectedHonkId: "honk-1" });
@@ -75,6 +75,8 @@ test("a held final note is safely released at Stop and makes Stop its real endpo
 
   assert.deepEqual(timeline.getTrack(track.trackId).events.map((event) => event.timeMs), [0, 400]);
   assert.equal(timeline.contentEndMs, 400);
+  assert.equal(timeline.recordedDurationMs, 500);
+  assert.equal(timeline.durationMs, 500);
 });
 
 test("clocked playback chooses the next beat and stays silent while waiting", () => {

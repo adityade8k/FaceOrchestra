@@ -187,13 +187,20 @@ export class LooperController {
       now,
       LOOPER_MIN_ACTION_DURATION_MS,
       (honkId) => this.captureActionByHonkId(honkId),
-      null,
+      { preserveRecordingOrigin: true },
     );
     if (data.timeline.timingMode !== "metronome") {
       const beatAnalysis = this.beatDetector.analyze(data.timeline, {
         fallbackBeatIntervalMs: data.recordingBeatIntervalMs,
       });
-      if (beatAnalysis) this.beatDetector.apply(data.timeline, beatAnalysis);
+      if (beatAnalysis) {
+        this.beatDetector.apply(data.timeline, beatAnalysis);
+      } else {
+        // Preserve the ordinary, non-beat fallback: trim the pre-performance
+        // rest only when no reliable grid was inferred.
+        data.timeline.normalizeToFirstAction();
+        data.timeline.finalizeDuration(LOOPER_MIN_ACTION_DURATION_MS);
+      }
     }
     data.timeline.setGapBeats(data.gapBeats, LOOPER_MIN_ACTION_DURATION_MS);
     data.recordingBeatIntervalMs = 0;
