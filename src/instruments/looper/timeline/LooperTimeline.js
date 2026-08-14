@@ -59,7 +59,11 @@ export class LooperTimeline {
       this.durationMs = 0;
       return false;
     }
-    if (this.timingMode !== LooperTimingMode.Metronome) {
+    this.pruneInactiveTracks();
+    if (
+      this.timingMode !== LooperTimingMode.Metronome &&
+      !timing?.preserveRecordingOrigin
+    ) {
       this.normalizeToFirstAction();
     }
     this.finalizeDuration(minDurationMs);
@@ -94,6 +98,12 @@ export class LooperTimeline {
       }
     }
     return count;
+  }
+
+  pruneInactiveTracks() {
+    for (const [trackId, track] of this.tracks) {
+      if (!track.active) this.tracks.delete(trackId);
+    }
   }
 
   getElapsedMs(now) {
@@ -343,7 +353,7 @@ export class LooperTimeline {
 
     for (const serializedTrack of serializedTracks) {
       const track = LooperTrackTimeline.fromJSON(serializedTrack);
-      if (track.trackId) {
+      if (track.trackId && track.active) {
         timeline.tracks.set(track.trackId, track);
       }
     }

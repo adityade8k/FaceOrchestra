@@ -52,7 +52,7 @@ The expected Quest-style map is:
 | --- | --- |
 | Right A press/release | Open/confirm spawn menu |
 | Grip held + Right A press | Duplicate the actively gripped Honk, Looper, or Metronome; never open the menu |
-| Right B press | Contextual Honk formation or Looper lock toggle |
+| Right B press | Contextual Honk formation, Looper, or Metronome lock toggle |
 | Left X press | Delete pointed instrument |
 | Trigger press/release | Place preview or interact with the current ray target |
 | Grip press/release | Cancel menu/preview, transform a pointed body, or equip/unequip Stick when no body is targeted |
@@ -66,11 +66,11 @@ If the physical map differs, stop and report the input source profile, handednes
 
 - [ ] **Desktop fallback** — View the page without entering XR and resize the window. Expected: the opaque fallback environment and lighting render, camera aspect updates, the scene remains responsive, and the status explains whether WebXR is available.
 
-- [ ] **Enter XR** — Enter immersive AR when available, otherwise immersive VR. Expected: the session starts once, controllers/rays appear, passthrough hides the opaque fallback environment when the blend mode permits it, and no duplicate scene or controller roots are created.
+- [ ] **Enter XR** — Enter immersive AR when available, otherwise immersive VR. Expected: the session starts once, controllers/rays appear, passthrough hides the opaque fallback environment when the blend mode permits it, and no duplicate scene or controller roots are created. With a scene containing no Metronome, one default Metronome is placed in front of the user; with a restored Metronome, no extra default is created.
 
 - [ ] **Exit XR** — Exit while the scene contains at least one Honk and one Looper. Expected: exactly one scene snapshot is written, live voices and controller interactions stop, rays/menus/Stick state reset, the desktop fallback returns, and placed instruments are not accidentally deleted from persisted data.
 
-- [ ] **Dismiss instructions** — Aim at the instruction panel close target and pull Trigger. Expected: the panel hides, ray hover/haptic behavior clears, and the spawn menu becomes available. Re-enter XR and confirm instruction visibility follows the configured session behavior.
+- [ ] **Instruction-panel configuration** — With committed `SHOW_INSTRUCTION_PANEL = false`, expected: no panel is shown and the spawn menu/default Metronome path is immediately available. In a separate configuration-only pass with the flag enabled, aim at the close target and pull Trigger; expected: the panel hides, ray hover/haptic behavior clears, and the default Metronome/spawn menu become available.
 
 - [ ] Exit XR while squeezing a Honk, holding a grip transform, running Looper playback, and/or holding the Stick. Expected: no stuck audio, automation voice, grip, haptic loop, visible Stick, active contact, or hidden ray survives the session boundary.
 
@@ -87,6 +87,10 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 - [ ] **Spawn looper** — Select `Looper`, preview, and place it. Expected: one Looper appears with eight track nodes, transport buttons, Volume and right-hand Gap targets, body grip target, and no active wire. The authored bottom handle remains visible but has no collider or reaction.
 
 - [ ] **Spawn and run metronome** — Select `Metro`, preview, and place it. Expected: exactly four procedural connection ports appear in debug mode. Trigger the left Play eye, then the right Pause eye. Only the eye targets control transport; Play latches while clicks sound, the pendulum completes one side-to-side cycle every two beats, and Pause immediately restores the authored rest pose. Confirm live BPM changes alter its rate without a phase jump and Volume still works while unlocked.
+
+- [ ] **Repeated Metronome lock texture regression** — Before locking, photograph or inspect the authored Metronome base texture from multiple angles. Press Right B to lock/unlock the same Metronome at least ten times, including while it is running. Expected: its material and authored texture never switch to either Honk atlas, never flash a replacement map, and look identical before, during, and after every toggle.
+
+- [ ] **Metronome lock behavior freeze** — Across the repeated lock/unlock sequence, exercise Play, Pause, BPM, Volume, pendulum motion, all four ports, an existing Looper wire, an existing Honk pulse wire, Grip movement/scale, Grip+Right A duplication, radial preview placement, and deletion of the duplicate. Expected: every behavior remains unchanged; connections and wires remain attached, the original clock phase is not restarted by lock state, and the duplicate keeps its own authored Metronome texture.
 
 - [ ] **Equip stick** — Point away from instrument transform targets and hold Grip. Expected: the Stick attaches to that controller using the configured local transform, the ray hides, its strike collider activates, and it disappears/clears contacts on Grip release.
 
@@ -229,6 +233,18 @@ Use two Metronomes, several Loopers, and at least two Honks. Keep one Looper tra
 - [ ] **Record morph changes** — During recording, change ears, nose, and vowel. Expected: numeric fields interpolate according to timeline sampling, vowel steps deterministically, and clearing playback does not erase the Honk’s direct live state.
 
 - [ ] **Record stick percussion** — While recording, strike the connected Honk and the Looper. Expected: Honk `boink` is recorded on the connected track, Looper `hihat` on the self-percussion track, and playback fires deterministic events once per loop.
+
+- [ ] **Delayed-Stop phrase boundary at 120 BPM** — Set a connected Metronome to 120 BPM (`B = 500 ms`) and Gap 0. Record attacks approximately 100, 1100, and 1600 ms after the launch beat, releasing normally. First press Stop around 2200 ms; repeat the same performance but wait until about 5000 ms, then repeat with a much longer wait. Expected: all takes have the same 2000 ms base/total loop, the same onset list and first-onset phase, and repeated attacks at about 2100, 3100, 3600, 4100 ms onward. Stop remains available throughout the wait and recording never ends merely because the performer is idle.
+
+- [ ] **Release tail and held-note Stop** — Repeat the phrase with a normal/smoothed release after the 2000 ms boundary, then with the final Honk still held when Stop is pressed several beats later. Expected: both base durations remain 2000 ms; the held take receives one safe release, no voice crosses the wrap, and no duplicate release, missing attack, empty track, stuck voice, or catch-up burst occurs.
+
+- [ ] **Exact-beat, single-note, and cross-track boundaries** — At Gap 0, record (a) one attack exactly on a beat, (b) one off-beat attack, (c) simultaneous Honk attacks on multiple tracks, (d) percussion only, and (e) mixed Honk/percussion with the final onset on a different track. Expected: the boundary is always the first beat strictly after the latest onset, never shorter than one beat, and simultaneous attacks do not add another boundary.
+
+- [ ] **First-onset phase and Gap 0–4** — Record a phrase whose first onset is visibly/audibly off the launch beat. Play it at Gap 0 through Gap 4. Expected: every repetition keeps that same within-beat first-onset offset; the base phrase never changes; each Gap step adds exactly one whole beat.
+
+- [ ] **Inferred and fallback standalone recordings** — Disconnect the clock and record a clear multi-onset 120 BPM phrase after a short launch offset, then wait before Stop. Expected: successful inference keeps the launch-relative first-onset phase and removes Stop-time padding. Record a one-onset/non-inferable phrase separately; expected: the established ordinary trim/content-duration fallback remains and no tempo is invented.
+
+- [ ] **Delayed-Stop persistence repair** — Exit XR after making a delayed-Stop phrase, reload, and compare onset phase, base duration, Gap, playback schedule, tracks, and releases. Also load a backed-up older JSON fixture whose beat-aware `recordedDurationMs`/`durationMs` includes Stop-time padding. Expected: round-trip data remains musical-onset-derived and the older padding is repaired without moving real events.
 
 - [ ] **Standalone Play** — Disconnect the Looper clock and press Play from stopped state. Expected: recorded tracks enter playing state immediately, the head animates, and standalone behavior remains independent of any globally playing Metronome.
 

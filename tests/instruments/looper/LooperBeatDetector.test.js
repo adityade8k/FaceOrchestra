@@ -61,10 +61,13 @@ test("beat correction drops the record-to-Stop rest and ends on the next phrase 
   const attacks = timeline.getTrack("track-0").events
     .filter((event) => event.type === LooperActionEventType.SqueezeStart)
     .map((event) => event.timeMs);
-  assert.equal(attacks[0], 0);
+  assert.equal(attacks[0], 300);
   assert.equal(attacks[2] - attacks[1], 625);
   assert.equal(timeline.durationMs, 1500);
-  assert.equal(timeline.durationMs - attacks.at(-1), analysis.beatIntervalMs);
+  assert.equal(
+    timeline.durationMs + attacks[0] - attacks.at(-1),
+    analysis.beatIntervalMs,
+  );
 });
 
 function addNote(timeline, trackId, trackIndex, startMs, endMs) {

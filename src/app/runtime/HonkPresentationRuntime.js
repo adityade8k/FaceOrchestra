@@ -25,6 +25,10 @@ import {
   HIT_MARKER_OPACITY,
   getInteractionTargetColor,
 } from "../../ui/interactionTargetPresentation.js";
+import {
+  applyInstrumentLockedTexture,
+  resolveInstrumentLockTextureSet,
+} from "../../scene/instrumentLockTexturePolicy.js";
 
 export const HonkPresentationRuntimeMethods = {
     updateMetronomes(now = performance.now()) {
@@ -199,45 +203,17 @@ export const HonkPresentationRuntimeMethods = {
           : THREE.MathUtils.lerp(neutralY, minY, -value);
     },
     setInstrumentLockedTexture(instrumentState, locked) {
-      if (!instrumentState?.root) {
-        return;
-      }
-  
       const textureSet = this.getTextureSetForInstrumentState(instrumentState);
-      const baseMap = textureSet?.baseMap;
-      const lockedBaseMap = textureSet?.lockedBaseMap;
-      if (!baseMap || !lockedBaseMap) {
-        return;
-      }
-  
-      const useLockedTexture = Boolean(locked);
-      if (instrumentState.lockedTextureApplied === useLockedTexture) {
-        return;
-      }
-  
-      const targetMap = useLockedTexture ? lockedBaseMap : baseMap;
-      instrumentState.root.traverse((object) => {
-        if (
-          !object.isMesh ||
-          object.userData.isHitTarget ||
-          object.userData.isNoteLabel ||
-          object.name.startsWith("DEBUG_") ||
-          !object.material
-        ) {
-          return;
-        }
-  
-        object.material = Array.isArray(object.material)
-          ? object.material.map((material) => this.getTextureSwapMaterial(material, targetMap))
-          : this.getTextureSwapMaterial(object.material, targetMap);
+      return applyInstrumentLockedTexture(instrumentState, locked, textureSet, {
+        swapMaterial: (material, targetMap) => this.getTextureSwapMaterial(material, targetMap),
       });
-      instrumentState.lockedTextureApplied = useLockedTexture;
     },
     getTextureSetForInstrumentState(instrumentState) {
-      if (instrumentState?.kind === "looper" || instrumentState?.componentId === LOOPER_COMPONENT_ID) {
-        return this.looperMaterialTextures;
-      }
-      return this.instrumentMaterialTextures;
+      return resolveInstrumentLockTextureSet(instrumentState, {
+        honk: this.instrumentMaterialTextures,
+        looper: this.looperMaterialTextures,
+        looperComponentId: LOOPER_COMPONENT_ID,
+      });
     },
     getTextureSwapMaterial(material, targetMap) {
       if (!material) {
