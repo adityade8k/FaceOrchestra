@@ -120,7 +120,7 @@ To disconnect a Honk from Loopers, Grip the connected Honk and shake it through 
 
 ### Record and finish a phrase
 
-A Metronome-connected Looper waits for the first Honk attack or Stick strike, then launches the recording timeline at the beat immediately before that onset. This removes the wait before the performance while preserving the first note’s real position inside its beat. An unconnected Looper starts recording immediately; after Stop, it uses the existing beat detector when a reliable beat can be inferred and otherwise keeps the ordinary non-tempo fallback.
+A Metronome-connected Looper waits for the first Honk attack or Stick strike, then launches the recording timeline at the beat immediately before that onset. This removes the wait before the performance while preserving the first note’s real position inside its beat. An unconnected Looper starts recording immediately; at Stop it trims the idle time before the first performance action, uses the existing beat detector when a reliable beat can be inferred, and otherwise keeps the ordinary non-tempo fallback.
 
 Stop always remains under the musician’s control. Recording does not automatically stop after the final note, so you may wait and play another note whenever you choose.
 
@@ -128,7 +128,7 @@ When you do press Stop:
 
 - Stop ends capture but does not add trailing silence.
 - The base loop boundary is the beat immediately after the final played onset—Honk attack or percussion strike—not the time Stop was pressed.
-- The first note keeps its original position within the beat on every repetition.
+- A Metronome-connected first note keeps its clock-relative position within the beat on every repetition; an ordinary recording begins at its first performance action.
 - Gap 0 adds no extra beat. Gap 1–4 adds exactly that many whole beats.
 - Waiting one second or twenty seconds before Stop does not change the finished rhythm.
 - A held final Honk is safely released at Stop, but that safety release does not lengthen the phrase.

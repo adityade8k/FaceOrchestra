@@ -8,7 +8,7 @@ import { LooperActionEventType } from "../../../src/instruments/looper/timeline/
 
 const BEAT_INTERVAL_MS = 500;
 
-test("controller finalization gives immediate and delayed Stop the same beat-aware phrase", () => {
+test("connected off-beat phase and X o X X pattern survive immediate and delayed Stop", () => {
   const immediate = recordHonkPhrase({ stopMs: 2200 });
   const delayed = recordHonkPhrase({ stopMs: 5000 });
   const muchLater = recordHonkPhrase({ stopMs: 20_000 });
@@ -25,8 +25,29 @@ test("controller finalization gives immediate and delayed Stop the same beat-awa
 
   assert.equal(immediate.timeline.firstOnsetElapsedMs, delayed.timeline.firstOnsetElapsedMs);
   assert.equal(immediate.timeline.firstOnsetElapsedMs, 100);
+  assert.equal(
+    getBeatPattern(getPlaybackAttacks(immediate.timeline), { phaseMs: 100, beatCount: 8 }),
+    "X o X X X o X X",
+  );
   assert.deepEqual(immediate.timeline.toJSON(), delayed.timeline.toJSON());
   assert.deepEqual(delayed.timeline.toJSON(), muchLater.timeline.toJSON());
+});
+
+test("a Metronome-connected onset exactly on a beat repeats on the next phrase beat", () => {
+  const recording = createHarness({ connected: true });
+  recording.controller.startRecording(recording.looper, 0);
+  setHonk(recording, 0, 500, 1);
+  setHonk(recording, 0, 600, 0);
+  recording.controller.stopRecording(recording.looper, 3000);
+
+  assert.equal(recording.timeline.timingMode, "metronome");
+  assert.deepEqual(recording.timeline.getMusicalOnsetTimes(), [0]);
+  assert.equal(recording.timeline.recordedDurationMs, BEAT_INTERVAL_MS);
+  assert.equal(recording.timeline.durationMs, BEAT_INTERVAL_MS);
+  assert.deepEqual(
+    getPlaybackAttacks(recording.timeline, [0, 100, 500, 600, 1000]),
+    [0, 500, 1000],
+  );
 });
 
 test("a release tail after the phrase boundary and a held-at-Stop safety release add no beats", () => {
@@ -48,19 +69,39 @@ test("a release tail after the phrase boundary and a held-at-Stop safety release
   ]);
 });
 
-test("successfully inferred recordings retain launch phase while non-beat fallback still trims", () => {
-  const inferred = createHarness({ connected: false });
-  inferred.controller.startRecording(inferred.looper, 0);
-  for (const attackMs of [100, 600, 1100, 1600]) {
-    setHonk(inferred, 0, attackMs, 1);
-    setHonk(inferred, 0, attackMs + 100, 0);
+test("successfully inferred standalone recordings trim Record pre-roll and delayed Stop", () => {
+  const immediate = recordInferredHonkPhrase({ stopMs: 2200 });
+  const delayed = recordInferredHonkPhrase({ stopMs: 7000 });
+
+  for (const recording of [immediate, delayed]) {
+    assert.equal(recording.timeline.beatAnalysis?.inferred, true);
+    assert.equal(recording.timeline.beatIntervalMs, BEAT_INTERVAL_MS);
+    assert.deepEqual(recording.timeline.getMusicalOnsetTimes(), [0, 500, 1000, 1500]);
+    assert.equal(recording.timeline.recordedDurationMs, 2000);
+    assert.equal(recording.timeline.durationMs, 2000);
+    assert.equal(
+      recording.timeline.durationMs + recording.timeline.getMusicalOnsetTimes()[0],
+      2000,
+    );
+    assert.deepEqual(
+      getPlaybackAttacks(
+        recording.timeline,
+        Array.from({ length: 37 }, (_value, index) => index * 100),
+      ),
+      [0, 500, 1000, 1500, 2000, 2500, 3000, 3500],
+    );
   }
-  inferred.controller.stopRecording(inferred.looper, 5000);
-  assert.equal(inferred.timeline.beatAnalysis?.inferred, true);
-  assert.equal(inferred.timeline.beatIntervalMs, 500);
-  assert.equal(inferred.timeline.recordedDurationMs, 2000);
-  assert.deepEqual(inferred.timeline.getMusicalOnsetTimes(), [100, 600, 1100, 1600]);
-  assert.equal(inferred.timeline.durationMs + 100, 2100);
+
+  assert.deepEqual(immediate.timeline.toJSON(), delayed.timeline.toJSON());
+
+  const held = recordInferredHonkPhrase({ stopMs: 7000, holdFinalNote: true });
+  const heldTrack = held.timeline.getTrack("track-0");
+  assert.equal(held.timeline.recordedDurationMs, 2000);
+  assert.equal(held.timeline.durationMs, 2000);
+  assert.deepEqual(held.timeline.getMusicalOnsetTimes(), [0, 500, 1000, 1500]);
+  assert.equal(heldTrack.events.filter((event) => (
+    event.type === LooperActionEventType.SqueezeEnd && event.timeMs === 6500
+  )).length, 1);
 
   const fallback = createHarness({ connected: false });
   fallback.controller.startRecording(fallback.looper, 0);
@@ -112,6 +153,8 @@ test("controller records percussion-only and mixed phrases from their latest ons
 test("controller Gap 0 through 4 adds whole beats without changing the base phrase", () => {
   const recording = recordHonkPhrase({ stopMs: 5000 });
 
+  assert.equal(LooperControlMapping.getGapBeatsFromControl(-1), 0);
+
   for (let gapBeats = 0; gapBeats <= 4; gapBeats += 1) {
     recording.controller.setControlValue(
       recording.looper,
@@ -154,6 +197,19 @@ function recordHonkPhrase({
   setHonk(harness, 0, 1200, 0);
   setHonk(harness, 0, 1600, 1);
   if (!holdFinalNote) setHonk(harness, 0, finalReleaseMs, 0);
+  harness.controller.stopRecording(harness.looper, stopMs);
+  return harness;
+}
+
+function recordInferredHonkPhrase({ stopMs, holdFinalNote = false }) {
+  const harness = createHarness({ connected: false });
+  harness.controller.startRecording(harness.looper, 0);
+  for (const attackMs of [500, 1000, 1500, 2000]) {
+    setHonk(harness, 0, attackMs, 1);
+    if (!holdFinalNote || attackMs < 2000) {
+      setHonk(harness, 0, attackMs + 100, 0);
+    }
+  }
   harness.controller.stopRecording(harness.looper, stopMs);
   return harness;
 }
@@ -202,7 +258,10 @@ function setHonk(harness, trackIndex, now, squeeze) {
   harness.controller.updateRecordings([harness.looper], now);
 }
 
-function getPlaybackAttacks(timeline) {
+function getPlaybackAttacks(timeline, sampleTimes = [
+  0, 100, 200, 1100, 1200, 1600, 1700, 2000, 2100, 2200, 3100, 3200, 3600,
+  3700, 4000, 4100,
+]) {
   const engine = new LooperPlaybackEngine();
   const attacks = [];
   let active = false;
@@ -218,8 +277,15 @@ function getPlaybackAttacks(timeline) {
     },
   };
   engine.start(0);
-  for (now of [0, 100, 200, 1100, 1200, 1600, 1700, 2000, 2100, 2200, 3100, 3200, 3600, 3700, 4000, 4100]) {
+  for (now of sampleTimes) {
     engine.update(now, timeline, 1, handlers);
   }
   return attacks;
+}
+
+function getBeatPattern(attacks, { phaseMs = 0, beatCount, beatIntervalMs = BEAT_INTERVAL_MS }) {
+  const attackTimes = new Set(attacks);
+  return Array.from({ length: beatCount }, (_value, index) => (
+    attackTimes.has(phaseMs + index * beatIntervalMs) ? "X" : "o"
+  )).join(" ");
 }

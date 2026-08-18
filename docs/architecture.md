@@ -336,9 +336,9 @@ XR Trigger on Looper Stop collider
 → LooperGestureRecorder.stop(now)
 → force one final capture sample
 → write required neutral squeeze/bend safety releases
-→ LooperTimeline.stopRecording(..., preserveRecordingOrigin)
+→ LooperTimeline.stopRecording(...)
+→ normalize every ordinary recording to its first action
 → analyze/apply inferred beat when appropriate
-→ normalize only the no-inference ordinary fallback
 → recompute onset-derived baseDuration
 → apply Gap
 → finish transport and update presentation
@@ -346,7 +346,7 @@ XR Trigger on Looper Stop collider
 
 For a Metronome-connected recording, Record remains armed until the first Honk/percussion onset. The controller uses the beat immediately preceding that onset as the timeline launch, so `t_first` retains its played phase. The known Metronome `B` is already present when timeline finalization runs.
 
-For an ordinary unconnected recording, the controller preserves the recording launch origin until the existing `LooperBeatDetector` has attempted analysis. If analysis succeeds, gate correction is applied relative to the inferred grid, real non-gate timestamps stay intact, and final duration is recomputed from corrected onsets without removing `t_first`. If no reliable beat is returned, the controller performs the pre-existing fallback: normalize to the first action and use ordinary content-derived duration. It does not invent a tempo.
+For an ordinary unconnected recording, timeline finalization normalizes the first performance action to time zero before the existing `LooperBeatDetector` attempts analysis. Record-button pre-roll is not a musical phase reference. If analysis succeeds, gate correction is applied relative to that normalized inferred grid and final duration is recomputed from corrected onsets. If no reliable beat is returned, the same normalization feeds the ordinary content-derived fallback without inventing a tempo. In both cases, post-performance idle time before Stop is excluded from the phrase boundary.
 
 The recorder prunes inactive timeline tracks at finalization. Delaying Stop therefore cannot manufacture extra active/serialized tracks, duplicate releases, move or omit attacks, or create a playback catch-up burst. A held final Honk gets one safety release at Stop; that event may sit after the phrase boundary, but `baseDuration` remains onset-derived.
 
@@ -354,7 +354,7 @@ The recorder prunes inactive timeline tracks at finalization. Delaying Stop ther
 
 Session exit calls `LooperInstrument.finishRecording(now)` for each active recording before the single save, so exit uses this same path. `LooperTimeline.fromJSON()` reconstructs musical onsets and recomputes beat-aware duration, repairing older snapshots whose `recordedDurationMs`/`durationMs` contain Stop-time padding. It preserves ordinary non-beat fallback data where no beat exists.
 
-Playback is event-time preserving. Standalone playback derives position from elapsed time without accumulating boundary drift. Connected playback derives authoritative total elapsed time from the connected Metronome’s continuous beat position and the timeline’s recorded `B`; BPM changes retain phase. At every wrap, active Honk tracks are released before time zero is sampled again. Delayed Stop can therefore never create hidden empty beats between repetitions.
+Playback is event-time preserving. Standalone playback derives position from elapsed time without accumulating boundary drift. Connected playback derives authoritative total elapsed time from the connected Metronome’s continuous beat position and the timeline’s recorded `B`; BPM changes retain phase. At every wrap, active Honk tracks are released before time zero is sampled again. Delayed Stop can therefore never create hidden empty beats between repetitions, and Gap `0` adds no complete silent beats.
 
 ### Metronome connections and clock ownership
 
