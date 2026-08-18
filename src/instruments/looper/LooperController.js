@@ -187,7 +187,7 @@ export class LooperController {
       now,
       LOOPER_MIN_ACTION_DURATION_MS,
       (honkId) => this.captureActionByHonkId(honkId),
-      { preserveRecordingOrigin: true },
+      null,
     );
     if (data.timeline.timingMode !== "metronome") {
       const beatAnalysis = this.beatDetector.analyze(data.timeline, {
