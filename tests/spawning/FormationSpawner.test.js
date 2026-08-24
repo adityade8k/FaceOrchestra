@@ -65,7 +65,7 @@ const EXPECTED_TUNINGS = Object.freeze({
   "preset-still-believe": [["G#", 3, 1], ["A", 4, 1]],
 });
 
-test("chord and preset recipes preserve every specified tuning tuple in order", () => {
+test("chord and Honk preset recipes preserve every specified tuning tuple in order", () => {
   for (const [recipeId, expectedTunings] of Object.entries(EXPECTED_TUNINGS)) {
     const recipe = getFormationRecipe(recipeId);
     assert.ok(recipe, `missing recipe ${recipeId}`);
@@ -77,7 +77,7 @@ test("chord and preset recipes preserve every specified tuning tuple in order", 
   }
 });
 
-test("preset recipes have the required counts and Melody starts on G#4 and retains its repeated E4", () => {
+test("Honk preset recipes have the required counts and Melody starts on G#4 and retains its repeated E4", () => {
   assert.deepEqual(
     Object.keys(EXPECTED_TUNINGS)
       .filter((id) => id.startsWith("preset-"))
@@ -101,7 +101,7 @@ test("preset recipes have the required counts and Melody starts on G#4 and retai
   );
 });
 
-test("every chord and preset spawns independent Honks through the formation path", () => {
+test("every chord and Honk preset spawns independent Honks through the formation path", () => {
   let sequence = 0;
   const spawner = new FormationSpawner({
     recipes: { get: getFormationRecipe },
@@ -122,7 +122,7 @@ test("every chord and preset spawns independent Honks through the formation path
   }
 });
 
-test("every chord and preset reaches the ordinary pending preview as independent Honks", () => {
+test("every chord and Honk preset reaches the ordinary pending preview as independent Honks", () => {
   let sequence = 0;
   const spawner = new FormationSpawner({
     recipes: { get: getFormationRecipe },

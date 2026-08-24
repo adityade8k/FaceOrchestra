@@ -78,19 +78,19 @@ If the physical map differs, stop and report the input source profile, handednes
 
 Use a fresh scene or leave enough space to distinguish each result. Right A opens the menu only after instructions are dismissed.
 
-- [ ] **Open and select parent categories** — With Grip released, hold Right A without waiting for a timer. Expected: the parent ring opens immediately. Use the existing wrist-roll feel to highlight Instruments, Scales, Chords, and Presets in order; confirm the dead zone, direction, dial speed, counter-rotation, and highlight feel remain usable.
+- [ ] **Open and select parent categories** — With Grip released, hold Right A without waiting for a timer. Expected: the parent ring opens immediately with one haptic pulse. Use the existing wrist-roll feel to highlight Instruments, Scales, Chords, and Presets in order; confirm each actual highlight change produces one light pulse while an unchanged highlight produces none, and the dead zone, direction, dial speed, counter-rotation, and highlight feel remain usable.
 
 - [ ] **Pull toward the viewer in different orientations** — While holding A on each parent, pull only the controller physically toward the headset while facing at least three different room directions. Then keep the controller fixed relative to your body and translate your head/body backward and forward. Expected: the child ring opens from controller motion relative to the headset along the controller's opening normal, not global room Z or shared headset/controller translation. Sideways or away controller motion does not open it, and tracking jitter near the threshold does not flicker between layers.
 
-- [ ] **Inspect both depth phases** — Transition repeatedly between parent and child while viewing the menu obliquely. Expected: pulling into the child phase hides the parent disk and shows only the child disk at its configured 5.5 cm depth layer; pushing back hides the child and restores only the parent. The disks never appear together or as inner/outer coplanar annuli.
+- [ ] **Inspect both depth phases** — Transition repeatedly between parent and child while viewing the menu obliquely. Expected: pulling into the child phase hides the parent disk and shows only the child disk at its configured 5.5 cm depth layer; pushing back hides the child and restores only the parent. Each layer transition produces one distinct pulse. The disks never appear together or as inner/outer coplanar annuli.
 
 - [ ] **Menu depth anchor** — While either layer is active, move the controller left/right and up/down, then pull/push it along the opening menu normal. Expected: the menu follows lateral X/Y controller motion but remains frozen on its opening Z plane; only the child ring's configured depth offset appears, rather than the complete menu moving with the pull gesture.
 
 - [ ] **Return to the parent** — Roll within a child ring, then push the controller away until the parent becomes active. Expected: the child hides below the exit threshold, the parent selection does not jump, and parent wrist roll resumes from the returned orientation. Pull in again and confirm a fresh child roll baseline produces no initial selection jump.
 
-- [ ] **Release semantics** — Release A once while only the parent ring is active and once while a child ring is active. Expected: parent release closes both layers and creates no preview; child release closes both layers and creates exactly the highlighted leaf preview. Press Grip while either layer is open and confirm cancellation creates no preview.
+- [ ] **Release semantics and haptics** — Release A once while only the parent ring is active and once while a child ring is active. Expected: parent release closes both layers, creates no preview, and pulses once for dismissal; child release closes both layers, creates exactly the highlighted leaf preview, and pulses once for confirmation. Press Grip while either layer is open and confirm cancellation creates no preview and pulses once. Any other programmatic close also pulses once, while repeated close calls on an already closed menu stay silent.
 
-- [ ] **Exercise every menu leaf** — Preview and place Honk, Looper, Metronome; C Major Scale, F Natural Minor Scale, F-sharp Natural Minor Scale; A Minor, E Major, C Major, D Minor; and Quiet, Melody, Bass, Decoration, Still Believe. Expected: every leaf uses the same glass preview and placement path, and no Stick entry appears.
+- [ ] **Exercise every menu leaf** — Preview and place Honk, Looper, Metronome; C Major Scale, F Natural Minor Scale, F-sharp Natural Minor Scale; A Minor, E Major, C Major, D Minor; and Quiet, Melody, Bass, Decoration, Still Believe, Metronome 96. Expected: every leaf uses the same glass preview and placement path, and no Stick entry appears.
 
 - [ ] **Chord recipes** — Preview all four chords and inspect their left-to-right labels. Expected: A Minor reads `A4 C4 E5`, E Major reads `E3 B4 G#4`, C Major reads `C4 E4 G4`, and D Minor reads `F4 A4 D5`. Every preview contains exactly three separately registered Honks, including the displayed octaves and inversions.
 
@@ -98,7 +98,9 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Melody duplicate and two-Honk preview** — Inspect Melody's last four positions and Still Believe's complete preview. Expected: Melody keeps `E4 F4 E6 E4`, including the intentional repeated E4, and Still Believe renders correctly as a two-Honk glass preview.
 
-- [ ] **Single- and multi-Honk preview controls** — For a single Honk and every scale, chord, and preset formation, scale up/down with right thumbstick Y, place with Trigger, then repeat and cancel with Grip. Expected: existing step size, distance, world-transform preservation, independent registration, and all-entity cancellation remain unchanged.
+- [ ] **Metronome 96 preset** — Select Metronome 96 from Presets, inspect its glass preview, place it, and inspect its BPM label and controls. Expected: one ordinary independently registered metronome is created at 96 BPM, remains paused until Play is pressed, and can be moved, scaled, connected, duplicated, deleted, and persisted like the Instruments-menu metronome.
+
+- [ ] **Preview scale and distance controls** — For Honk, Looper, Metronome, and every scale, chord, and Presets leaf, press the right thumbstick left/right to scale the complete preview down/up, then press down/up to move it closer to/farther from the controller. Expected: each fresh axis deflection applies one step, holding a direction does not repeat, returning through the dead zone rearms that axis, diagonal input can change both properties, scale and distance clamp at their configured limits, and every preview member preserves its relative layout. Place with Trigger, then repeat and cancel with Grip; world-transform preservation, independent registration, and all-entity cancellation remain unchanged.
 
 - [ ] **Removed submenu entries** — Inspect the complete Chords and Presets child rings. Expected: G Major and F Major no longer appear under Chords, and C Major 2 Oct no longer appears under Presets.
 
@@ -120,7 +122,7 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Cancel spawn preview** — Select any item, then press Grip before placement. Expected: the preview group and every preview entity are removed through lifecycle cleanup, no storage write occurs, the canceled entities are absent from the eventual exit snapshot, no glass material remains, and normal interactions resume.
 
-- [ ] **Scale spawn preview** — Create a multi-Honk preview and step the right thumbstick up and down. Expected: every member scales together once per direction transition, stays within Honk limits, keeps its spacing, and does not drift or place early.
+- [ ] **Scale spawn preview** — Create a multi-Honk preview and step the right thumbstick left and right. Expected: every member scales down/up together once per direction transition, stays within Honk limits, keeps its spacing, and does not drift or place early. Up/down changes only preview distance.
 
 - [ ] **Place spawn preview** — Move/rotate the preview controller, then pull Trigger. Expected: all roots preserve their preview world transforms when attached to the scene, pending flags clear, normal materials/interactions return, no immediate storage write occurs, and the placement persists after exiting XR and reloading.
 
@@ -136,7 +138,7 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] Hold Grip with no duplicable transform target and press Right A. Expected: the radial menu remains disabled and no instrument or preview is created. Grip release followed by Right A opens the menu normally.
 
-- [ ] **Unrelated control/audio regression** — After the hierarchy pass, verify Left X deletion, Right B lock toggles, ordinary ray interactions, Honk audio, Looper recording/playback, and Metronome timing/controls still behave as documented. Expected: no input remapping, audio change, ray regression, or instrument-specific behavior change. Repeat Grip+A duplication for Honk, Looper, and Metronome.
+- [ ] **Unrelated control/audio regression** — After the hierarchy pass, verify Left X deletion, Right B lock toggles, ordinary ray interactions, Honk audio, Looper recording/playback, and Metronome timing/controls still behave as documented. Expected: no unrelated input remapping, audio change, ray regression, or instrument-specific behavior change. Repeat Grip+A duplication for Honk, Looper, and Metronome.
 
 ## 3. Transform targets
 
@@ -146,11 +148,11 @@ Use an unlocked isolated Honk and an unlocked Looper first. Keep the controller 
 
 - [ ] **Rotate honk** — During the same grip interaction, rotate the controller around multiple axes. Expected: the Honk follows smoothly without a position jump, scale change, or stuck grip after release.
 
-- [ ] **Scale honk** — While gripping the Honk, step the right thumbstick in both directions. Expected: scale changes by configured steps, clamps to Honk min/max, and hit targets/colliders remain aligned.
+- [ ] **Scale honk** — While gripping the Honk, step the right thumbstick left and right. Expected: left decreases and right increases scale by configured steps, scale clamps to Honk min/max, and hit targets/colliders remain aligned. Up/down does not change size while gripping.
 
 - [ ] **Move looper** — Grip the Looper body and translate/rotate it. Expected: the Looper follows as one transform target; connected wire endpoints (if present) track the new transform.
 
-- [ ] **Scale looper** — While gripping the Looper, step the right thumbstick. Expected: Looper-specific limits/step apply rather than Honk limits, controls and colliders remain usable, and wires follow.
+- [ ] **Scale looper** — While gripping the Looper, step the right thumbstick left and right. Expected: Looper-specific limits/step apply rather than Honk limits, controls and colliders remain usable, and wires follow. Up/down does not change size.
 
 - [ ] Start a grip on an object, move the ray across another object, and release. Expected: ownership stays with the original transform target until release.
 
@@ -196,7 +198,7 @@ For precise diagnosis, optionally repeat failures with collider debug visuals. C
 
 - [ ] **Move locked formation** — Grip any locked member and translate/rotate it. Expected: the transform resolver targets the lock-group proxy; every member follows from its saved relative transform with no cumulative drift.
 
-- [ ] **Scale locked formation** — Grip any member and step the thumbstick. Expected: all members scale around the anchor/proxy while preserving configured relative transforms and individual IDs.
+- [ ] **Scale locked formation** — Grip any member and step the thumbstick left and right. Expected: all members scale around the anchor/proxy while preserving configured relative transforms and individual IDs. Up/down does not change group size.
 
 - [ ] **Unlock formation** — Point at a member and press Right B. Expected: the relationship and lock visuals clear, each Honk remains independently registered, and subsequent movement affects only the targeted Honk.
 

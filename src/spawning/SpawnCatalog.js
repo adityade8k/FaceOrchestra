@@ -30,6 +30,15 @@ export class SpawnCatalog {
   }
 }
 
+export function resolveCatalogInstrumentSpawn(entry, fallbackComponentId) {
+  return {
+    componentId: entry?.componentId || entry?.id || fallbackComponentId,
+    options: {
+      bpm: entry?.bpm,
+    },
+  };
+}
+
 function resolveRadialCategories(categories, entriesById) {
   const categoryIds = new Set();
   const childIds = new Set();

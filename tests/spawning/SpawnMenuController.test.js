@@ -7,24 +7,32 @@ import { SpawnMenuController } from "../../src/spawning/SpawnMenuController.js";
 import { RadialMenuPhase } from "../../src/spawning/radialMenuNavigation.js";
 
 test("entering layer 2 latches the selected parent and starts its child selection at zero", () => {
-  const { menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childEntryThresholdM + 0.01);
+  const { changes, menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childEntryThresholdM + 0.01);
   view.parentSelection = 2;
   menu.update({}, state);
   assert.equal(state.radialMenuPhase, RadialMenuPhase.child);
   assert.equal(state.radialMenuLatchedParentIndex, 2);
   assert.equal(state.radialMenuChildSelectedIndex, 0);
+  assert.deepEqual(changes, [
+    { type: "selection", layer: "parent", selectedIndex: 2 },
+    { type: "layer", phase: "child" },
+  ]);
 });
 
 test("A release in layer 1 returns no selection and closes without a preview command", () => {
-  const { menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childEntryThresholdM - 0.01);
+  const { changes, menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childEntryThresholdM - 0.01);
   view.parentSelection = 3;
   assert.equal(menu.confirm({}, state), null);
   assert.equal(state.radialMenuOpen, false);
   assert.equal(view.closed, true);
+  assert.deepEqual(changes, [
+    { type: "selection", layer: "parent", selectedIndex: 3 },
+    { type: "dismiss", selectedId: null },
+  ]);
 });
 
 test("A release in layer 2 returns only the highlighted leaf from the latched category", () => {
-  const { menu, state, view } = createHarness(0.08);
+  const { changes, menu, state, view } = createHarness(0.08);
   state.radialMenuPhase = RadialMenuPhase.child;
   state.radialMenuLatchedParentIndex = 2;
   state.radialMenuChildSelectedIndex = 1;
@@ -33,10 +41,11 @@ test("A release in layer 2 returns only the highlighted leaf from the latched ca
   assert.equal(selected.id, "chord-emajor");
   assert.equal(selected.action, "formation");
   assert.equal(state.radialMenuOpen, false);
+  assert.deepEqual(changes, [{ type: "confirm", selectedId: "chord-emajor" }]);
 });
 
 test("pushing below the exit threshold returns to layer 1 without confirming a category", () => {
-  const { menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childExitThresholdM - 0.001);
+  const { changes, menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childExitThresholdM - 0.001);
   state.radialMenuPhase = RadialMenuPhase.child;
   state.radialMenuLatchedParentIndex = 1;
   state.radialMenuChildSelectedIndex = 2;
@@ -44,18 +53,46 @@ test("pushing below the exit threshold returns to layer 1 without confirming a c
   assert.equal(state.radialMenuPhase, RadialMenuPhase.parent);
   assert.equal(state.radialMenuLatchedParentIndex, null);
   assert.equal(view.returnedParentIndex, 1);
+  assert.deepEqual(changes, [{ type: "layer", phase: "parent" }]);
+});
+
+test("child selection changes emit one state-change event and unchanged selections stay silent", () => {
+  const { changes, menu, state, view } = createHarness(0.08);
+  state.radialMenuPhase = RadialMenuPhase.child;
+  state.radialMenuLatchedParentIndex = 3;
+  view.childSelection = 4;
+  menu.update({}, state);
+  menu.update({}, state);
+  assert.deepEqual(changes, [{ type: "selection", layer: "child", selectedIndex: 4 }]);
+});
+
+test("open, cancel, and programmatic close each emit their actual state change", () => {
+  const opened = createHarness(0);
+  opened.state.radialMenuOpen = false;
+  opened.menu.open({}, opened.state);
+  assert.deepEqual(opened.changes, [{ type: "open" }]);
+
+  const cancelled = createHarness(0);
+  cancelled.menu.cancel({}, cancelled.state);
+  assert.deepEqual(cancelled.changes, [{ type: "cancel" }]);
+
+  const closed = createHarness(0);
+  closed.menu.close({}, closed.state);
+  closed.menu.close({}, closed.state);
+  assert.deepEqual(closed.changes, [{ type: "close" }]);
 });
 
 function createHarness(pullDistance) {
   const catalog = new SpawnCatalog();
+  const changes = [];
   const view = {
     pullDistance,
     parentSelection: 0,
     childSelection: 0,
     closed: false,
     create: () => ({}),
-    open: () => {},
-    cancel: () => {},
+    open(_controller, state) { state.radialMenuOpen = true; },
+    cancel(_controller, state) { this.close(_controller, state); },
     close(_controller, state) { state.radialMenuOpen = false; this.closed = true; },
     updatePullDistance: () => view.pullDistance,
     updateParentSelection(_controller, state) { state.radialMenuParentSelectedIndex = this.parentSelection; },
@@ -71,7 +108,11 @@ function createHarness(pullDistance) {
     },
     updateVisuals: () => {},
   };
-  const menu = new SpawnMenuController({ view, catalog });
+  const menu = new SpawnMenuController({
+    view,
+    catalog,
+    onStateChange: (_controller, change) => changes.push(change),
+  });
   const state = {
     radialMenuOpen: true,
     radialMenuCancelled: false,
@@ -80,5 +121,5 @@ function createHarness(pullDistance) {
     radialMenuChildSelectedIndex: 0,
     radialMenuLatchedParentIndex: null,
   };
-  return { catalog, menu, state, view };
+  return { catalog, changes, menu, state, view };
 }

@@ -75,12 +75,13 @@ export class XRInputSourceManager {
       });
     }
 
-    const direction = this.getThumbstickScaleDirection(gamepad);
-    if (direction !== state.thumbstickDirection) {
-      state.thumbstickDirection = direction;
+    for (const axis of ["thumbstickX", "thumbstickY"]) {
+      const direction = this.getThumbstickDirection(gamepad, axis);
+      if (direction === state.thumbstickDirections[axis]) continue;
+      state.thumbstickDirections[axis] = direction;
       this.onInput({
         type: "axis.step",
-        axis: "thumbstickY",
+        axis,
         controller,
         controllerId: controller.userData.controllerId,
         handedness: controller.userData.handedness,
@@ -103,9 +104,21 @@ export class XRInputSourceManager {
   }
 
   getThumbstickScaleDirection(gamepad) {
+    return this.getThumbstickDirection(gamepad, "thumbstickY");
+  }
+
+  getThumbstickDirection(gamepad, axis) {
     const axes = gamepad?.axes || [];
-    const configured = axes[XR_AXES.thumbstickY];
-    const value = Number.isFinite(configured) ? configured : Number.isFinite(axes[1]) ? axes[1] : 0;
+    const configured = axes[XR_AXES[axis]];
+    const fallbackIndex = axis === "thumbstickX" ? 0 : 1;
+    const value = Number.isFinite(configured)
+      ? configured
+      : Number.isFinite(axes[fallbackIndex]) ? axes[fallbackIndex] : 0;
+    if (axis === "thumbstickX") {
+      if (value > SCALE_JOYSTICK_DEADZONE) return 1;
+      if (value < -SCALE_JOYSTICK_DEADZONE) return -1;
+      return 0;
+    }
     if (value < -SCALE_JOYSTICK_DEADZONE) return 1;
     if (value > SCALE_JOYSTICK_DEADZONE) return -1;
     return 0;
@@ -128,6 +141,6 @@ export class XRInputSourceManager {
 function createHardwareState() {
   return {
     buttons: { trigger: false, grip: false, primary: false, secondary: false },
-    thumbstickDirection: 0,
+    thumbstickDirections: { thumbstickX: 0, thumbstickY: 0 },
   };
 }

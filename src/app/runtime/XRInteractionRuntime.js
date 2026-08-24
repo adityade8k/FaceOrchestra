@@ -386,17 +386,20 @@ export const XRInteractionRuntimeMethods = {
       this.gripTransformSystem?.release(controller);
       this.interactionCoordinator.setMode(controller, ControllerMode.IDLE);
     },
-    handleScaleStepIntent(controller, direction) {
+    handleHorizontalScaleStepIntent(controller, direction) {
       if (this.pendingSpawnPlacement) {
         this.handlePendingSpawnScaleThumbstick(controller, direction);
         return;
       }
-  
       if (this.isControllerStickActive(controller)) {
         return;
       }
-  
       this.gripTransformSystem?.handleScaleStep(controller, direction);
+    },
+    handlePreviewDistanceStepIntent(controller, direction) {
+      if (this.pendingSpawnPlacement) {
+        this.handlePendingSpawnDistanceThumbstick(controller, direction);
+      }
     },
     updateGripTransform() {
       this.gripTransformSystem?.update();

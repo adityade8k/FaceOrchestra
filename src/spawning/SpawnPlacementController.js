@@ -20,6 +20,10 @@ export class SpawnPlacementController {
     if (this.preview?.controller === controller) this.preview.setScaleDirection(direction, applyStep);
   }
 
+  distance(controller, direction) {
+    if (this.preview?.controller === controller) this.preview.setDistanceDirection(direction);
+  }
+
   place(controller) {
     if (this.preview?.controller !== controller) return [];
     const preview = this.preview;

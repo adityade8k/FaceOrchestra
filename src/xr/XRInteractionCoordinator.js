@@ -74,8 +74,11 @@ export class XRInteractionCoordinator {
       case XRIntentType.GripEnd:
         this.handlers.onGripEnd?.(controller);
         break;
-      case XRIntentType.ScaleStep:
-        this.handlers.onScaleStep?.(controller, intent.direction);
+      case XRIntentType.HorizontalScaleStep:
+        this.handlers.onHorizontalScaleStep?.(controller, intent.direction);
+        break;
+      case XRIntentType.PreviewDistanceStep:
+        this.handlers.onPreviewDistanceStep?.(controller, intent.direction);
         break;
       default:
         this.handlers.onIntent?.(intent);

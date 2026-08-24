@@ -15,6 +15,7 @@ import { getFormationRecipe } from "../../instruments/formations/formationRecipe
 import { HonkColliderFactory } from "../../instruments/honk/HonkColliderFactory.js";
 import { HonkInstrument } from "../../instruments/honk/HonkInstrument.js";
 import { METRONOME_SETTINGS } from "../../config/metronome.js";
+import { RADIAL_MENU_HAPTICS } from "../../config/spawning.js";
 import { LooperInstrument } from "../../instruments/looper/LooperInstrument.js";
 import { MetronomeColliderFactory } from "../../instruments/metronome/MetronomeColliderFactory.js";
 import { MetronomeConnectionManager } from "../../instruments/metronome/MetronomeConnectionManager.js";
@@ -136,6 +137,11 @@ export class RuntimeHost {
     this.spawnMenuController = new SpawnMenuController({
       view: this.radialSpawnMenu,
       catalog: this.spawnCatalog,
+      onStateChange: (controller, change) => this.pulseRadialMenuStateChange(
+        controller,
+        change,
+        RADIAL_MENU_HAPTICS,
+      ),
     });
     this.formationSpawner = new FormationSpawner({
       recipes: { get: getFormationRecipe },
@@ -228,7 +234,8 @@ export class RuntimeHost {
         onSpawnMenuCancel: (controller) => this.cancelRadialMenu(controller),
         onGripBegin: (controller) => this.handleGripBeginIntent(controller),
         onGripEnd: (controller) => this.handleGripEndIntent(controller),
-        onScaleStep: (controller, direction) => this.handleScaleStepIntent(controller, direction),
+        onHorizontalScaleStep: (controller, direction) => this.handleHorizontalScaleStepIntent(controller, direction),
+        onPreviewDistanceStep: (controller, direction) => this.handlePreviewDistanceStepIntent(controller, direction),
       },
     });
     this.inputSourceManager = new XRInputSourceManager({
