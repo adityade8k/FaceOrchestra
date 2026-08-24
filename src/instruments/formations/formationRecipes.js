@@ -13,28 +13,36 @@ export const HONK_TUNING_SETS = Object.freeze({
     note("F#", 1), note("G#", 3), note("A", 4), note("B", 6),
     note("C#", -4, 1), note("D", -3, 1), note("E", -1, 1), note("F#", 1, 1),
   ]),
+  aMinorChord: Object.freeze([note("A", 4), note("C", -5), note("E", -1, 1)]),
+  eMajorChord: Object.freeze([note("E", -1, -1), note("B", 6), note("G#", 3)]),
   cMajorChord: Object.freeze([note("C", -5), note("E", -1), note("G", 2)]),
-  gMajorChord: Object.freeze([note("G", 2), note("B", 6), note("D", -3, 1)]),
-  fMajorChord: Object.freeze([note("F", 0), note("A", 4), note("C", -5, 1)]),
-  aMinorChord: Object.freeze([note("A", 4), note("C", -5, 1), note("E", -1, 1)]),
-  cMajorTwoOctaves: Object.freeze([
-    note("C", -5), note("D", -3), note("E", -1), note("F", 0),
-    note("G", 2), note("A", 4), note("B", 6),
-    note("C", -5, 1), note("D", -3, 1), note("E", -1, 1), note("F", 0, 1),
-    note("G", 2, 1), note("A", 4, 1), note("B", 6, 1),
-    note("C", -5, 2),
+  dMinorChord: Object.freeze([note("F", 0), note("A", 4), note("D", -3, 1)]),
+  quietPreset: Object.freeze([
+    note("G", 2, -1), note("C", -5), note("E", -1), note("D", -3, 1),
+    note("C", -5, 1), note("B", 6), note("A", 4), note("G#", 3),
   ]),
+  melodyPreset: Object.freeze([
+    note("G#", 3), note("A", 4), note("B", 6), note("C", -5), note("D", -3),
+    note("E", -1), note("F", 0), note("E", -1, 2), note("E", -1),
+  ]),
+  bassPreset: Object.freeze([note("C", -5), note("E", -1), note("G", 2), note("A", 4)]),
+  decorationPreset: Object.freeze([note("C", -5), note("D", -3), note("E", -1, 1)]),
+  stillBelievePreset: Object.freeze([note("G#", 3, 1), note("A", 4, 1)]),
 });
 
 const RECIPE_DEFINITIONS = [
   ["honk-cmajor", "C Major Scale", "cMajorScale", "Honk"],
   ["honk-fminor", "F Minor Scale", "fNaturalMinorScale", "HonkFm"],
   ["honk-fsharpminor", "F# Minor Scale", "fSharpNaturalMinorScale", "HonkFSharpMinor"],
-  ["chord-cmajor", "C Major", "cMajorChord", "CMaj"],
-  ["chord-gmajor", "G Major", "gMajorChord", "GMaj"],
-  ["chord-fmajor", "F Major", "fMajorChord", "FMaj"],
   ["chord-aminor", "A Minor", "aMinorChord", "AMin"],
-  ["preset-cmajor-two-octaves", "C Major 2 Oct", "cMajorTwoOctaves", "C2Oct"],
+  ["chord-emajor", "E Major", "eMajorChord", "EMaj"],
+  ["chord-cmajor", "C Major", "cMajorChord", "CMaj"],
+  ["chord-dminor", "D Minor", "dMinorChord", "DMin"],
+  ["preset-quiet", "Quiet", "quietPreset", "Quiet"],
+  ["preset-melody", "Melody", "melodyPreset", "Melody"],
+  ["preset-bass", "Bass", "bassPreset", "Bass"],
+  ["preset-decoration", "Decoration", "decorationPreset", "Decoration"],
+  ["preset-still-believe", "Still Believe", "stillBelievePreset", "StillBelieve"],
 ];
 
 export const FORMATION_RECIPES = Object.freeze(

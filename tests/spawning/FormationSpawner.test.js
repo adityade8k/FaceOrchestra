@@ -47,22 +47,61 @@ test("spawn catalog keeps instrument, formation, and equipment actions distinct"
   assert.equal(catalog.get("stick").visibleInRadial, false);
 });
 
-test("C-major two-octave preset has exactly fifteen correctly tuned members from C4 through C6", () => {
-  const recipe = getFormationRecipe("preset-cmajor-two-octaves");
-  assert.equal(recipe.members.length, 15);
+const EXPECTED_TUNINGS = Object.freeze({
+  "chord-aminor": [["A", 4, 0], ["C", -5, 0], ["E", -1, 1]],
+  "chord-emajor": [["E", -1, -1], ["B", 6, 0], ["G#", 3, 0]],
+  "chord-cmajor": [["C", -5, 0], ["E", -1, 0], ["G", 2, 0]],
+  "chord-dminor": [["F", 0, 0], ["A", 4, 0], ["D", -3, 1]],
+  "preset-quiet": [
+    ["G", 2, -1], ["C", -5, 0], ["E", -1, 0], ["D", -3, 1],
+    ["C", -5, 1], ["B", 6, 0], ["A", 4, 0], ["G#", 3, 0],
+  ],
+  "preset-melody": [
+    ["G#", 3, 0], ["A", 4, 0], ["B", 6, 0], ["C", -5, 0], ["D", -3, 0],
+    ["E", -1, 0], ["F", 0, 0], ["E", -1, 2], ["E", -1, 0],
+  ],
+  "preset-bass": [["C", -5, 0], ["E", -1, 0], ["G", 2, 0], ["A", 4, 0]],
+  "preset-decoration": [["C", -5, 0], ["D", -3, 0], ["E", -1, 1]],
+  "preset-still-believe": [["G#", 3, 1], ["A", 4, 1]],
+});
+
+test("chord and preset recipes preserve every specified tuning tuple in order", () => {
+  for (const [recipeId, expectedTunings] of Object.entries(EXPECTED_TUNINGS)) {
+    const recipe = getFormationRecipe(recipeId);
+    assert.ok(recipe, `missing recipe ${recipeId}`);
+    assert.deepEqual(
+      recipe.members.map(({ tuning }) => [tuning.note, tuning.semitonesFromF, tuning.octaveOffset]),
+      expectedTunings,
+      recipeId,
+    );
+  }
+});
+
+test("preset recipes have the required counts and Melody starts on G#4 and retains its repeated E4", () => {
   assert.deepEqual(
-    recipe.members.map(({ tuning }) => [tuning.note, tuning.semitonesFromF, tuning.octaveOffset]),
+    Object.keys(EXPECTED_TUNINGS)
+      .filter((id) => id.startsWith("preset-"))
+      .map((id) => [id, getFormationRecipe(id).members.length]),
     [
-      ["C", -5, 0], ["D", -3, 0], ["E", -1, 0], ["F", 0, 0],
-      ["G", 2, 0], ["A", 4, 0], ["B", 6, 0],
-      ["C", -5, 1], ["D", -3, 1], ["E", -1, 1], ["F", 0, 1],
-      ["G", 2, 1], ["A", 4, 1], ["B", 6, 1],
-      ["C", -5, 2],
+      ["preset-quiet", 8],
+      ["preset-melody", 9],
+      ["preset-bass", 4],
+      ["preset-decoration", 3],
+      ["preset-still-believe", 2],
     ],
+  );
+  const melodyTunings = getFormationRecipe("preset-melody").members.map(({ tuning }) => tuning);
+  assert.deepEqual(
+    [melodyTunings[0].note, melodyTunings[0].semitonesFromF, melodyTunings[0].octaveOffset],
+    ["G#", 3, 0],
+  );
+  assert.deepEqual(
+    melodyTunings.slice(-4).map(({ note, octaveOffset }) => [note, octaveOffset]),
+    [["E", 0], ["F", 0], ["E", 2], ["E", 0]],
   );
 });
 
-test("C-major preset spawns fifteen independent Honks through the formation path", () => {
+test("every chord and preset spawns independent Honks through the formation path", () => {
   let sequence = 0;
   const spawner = new FormationSpawner({
     recipes: { get: getFormationRecipe },
@@ -74,14 +113,16 @@ test("C-major preset spawns fifteen independent Honks through the formation path
       root: { position: vector(), quaternion: vector(0, 0, 0, 1) },
     }),
   });
-  const honks = spawner.spawn("preset-cmajor-two-octaves");
-  assert.equal(honks.length, 15);
-  assert.equal(new Set(honks.map(({ id }) => id)).size, 15);
-  assert.ok(honks.every(({ kind }) => kind === "honk"));
-  assert.ok(honks.every((honk) => !honk.members && !honk.lockGroupId));
+  for (const [recipeId, expectedTunings] of Object.entries(EXPECTED_TUNINGS)) {
+    const honks = spawner.spawn(recipeId);
+    assert.equal(honks.length, expectedTunings.length, recipeId);
+    assert.equal(new Set(honks.map(({ id }) => id)).size, expectedTunings.length, recipeId);
+    assert.ok(honks.every(({ kind }) => kind === "honk"), recipeId);
+    assert.ok(honks.every((honk) => !honk.members && !honk.lockGroupId), recipeId);
+  }
 });
 
-test("C-major preset reaches the ordinary preview as independent formation members", () => {
+test("every chord and preset reaches the ordinary pending preview as independent Honks", () => {
   let sequence = 0;
   const spawner = new FormationSpawner({
     recipes: { get: getFormationRecipe },
@@ -92,18 +133,21 @@ test("C-major preset reaches the ordinary preview as independent formation membe
       root: { position: vector(), quaternion: vector(0, 0, 0, 1) },
     }),
   });
-  const catalogEntry = new SpawnCatalog().get("preset-cmajor-two-octaves");
+  const catalog = new SpawnCatalog();
   const placement = new SpawnPlacementController({
     scene: {},
     createEntry: (entry) => spawner.spawn(entry.recipeId),
     previewFactory: (options) => ({ ...options, cancel: () => {} }),
   });
   const controller = {};
-  const preview = placement.begin(controller, catalogEntry);
-  assert.strictEqual(preview.catalogEntry, catalogEntry);
-  assert.strictEqual(preview.controller, controller);
-  assert.equal(preview.instruments.length, 15);
-  assert.ok(preview.instruments.every(({ kind }) => kind === "honk"));
+  for (const [recipeId, expectedTunings] of Object.entries(EXPECTED_TUNINGS)) {
+    const catalogEntry = catalog.get(recipeId);
+    const preview = placement.begin(controller, catalogEntry);
+    assert.strictEqual(preview.catalogEntry, catalogEntry);
+    assert.strictEqual(preview.controller, controller);
+    assert.equal(preview.instruments.length, expectedTunings.length, recipeId);
+    assert.ok(preview.instruments.every(({ kind }) => kind === "honk"), recipeId);
+  }
 });
 
 function vector(...initial) {

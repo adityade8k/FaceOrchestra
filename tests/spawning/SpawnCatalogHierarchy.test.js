@@ -8,8 +8,13 @@ import { SpawnPlacementController } from "../../src/spawning/SpawnPlacementContr
 const EXPECTED = Object.freeze({
   Instruments: ["honk", "looper", "metronome"],
   Scales: ["honk-cmajor", "honk-fminor", "honk-fsharpminor"],
-  Chords: ["chord-cmajor", "chord-gmajor", "chord-fmajor", "chord-aminor"],
-  Presets: ["preset-cmajor-two-octaves"],
+  Chords: ["chord-aminor", "chord-emajor", "chord-cmajor", "chord-dminor"],
+  Presets: ["preset-quiet", "preset-melody", "preset-bass", "preset-decoration", "preset-still-believe"],
+});
+
+const EXPECTED_LABELS = Object.freeze({
+  Chords: ["A Minor", "E Major", "C Major", "D Minor"],
+  Presets: ["Quiet", "Melody", "Bass", "Decoration", "Still Believe"],
 });
 
 test("radial categories have the required order and exact leaf IDs", () => {
@@ -17,6 +22,16 @@ test("radial categories have the required order and exact leaf IDs", () => {
   assert.deepEqual(categories.map(({ label }) => label), Object.keys(EXPECTED));
   for (const category of categories) {
     assert.deepEqual(category.entries.map(({ id }) => id), EXPECTED[category.label]);
+  }
+  for (const category of categories.filter(({ label }) => EXPECTED_LABELS[label])) {
+    assert.deepEqual(category.entries.map(({ label }) => label), EXPECTED_LABELS[category.label]);
+  }
+});
+
+test("obsolete chord and preset IDs are absent from the radial hierarchy", () => {
+  const radialIds = new SpawnCatalog().getRadialCategories().flatMap(({ entries }) => entries.map(({ id }) => id));
+  for (const obsoleteId of ["chord-gmajor", "chord-fmajor", "preset-cmajor-two-octaves"]) {
+    assert.equal(radialIds.includes(obsoleteId), false);
   }
 });
 

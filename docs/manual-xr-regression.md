@@ -90,11 +90,17 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Release semantics** — Release A once while only the parent ring is active and once while a child ring is active. Expected: parent release closes both layers and creates no preview; child release closes both layers and creates exactly the highlighted leaf preview. Press Grip while either layer is open and confirm cancellation creates no preview.
 
-- [ ] **Exercise every menu leaf** — Preview and place Honk, Looper, Metronome; C Major Scale, F Natural Minor Scale, F-sharp Natural Minor Scale; C Major, G Major, F Major, A Minor; and C Major 2 Oct. Expected: every leaf uses the same glass preview and placement path, and no Stick entry appears.
+- [ ] **Exercise every menu leaf** — Preview and place Honk, Looper, Metronome; C Major Scale, F Natural Minor Scale, F-sharp Natural Minor Scale; A Minor, E Major, C Major, D Minor; and Quiet, Melody, Bass, Decoration, Still Believe. Expected: every leaf uses the same glass preview and placement path, and no Stick entry appears.
 
-- [ ] **C Major 2 Oct preset** — Place the preset and count/inspect its members. Expected: fifteen separately registered Honks read `C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6`; there is no preset entity, automatic chord, persistent membership, or lock group.
+- [ ] **Chord recipes** — Preview all four chords and inspect their left-to-right labels. Expected: A Minor reads `A4 C4 E5`, E Major reads `E3 B4 G#4`, C Major reads `C4 E4 G4`, and D Minor reads `F4 A4 D5`. Every preview contains exactly three separately registered Honks, including the displayed octaves and inversions.
 
-- [ ] **Single- and multi-Honk preview controls** — For a single Honk, a scale/chord, and C Major 2 Oct, scale up/down with right thumbstick Y, place with Trigger, then repeat and cancel with Grip. Expected: existing step size, distance, world-transform preservation, registry behavior, and all-entity cancellation remain unchanged.
+- [ ] **Preset recipes** — Preview all five presets and inspect their left-to-right labels. Expected: Quiet has eight Honks reading `G3 C4 E4 D5 C5 B4 A4 G#4`; Melody has nine reading `G#4 A4 B4 C4 D4 E4 F4 E6 E4`; Bass has four reading `C4 E4 G4 A4`; Decoration has three reading `C4 D4 E5`; and Still Believe has two reading `G#5 A5`. Every member is a separately registered ordinary Honk with no preset entity, persistent membership, or default lock group.
+
+- [ ] **Melody duplicate and two-Honk preview** — Inspect Melody's last four positions and Still Believe's complete preview. Expected: Melody keeps `E4 F4 E6 E4`, including the intentional repeated E4, and Still Believe renders correctly as a two-Honk glass preview.
+
+- [ ] **Single- and multi-Honk preview controls** — For a single Honk and every scale, chord, and preset formation, scale up/down with right thumbstick Y, place with Trigger, then repeat and cancel with Grip. Expected: existing step size, distance, world-transform preservation, independent registration, and all-entity cancellation remain unchanged.
+
+- [ ] **Removed submenu entries** — Inspect the complete Chords and Presets child rings. Expected: G Major and F Major no longer appear under Chords, and C Major 2 Oct no longer appears under Presets.
 
 - [ ] **Spawn basic honk** — Hold Right A, rotate to `Honk`, release A, then pull Trigger to place. Expected: one independent Honk appears at the preview transform with a stable interaction set, note label behavior, normal material, and no preview glass.
 

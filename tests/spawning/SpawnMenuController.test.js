@@ -28,9 +28,9 @@ test("A release in layer 2 returns only the highlighted leaf from the latched ca
   state.radialMenuPhase = RadialMenuPhase.child;
   state.radialMenuLatchedParentIndex = 2;
   state.radialMenuChildSelectedIndex = 1;
-  view.childSelection = 3;
+  view.childSelection = 1;
   const selected = menu.confirm({}, state);
-  assert.equal(selected.id, "chord-aminor");
+  assert.equal(selected.id, "chord-emajor");
   assert.equal(selected.action, "formation");
   assert.equal(state.radialMenuOpen, false);
 });

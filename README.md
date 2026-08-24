@@ -75,8 +75,8 @@ The radial menu has two depth phases with one ring visible at a time. Keep A hel
 
 - **Instruments:** Honk (one default F4 Honk), Looper (one eight-track Looper), and Metronome.
 - **Scales:** C Major Scale; F Natural Minor Scale; and F-sharp Natural Minor Scale. Each creates its existing eight-Honk row.
-- **Chords:** C Major, G Major, F Major, and A Minor. Each creates its existing three-Honk row.
-- **Presets:** C Major 2 Oct, containing fifteen Honks from C4 through C6 (`C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6`).
+- **Chords:** A Minor (`A4 C4 E5`); E Major (`E3 B4 G#4`); C Major (`C4 E4 G4`); and D Minor (`F4 A4 D5`). Each creates a three-Honk row in the listed order.
+- **Presets:** Quiet (`G3 C4 E4 D5 C5 B4 A4 G#4`); Melody (`G#4 A4 B4 C4 D4 E4 F4 E6 E4`); Bass (`C4 E4 G4 A4`); Decoration (`C4 D4 E5`); and Still Believe (`G#5 A5`). The note order and Melody's repeated E4 are intentional.
 
 Scales, chords, and presets are placement recipes. Their Honks remain independent instruments after placement; you can retune, move, connect, lock, duplicate, or delete them individually. Parent categories are navigation only and releasing A on that ring creates nothing. The Stick is equipment, so it is not shown in the radial menu.
 
