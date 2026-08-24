@@ -11,7 +11,7 @@ const { renderer } = app.sceneRuntime;
 
 renderer.xr.addEventListener("sessionstart", () => {
   app.onXRSessionStart();
-  setStatus("XR session active. Release A to preview, use right stick to scale, trigger to place, grip to delete.");
+  setStatus("XR active. Hold A, roll a category, pull toward you, roll an item, and release to preview.");
 });
 
 renderer.xr.addEventListener("sessionend", () => {
@@ -27,7 +27,7 @@ setupXRButton(renderer).catch((error) => {
 app.initialize()
   .then(() => {
     app.start();
-    setStatus("Enter AR/VR, hold A for the spawn menu, release to preview, right stick scales, trigger places.");
+    setStatus("Enter AR/VR, hold A and roll a category, pull toward you and roll an item, then release to preview.");
   })
   .catch((error) => {
     console.error(error);

@@ -129,7 +129,10 @@ export class RuntimeHost {
     });
 
     this.spawnCatalog = new SpawnCatalog();
-    this.radialSpawnMenu = new RadialSpawnMenu(this.spawnCatalog.getRadialEntries());
+    this.radialSpawnMenu = new RadialSpawnMenu({
+      categories: this.spawnCatalog.getRadialCategories(),
+      getViewerWorldPosition: (target) => this.getUserCamera().getWorldPosition(target),
+    });
     this.spawnMenuController = new SpawnMenuController({
       view: this.radialSpawnMenu,
       catalog: this.spawnCatalog,

@@ -78,15 +78,33 @@ If the physical map differs, stop and report the input source profile, handednes
 
 Use a fresh scene or leave enough space to distinguish each result. Right A opens the menu only after instructions are dismissed.
 
+- [ ] **Open and select parent categories** — With Grip released, hold Right A without waiting for a timer. Expected: the parent ring opens immediately. Use the existing wrist-roll feel to highlight Instruments, Scales, Chords, and Presets in order; confirm the dead zone, direction, dial speed, counter-rotation, and highlight feel remain usable.
+
+- [ ] **Pull toward the viewer in different orientations** — While holding A on each parent, pull only the controller physically toward the headset while facing at least three different room directions. Then keep the controller fixed relative to your body and translate your head/body backward and forward. Expected: the child ring opens from controller motion relative to the headset along the controller's opening normal, not global room Z or shared headset/controller translation. Sideways or away controller motion does not open it, and tracking jitter near the threshold does not flicker between layers.
+
+- [ ] **Inspect both depth phases** — Transition repeatedly between parent and child while viewing the menu obliquely. Expected: pulling into the child phase hides the parent disk and shows only the child disk at its configured 5.5 cm depth layer; pushing back hides the child and restores only the parent. The disks never appear together or as inner/outer coplanar annuli.
+
+- [ ] **Menu depth anchor** — While either layer is active, move the controller left/right and up/down, then pull/push it along the opening menu normal. Expected: the menu follows lateral X/Y controller motion but remains frozen on its opening Z plane; only the child ring's configured depth offset appears, rather than the complete menu moving with the pull gesture.
+
+- [ ] **Return to the parent** — Roll within a child ring, then push the controller away until the parent becomes active. Expected: the child hides below the exit threshold, the parent selection does not jump, and parent wrist roll resumes from the returned orientation. Pull in again and confirm a fresh child roll baseline produces no initial selection jump.
+
+- [ ] **Release semantics** — Release A once while only the parent ring is active and once while a child ring is active. Expected: parent release closes both layers and creates no preview; child release closes both layers and creates exactly the highlighted leaf preview. Press Grip while either layer is open and confirm cancellation creates no preview.
+
+- [ ] **Exercise every menu leaf** — Preview and place Honk, Looper, Metronome; C Major Scale, F Natural Minor Scale, F-sharp Natural Minor Scale; C Major, G Major, F Major, A Minor; and C Major 2 Oct. Expected: every leaf uses the same glass preview and placement path, and no Stick entry appears.
+
+- [ ] **C Major 2 Oct preset** — Place the preset and count/inspect its members. Expected: fifteen separately registered Honks read `C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6`; there is no preset entity, automatic chord, persistent membership, or lock group.
+
+- [ ] **Single- and multi-Honk preview controls** — For a single Honk, a scale/chord, and C Major 2 Oct, scale up/down with right thumbstick Y, place with Trigger, then repeat and cancel with Grip. Expected: existing step size, distance, world-transform preservation, registry behavior, and all-entity cancellation remain unchanged.
+
 - [ ] **Spawn basic honk** — Hold Right A, rotate to `Honk`, release A, then pull Trigger to place. Expected: one independent Honk appears at the preview transform with a stable interaction set, note label behavior, normal material, and no preview glass.
 
-- [ ] **Spawn tuned honk** — Choose a tuning-bearing Honk catalog entry such as `Honk C`, place it, and inspect one member as the tuned-Honk target. Expected: its label/pitch follows the recipe tuning and ear manipulation clears/changes preset tuning as designed. The current catalog exposes tuned Honks as members of rows; record N/A with justification if a future catalog has no tuning-bearing entry.
+- [ ] **Spawn tuned honk** — Choose a tuning-bearing Honk catalog entry such as `C Major Scale`, place it, and inspect one member as the tuned-Honk target. Expected: its label/pitch follows the recipe tuning and ear manipulation clears/changes preset tuning as designed. The current catalog exposes tuned Honks as members of rows; record N/A with justification if a future catalog has no tuning-bearing entry.
 
-- [ ] **Spawn formation recipe** — Place a known triad such as `C Maj`. Expected: exactly three separately registered Honks appear at centered configured offsets, each has its own stable ID/performance/audio state, and there is no composite chord scene entity. A scale recipe should create eight independent Honks.
+- [ ] **Spawn formation recipe** — Place a known triad such as `C Major`. Expected: exactly three separately registered Honks appear at centered configured offsets, each has its own stable ID/performance/audio state, and there is no composite chord scene entity. A scale recipe should create eight independent Honks.
 
 - [ ] **Spawn looper** — Select `Looper`, preview, and place it. Expected: one Looper appears with eight track nodes, transport buttons, Volume and right-hand Gap targets, body grip target, and no active wire. The authored bottom handle remains visible but has no collider or reaction.
 
-- [ ] **Spawn and run metronome** — Select `Metro`, preview, and place it. Expected: exactly four procedural connection ports appear in debug mode. Trigger the left Play eye, then the right Pause eye. Only the eye targets control transport; Play latches while clicks sound, the pendulum completes one side-to-side cycle every two beats, and Pause immediately restores the authored rest pose. Confirm live BPM changes alter its rate without a phase jump and Volume still works while unlocked.
+- [ ] **Spawn and run metronome** — Select `Metronome`, preview, and place it. Expected: exactly four procedural connection ports appear in debug mode. Trigger the left Play eye, then the right Pause eye. Only the eye targets control transport; Play latches while clicks sound, the pendulum completes one side-to-side cycle every two beats, and Pause immediately restores the authored rest pose. Confirm live BPM changes alter its rate without a phase jump and Volume still works while unlocked.
 
 - [ ] **Repeated Metronome lock texture regression** — Before locking, photograph or inspect the authored Metronome base texture from multiple angles. Press Right B to lock/unlock the same Metronome at least ten times, including while it is running. Expected: its material and authored texture never switch to either Honk atlas, never flash a replacement map, and look identical before, during, and after every toggle.
 
@@ -111,6 +129,8 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 - [ ] **Duplicate Metronome** — Grip an unlocked Metronome, then press Right A. Expected: the duplicate copies BPM, Volume, transform, and scale but starts stopped with no connection relationships, wires, beat origin/ordinal, or pulse voices.
 
 - [ ] Hold Grip with no duplicable transform target and press Right A. Expected: the radial menu remains disabled and no instrument or preview is created. Grip release followed by Right A opens the menu normally.
+
+- [ ] **Unrelated control/audio regression** — After the hierarchy pass, verify Left X deletion, Right B lock toggles, ordinary ray interactions, Honk audio, Looper recording/playback, and Metronome timing/controls still behave as documented. Expected: no input remapping, audio change, ray regression, or instrument-specific behavior change. Repeat Grip+A duplication for Honk, Looper, and Metronome.
 
 ## 3. Transform targets
 

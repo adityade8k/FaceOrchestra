@@ -95,7 +95,7 @@ export const SpawnRuntimeMethods = {
       }
   
       this.deletePendingSpawnPlacement();
-      const entry = this.spawnCatalog.get(componentId) || this.spawnCatalog.get("honk");
+      const entry = this.spawnCatalog.get(componentId);
       if (!entry) {
         return;
       }
@@ -114,7 +114,7 @@ export const SpawnRuntimeMethods = {
       this.interactionCoordinator.setMode(controller, ControllerMode.SPAWN_PREVIEW);
     },
     createPendingSpawnComponents(componentId) {
-      const entry = this.spawnCatalog.get(componentId) || this.spawnCatalog.get("honk");
+      const entry = this.spawnCatalog.get(componentId);
       if (entry?.action === "formation") {
         const instruments = this.formationSpawner.spawn(entry.recipeId);
         for (const instrument of instruments) this.setInstrumentBaseScale(instrument, INSTRUMENT_BASE_SCALE);

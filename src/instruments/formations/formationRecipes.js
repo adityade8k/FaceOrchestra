@@ -17,6 +17,13 @@ export const HONK_TUNING_SETS = Object.freeze({
   gMajorChord: Object.freeze([note("G", 2), note("B", 6), note("D", -3, 1)]),
   fMajorChord: Object.freeze([note("F", 0), note("A", 4), note("C", -5, 1)]),
   aMinorChord: Object.freeze([note("A", 4), note("C", -5, 1), note("E", -1, 1)]),
+  cMajorTwoOctaves: Object.freeze([
+    note("C", -5), note("D", -3), note("E", -1), note("F", 0),
+    note("G", 2), note("A", 4), note("B", 6),
+    note("C", -5, 1), note("D", -3, 1), note("E", -1, 1), note("F", 0, 1),
+    note("G", 2, 1), note("A", 4, 1), note("B", 6, 1),
+    note("C", -5, 2),
+  ]),
 });
 
 const RECIPE_DEFINITIONS = [
@@ -27,6 +34,7 @@ const RECIPE_DEFINITIONS = [
   ["chord-gmajor", "G Major", "gMajorChord", "GMaj"],
   ["chord-fmajor", "F Major", "fMajorChord", "FMaj"],
   ["chord-aminor", "A Minor", "aMinorChord", "AMin"],
+  ["preset-cmajor-two-octaves", "C Major 2 Oct", "cMajorTwoOctaves", "C2Oct"],
 ];
 
 export const FORMATION_RECIPES = Object.freeze(

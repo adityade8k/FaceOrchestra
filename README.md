@@ -55,8 +55,8 @@ Trigger and Grip work on either hand. Menu, lock, and delete actions have fixed 
 
 | Control | What it does |
 | --- | --- |
-| Hold **Right A** | Open the radial spawn menu. Rotate the right controller to highlight an item. |
-| Release **Right A** | Confirm the highlighted item and create its placement preview. |
+| Hold **Right A** | Open the category ring. Roll the right controller to choose Instruments, Scales, Chords, or Presets; pull it toward you to open that category's depth-separated item ring. |
+| Release **Right A** | On the item ring, confirm the highlighted item and create its placement preview. On the category ring, close without a preview. |
 | **Trigger** during preview | Place the preview. |
 | **Grip** during menu or preview | Cancel it. |
 | Right thumbstick up/down during preview | Scale the entire preview in steps. |
@@ -71,17 +71,14 @@ The radial menu is suppressed whenever Grip is active, including a Grip+A duplic
 
 ## Spawn menu
 
-The current radial catalog contains:
+The radial menu has two depth phases with one ring visible at a time. Keep A held while navigating: roll to select a parent category, pull the controller physically toward the headset to hide the category ring and reveal that category's item ring, then roll from the new baseline to select an item. Push the controller away to hide the item ring and restore the category ring. The categories and items are:
 
-- **Metro** — one Metronome.
-- **Honk** — one untuned/default Honk centered on F4.
-- **Honk C** — an eight-Honk C major row: C, D, E, F, G, A, B, C.
-- **Honk Fm** — an eight-Honk F natural minor row: F, G, A-flat, B-flat, C, D-flat, E-flat, F.
-- **Honk F#m** — an eight-Honk F-sharp natural minor row: F-sharp, G-sharp, A, B, C-sharp, D, E, F-sharp.
-- **C Maj**, **G Maj**, **F Maj**, and **A Min** — three-Honk chord rows.
-- **Looper** — one eight-track Looper.
+- **Instruments:** Honk (one default F4 Honk), Looper (one eight-track Looper), and Metronome.
+- **Scales:** C Major Scale; F Natural Minor Scale; and F-sharp Natural Minor Scale. Each creates its existing eight-Honk row.
+- **Chords:** C Major, G Major, F Major, and A Minor. Each creates its existing three-Honk row.
+- **Presets:** C Major 2 Oct, containing fifteen Honks from C4 through C6 (`C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6`).
 
-Rows and chords are placement recipes. Their Honks remain independent instruments after placement; you can retune, move, connect, lock, duplicate, or delete them individually. The Stick is equipment, so it is not shown in the radial menu.
+Scales, chords, and presets are placement recipes. Their Honks remain independent instruments after placement; you can retune, move, connect, lock, duplicate, or delete them individually. Parent categories are navigation only and releasing A on that ring creates nothing. The Stick is equipment, so it is not shown in the radial menu.
 
 ## Play a Honk
 
@@ -194,7 +191,7 @@ localStorage.removeItem("face-orchestra:scene:v3");
 - **Headset refuses XR over the LAN:** use `https://`, confirm the headset trusts the certificate authority, and open port `8443` on the computer firewall.
 - **Blank model or missing note labels:** confirm the headset has internet access and check the console for failed GLB, texture, Three.js CDN, or font requests.
 - **No sound:** interact once to allow the browser to start Web Audio, raise the relevant Honk/Looper/Metronome volume, and confirm the headset is not muted.
-- **A opens no menu:** release Grip, finish or cancel any active placement, and remember the menu is bound to the right-hand primary button.
+- **A opens no menu:** release Grip, finish or cancel any active placement, and remember the menu is bound to the right-hand primary button. Pull toward the headset while holding A to enter the item ring.
 - **A preview will not place:** use Trigger; Grip cancels it. The right thumbstick changes preview scale.
 - **Cannot transform an object:** aim at its body transform target and hold Grip. If no target is selected, Grip intentionally equips the Stick.
 - **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Stop-time waiting should never become a loop gap; use the XR regression checklist if it does.
