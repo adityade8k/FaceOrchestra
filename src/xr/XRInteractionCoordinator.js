@@ -74,8 +74,11 @@ export class XRInteractionCoordinator {
       case XRIntentType.GripEnd:
         this.handlers.onGripEnd?.(controller);
         break;
-      case XRIntentType.ScaleStep:
-        this.handlers.onScaleStep?.(controller, intent.direction);
+      case XRIntentType.HorizontalScaleStep:
+        this.handlers.onHorizontalScaleStep?.(controller, intent.direction);
+        break;
+      case XRIntentType.PreviewDistanceStep:
+        this.handlers.onPreviewDistanceStep?.(controller, intent.direction);
         break;
       default:
         this.handlers.onIntent?.(intent);
@@ -129,9 +132,28 @@ function createControllerInteractionState() {
     raySqueezeStartInverseQuaternion: new THREE.Quaternion(),
     radialMenuOpen: false,
     radialMenuCancelled: false,
-    radialMenuSelectedIndex: 0,
-    radialMenuControllerRoll: 0,
-    radialMenuDialRotation: 0,
-    radialMenuStartQuaternion: new THREE.Quaternion(),
+    radialMenuPhase: "parent",
+    radialMenuParentSelectedIndex: 0,
+    radialMenuChildSelectedIndex: 0,
+    radialMenuLatchedParentIndex: null,
+    radialMenuParentControllerRoll: 0,
+    radialMenuChildControllerRoll: 0,
+    radialMenuParentDialRotation: 0,
+    radialMenuChildDialRotation: 0,
+    radialMenuParentDialBaseRotation: 0,
+    radialMenuChildDialBaseRotation: 0,
+    radialMenuParentRingRotation: 0,
+    radialMenuChildRingRotation: 0,
+    radialMenuParentRingBaseRotation: 0,
+    radialMenuChildRingBaseRotation: 0,
+    radialMenuOpeningWorldPosition: new THREE.Vector3(),
+    radialMenuOpeningViewerWorldPosition: new THREE.Vector3(),
+    radialMenuOpeningMenuWorldPosition: new THREE.Vector3(),
+    radialMenuOpeningWorldQuaternion: new THREE.Quaternion(),
+    radialMenuParentStartQuaternion: new THREE.Quaternion(),
+    radialMenuChildStartQuaternion: new THREE.Quaternion(),
+    radialMenuPullAxis: new THREE.Vector3(0, 0, 1),
+    radialMenuPullAxisLocalZSign: 1,
+    radialMenuPullDistance: 0,
   };
 }

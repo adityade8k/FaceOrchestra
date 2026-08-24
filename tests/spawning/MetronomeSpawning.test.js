@@ -3,12 +3,27 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { ASSET_PATHS } from "../../src/config/assets.js";
 import { SPAWN_CATALOG_ENTRIES } from "../../src/config/spawning.js";
+import { SpawnCatalog, resolveCatalogInstrumentSpawn } from "../../src/spawning/SpawnCatalog.js";
 
 test("metronome remains visible in the spawn catalog and uses its GLB model", () => {
   const entry = SPAWN_CATALOG_ENTRIES.find(({ id }) => id === "metronome");
   assert.equal(ASSET_PATHS.models.metronome, "./model/metronome/metronome_02.glb");
   assert.equal(entry.modelPath, ASSET_PATHS.models.metronome);
   assert.notEqual(entry.visibleInRadial, false);
+});
+
+test("Metronome 96 preset reuses the canonical template and enters preview at 96 BPM", () => {
+  const entry = new SpawnCatalog().get("preset-metronome-96");
+  assert.deepEqual(
+    resolveCatalogInstrumentSpawn(entry, entry.id),
+    { componentId: "metronome", options: { bpm: 96 } },
+  );
+
+  const spawnSource = readFileSync(
+    new URL("../../src/app/runtime/SpawnRuntime.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(spawnSource, /createPendingSpawnComponents[\s\S]*resolveCatalogInstrumentSpawn\(entry, componentId\)/);
 });
 
 test("metronome creation paths do not enforce a single-instance guard", () => {

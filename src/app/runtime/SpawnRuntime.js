@@ -22,6 +22,7 @@ import {
   SpawnMenuPrimaryAction,
   resolveSpawnMenuPrimaryAction,
 } from "../../spawning/spawnMenuPrimaryAction.js";
+import { resolveCatalogInstrumentSpawn } from "../../spawning/SpawnCatalog.js";
 import { RAY_COLOR_HOVER } from "../../ui/interactionTargetPresentation.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
 import { setControllerGripTarget } from "../../xr/controllerGripState.js";
@@ -33,6 +34,12 @@ const tempSpawnTarget = new THREE.Vector3();
 const tempVector = new THREE.Vector3();
 
 export const SpawnRuntimeMethods = {
+    pulseRadialMenuStateChange(controller, change, profiles) {
+      const profile = profiles?.[change?.type];
+      if (!profile) return;
+      const pulse = this.hapticsService?.pulse(this.getControllerGamepad(controller), profile);
+      pulse?.catch?.((error) => console.warn("Could not pulse radial-menu haptics:", error));
+    },
     handleSpawnMenuOpenIntent(controller, gripPressed = false) {
       if (this.pendingSpawnPlacement) {
         return;
@@ -95,7 +102,7 @@ export const SpawnRuntimeMethods = {
       }
   
       this.deletePendingSpawnPlacement();
-      const entry = this.spawnCatalog.get(componentId) || this.spawnCatalog.get("honk");
+      const entry = this.spawnCatalog.get(componentId);
       if (!entry) {
         return;
       }
@@ -114,7 +121,7 @@ export const SpawnRuntimeMethods = {
       this.interactionCoordinator.setMode(controller, ControllerMode.SPAWN_PREVIEW);
     },
     createPendingSpawnComponents(componentId) {
-      const entry = this.spawnCatalog.get(componentId) || this.spawnCatalog.get("honk");
+      const entry = this.spawnCatalog.get(componentId);
       if (entry?.action === "formation") {
         const instruments = this.formationSpawner.spawn(entry.recipeId);
         for (const instrument of instruments) this.setInstrumentBaseScale(instrument, INSTRUMENT_BASE_SCALE);
@@ -122,7 +129,8 @@ export const SpawnRuntimeMethods = {
       }
 
       if (entry?.action === "equip") return null;
-      const root = this.createSpawnedComponent(entry?.id || componentId);
+      const spawnRequest = resolveCatalogInstrumentSpawn(entry, componentId);
+      const root = this.createSpawnedComponent(spawnRequest.componentId, spawnRequest.options);
       const state = this.activeInstrumentState;
       if (!root || !state) {
         return null;
@@ -182,6 +190,13 @@ export const SpawnRuntimeMethods = {
       this.spawnPlacementController.scale(controller, direction, (state, stepDirection) => {
         this.setInstrumentBaseScale(state, state.baseScale + stepDirection * INSTRUMENT_SCALE_STEP);
       });
+    },
+    handlePendingSpawnDistanceThumbstick(controller, direction) {
+      const pending = this.pendingSpawnPlacement;
+      if (!pending || controller !== pending.controller || controller.userData.handedness !== "right") {
+        return;
+      }
+      this.spawnPlacementController.distance(controller, direction);
     },
     placePendingSpawnPlacement(controller) {
       const pending = this.pendingSpawnPlacement;
@@ -433,7 +448,8 @@ export const SpawnRuntimeMethods = {
       }
 
       if (entry?.action === "equip") return;
-      const component = this.createSpawnedComponent(entry?.id || componentId);
+      const spawnRequest = resolveCatalogInstrumentSpawn(entry, componentId);
+      const component = this.createSpawnedComponent(spawnRequest.componentId, spawnRequest.options);
       if (!component) {
         return;
       }

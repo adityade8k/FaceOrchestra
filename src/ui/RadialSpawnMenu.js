@@ -1,44 +1,77 @@
 import * as THREE from "three";
-import { SPAWN_CATALOG_ENTRIES } from "../config/spawning.js";
+import { RADIAL_MENU_SETTINGS } from "../config/spawning.js";
+import {
+  choosePullAxisTowardViewer,
+  getRadialLayerPresentation,
+  lockPositionToOpeningPlane,
+  projectControllerRelativePullDistance,
+  RadialMenuPhase,
+  relativeZRoll,
+} from "../spawning/radialMenuNavigation.js";
 
-const RADIAL_MENU_RADIUS = 0.18;
-const RADIAL_MENU_INNER_RADIUS = 0.035;
-const RADIAL_MENU_DISTANCE = 0.22;
 const RADIAL_MENU_TOP_ANGLE = Math.PI / 2;
-const RADIAL_MENU_ROLL_DEADZONE = THREE.MathUtils.degToRad(3);
-const RADIAL_MENU_DIAL_SPEED = 2.4;
-const RADIAL_MENU_ROLL_DIRECTION = 1;
 const RADIAL_MENU_BASE_OPACITY = 0.38;
 const RADIAL_MENU_HIGHLIGHT_OPACITY = 0.88;
 
-const tempStartInverseQuaternion = new THREE.Quaternion();
+const tempControllerPosition = new THREE.Vector3();
 const tempControllerQuaternion = new THREE.Quaternion();
+const tempInverseControllerQuaternion = new THREE.Quaternion();
+const tempMenuWorldPosition = new THREE.Vector3();
+const tempLockedMenuWorldPosition = new THREE.Vector3();
+const tempMenuWorldCorrection = new THREE.Vector3();
+const tempViewerPosition = new THREE.Vector3();
 
 export class RadialSpawnMenu {
-  constructor(options = SPAWN_CATALOG_ENTRIES.filter((entry) => entry.visibleInRadial !== false)) {
-    this.options = options;
+  constructor({
+    categories = [],
+    settings = RADIAL_MENU_SETTINGS,
+    getViewerWorldPosition = null,
+  } = {}) {
+    this.categories = categories;
+    this.settings = settings;
+    this.getViewerWorldPosition = getViewerWorldPosition;
   }
 
-  create(options = this.options) {
-    this.options = options;
+  create(categories = this.categories) {
+    this.categories = categories;
     const group = new THREE.Group();
     group.name = "SpawnRadialMenu";
-    group.position.set(0, 0, -RADIAL_MENU_DISTANCE);
+    group.position.set(0, 0, -this.settings.distance);
     group.visible = false;
     group.renderOrder = 1100;
-    group.userData.segments = [];
+
+    const parentRing = this.createRing(categories, "Parent", 1100);
+    group.add(parentRing);
+    group.userData.parentRing = parentRing;
+
+    const childRings = new Map();
+    for (const category of categories) {
+      const childRing = this.createRing(category.entries, `Child_${category.id}`, 1120);
+      childRing.visible = false;
+      group.add(childRing);
+      childRings.set(category.id, childRing);
+    }
+    group.userData.childRings = childRings;
+    return group;
+  }
+
+  createRing(options, name, renderOrder) {
+    const ring = new THREE.Group();
+    ring.name = `SpawnRadialRing_${name}`;
+    ring.renderOrder = renderOrder;
+    ring.userData.segments = [];
+    ring.userData.labels = [];
 
     const dial = new THREE.Group();
-    dial.name = "SpawnRadialDial";
-    dial.renderOrder = 1100;
-    group.add(dial);
-    group.userData.dial = dial;
+    dial.name = `SpawnRadialDial_${name}`;
+    dial.renderOrder = renderOrder;
+    ring.add(dial);
+    ring.userData.dial = dial;
 
-    const optionCount = Math.max(this.options.length, 1);
+    const optionCount = Math.max(options.length, 1);
     const arc = (Math.PI * 2) / optionCount;
     const startOffset = RADIAL_MENU_TOP_ANGLE + arc * 0.5;
-
-    this.options.forEach((option, index) => {
+    options.forEach((option, index) => {
       const startAngle = startOffset - index * arc;
       const endAngle = startAngle - arc;
       const segment = new THREE.Mesh(
@@ -53,39 +86,48 @@ export class RadialSpawnMenu {
         }),
       );
       segment.name = `SpawnRadialSegment_${option.id}`;
-      segment.renderOrder = 1100;
+      segment.renderOrder = renderOrder;
       dial.add(segment);
-      group.userData.segments.push(segment);
+      ring.userData.segments.push(segment);
 
-      const label = this.createLabel(option.label);
+      const label = this.createLabel(option.label, renderOrder + 10);
       const midAngle = (startAngle + endAngle) * 0.5;
-      const labelRadius = RADIAL_MENU_RADIUS * 0.64;
+      const labelRadius = this.settings.radius * 0.64;
       label.position.set(Math.cos(midAngle) * labelRadius, Math.sin(midAngle) * labelRadius, 0.006);
       dial.add(label);
+      ring.userData.labels.push(label);
     });
-
-    return group;
+    return ring;
   }
 
   createSegmentGeometry(startAngle, endAngle) {
     const shape = new THREE.Shape();
-    shape.moveTo(Math.cos(startAngle) * RADIAL_MENU_INNER_RADIUS, Math.sin(startAngle) * RADIAL_MENU_INNER_RADIUS);
-    shape.lineTo(Math.cos(startAngle) * RADIAL_MENU_RADIUS, Math.sin(startAngle) * RADIAL_MENU_RADIUS);
-    shape.absarc(0, 0, RADIAL_MENU_RADIUS, startAngle, endAngle, true);
-    shape.lineTo(Math.cos(endAngle) * RADIAL_MENU_INNER_RADIUS, Math.sin(endAngle) * RADIAL_MENU_INNER_RADIUS);
-    shape.absarc(0, 0, RADIAL_MENU_INNER_RADIUS, endAngle, startAngle, false);
+    shape.moveTo(
+      Math.cos(startAngle) * this.settings.innerRadius,
+      Math.sin(startAngle) * this.settings.innerRadius,
+    );
+    shape.lineTo(
+      Math.cos(startAngle) * this.settings.radius,
+      Math.sin(startAngle) * this.settings.radius,
+    );
+    shape.absarc(0, 0, this.settings.radius, startAngle, endAngle, true);
+    shape.lineTo(
+      Math.cos(endAngle) * this.settings.innerRadius,
+      Math.sin(endAngle) * this.settings.innerRadius,
+    );
+    shape.absarc(0, 0, this.settings.innerRadius, endAngle, startAngle, false);
     shape.closePath();
     return new THREE.ShapeGeometry(shape, 36);
   }
 
-  createLabel(labelText) {
+  createLabel(labelText, renderOrder) {
     const canvas = document.createElement("canvas");
-    canvas.width = 256;
+    canvas.width = 320;
     canvas.height = 96;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#10100e";
-    ctx.font = "700 34px Arial";
+    ctx.font = "700 32px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(labelText, canvas.width / 2, canvas.height / 2);
@@ -99,25 +141,51 @@ export class RadialSpawnMenu {
       depthTest: false,
       depthWrite: false,
     });
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.042), material);
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.042), material);
     label.name = `SpawnRadialLabel_${labelText}`;
-    label.renderOrder = 1110;
+    label.renderOrder = renderOrder;
     return label;
   }
 
   open(controller, state) {
-    if (!controller || !state) {
-      return;
-    }
+    const menu = controller?.userData.radialMenu;
+    if (!controller || !state || !menu) return;
 
+    menu.position.set(0, 0, -this.settings.distance);
     controller.updateMatrixWorld(true);
-    controller.getWorldQuaternion(state.radialMenuStartQuaternion);
+    controller.getWorldPosition(state.radialMenuOpeningWorldPosition);
+    controller.getWorldQuaternion(state.radialMenuOpeningWorldQuaternion);
+    state.radialMenuParentStartQuaternion.copy(state.radialMenuOpeningWorldQuaternion);
+    this.resolveViewerPosition(state.radialMenuOpeningWorldPosition, tempViewerPosition);
+    state.radialMenuOpeningViewerWorldPosition.copy(tempViewerPosition);
+    const pullFrame = choosePullAxisTowardViewer(
+      state.radialMenuOpeningWorldPosition,
+      state.radialMenuOpeningWorldQuaternion,
+      tempViewerPosition,
+    );
+    state.radialMenuPullAxis.fromArray(pullFrame.axis);
+    state.radialMenuPullAxisLocalZSign = pullFrame.localZSign;
+    menu.updateMatrixWorld(true);
+    menu.getWorldPosition(state.radialMenuOpeningMenuWorldPosition);
     state.radialMenuOpen = true;
     state.radialMenuCancelled = false;
-    state.radialMenuSelectedIndex = 0;
-    state.radialMenuControllerRoll = 0;
-    state.radialMenuDialRotation = 0;
-    controller.userData.radialMenu.visible = true;
+    state.radialMenuPhase = RadialMenuPhase.parent;
+    state.radialMenuParentSelectedIndex = 0;
+    state.radialMenuChildSelectedIndex = 0;
+    state.radialMenuLatchedParentIndex = null;
+    state.radialMenuParentControllerRoll = 0;
+    state.radialMenuChildControllerRoll = 0;
+    state.radialMenuParentDialRotation = 0;
+    state.radialMenuChildDialRotation = 0;
+    state.radialMenuParentDialBaseRotation = 0;
+    state.radialMenuChildDialBaseRotation = 0;
+    state.radialMenuParentRingRotation = 0;
+    state.radialMenuChildRingRotation = 0;
+    state.radialMenuParentRingBaseRotation = 0;
+    state.radialMenuChildRingBaseRotation = 0;
+    state.radialMenuPullDistance = 0;
+    menu.visible = true;
+    this.resetRings(menu, state);
     this.updateVisuals(controller, state);
   }
 
@@ -125,102 +193,173 @@ export class RadialSpawnMenu {
     if (state) {
       state.radialMenuOpen = false;
       state.radialMenuCancelled = false;
+      state.radialMenuPhase = RadialMenuPhase.parent;
+      state.radialMenuLatchedParentIndex = null;
+      state.radialMenuPullDistance = 0;
     }
-    if (controller?.userData.radialMenu) {
-      controller.userData.radialMenu.visible = false;
-    }
+    if (controller?.userData.radialMenu) controller.userData.radialMenu.visible = false;
   }
 
   cancel(controller, state) {
-    if (!state?.radialMenuOpen) {
-      return;
-    }
-
+    if (!state?.radialMenuOpen) return;
     state.radialMenuCancelled = true;
     this.close(controller, state);
   }
 
-  update(controller, state) {
-    if (!state?.radialMenuOpen) {
-      return;
-    }
-
-    state.radialMenuSelectedIndex = this.getSelectedIndex(controller, state);
-    this.updateVisuals(controller, state);
-  }
-
-  getSelectedIndex(controller, state) {
-    const optionCount = this.options.length;
-    if (optionCount <= 1) {
-      return 0;
-    }
-
-    const controllerRoll = this.getControllerRoll(controller, state);
-    const dialRotation = this.getDialRotationFromControllerRoll(controllerRoll);
-    state.radialMenuControllerRoll = controllerRoll;
-    state.radialMenuDialRotation = dialRotation;
-    return this.getSelectedIndexForDialRotation(dialRotation, optionCount);
-  }
-
-  getControllerRoll(controller, state) {
-    if (!controller || !state) {
-      return 0;
-    }
-
+  updatePullDistance(controller, state) {
+    if (!controller || !state?.radialMenuOpen) return 0;
     controller.updateMatrixWorld(true);
-    controller.getWorldQuaternion(tempControllerQuaternion);
-    tempStartInverseQuaternion.copy(state.radialMenuStartQuaternion).invert();
-    tempControllerQuaternion.premultiply(tempStartInverseQuaternion);
-
-    const roll = 2 * Math.atan2(tempControllerQuaternion.z, tempControllerQuaternion.w);
-    return THREE.MathUtils.euclideanModulo(roll + Math.PI, Math.PI * 2) - Math.PI;
+    controller.getWorldPosition(tempControllerPosition);
+    this.resolveViewerPosition(state.radialMenuOpeningViewerWorldPosition, tempViewerPosition);
+    state.radialMenuPullDistance = projectControllerRelativePullDistance({
+      openingControllerPosition: state.radialMenuOpeningWorldPosition,
+      currentControllerPosition: tempControllerPosition,
+      openingViewerPosition: state.radialMenuOpeningViewerWorldPosition,
+      currentViewerPosition: tempViewerPosition,
+      pullAxis: state.radialMenuPullAxis,
+    });
+    return state.radialMenuPullDistance;
   }
 
-  getDialRotationFromControllerRoll(controllerRoll) {
-    const directedRoll = controllerRoll * RADIAL_MENU_ROLL_DIRECTION;
-    if (Math.abs(directedRoll) < RADIAL_MENU_ROLL_DEADZONE) {
-      return 0;
-    }
-
-    const rollPastDeadzone = directedRoll - Math.sign(directedRoll) * RADIAL_MENU_ROLL_DEADZONE;
-    return -rollPastDeadzone * RADIAL_MENU_DIAL_SPEED;
+  updateParentSelection(controller, state) {
+    const presentation = this.getLayerPresentation(controller, {
+      startQuaternion: state.radialMenuParentStartQuaternion,
+      optionCount: this.categories.length,
+      dialBaseRotation: state.radialMenuParentDialBaseRotation,
+      ringBaseRotation: state.radialMenuParentRingBaseRotation,
+    });
+    state.radialMenuParentControllerRoll = presentation.controllerRoll;
+    state.radialMenuParentDialRotation = presentation.dialRotation;
+    state.radialMenuParentRingRotation = presentation.ringRotation;
+    state.radialMenuParentSelectedIndex = presentation.selectedIndex;
   }
 
-  getSelectedIndexForDialRotation(dialRotation, optionCount) {
-    if (optionCount <= 1) {
-      return 0;
-    }
+  beginChildLayer(controller, state) {
+    controller.updateMatrixWorld(true);
+    controller.getWorldQuaternion(state.radialMenuChildStartQuaternion);
+    state.radialMenuLatchedParentIndex = state.radialMenuParentSelectedIndex;
+    state.radialMenuChildSelectedIndex = 0;
+    state.radialMenuChildControllerRoll = 0;
+    state.radialMenuChildDialRotation = 0;
+    state.radialMenuChildDialBaseRotation = 0;
+    state.radialMenuChildRingRotation = 0;
+    state.radialMenuChildRingBaseRotation = 0;
+  }
 
-    const arc = (Math.PI * 2) / optionCount;
-    return THREE.MathUtils.euclideanModulo(Math.round(dialRotation / arc), optionCount);
+  updateChildSelection(controller, state) {
+    const category = this.categories[state.radialMenuLatchedParentIndex];
+    const presentation = this.getLayerPresentation(controller, {
+      startQuaternion: state.radialMenuChildStartQuaternion,
+      optionCount: category?.entries.length || 0,
+      dialBaseRotation: state.radialMenuChildDialBaseRotation,
+      ringBaseRotation: state.radialMenuChildRingBaseRotation,
+    });
+    state.radialMenuChildControllerRoll = presentation.controllerRoll;
+    state.radialMenuChildDialRotation = presentation.dialRotation;
+    state.radialMenuChildRingRotation = presentation.ringRotation;
+    state.radialMenuChildSelectedIndex = presentation.selectedIndex;
+  }
+
+  returnToParentLayer(controller, state) {
+    const parentRing = controller?.userData.radialMenu?.userData.parentRing;
+    controller.updateMatrixWorld(true);
+    controller.getWorldQuaternion(state.radialMenuParentStartQuaternion);
+    state.radialMenuParentDialBaseRotation = state.radialMenuParentDialRotation;
+    state.radialMenuParentRingBaseRotation = parentRing?.rotation.z ?? state.radialMenuParentRingRotation;
+    state.radialMenuParentRingRotation = state.radialMenuParentRingBaseRotation;
+    state.radialMenuParentControllerRoll = 0;
+    state.radialMenuParentSelectedIndex = state.radialMenuLatchedParentIndex ?? 0;
+    state.radialMenuLatchedParentIndex = null;
   }
 
   updateVisuals(controller, state) {
     const menu = controller?.userData.radialMenu;
-    if (!menu || !state) {
-      return;
+    if (!menu || !state) return;
+    this.lockMenuToOpeningPlane(controller, state, menu);
+    const parentRing = menu.userData.parentRing;
+    const childPhase = state.radialMenuPhase === RadialMenuPhase.child;
+    parentRing.visible = !childPhase;
+    parentRing.rotation.z = childPhase
+      ? state.radialMenuParentRingRotation - state.radialMenuChildControllerRoll
+      : state.radialMenuParentRingRotation;
+    parentRing.userData.dial.rotation.z = state.radialMenuParentDialRotation;
+    if (!childPhase) this.applyRingVisuals(parentRing, state.radialMenuParentSelectedIndex);
+
+    for (const [categoryId, childRing] of menu.userData.childRings) {
+      const category = this.categories[state.radialMenuLatchedParentIndex];
+      const active = childPhase && category?.id === categoryId;
+      childRing.visible = active;
+      childRing.position.z = this.settings.layerSeparationM * state.radialMenuPullAxisLocalZSign;
+      if (!active) continue;
+      childRing.rotation.z = state.radialMenuChildRingRotation;
+      childRing.userData.dial.rotation.z = state.radialMenuChildDialRotation;
+      this.applyRingVisuals(childRing, state.radialMenuChildSelectedIndex);
     }
+  }
 
-    const controllerRoll = state.radialMenuOpen ? this.getControllerRoll(controller, state) : 0;
-    const dialRotation = state.radialMenuOpen
-      ? this.getDialRotationFromControllerRoll(controllerRoll)
-      : 0;
-    state.radialMenuControllerRoll = controllerRoll;
-    state.radialMenuDialRotation = dialRotation;
-    state.radialMenuSelectedIndex = this.getSelectedIndexForDialRotation(
-      dialRotation,
-      this.options.length,
-    );
+  getSelectedIndex(_controller, state) {
+    return state?.radialMenuPhase === RadialMenuPhase.child
+      ? state.radialMenuChildSelectedIndex
+      : state?.radialMenuParentSelectedIndex || 0;
+  }
 
-    menu.rotation.z = -controllerRoll;
-    if (menu.userData.dial) {
-      menu.userData.dial.rotation.z = dialRotation;
-    }
+  getLayerPresentation(controller, options) {
+    controller.updateMatrixWorld(true);
+    controller.getWorldQuaternion(tempControllerQuaternion);
+    const controllerRoll = relativeZRoll(options.startQuaternion, tempControllerQuaternion);
+    return {
+      controllerRoll,
+      ...getRadialLayerPresentation({
+        controllerRoll,
+        optionCount: options.optionCount,
+        dialBaseRotation: options.dialBaseRotation,
+        ringBaseRotation: options.ringBaseRotation,
+        settings: this.settings,
+      }),
+    };
+  }
 
-    for (const [index, segment] of menu.userData.segments.entries()) {
-      const selected = index === state.radialMenuSelectedIndex;
+  applyRingVisuals(ring, selectedIndex) {
+    for (const [index, segment] of ring.userData.segments.entries()) {
+      const selected = index === selectedIndex;
       segment.material.opacity = selected ? RADIAL_MENU_HIGHLIGHT_OPACITY : RADIAL_MENU_BASE_OPACITY;
       segment.scale.setScalar(selected ? 1.08 : 1);
     }
+    for (const label of ring.userData.labels) label.material.opacity = 1;
+  }
+
+  resetRings(menu, state) {
+    const parentRing = menu.userData.parentRing;
+    parentRing.rotation.z = 0;
+    parentRing.userData.dial.rotation.z = 0;
+    for (const childRing of menu.userData.childRings.values()) {
+      childRing.visible = false;
+      childRing.rotation.z = 0;
+      childRing.userData.dial.rotation.z = 0;
+      childRing.position.z = this.settings.layerSeparationM * state.radialMenuPullAxisLocalZSign;
+    }
+  }
+
+  lockMenuToOpeningPlane(controller, state, menu) {
+    menu.position.set(0, 0, -this.settings.distance);
+    controller.updateMatrixWorld(true);
+    menu.updateMatrixWorld(true);
+    menu.getWorldPosition(tempMenuWorldPosition);
+    tempLockedMenuWorldPosition.fromArray(lockPositionToOpeningPlane(
+      state.radialMenuOpeningMenuWorldPosition,
+      tempMenuWorldPosition,
+      state.radialMenuPullAxis,
+    ));
+    tempMenuWorldCorrection.subVectors(tempLockedMenuWorldPosition, tempMenuWorldPosition);
+    controller.getWorldQuaternion(tempInverseControllerQuaternion).invert();
+    tempMenuWorldCorrection.applyQuaternion(tempInverseControllerQuaternion);
+    menu.position.add(tempMenuWorldCorrection);
+    controller.updateMatrixWorld(true);
+  }
+
+  resolveViewerPosition(openPosition, target) {
+    target.copy(openPosition);
+    const result = this.getViewerWorldPosition?.(target);
+    return result || target;
   }
 }

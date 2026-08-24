@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { stepSpawnPreviewDistance } from "./spawnPreviewControls.js";
 
 export class SpawnPreview {
   constructor({ controller, instruments = [], catalogEntry = null, distance = 1.5, spacing = 0.32 } = {}) {
@@ -8,6 +9,8 @@ export class SpawnPreview {
     this.group.name = "PendingSpawnPlacement";
     this.group.userData.isPendingSpawnPlacement = true;
     this.group.position.set(0, 0, -distance);
+    this.distance = distance;
+    this.distanceDirection = 0;
     this.scaleDirection = 0;
     this.thumbstickScaleDirection = 0;
     controller?.add(this.group);
@@ -35,6 +38,17 @@ export class SpawnPreview {
     this.scaleDirection = direction;
     this.thumbstickScaleDirection = direction;
     for (const instrument of this.instruments) applyStep(instrument, direction);
+  }
+
+  setDistanceDirection(direction) {
+    if (direction === 0) {
+      this.distanceDirection = 0;
+      return;
+    }
+    if (direction === this.distanceDirection) return;
+    this.distanceDirection = direction;
+    this.distance = stepSpawnPreviewDistance(this.distance, direction);
+    this.group.position.z = -this.distance;
   }
 
   place(scene) {

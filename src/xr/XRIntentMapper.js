@@ -7,7 +7,8 @@ export const XRIntentType = Object.freeze({
   TriggerEnd: "interaction.trigger.end",
   GripBegin: "interaction.grip.begin",
   GripEnd: "interaction.grip.end",
-  ScaleStep: "instrument.scale.step",
+  HorizontalScaleStep: "instrument.scale.horizontal.step",
+  PreviewDistanceStep: "spawn.preview.distance.step",
 });
 
 export class XRIntentMapper {
@@ -19,8 +20,14 @@ export class XRIntentMapper {
       timestamp: inputEvent.timestamp,
     };
 
-    if (inputEvent.type === "axis.step" && inputEvent.axis === "thumbstickY") {
-      return [{ ...base, type: XRIntentType.ScaleStep, direction: inputEvent.direction }];
+    if (inputEvent.type === "axis.step") {
+      if (inputEvent.axis === "thumbstickX") {
+        return [{ ...base, type: XRIntentType.HorizontalScaleStep, direction: inputEvent.direction }];
+      }
+      if (inputEvent.axis === "thumbstickY") {
+        return [{ ...base, type: XRIntentType.PreviewDistanceStep, direction: inputEvent.direction }];
+      }
+      return [];
     }
     if (inputEvent.type !== "button.transition") {
       return [];
