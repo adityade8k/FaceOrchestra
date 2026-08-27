@@ -12,11 +12,11 @@ test("metronome remains visible in the spawn catalog and uses its GLB model", ()
   assert.notEqual(entry.visibleInRadial, false);
 });
 
-test("Metronome 96 preset reuses the canonical template and enters preview at 96 BPM", () => {
-  const entry = new SpawnCatalog().get("preset-metronome-96");
+test("Metronome 93 preset reuses the canonical template and enters preview at 93 BPM", () => {
+  const entry = new SpawnCatalog().get("preset-metronome-93");
   assert.deepEqual(
     resolveCatalogInstrumentSpawn(entry, entry.id),
-    { componentId: "metronome", options: { bpm: 96 } },
+    { componentId: "metronome", options: { bpm: 93 } },
   );
 
   const spawnSource = readFileSync(

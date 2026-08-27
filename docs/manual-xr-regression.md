@@ -90,7 +90,7 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Release semantics and haptics** — Release A once while only the parent ring is active and once while a child ring is active. Expected: parent release closes both layers, creates no preview, and pulses once for dismissal; child release closes both layers, creates exactly the highlighted leaf preview, and pulses once for confirmation. Press Grip while either layer is open and confirm cancellation creates no preview and pulses once. Any other programmatic close also pulses once, while repeated close calls on an already closed menu stay silent.
 
-- [ ] **Exercise every menu leaf** — Preview and place Honk, Looper, Metronome; C Major Scale, F Natural Minor Scale, F-sharp Natural Minor Scale; A Minor, E Major, C Major, D Minor; and Quiet, Melody, Bass, Decoration, Still Believe, Metronome 96. Expected: every leaf uses the same glass preview and placement path, and no Stick entry appears.
+- [ ] **Exercise every menu leaf** — Preview and place Honk, Looper, Metronome; C Major Scale, F Natural Minor Scale, F-sharp Natural Minor Scale; A Minor, E Major, C Major, D Minor; and Quiet, Melody, Bass, Decoration, Still Believe, Metronome 93. Expected: every leaf uses the same glass preview and placement path, and no Stick entry appears.
 
 - [ ] **Chord recipes** — Preview all four chords and inspect their left-to-right labels. Expected: A Minor reads `A4 C4 E5`, E Major reads `E3 B4 G#4`, C Major reads `C4 E4 G4`, and D Minor reads `F4 A4 D5`. Every preview contains exactly three separately registered Honks, including the displayed octaves and inversions.
 
@@ -98,7 +98,7 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Melody duplicate and two-Honk preview** — Inspect Melody's last four positions and Still Believe's complete preview. Expected: Melody keeps `E4 F4 E6 E4`, including the intentional repeated E4, and Still Believe renders correctly as a two-Honk glass preview.
 
-- [ ] **Metronome 96 preset** — Select Metronome 96 from Presets, inspect its glass preview, place it, and inspect its BPM label and controls. Expected: one ordinary independently registered metronome is created at 96 BPM, remains paused until Play is pressed, and can be moved, scaled, connected, duplicated, deleted, and persisted like the Instruments-menu metronome.
+- [ ] **Metronome 93 preset** — Select Metronome 93 from Presets, inspect its glass preview, place it, and inspect its BPM label and controls. Expected: one ordinary independently registered metronome is created at 93 BPM, remains paused until Play is pressed, and can be moved, scaled, connected, duplicated, deleted, and persisted like the Instruments-menu metronome.
 
 - [ ] **Preview scale and distance controls** — For Honk, Looper, Metronome, and every scale, chord, and Presets leaf, press the right thumbstick left/right to scale the complete preview down/up, then press down/up to move it closer to/farther from the controller. Expected: each fresh axis deflection applies one step, holding a direction does not repeat, returning through the dead zone rearms that axis, diagonal input can change both properties, scale and distance clamp at their configured limits, and every preview member preserves its relative layout. Place with Trigger, then repeat and cancel with Grip; world-transform preservation, independent registration, and all-entity cancellation remain unchanged.
 

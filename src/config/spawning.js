@@ -48,7 +48,7 @@ export const SPAWN_CATALOG_ENTRIES = Object.freeze([
   { id: "preset-bass", label: "Bass", action: "formation", recipeId: "preset-bass", color: 0xffd166 },
   { id: "preset-decoration", label: "Decoration", action: "formation", recipeId: "preset-decoration", color: 0xffd166 },
   { id: "preset-still-believe", label: "Still Believe", action: "formation", recipeId: "preset-still-believe", color: 0xffd166 },
-  { id: "preset-metronome-96", label: "Metronome 96", action: "instrument", kind: "metronome", componentId: "metronome", bpm: 96, color: 0xffd166 },
+  { id: "preset-metronome-93", label: "Metronome 93", action: "instrument", kind: "metronome", componentId: "metronome", bpm: 93, color: 0xffd166 },
   { id: "looper", label: "Looper", action: "instrument", kind: "looper", modelPath: ASSET_PATHS.models.looper, color: 0x45f6ff },
   { id: "stick", label: "Stick", action: "equip", kind: "stick", visibleInRadial: false, color: 0xf7d04a },
 ]);
@@ -82,7 +82,7 @@ export const SPAWN_RADIAL_CATEGORIES = Object.freeze([
       "preset-bass",
       "preset-decoration",
       "preset-still-believe",
-      "preset-metronome-96",
+      "preset-metronome-93",
     ]),
   }),
 ]);

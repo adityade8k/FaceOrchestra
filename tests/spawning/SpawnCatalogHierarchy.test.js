@@ -15,13 +15,13 @@ const EXPECTED = Object.freeze({
     "preset-bass",
     "preset-decoration",
     "preset-still-believe",
-    "preset-metronome-96",
+    "preset-metronome-93",
   ],
 });
 
 const EXPECTED_LABELS = Object.freeze({
   Chords: ["A Minor", "E Major", "C Major", "D Minor"],
-  Presets: ["Quiet", "Melody", "Bass", "Decoration", "Still Believe", "Metronome 96"],
+  Presets: ["Quiet", "Melody", "Bass", "Decoration", "Still Believe", "Metronome 93"],
 });
 
 test("radial categories have the required order and exact leaf IDs", () => {
@@ -75,27 +75,27 @@ test("radial hierarchy validation rejects missing, hidden, and duplicate child I
   );
 });
 
-test("all instrument, formation, and Metronome 96 leaves retain the existing action pipeline", () => {
+test("all instrument, formation, and Metronome 93 leaves retain the existing action pipeline", () => {
   const catalog = new SpawnCatalog();
   assert.deepEqual(
     ["honk", "looper", "metronome"].map((id) => catalog.get(id).action),
     ["instrument", "instrument", "instrument"],
   );
-  const honkPresetIds = EXPECTED.Presets.filter((id) => id !== "preset-metronome-96");
+  const honkPresetIds = EXPECTED.Presets.filter((id) => id !== "preset-metronome-93");
   for (const id of [...EXPECTED.Scales, ...EXPECTED.Chords, ...honkPresetIds]) {
     const entry = catalog.get(id);
     assert.equal(entry.action, "formation");
     assert.equal(entry.recipeId, id);
   }
   assert.deepEqual(
-    catalog.get("preset-metronome-96"),
+    catalog.get("preset-metronome-93"),
     Object.freeze({
-      id: "preset-metronome-96",
-      label: "Metronome 96",
+      id: "preset-metronome-93",
+      label: "Metronome 93",
       action: "instrument",
       kind: "metronome",
       componentId: "metronome",
-      bpm: 96,
+      bpm: 93,
       color: 0xffd166,
     }),
   );
