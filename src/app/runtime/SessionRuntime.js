@@ -32,7 +32,7 @@ export const SessionRuntimeMethods = {
           }
           looper.stop();
         }
-        didSave = this.savePersistedSceneOnXRExit();
+        didSave = this.debugMode ? false : this.savePersistedSceneOnXRExit();
       } finally {
         this.resetSubsystemsAfterSession();
         this.audioSystem?.suspend?.()?.catch?.((error) => {

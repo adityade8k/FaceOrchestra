@@ -461,8 +461,11 @@ export const XRInteractionRuntimeMethods = {
   
       const baseOpacity =
         typeof target.userData.baseHitOpacity === "number" ? target.userData.baseHitOpacity : HIT_MARKER_OPACITY;
+      const showColliderHighlight = target.userData.isMetronomeTarget
+        ? this.debugMode
+        : DEBUG_SHOW_COLLIDERS;
       target.material.opacity =
-        DEBUG_SHOW_COLLIDERS && highlighted ? Math.max(baseOpacity, 0.52) : baseOpacity;
+        showColliderHighlight && highlighted ? Math.max(baseOpacity, 0.52) : baseOpacity;
       target.material.transparent = true;
       target.material.depthWrite = false;
       target.material.color.setHex(highlighted ? 0xffffff : getInteractionTargetColor(target));

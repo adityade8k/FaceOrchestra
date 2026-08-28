@@ -1,4 +1,4 @@
-import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
+import { DEBUG_MODE } from "../../config/debug.js";
 import {
   METRONOME_CONNECTION_PORTS,
   METRONOME_CONNECTION_ROLE,
@@ -11,7 +11,7 @@ import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
 import { MetronomeHandleRig } from "./MetronomeHandleRig.js";
 
 export class MetronomeColliderFactory {
-  constructor({ THREE, showDebug = DEBUG_SHOW_COLLIDERS } = {}) {
+  constructor({ THREE, showDebug = DEBUG_MODE } = {}) {
     this.THREE = THREE;
     this.showDebug = showDebug;
   }
@@ -105,7 +105,7 @@ export class MetronomeColliderFactory {
         metronomePortId: config.portId,
         interactionRole: METRONOME_CONNECTION_ROLE,
         wireSocketOutward: { ...config.socketDirection },
-        baseHitOpacity: METRONOME_SETTINGS.connectionPortOpacity,
+        baseHitOpacity: this.showDebug ? METRONOME_SETTINGS.connectionPortOpacity : 0,
         hitColor: config.colliderColor,
       });
       root.add(collider);

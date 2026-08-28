@@ -4,7 +4,7 @@ export function createMetronomeConnectionPortMaterial({ THREE, color, showDebug 
   const material = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
-    opacity: METRONOME_SETTINGS.connectionPortOpacity,
+    opacity: showDebug ? METRONOME_SETTINGS.connectionPortOpacity : 0,
     depthTest: !showDebug,
     depthWrite: false,
     wireframe: showDebug,

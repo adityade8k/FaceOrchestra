@@ -32,6 +32,7 @@ import { MorphTargetController, findMorphMeshes } from "../../instruments/honk/M
 import { LooperColliderFactory } from "../../instruments/looper/LooperColliderFactory.js";
 import { applyStandardInstrumentMaterials } from "../../scene/materialUtils.js";
 import { MetronomePendulumRig } from "../../instruments/metronome/MetronomePendulumRig.js";
+import { applyMetronomeSpawnOrientation } from "../../instruments/metronome/metronomeSpawnOrientation.js";
 
 const CONTROLLER_RAY_LENGTH = 1.6;
 const RAY_COLOR_DEFAULT = 0xf6d878;
@@ -267,6 +268,7 @@ export const InstrumentAssetRuntimeMethods = {
     root.name = options.name || `${componentOption.label || kind}_${this.instrumentRegistry.size + 1}`;
     root.visible = true;
     root.userData.componentId = componentOption.id;
+    if (kind === METRONOME_COMPONENT_ID) applyMetronomeSpawnOrientation(root);
     this.scene.add(root);
 
     let hitTargets = collectNamedHitTargets(root);

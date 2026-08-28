@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import {
+  restorePersistedSceneForRuntime,
+  savePersistedSceneForRuntime,
+} from "../../src/app/runtime/RuntimePersistencePolicy.js";
 import { SessionRuntimeMethods } from "../../src/app/runtime/SessionRuntime.js";
 import { PersistenceStore } from "../../src/persistence/PersistenceStore.js";
 import { ScenePersistence } from "../../src/persistence/ScenePersistence.js";
@@ -69,6 +73,7 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
     stop() { events.push("stop:paused-looper"); },
   };
   const runtime = {
+    debugMode: false,
     xrSessionActive: true,
     pendingPanelPlacementFrames: 3,
     hideInstructionPanel() { events.push("hide-panel"); },
@@ -98,6 +103,116 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
 
   assert.equal(SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1300), false);
   assert.equal(events.filter((event) => event === "save").length, 1);
+});
+
+test("debug XR exit resets the session without invoking persistence saving", () => {
+  const events = [];
+  const runtime = {
+    debugMode: true,
+    xrSessionActive: true,
+    hideInstructionPanel() { events.push("hide-panel"); },
+    deletePendingSpawnPlacement() { events.push("delete-preview"); },
+    instrumentRegistry: { getByKind: () => [] },
+    savePersistedSceneOnXRExit() { events.push("save"); return true; },
+    resetSubsystemsAfterSession() { events.push("reset"); },
+    audioSystem: { suspend: () => Promise.resolve() },
+  };
+
+  assert.equal(SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234), false);
+  assert.deepEqual(events, ["hide-panel", "delete-preview", "reset"]);
+});
+
+test("debug startup skips restoration and creates exactly one default metronome", async () => {
+  const instruments = [];
+  let persistedRestoreCalls = 0;
+  let spawnRequests = 0;
+  const runtime = {
+    debugMode: true,
+    xrSessionActive: false,
+    instructionPanelClosed: false,
+    setupControllers() {},
+    createInstructionPanel() {},
+    async loadInstrument() {},
+    async loadStick() {},
+    async loadNoteFont() {},
+    scenePersistence: {
+      async restore() {
+        persistedRestoreCalls += 1;
+        instruments.push({ kind: "honk" }, { kind: "looper" }, { kind: "metronome" });
+      },
+    },
+    hideInstructionPanel() {},
+    spawnDefaultInstrumentPreview() {
+      spawnRequests += 1;
+      if (!instruments.some(({ kind }) => kind === "metronome")) {
+        instruments.push({ kind: "metronome" });
+      }
+    },
+  };
+
+  await restorePersistedSceneForRuntime(runtime);
+  SessionRuntimeMethods.onXRSessionStart.call(runtime);
+  SessionRuntimeMethods.onRuntimeInitialized.call(runtime);
+
+  assert.equal(persistedRestoreCalls, 0);
+  assert.equal(spawnRequests, 2, "both timing paths may request the guarded default flow");
+  assert.deepEqual(instruments.map(({ kind }) => kind), ["metronome"]);
+});
+
+test("RuntimeHost persistence policy preserves production storage during debug sessions", async () => {
+  const savedProductionScene = JSON.stringify({
+    schemaVersion: 3,
+    instruments: [{ id: "honk-saved", kind: "honk" }],
+  });
+  let storedValue = savedProductionScene;
+  let reads = 0;
+  let writes = 0;
+  const storage = {
+    getItem(key) {
+      assert.equal(key, SCENE_STORAGE_KEY);
+      reads += 1;
+      return storedValue;
+    },
+    setItem(key, value) {
+      assert.equal(key, SCENE_STORAGE_KEY);
+      writes += 1;
+      storedValue = value;
+    },
+    removeItem() {
+      throw new Error("debug persistence policy must not remove saved data");
+    },
+  };
+  const store = new PersistenceStore({ storage, legacyKeys: [] });
+  const restoredIds = [];
+  const scenePersistence = new ScenePersistence({
+    store,
+    serializer: {
+      serialize: () => ({ schemaVersion: 3, instruments: [{ id: "debug-only", kind: "metronome" }] }),
+    },
+    restorer: {
+      restore: async (scene) => {
+        restoredIds.push(...scene.instruments.map(({ id }) => id));
+        return { instruments: scene.instruments, skipped: [] };
+      },
+    },
+  });
+  const debugRuntime = { debugMode: true, scenePersistence };
+
+  assert.deepEqual(
+    await restorePersistedSceneForRuntime(debugRuntime),
+    { instruments: [], skipped: [] },
+  );
+  assert.equal(savePersistedSceneForRuntime(debugRuntime), false);
+  assert.equal(reads, 0);
+  assert.equal(writes, 0);
+  assert.equal(storedValue, savedProductionScene);
+
+  const productionRuntime = { debugMode: false, scenePersistence };
+  await restorePersistedSceneForRuntime(productionRuntime);
+  assert.deepEqual(restoredIds, ["honk-saved"]);
+  assert.equal(savePersistedSceneForRuntime(productionRuntime), true);
+  assert.equal(reads, 1);
+  assert.equal(writes, 1);
 });
 
 test("XR teardown still resets subsystems when persistence throws", () => {

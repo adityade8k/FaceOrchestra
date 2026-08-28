@@ -15,6 +15,7 @@ import { getFormationRecipe } from "../../instruments/formations/formationRecipe
 import { HonkColliderFactory } from "../../instruments/honk/HonkColliderFactory.js";
 import { HonkInstrument } from "../../instruments/honk/HonkInstrument.js";
 import { METRONOME_SETTINGS } from "../../config/metronome.js";
+import { DEBUG_MODE } from "../../config/debug.js";
 import { RADIAL_MENU_HAPTICS } from "../../config/spawning.js";
 import { LooperInstrument } from "../../instruments/looper/LooperInstrument.js";
 import { MetronomeColliderFactory } from "../../instruments/metronome/MetronomeColliderFactory.js";
@@ -51,6 +52,10 @@ import { MetronomeConnectionRuntimeMethods } from "./MetronomeConnectionRuntime.
 import { MetronomePulseRuntimeMethods } from "./MetronomePulseRuntime.js";
 import { PendingSpawnSafeRuntimeMethods } from "./PendingSpawnSafeRuntime.js";
 import { RelationshipRuntimeMethods } from "./RelationshipRuntime.js";
+import {
+  restorePersistedSceneForRuntime,
+  savePersistedSceneForRuntime,
+} from "./RuntimePersistencePolicy.js";
 import { SessionRuntimeMethods } from "./SessionRuntime.js";
 import { SpawnRuntimeMethods } from "./SpawnRuntime.js";
 import { StickRuntimeMethods } from "./StickRuntime.js";
@@ -64,11 +69,20 @@ import { XRInteractionRuntimeMethods } from "./XRInteractionRuntime.js";
  * InstrumentRegistry. Domain services remain independently testable.
  */
 export class RuntimeHost {
-  constructor({ scene, camera, renderer, audioSystem, assetRepository = null, storage = globalThis.localStorage } = {}) {
+  constructor({
+    scene,
+    camera,
+    renderer,
+    audioSystem,
+    assetRepository = null,
+    storage = globalThis.localStorage,
+    debugMode = DEBUG_MODE,
+  } = {}) {
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
     this.audioSystem = audioSystem;
+    this.debugMode = Boolean(debugMode);
 
     this.assetRepository = assetRepository || new AssetRepository();
 
@@ -105,7 +119,10 @@ export class RuntimeHost {
     });
 
     this.honkColliderFactory = new HonkColliderFactory({ THREE });
-    this.metronomeColliderFactory = new MetronomeColliderFactory({ THREE });
+    this.metronomeColliderFactory = new MetronomeColliderFactory({
+      THREE,
+      showDebug: this.debugMode,
+    });
     this.stickColliderFactory = new StickColliderFactory({ THREE });
     this.stickEquipmentSystem = new StickEquipmentSystem({
       controllerResolver: (controllerId) => this.controllers.find(
@@ -424,11 +441,11 @@ export class RuntimeHost {
   }
 
   savePersistedSceneOnXRExit() {
-    return this.scenePersistence.save();
+    return savePersistedSceneForRuntime(this);
   }
 
   async restorePersistedScene() {
-    return this.scenePersistence.restore();
+    return restorePersistedSceneForRuntime(this);
   }
 
   resetSubsystemsAfterSession() {

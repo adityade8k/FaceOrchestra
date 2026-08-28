@@ -23,6 +23,7 @@ import {
   resolveSpawnMenuPrimaryAction,
 } from "../../spawning/spawnMenuPrimaryAction.js";
 import { resolveCatalogInstrumentSpawn } from "../../spawning/SpawnCatalog.js";
+import { applyMetronomeSpawnOrientation } from "../../instruments/metronome/metronomeSpawnOrientation.js";
 import { RAY_COLOR_HOVER } from "../../ui/interactionTargetPresentation.js";
 import { ControllerMode } from "../../xr/XRInteractionCoordinator.js";
 import { setControllerGripTarget } from "../../xr/controllerGripState.js";
@@ -574,6 +575,9 @@ export const SpawnRuntimeMethods = {
       tempSpawnTarget.copy(tempVector);
       tempSpawnTarget.y = object.position.y;
       object.lookAt(tempSpawnTarget);
+      if (object.userData.componentId === "metronome") {
+        applyMetronomeSpawnOrientation(object, { relative: true });
+      }
     },
     getUserCamera() {
       if (this.renderer.xr.isPresenting) {

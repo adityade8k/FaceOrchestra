@@ -1,15 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { ASSET_PATHS } from "../../src/config/assets.js";
+import { METRONOME_SETTINGS } from "../../src/config/metronome.js";
+import { applyMetronomeSpawnOrientation } from "../../src/instruments/metronome/metronomeSpawnOrientation.js";
 import { SPAWN_CATALOG_ENTRIES } from "../../src/config/spawning.js";
 import { SpawnCatalog, resolveCatalogInstrumentSpawn } from "../../src/spawning/SpawnCatalog.js";
 
 test("metronome remains visible in the spawn catalog and uses its GLB model", () => {
   const entry = SPAWN_CATALOG_ENTRIES.find(({ id }) => id === "metronome");
-  assert.equal(ASSET_PATHS.models.metronome, "./model/metronome/metronome_02.glb");
+  assert.equal(ASSET_PATHS.models.metronome, "./model/metronome/metronome_outlets.glb");
+  assert.equal(
+    existsSync(new URL(`../../${ASSET_PATHS.models.metronome.slice(2)}`, import.meta.url)),
+    true,
+  );
   assert.equal(entry.modelPath, ASSET_PATHS.models.metronome);
   assert.notEqual(entry.visibleInRadial, false);
+});
+
+test("new Metronomes spawn with a 90-degree yaw", () => {
+  const root = { rotation: { y: 0 } };
+  applyMetronomeSpawnOrientation(root);
+  assert.equal(METRONOME_SETTINGS.spawnYawDegrees, 90);
+  assert.equal(root.rotation.y, Math.PI / 2);
+
+  let relativeYaw = 0;
+  applyMetronomeSpawnOrientation({
+    rotateY: (radians) => { relativeYaw += radians; },
+  }, { relative: true });
+  assert.equal(relativeYaw, Math.PI / 2);
 });
 
 test("Metronome 93 preset reuses the canonical template and enters preview at 93 BPM", () => {

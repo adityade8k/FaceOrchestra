@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { applyMetronomeSpawnOrientation } from "../instruments/metronome/metronomeSpawnOrientation.js";
 import { stepSpawnPreviewDistance } from "./spawnPreviewControls.js";
 
 export class SpawnPreview {
@@ -22,6 +23,7 @@ export class SpawnPreview {
       if (!hasRecipeLayout) {
         instrument.root.position.set(firstOffset + index * spacing, 0, 0);
         instrument.root.rotation.set(0, 0, 0);
+        if (instrument.kind === "metronome") applyMetronomeSpawnOrientation(instrument.root);
       }
       instrument.pendingPlacement = true;
       instrument.root.userData.pendingPlacement = true;
