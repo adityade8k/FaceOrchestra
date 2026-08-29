@@ -43,6 +43,11 @@ export const METRONOME_SETTINGS = Object.freeze({
 
 export const METRONOME_CONNECTION_ROLE = "metronome.connection-port";
 
+export const METRONOME_BODY_COLLIDER = Object.freeze({
+  position: Object.freeze({ x: 0, y: 0, z: 0 }),
+  scale: Object.freeze({ x: 0.7, y: 0.8, z: 0.8 }),
+});
+
 export const METRONOME_CONNECTION_PORTS = Object.freeze([
   Object.freeze({
     portId: "port-0",

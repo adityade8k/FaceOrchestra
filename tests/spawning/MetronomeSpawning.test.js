@@ -18,17 +18,17 @@ test("metronome remains visible in the spawn catalog and uses its GLB model", ()
   assert.notEqual(entry.visibleInRadial, false);
 });
 
-test("new Metronomes spawn with a 90-degree yaw", () => {
+test("new Metronomes use the configured spawn yaw", () => {
   const root = { rotation: { y: 0 } };
   applyMetronomeSpawnOrientation(root);
-  assert.equal(METRONOME_SETTINGS.spawnYawDegrees, 90);
-  assert.equal(root.rotation.y, Math.PI / 2);
+  const configuredYaw = METRONOME_SETTINGS.spawnYawDegrees * Math.PI / 180;
+  assert.equal(root.rotation.y, configuredYaw);
 
   let relativeYaw = 0;
   applyMetronomeSpawnOrientation({
     rotateY: (radians) => { relativeYaw += radians; },
   }, { relative: true });
-  assert.equal(relativeYaw, Math.PI / 2);
+  assert.equal(relativeYaw, configuredYaw);
 });
 
 test("Metronome 93 preset reuses the canonical template and enters preview at 93 BPM", () => {

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face Orchestra — Collider & Motion Editor</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./collider-editor.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="editor-shell">
+      <header id="editor-toolbar" aria-label="Editor toolbar">
+        <div class="brand">
+          <strong>Collider & Motion Editor</strong>
+          <span id="dirty-indicator">Repository configuration</span>
+        </div>
+        <div class="toolbar-group">
+          <button data-action="translate" title="Translate (W)">Move</button>
+          <button data-action="rotate" title="Rotate (E)">Rotate</button>
+          <button data-action="scale" title="Scale (R)">Scale</button>
+        </div>
+        <div class="toolbar-group">
+          <button data-action="undo" title="Undo">Undo</button>
+          <button data-action="redo" title="Redo">Redo</button>
+          <button data-action="reset-selected">Reset selected</button>
+          <button data-action="reset-all">Reset all</button>
+        </div>
+        <div class="toolbar-group">
+          <button data-action="frame-selected" title="Frame selection (F)">Frame selected</button>
+          <button data-action="frame-all">Frame model</button>
+          <select id="camera-mode" aria-label="Camera mode">
+            <option value="perspective">Perspective</option>
+            <option value="orthographic">Orthographic</option>
+          </select>
+          <select id="camera-preset" aria-label="Camera preset">
+            <option value="">Camera view…</option>
+            <option value="front">Front</option>
+            <option value="rear">Rear</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </div>
+        <div class="toolbar-group toggles">
+          <label><input id="toggle-grid" type="checkbox" checked /> Grid</label>
+          <label><input id="toggle-world-axes" type="checkbox" checked /> Axes</label>
+          <label><input id="toggle-bounds" type="checkbox" checked /> Bounds</label>
+          <label><input id="toggle-local-axes" type="checkbox" /> Local axes</label>
+          <label><input id="toggle-colliders" type="checkbox" checked /> Colliders</label>
+          <label><input id="toggle-paths" type="checkbox" checked /> Motion paths</label>
+        </div>
+        <div class="toolbar-group">
+          <select id="model-display" aria-label="Model display">
+            <option value="solid">Solid</option>
+            <option value="wireframe">Wireframe</option>
+            <option value="translucent">Translucent</option>
+          </select>
+          <label class="file-button">Load local GLB<input id="custom-glb-input" type="file" accept=".glb,model/gltf-binary" /></label>
+        </div>
+      </header>
+
+      <main id="editor-main">
+        <section id="viewport-panel" aria-label="Three.js viewport">
+          <div id="viewport"></div>
+          <div id="viewport-status" class="status-banner" data-level="loading">Loading metronome…</div>
+          <div id="view-cube-label">Perspective · repository GLB</div>
+        </section>
+
+        <aside id="inspector-panel">
+          <section class="panel-section compact">
+            <div class="section-heading">
+              <h2>Objects & mechanisms</h2>
+              <input id="entity-filter" type="search" placeholder="Filter…" aria-label="Filter entities" />
+            </div>
+            <div id="entity-list" class="entity-list"></div>
+          </section>
+
+          <section class="panel-section inspector-section">
+            <div class="section-heading">
+              <h2 id="inspector-title">Inspector</h2>
+              <span id="selection-kind" class="pill">Nothing selected</span>
+            </div>
+            <div id="validation-messages" class="messages"></div>
+            <div id="inspector-content" class="inspector-content">
+              Select a collider or mechanism from the list or viewport.
+            </div>
+          </section>
+
+          <section class="panel-section export-section">
+            <div class="section-heading"><h2>Import & export</h2></div>
+            <div class="button-row">
+              <button data-action="copy-json">Copy JSON</button>
+              <button data-action="download-json">Download JSON</button>
+              <label class="file-button">Import JSON<input id="json-file-input" type="file" accept="application/json,.json" /></label>
+              <button data-action="copy-javascript">Copy JavaScript</button>
+            </div>
+            <label class="stacked-field">
+              <span>JSON / paste-ready JavaScript</span>
+              <textarea id="export-text" spellcheck="false" aria-label="Calibration JSON"></textarea>
+            </label>
+            <div class="button-row">
+              <button data-action="apply-pasted-json">Import pasted JSON</button>
+              <button data-action="show-json">Show JSON</button>
+              <button data-action="show-javascript">Show JavaScript</button>
+              <button data-action="discard-draft">Discard draft</button>
+            </div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="draft-dialog">
+      <form method="dialog">
+        <h2>Restore editor draft?</h2>
+        <p>A collider-editor autosave exists. Repository configuration has not been replaced.</p>
+        <div class="dialog-actions">
+          <button value="discard">Discard draft</button>
+          <button value="restore" class="primary">Restore draft</button>
+        </div>
+      </form>
+    </dialog>
+
+    <datalist id="model-node-names"></datalist>
+    <script type="module" src="./src/editor/colliderEditorMain.js"></script>
+  </body>
+</html>

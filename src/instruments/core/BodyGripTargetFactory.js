@@ -3,6 +3,7 @@ import {
   GRIP_TRANSFORM_COLLIDER_SETTINGS,
   INTERACTION_TARGET_NAMES,
 } from "../../config/honk.js";
+import { normalizedPositionToModel } from "./calibrationMath.js";
 
 const tempBoxCenter = new THREE.Vector3();
 const tempBoxSize = new THREE.Vector3();
@@ -10,7 +11,13 @@ const tempBoxSize = new THREE.Vector3();
 export function createBodyGripTarget(
   root,
   hitTargets,
-  { makeHitTargetMaterial, hitMarkerOpacity },
+  {
+    makeHitTargetMaterial,
+    hitMarkerOpacity,
+    normalizedPosition = { x: 0, y: 0, z: 0 },
+    relativeScale = GRIP_TRANSFORM_COLLIDER_SETTINGS.relativeScale,
+    renderOrder = GRIP_TRANSFORM_COLLIDER_SETTINGS.renderOrder,
+  },
 ) {
   const bodyBox = new THREE.Box3();
   let hasVisibleMesh = false;
@@ -28,7 +35,7 @@ export function createBodyGripTarget(
 
   bodyBox.getCenter(tempBoxCenter);
   bodyBox.getSize(tempBoxSize);
-  const bodyScale = GRIP_TRANSFORM_COLLIDER_SETTINGS.relativeScale;
+  const bodyScale = relativeScale;
   const geometry = new THREE.BoxGeometry(
     tempBoxSize.x * getRelativeScaleAxis(bodyScale, "x"),
     tempBoxSize.y * getRelativeScaleAxis(bodyScale, "y"),
@@ -39,12 +46,13 @@ export function createBodyGripTarget(
   markOwnedResource(material);
   const bodyTarget = new THREE.Mesh(geometry, material);
   bodyTarget.name = INTERACTION_TARGET_NAMES.body;
-  bodyTarget.position.copy(tempBoxCenter);
+  const bodyPosition = normalizedPositionToModel(normalizedPosition, tempBoxCenter, tempBoxSize);
+  bodyTarget.position.set(bodyPosition.x, bodyPosition.y, bodyPosition.z);
   bodyTarget.userData.isHitTarget = true;
   bodyTarget.userData.isBodyGripTarget = true;
   bodyTarget.userData.baseHitOpacity = hitMarkerOpacity;
   bodyTarget.material.opacity = bodyTarget.userData.baseHitOpacity;
-  bodyTarget.renderOrder = GRIP_TRANSFORM_COLLIDER_SETTINGS.renderOrder;
+  bodyTarget.renderOrder = renderOrder;
 
   root.add(bodyTarget);
   hitTargets[INTERACTION_TARGET_NAMES.body] = bodyTarget;

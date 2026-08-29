@@ -1,9 +1,14 @@
 import { DEBUG_MODE } from "../../config/debug.js";
 import {
+  METRONOME_BODY_COLLIDER,
   METRONOME_CONNECTION_PORTS,
   METRONOME_CONNECTION_ROLE,
   METRONOME_SETTINGS,
 } from "../../config/metronome.js";
+import {
+  colliderScaleToRadius,
+  normalizedPositionToModel,
+} from "../core/calibrationMath.js";
 import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
 import { MetronomeButtonRig } from "./MetronomeButtonRig.js";
 import { createMetronomeConnectionPortMaterial } from "./metronomeConnectionPortPresentation.js";
@@ -23,6 +28,8 @@ export class MetronomeColliderFactory {
     const bodyTarget = createBodyGripTarget(root, bodyTargets, {
       makeHitTargetMaterial: () => this.createMaterial(0xffffff),
       hitMarkerOpacity: this.showDebug ? METRONOME_SETTINGS.debugOpacity : 0,
+      normalizedPosition: METRONOME_BODY_COLLIDER.position,
+      relativeScale: METRONOME_BODY_COLLIDER.scale,
     });
     if (bodyTarget) {
       bodyTarget.userData.isMetronomeTarget = true;
@@ -76,7 +83,7 @@ export class MetronomeColliderFactory {
     const maxSize = Math.max(size.x, size.y, size.z, 0.1);
     for (const config of METRONOME_CONNECTION_PORTS) {
       const geometry = new this.THREE.SphereGeometry(
-        maxSize * config.colliderScale,
+        colliderScaleToRadius(config.colliderScale, maxSize),
         METRONOME_SETTINGS.sphereSegments,
         METRONOME_SETTINGS.sphereRings,
       );
@@ -91,11 +98,8 @@ export class MetronomeColliderFactory {
         }),
       );
       collider.name = config.name;
-      collider.position.set(
-        center.x + size.x * config.position.x,
-        center.y + size.y * config.position.y,
-        center.z + size.z * config.position.z,
-      );
+      const position = normalizedPositionToModel(config.position, center, size);
+      collider.position.set(position.x, position.y, position.z);
       collider.renderOrder = METRONOME_SETTINGS.renderOrder;
       Object.assign(collider.userData, {
         isHitTarget: true,
