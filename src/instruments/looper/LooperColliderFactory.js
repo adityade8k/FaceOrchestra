@@ -11,26 +11,22 @@ import {
   LOOPER_COLLIDER_TRANSFORM_DEFAULTS,
   LOOPER_CONTROL_COLLIDERS,
   LOOPER_CONTROL_DEFAULT_VALUES,
-  LOOPER_CONTROL_MOTION_DEFAULTS,
   LOOPER_DEBUG_COLORS,
   LOOPER_NODE_COLLIDER_LAYOUT,
   LOOPER_TRACK_COUNT,
 } from "../../config/looper.js";
 import {
-  generateArcPoints,
-  resolveArcMotion,
-} from "../core/arcMotionMath.js";
-import {
   getLooperButtonName,
   getLooperControlName,
   getLooperNodeName,
 } from "./looperNames.js";
+import { deriveLooperControlGeometry } from "./looperMorphGeometry.js";
 import { getLooperControlColliderPosition } from "./view/looperControlPresentation.js";
 
 const tempBox = new THREE.Box3();
 const tempBoxCenter = new THREE.Vector3();
 const tempBoxSize = new THREE.Vector3();
-const tempArcPoints = [];
+const warnedControlGeometry = new Set();
 
 export class LooperColliderFactory {
   constructor({ makeHitTargetMaterial } = {}) {
@@ -59,11 +55,6 @@ export class LooperColliderFactory {
       maxSize * getNumber(nodeLayout.sphereScale, LOOPER_NODE_COLLIDER_LAYOUT.sphereScale),
       getNumber(nodeLayout.sphereSegments, LOOPER_NODE_COLLIDER_LAYOUT.sphereSegments),
       getNumber(nodeLayout.sphereRings, LOOPER_NODE_COLLIDER_LAYOUT.sphereRings),
-    );
-    const controlGeometry = new THREE.SphereGeometry(
-      1,
-      LOOPER_COLLIDER_GEOMETRY.controlSphereSegments,
-      LOOPER_COLLIDER_GEOMETRY.controlSphereRings,
     );
     const looperColliderOpacity = getDebugHitOpacity(LOOPER_COLLIDER_OPACITY);
 
@@ -154,23 +145,39 @@ export class LooperColliderFactory {
       gap: LOOPER_DEBUG_COLORS.controlGap,
     };
     for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
+      const calibration = deriveLooperControlGeometry(root, controlConfig.morphTargets, {
+        colliderPadding: LOOPER_COLLIDER_GEOMETRY.controlColliderThicknessPadding,
+      });
+      if (!calibration) {
+        warnMissingControlGeometry(control, controlConfig.morphTargets);
+        continue;
+      }
       const color = controlConfig.colliderColor || controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
       const controlSphere = new THREE.Mesh(
-        controlGeometry.clone(),
+        new THREE.SphereGeometry(
+          calibration.colliderRadius,
+          LOOPER_COLLIDER_GEOMETRY.controlSphereSegments,
+          LOOPER_COLLIDER_GEOMETRY.controlSphereRings,
+        ),
         this.makeHitTargetMaterial(getLooperControlName(control), color, looperColliderOpacity),
       );
-      configureControlMotion(controlSphere, controlConfig, { size: tempBoxSize, maxSize });
       addCollider(controlSphere, getLooperControlName(control), color, {
         isLooperControl: true,
         looperControl: control,
         looperMorphTargets: controlConfig.morphTargets,
+        looperControlPath: {
+          neutralAnchor: calibration.neutralAnchor,
+          upAnchor: calibration.upAnchor,
+          downAnchor: calibration.downAnchor,
+        },
+        looperAffectedVertexCount: calibration.affectedVertexCount,
       });
       const defaultPosition = getLooperControlColliderPosition(
         controlSphere.userData,
         LOOPER_CONTROL_DEFAULT_VALUES[control] ?? 0,
       );
       controlSphere.position.set(defaultPosition.x, defaultPosition.y, defaultPosition.z);
-      createControlArcDebug(root, getLooperControlName(control), color, controlSphere.userData);
+      createControlPathDebug(root, getLooperControlName(control), color, controlSphere.userData);
       createColliderTransformDebug(
         controlSphere,
         getLooperControlName(control),
@@ -180,7 +187,6 @@ export class LooperColliderFactory {
 
     buttonGeometry.dispose();
     nodeGeometry.dispose();
-    controlGeometry.dispose();
     return hitTargets;
   }
 }
@@ -218,47 +224,6 @@ function applyConfiguredColliderTransform(mesh, config = {}, defaults = {}) {
   );
 
   return mesh.position;
-}
-
-function configureControlMotion(mesh, controlConfig, { size, maxSize }) {
-  mesh.userData.movementMode =
-    controlConfig?.movementMode || LOOPER_CONTROL_MOTION_DEFAULTS.movementMode;
-  mesh.userData.dragSensitivity = Math.max(
-    getNumber(controlConfig?.dragSensitivity, LOOPER_CONTROL_MOTION_DEFAULTS.dragSensitivity),
-    LOOPER_CONTROL_MOTION_DEFAULTS.minDragSensitivity,
-  );
-  mesh.userData.invertDrag = Boolean(controlConfig?.invertDrag);
-
-  if (mesh.userData.movementMode !== "arc" || !controlConfig?.arc) {
-    const defaultPosition = LOOPER_COLLIDER_GEOMETRY.controlDefaultTransform;
-    mesh.position.set(
-      tempBoxCenter.x + tempBoxSize.x * getNumber(controlConfig?.x, defaultPosition.x),
-      tempBoxCenter.y + tempBoxSize.y * getNumber(controlConfig?.y, defaultPosition.y),
-      tempBoxCenter.z + tempBoxSize.z * getNumber(controlConfig?.z, defaultPosition.z),
-    );
-    mesh.scale.setScalar(maxSize * LOOPER_COLLIDER_GEOMETRY.controlSphereScale);
-    mesh.userData.neutralX = mesh.position.x;
-    mesh.userData.neutralY = mesh.position.y;
-    mesh.userData.neutralZ = mesh.position.z;
-    mesh.userData.dragRange = Math.max(
-      size.y * getNumber(controlConfig?.movementRange, LOOPER_CONTROL_MOTION_DEFAULTS.movementRange),
-      LOOPER_CONTROL_MOTION_DEFAULTS.minDragRange,
-    );
-    mesh.userData.minY = mesh.position.y - mesh.userData.dragRange;
-    mesh.userData.maxY = mesh.position.y + mesh.userData.dragRange;
-    return;
-  }
-
-  mesh.userData.arcMotion = resolveArcMotion(controlConfig.arc, {
-    label: `${controlConfig.morphTargets?.up || "Looper control"} arc`,
-  });
-  if (Math.abs(mesh.userData.arcMotion.parallelOffsetAmount) > 1e-8) {
-    console.warn("Looper arc colliderOffset contains an axis-parallel component; the visible/runtime offset is projected onto the circular plane.");
-  }
-  mesh.scale.setScalar(Math.max(
-    getNumber(controlConfig.colliderRadius, maxSize * LOOPER_COLLIDER_GEOMETRY.controlSphereScale),
-    LOOPER_CONTROL_MOTION_DEFAULTS.minDragRange,
-  ));
 }
 
 function createColliderTransformDebug(mesh, name, length) {
@@ -300,17 +265,12 @@ function createColliderTransformDebug(mesh, name, length) {
   mesh.add(axes);
 }
 
-function createControlArcDebug(root, name, color, userData) {
-  if (!DEBUG_SHOW_COLLIDERS || userData.movementMode !== "arc") {
-    return;
-  }
-
-  tempArcPoints.length = 0;
-  for (const point of generateArcPoints(userData.arcMotion, {
-    segments: COLLIDER_DEBUG_VISUAL_SETTINGS.arcSteps,
-  })) tempArcPoints.push(new THREE.Vector3(point.x, point.y, point.z));
-
-  const geometry = new THREE.BufferGeometry().setFromPoints(tempArcPoints);
+function createControlPathDebug(root, name, color, userData) {
+  if (!DEBUG_SHOW_COLLIDERS || !userData.looperControlPath) return;
+  const { downAnchor, neutralAnchor, upAnchor } = userData.looperControlPath;
+  const geometry = new THREE.BufferGeometry().setFromPoints(
+    [downAnchor, neutralAnchor, upAnchor].map((point) => new THREE.Vector3(point.x, point.y, point.z)),
+  );
   markOwnedResource(geometry);
   const material = new THREE.LineBasicMaterial({
     color,
@@ -325,6 +285,15 @@ function createControlArcDebug(root, name, color, userData) {
   arcLine.renderOrder = COLLIDER_DEBUG_VISUAL_SETTINGS.arcRenderOrder;
   arcLine.raycast = () => {};
   root.add(arcLine);
+}
+
+function warnMissingControlGeometry(control, morphTargets) {
+  const key = `${control}:${morphTargets?.up}:${morphTargets?.down}`;
+  if (warnedControlGeometry.has(key)) return;
+  warnedControlGeometry.add(key);
+  console.warn(
+    `Looper ${control} control disabled: morph geometry for "${morphTargets?.up}" and "${morphTargets?.down}" was not found or was invalid.`,
+  );
 }
 
 function markOwnedResource(resource) {

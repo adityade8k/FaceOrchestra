@@ -1,9 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { LOOPER_CONTROL_COLLIDERS } from "../../../src/config/looper.js";
-import { METRONOME_HANDLE_CONTROLS } from "../../../src/config/metronome.js";
-
 import {
   ArcMotionError,
   generateArcPoints,
@@ -98,41 +95,6 @@ test("editing orbit radius scales colliderOffset without adding a second radius 
   assert.equal("parallelOffset" in resizedFromResolved, false);
   assert.equal(resolveArcMotion(resizedFromResolved).orbitRadius, 9);
   assert.throws(() => setArcOrbitRadius(arc, 0), /greater than zero/);
-});
-
-test("all four configured control planes derive an independently editable radius", () => {
-  const configurations = [
-    ...METRONOME_HANDLE_CONTROLS.map((config) => ({
-      label: `metronome ${config.parameter}`,
-      colliderRadius: config.colliderRadius,
-      arc: {
-        center: { x: 0, y: 0, z: 0 },
-        axis: config.axis,
-        colliderOffset: config.colliderOffset,
-        minAngleDegrees: config.minAngleDegrees,
-        maxAngleDegrees: config.maxAngleDegrees,
-        referenceAngleDegrees: config.referenceAngleDegrees,
-      },
-    })),
-    ...Object.entries(LOOPER_CONTROL_COLLIDERS).map(([control, config]) => ({
-      label: `looper ${control}`,
-      colliderRadius: config.colliderRadius,
-      arc: config.arc,
-    })),
-  ];
-  assert.deepEqual(configurations.map(({ label }) => label), [
-    "metronome bpm",
-    "metronome volume",
-    "looper volume",
-    "looper gap",
-  ]);
-  for (const { arc, colliderRadius } of configurations) {
-    const originalRadius = resolveArcMotion(arc).orbitRadius;
-    const resized = setArcOrbitRadius(arc, originalRadius * 1.25);
-    assert.ok(Math.abs(resolveArcMotion(resized).orbitRadius - originalRadius * 1.25) < EPSILON);
-    assert.equal("orbitRadius" in resized, false);
-    assert.equal(colliderRadius > 0, true);
-  }
 });
 
 test("axis-parallel offset components are reported and projected explicitly", () => {

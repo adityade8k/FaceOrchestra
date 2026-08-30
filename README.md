@@ -25,29 +25,6 @@ npm run dev
 
 Open <http://localhost:5173>. The desktop view can confirm that the scene, assets, lighting, saved scene, and resize handling load. Performing and placing instruments require XR controllers.
 
-## Collider & Motion Editor
-
-The standalone desktop calibration tool loads the current repository metronome configuration into mutable editor state without starting the XR runtime or reading its saved scene:
-
-```sh
-npm run dev
-```
-
-Open <http://localhost:5173/collider-editor.html>. The large viewport supports orbit, pan, zoom, perspective/orthographic cameras, six fixed camera views, model display modes, and toggles for the grid, axes, model bounds, colliders, and motion paths. Select an item in the viewport or the object list. Use the toolbar or `W`, `E`, and `R` for translate, rotate, and scale; `F` frames the selection. Delete is intentionally blocked for required runtime colliders. Numeric inspector fields provide precise changes alongside TransformControls, and Undo, Redo, Reset selected, and Reset all operate only on the editor state.
-
-Metronome outlet positions are normalized against the loaded model bounds:
-
-```text
-actualPosition = boundsCenter + boundsSize * configuredPosition
-radius = maxModelDimension * colliderScale
-```
-
-Moving or scaling an outlet sphere converts the result back through those same formulas. The inspector also exposes socket-direction arrows and axis presets. Handle previews use the runtime value-to-angle mapping, normalized axis, plane-projected collider offset, imported rest quaternion, and attached collider orbit. Pendulum previews premultiply a fresh axis-angle delta onto the imported rest quaternion. Eye controls preview their configured pressed offsets when their named nodes exist.
-
-Use **Copy JSON**, **Download JSON**, **Import JSON**, or the paste area for a versioned calibration round trip. **Copy JavaScript** generates valid, readable replacement constants with `0xrrggbb` colors for `src/config/metronome.js`; the browser never rewrites that file automatically. Unfinished work autosaves only to `face-orchestra-metronome-editor-v1`, which is separate from the production scene key, and the editor asks before restoring a draft. A local `.glb` can be loaded for re-export checks without presenting its object URL as a repository model path.
-
-The current `metronome_outlets.glb` contains `body_geo`, `L_handle_geo`, `R_handle_geo`, and `pendulum_geo`, but it does not contain the configured `L_button_geo` or `R_button_geo` eye nodes. The editor reports both bindings as missing and leaves them unbound; use their searchable node fields after a corrected GLB is exported.
-
 ### Start HTTPS for a headset
 
 WebXR on a headset requires a secure context. The HTTPS server reads two local, Git-ignored files:

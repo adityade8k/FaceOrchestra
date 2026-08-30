@@ -161,11 +161,10 @@ export const LOOPER_COLLIDER_GEOMETRY = {
   minModelSize: 0.1,
   renderOrder: 24,
   buttonScale: { x: 0.09, y: 0.045, z: 0.026 },
-  controlSphereScale: 0.044,
+  controlColliderThicknessPadding: 1.15,
   controlSphereSegments: 24,
   controlSphereRings: 16,
   buttonDefaultTransform: { x: 0, y: 0.34, z: 0.56 },
-  controlDefaultTransform: { x: 0, y: -0.08, z: 0.56 },
   buttonDebugAxisScale: 0.07,
   controlDebugAxisScale: 0.065,
 };
@@ -176,56 +175,13 @@ export const LOOPER_COLLIDER_TRANSFORM_DEFAULTS = {
   scale: { x: 1, y: 1, z: 1 },
 };
 
-export const LOOPER_CONTROL_MOTION_DEFAULTS = {
-  movementMode: "vertical",
-  movementRange: 0.24,
-  dragSensitivity: 1,
-  minDragSensitivity: 0,
-  minDragRange: 0.0001,
-};
-
-// Looper arc coordinates are expressed directly in the imported GLB root's
-// stable local coordinate system. `center` is the circular-plane pivot and
-// `colliderOffset` is the collider's rest vector relative to that pivot;
-// `referenceAngleDegrees` is applied before the movement angle. Collider geometry is deliberately independent from
-// the derived orbit radius (the projected length of colliderOffset).
-export const LOOPER_CONTROL_COLLIDERS = {
-  volume: {
-    movementMode: "arc",
-    dragSensitivity: 3,
-    invertDrag: false,
-    colliderRadius: 0.02030237796,
+export const LOOPER_CONTROL_COLLIDERS = Object.freeze({
+  volume: Object.freeze({
     colliderColor: LOOPER_DEBUG_COLORS.controlVolume,
-    pivotColor: 0xcfc7ff,
-    planeColor: LOOPER_DEBUG_COLORS.controlVolume,
-    arcColor: 0xcfc7ff,
-    arc: {
-      center: { x: -0.03909906436, y: 0.318953163553, z: -0.026963376396 },
-      axis: { x: 0, y: 0, z: -1 },
-      colliderOffset: { x: -0.048506283032, y: 0.048506283032, z: 0 },
-      minAngleDegrees: -30,
-      maxAngleDegrees: 30,
-      referenceAngleDegrees: 0,
-    },
     morphTargets: LOOPER_CONTROL_MORPH_TARGETS.volume,
-  },
-  gap: {
-    movementMode: "arc",
-    dragSensitivity: 3,
-    invertDrag: false,
-    colliderRadius: 0.02030237796,
+  }),
+  gap: Object.freeze({
     colliderColor: LOOPER_DEBUG_COLORS.controlGap,
-    pivotColor: 0xbcecff,
-    planeColor: LOOPER_DEBUG_COLORS.controlGap,
-    arcColor: 0xbcecff,
-    arc: {
-      center: { x: 0.027491110459, y: 0.292005228535, z: -0.026963376396 },
-      axis: { x: 0, y: 0, z: 1 },
-      colliderOffset: { x: 0.07545421805, y: 0.07545421805, z: 0 },
-      minAngleDegrees: -20,
-      maxAngleDegrees: 20,
-      referenceAngleDegrees: 0,
-    },
     morphTargets: LOOPER_CONTROL_MORPH_TARGETS.gap,
-  },
-};
+  }),
+});

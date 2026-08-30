@@ -1,4 +1,4 @@
-import { DEBUG_MODE } from "../../config/debug.js";
+import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
 import {
   METRONOME_CONNECTION_PORTS,
   METRONOME_CONNECTION_ROLE,
@@ -15,7 +15,7 @@ import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
 import { MetronomeHandleRig } from "./MetronomeHandleRig.js";
 
 export class MetronomeColliderFactory {
-  constructor({ THREE, showDebug = DEBUG_MODE } = {}) {
+  constructor({ THREE, showDebug = DEBUG_SHOW_COLLIDERS } = {}) {
     this.THREE = THREE;
     this.showDebug = showDebug;
   }

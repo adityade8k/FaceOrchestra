@@ -8,46 +8,81 @@ import {
 } from "../../../src/config/looper.js";
 import { LooperController } from "../../../src/instruments/looper/LooperController.js";
 import {
+  getClosestLooperControlValue,
   getLooperControlColliderPosition,
   getLooperControlMorphWeights,
+  getLooperControlValueFromDrag,
 } from "../../../src/instruments/looper/view/looperControlPresentation.js";
 
-test("Gap is the right-hand arc lever and defaults visually to its lowest endpoint", () => {
+test("Gap keeps its exact morph binding and defaults to the physical down endpoint", () => {
   assert.deepEqual(LOOPER_CONTROL_DEFAULT_VALUES, { volume: 0, gap: -1 });
   assert.deepEqual(Object.keys(LOOPER_CONTROL_COLLIDERS).sort(), ["gap", "volume"]);
-  assert.deepEqual(LOOPER_CONTROL_COLLIDERS.gap.arc.axis, { x: 0, y: 0, z: 1 });
-  assert.equal(LOOPER_CONTROL_COLLIDERS.gap.arc.referenceAngleDegrees, 0);
   assert.deepEqual(LOOPER_CONTROL_MORPH_TARGETS.gap, {
     down: "Right_handle_down",
     up: "right_handle_up",
   });
 
-  const userData = {
-    movementMode: "arc",
-    arc: LOOPER_CONTROL_COLLIDERS.gap.arc,
+  const controlPath = {
+    downAnchor: { x: 2, y: -4, z: 1 },
+    neutralAnchor: { x: 1, y: 0, z: 2 },
+    upAnchor: { x: 4, y: 3, z: 5 },
   };
-  const lowest = getLooperControlColliderPosition(userData, -1);
-  const highest = getLooperControlColliderPosition(userData, 1);
-  assert.ok(lowest.y < highest.y);
+  assert.deepEqual(getLooperControlColliderPosition({ looperControlPath: controlPath }, -1), controlPath.downAnchor);
   assert.deepEqual(getLooperControlMorphWeights(-1), { up: 0, down: 1 });
 });
 
-test("migrated Looper arc positions match the legacy calibration across the range", () => {
-  const oldControls = {
-    volume: { x: -0.32, y: 0.16, z: 0, side: 1, radius: 0.18, min: -30, max: 30, rotation: -45 },
-    gap: { x: 0.18, y: 0.16, z: 0, side: -1, radius: 0.28, min: -20, max: 20, rotation: 45 },
+test("geometry-derived collider positions interpolate the two exact morph segments", () => {
+  const userData = { looperControlPath: {
+    downAnchor: { x: -2, y: -4, z: -6 },
+    neutralAnchor: { x: 0, y: 0, z: 0 },
+    upAnchor: { x: 4, y: 8, z: 12 },
+  } };
+  const expected = new Map([
+    [-1, { x: -2, y: -4, z: -6 }],
+    [-0.25, { x: -0.5, y: -1, z: -1.5 }],
+    [0, { x: 0, y: 0, z: 0 }],
+    [0.5, { x: 2, y: 4, z: 6 }],
+    [1, { x: 4, y: 8, z: 12 }],
+  ]);
+  for (const [value, position] of expected) {
+    assert.deepEqual(getLooperControlColliderPosition(userData, value), position);
+  }
+});
+
+test("closest-path dragging maps both segments to signed values", () => {
+  const path = {
+    downAnchor: { x: -2, y: 0, z: 0 },
+    neutralAnchor: { x: 0, y: 0, z: 0 },
+    upAnchor: { x: 0, y: 4, z: 0 },
   };
-  for (const control of ["volume", "gap"]) {
-    for (const value of [-1, -0.65, -0.2, 0, 0.35, 0.8, 1]) {
-      const legacy = legacyPosition(oldControls[control], value);
-      const migrated = getLooperControlColliderPosition({
-        movementMode: "arc",
-        arc: LOOPER_CONTROL_COLLIDERS[control].arc,
-      }, value);
-      for (const axis of ["x", "y", "z"]) {
-        assert.ok(Math.abs(legacy[axis] - migrated[axis]) < 2e-9, `${control} ${value} ${axis}`);
-      }
-    }
+  assert.equal(getClosestLooperControlValue(path, { x: -1, y: 0.2, z: 0 }), -0.5);
+  assert.equal(getClosestLooperControlValue(path, { x: 0.1, y: 3, z: 0 }), 0.75);
+  assert.equal(getClosestLooperControlValue(path, { x: -20, y: 0, z: 0 }), -1);
+  assert.equal(getClosestLooperControlValue(path, { x: 0, y: 20, z: 0 }), 1);
+});
+
+test("dragging applies root-local controller displacement without a trigger-press jump", () => {
+  const path = {
+    downAnchor: { x: -2, y: 0, z: 0 },
+    neutralAnchor: { x: 0, y: 0, z: 0 },
+    upAnchor: { x: 0, y: 4, z: 0 },
+  };
+  const startingController = { x: 8, y: 9, z: 10 };
+  const startingCollider = getLooperControlColliderPosition({ looperControlPath: path }, 0.5);
+  assert.equal(
+    getLooperControlValueFromDrag(path, startingController, startingCollider, startingController),
+    0.5,
+  );
+  assert.equal(
+    getLooperControlValueFromDrag(path, startingController, startingCollider, { x: 8, y: 11, z: 10 }),
+    1,
+  );
+});
+
+test("Looper control config contains no manual position, arc, or per-control radius", () => {
+  const forbidden = ["x", "y", "z", "rotationDegrees", "arc", "colliderRadius", "movementMode", "dragSensitivity"];
+  for (const config of Object.values(LOOPER_CONTROL_COLLIDERS)) {
+    for (const key of forbidden) assert.equal(key in config, false, key);
   }
 });
 
@@ -80,37 +115,3 @@ test("Looper durable state exposes only Volume and Gap controls", () => {
   assert.equal(looper.looperData.gapControlValue, 0.5);
   assert.deepEqual(controller.serializeState(looper).controls, { volume: 0.25, gap: 0.5 });
 });
-
-function legacyPosition(config, value) {
-  const scale = 0.009999999776482582;
-  const min = [-15.620359420776367, -16.854137420654297, -56.356197357177734];
-  const max = [22.489776611328125, 11.461462020874023, 1.3210140466690063];
-  const boundsCenter = {
-    x: (min[0] + max[0]) * 0.5 * scale,
-    y: -(min[2] + max[2]) * 0.5 * scale,
-    z: (min[1] + max[1]) * 0.5 * scale,
-  };
-  const boundsSize = {
-    x: (max[0] - min[0]) * scale,
-    y: (max[2] - min[2]) * scale,
-    z: (max[1] - min[1]) * scale,
-  };
-  const neutral = {
-    x: boundsCenter.x + boundsSize.x * config.x,
-    y: boundsCenter.y + boundsSize.y * config.y,
-    z: boundsCenter.z + boundsSize.z * config.z,
-  };
-  const radius = boundsSize.x * config.radius;
-  const angle = (config.min + (value + 1) * 0.5 * (config.max - config.min)) * Math.PI / 180;
-  const midpoint = (config.min + config.max) * 0.5 * Math.PI / 180;
-  const local = {
-    x: -config.side * Math.cos(angle) * radius + config.side * Math.cos(midpoint) * radius,
-    y: Math.sin(angle) * radius - Math.sin(midpoint) * radius,
-  };
-  const rotation = config.rotation * Math.PI / 180;
-  return {
-    x: neutral.x + local.x * Math.cos(rotation) - local.y * Math.sin(rotation),
-    y: neutral.y + local.x * Math.sin(rotation) + local.y * Math.cos(rotation),
-    z: neutral.z,
-  };
-}
