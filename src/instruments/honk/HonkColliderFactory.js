@@ -1,4 +1,4 @@
-import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
+import { DEBUG_MODE } from "../../config/debug.js";
 import {
   BEND_ALIGNED_COLLIDER_GROUP_NAME,
   BEND_ALIGNED_INTERACTION_TYPES,
@@ -17,7 +17,7 @@ import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
 import { HONK_INTERACTION_ROLES } from "./HonkInstrument.js";
 
 export class HonkColliderFactory {
-  constructor({ THREE, showDebug = DEBUG_SHOW_COLLIDERS } = {}) {
+  constructor({ THREE, showDebug = DEBUG_MODE } = {}) {
     if (!THREE) {
       throw new TypeError("HonkColliderFactory requires the Three.js namespace.");
     }

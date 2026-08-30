@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { METRONOME_HANDLE_CONTROLS } from "../../../src/config/metronome.js";
-import { MetronomeHandleRig } from "../../../src/instruments/metronome/MetronomeHandleRig.js";
+import {
+  MetronomeHandleRig,
+  resolveHandleAxisInRootSpace,
+} from "../../../src/instruments/metronome/MetronomeHandleRig.js";
 import {
   mapAngleToValue,
   mapValueToAngle,
@@ -82,6 +85,64 @@ test("handle rotation is rest-relative and preserves the imported transform", ()
 
   rig.setValue("bpm", 135);
   assertQuaternion(handle.quaternion, restQuaternion);
+});
+
+test("configured handle-local Y resolves through the imported parent to Metronome-root Z", () => {
+  const root = new Group();
+  root.quaternion.setFromAxisAngle(new Vector3(0, 0, 1), 0.37);
+  const importedParent = new Group();
+  importedParent.quaternion.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
+  root.add(importedParent);
+  const handle = new Mesh(new Geometry([new Vector3(2, 3, 4)]), null);
+  handle.name = "L_handle_geo";
+  importedParent.add(handle);
+
+  const axis = resolveHandleAxisInRootSpace({
+    THREE,
+    root,
+    handle,
+    localAxis: new Vector3(0, 1, 0),
+  });
+  const rig = new MetronomeHandleRig({
+    THREE,
+    root,
+    configs: [TEST_CONFIGS[0]],
+    showDebug: false,
+  });
+
+  assertVector(axis, new Vector3(0, 0, 1));
+  assertVector(rig.controls.get("bpm").rootAxis, new Vector3(0, 0, 1));
+});
+
+test("applying one handle angle moves its geometry around its own origin only", () => {
+  const root = new Group();
+  const group1 = new Group();
+  group1.position.set(9, 8, 7);
+  group1.quaternion.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
+  root.add(group1);
+  const left = new Mesh(new Geometry([new Vector3(2, 0, 0)]), null);
+  left.name = "L_handle_geo";
+  left.position.set(-3, 0, 0);
+  const right = new Mesh(new Geometry([new Vector3(4, 0, 0)]), null);
+  right.name = "R_handle_geo";
+  right.position.set(3, 0, 0);
+  group1.add(left, right);
+  const rig = new MetronomeHandleRig({ THREE, root, configs: TEST_CONFIGS, showDebug: false });
+  const leftOrigin = left.localToWorld(new Vector3());
+  const leftPoint = left.localToWorld(left.geometry.vertices[0].clone());
+  const rightPosition = right.position.clone();
+  const rightQuaternion = right.quaternion.clone();
+  const groupPosition = group1.position.clone();
+  const groupQuaternion = group1.quaternion.clone();
+
+  rig.setValue("bpm", 30);
+
+  assertVector(left.localToWorld(new Vector3()), leftOrigin);
+  assertVectorNotEqual(left.localToWorld(left.geometry.vertices[0].clone()), leftPoint);
+  assertVector(right.position, rightPosition);
+  assertQuaternion(right.quaternion, rightQuaternion);
+  assertVector(group1.position, groupPosition);
+  assertQuaternion(group1.quaternion, groupQuaternion);
 });
 
 test("axial anchor displacement is preserved and the drag plane crosses its path center", () => {
@@ -267,4 +328,11 @@ function assertVector(actual, expected, epsilon = 1e-9) {
 function assertQuaternion(actual, expected, epsilon = 1e-9) {
   assertVector(actual, expected, epsilon);
   assert.ok(Math.abs(actual.w - expected.w) < epsilon, `w: ${actual.w} vs ${expected.w}`);
+}
+
+function assertVectorNotEqual(actual, expected, epsilon = 1e-9) {
+  assert.ok(
+    ["x", "y", "z"].some((axis) => Math.abs(actual[axis] - expected[axis]) >= epsilon),
+    `expected vectors to differ: ${JSON.stringify(actual)}`,
+  );
 }

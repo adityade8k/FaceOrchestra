@@ -5,7 +5,6 @@ import { ASSET_PATHS } from "../../config/assets.js";
 import {
   DEBUG_LOG_MORPHS,
   DEBUG_LOG_RAYCAST,
-  DEBUG_SHOW_COLLIDERS,
 } from "../../config/debug.js";
 import {
   BEND_ALIGNED_COLLIDER_GROUP_NAME,
@@ -37,7 +36,7 @@ import { METRONOME_INTERACTION_ROLES } from "../../instruments/metronome/Metrono
 
 const CONTROLLER_RAY_LENGTH = 1.6;
 const RAY_COLOR_DEFAULT = 0xf6d878;
-const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
+const HIT_MARKER_OPACITY = 0.24;
 const HONK_MODEL_PATH = ASSET_PATHS.models.honk;
 const HONK_TEXTURE_PATHS = ASSET_PATHS.textures.honk;
 const LOOPER_TEXTURE_PATHS = ASSET_PATHS.textures.looper;
@@ -177,7 +176,8 @@ export const InstrumentAssetRuntimeMethods = {
 
   createLooperColliders(root, hitTargets) {
     new LooperColliderFactory({
-      makeHitTargetMaterial: (name, color, opacity) => makeHitTargetMaterial(name, color, opacity),
+      makeHitTargetMaterial: (name, color, opacity) =>
+        makeHitTargetMaterial(name, color, opacity, this.debugMode),
     }).create(root, hitTargets);
   },
 
@@ -412,14 +412,19 @@ function collectGripTargets(root) {
   return targets;
 }
 
-function makeHitTargetMaterial(_name, color = 0xffffff, opacity = HIT_MARKER_OPACITY) {
+function makeHitTargetMaterial(
+  _name,
+  color = 0xffffff,
+  opacity = HIT_MARKER_OPACITY,
+  showDebug = false,
+) {
   const material = new THREE.MeshBasicMaterial({
     color: color ?? 0xffffff,
     transparent: true,
-    opacity: DEBUG_SHOW_COLLIDERS ? opacity ?? HIT_MARKER_OPACITY : 0,
-    depthTest: !DEBUG_SHOW_COLLIDERS,
+    opacity: showDebug ? opacity ?? HIT_MARKER_OPACITY : 0,
+    depthTest: !showDebug,
     depthWrite: false,
-    wireframe: DEBUG_SHOW_COLLIDERS,
+    wireframe: showDebug,
   });
   material.userData.disposeOnInstrumentDelete = true;
   return material;

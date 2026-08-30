@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   COLLIDER_DEBUG_VISUAL_SETTINGS,
-  DEBUG_SHOW_COLLIDERS,
+  DEBUG_MODE,
 } from "../../config/debug.js";
 import {
   LOOPER_BUTTON_COLLIDERS,
@@ -227,7 +227,7 @@ function applyConfiguredColliderTransform(mesh, config = {}, defaults = {}) {
 }
 
 function createColliderTransformDebug(mesh, name, length) {
-  if (!DEBUG_SHOW_COLLIDERS) {
+  if (!DEBUG_MODE) {
     return;
   }
 
@@ -266,7 +266,7 @@ function createColliderTransformDebug(mesh, name, length) {
 }
 
 function createControlPathDebug(root, name, color, userData) {
-  if (!DEBUG_SHOW_COLLIDERS || !userData.looperControlPath) return;
+  if (!DEBUG_MODE || !userData.looperControlPath) return;
   const { downAnchor, neutralAnchor, upAnchor } = userData.looperControlPath;
   const geometry = new THREE.BufferGeometry().setFromPoints(
     [downAnchor, neutralAnchor, upAnchor].map((point) => new THREE.Vector3(point.x, point.y, point.z)),
@@ -314,5 +314,5 @@ function getNumber(value, fallback) {
 }
 
 function getDebugHitOpacity(opacity) {
-  return DEBUG_SHOW_COLLIDERS ? opacity : 0;
+  return DEBUG_MODE ? opacity : 0;
 }

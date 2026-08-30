@@ -19,6 +19,10 @@ import {
   disposePendingSpawnMaterials,
 } from "../../spawning/pendingSpawnMaterials.js";
 import {
+  applyPendingSpawnVisualsToState,
+  restorePendingSpawnVisualsToState,
+} from "../../spawning/pendingSpawnVisuals.js";
+import {
   SpawnMenuPrimaryAction,
   resolveSpawnMenuPrimaryAction,
 } from "../../spawning/spawnMenuPrimaryAction.js";
@@ -246,56 +250,15 @@ export const SpawnRuntimeMethods = {
       });
     },
     applyPendingSpawnVisuals(state) {
-      state.root.traverse((object) => {
-        if (object.userData.isHitTarget) {
-          object.userData.pendingSpawnPreviousVisible = object.visible;
-          object.visible = false;
-          return;
-        }
-  
-        if (!object.isMesh || !object.material) {
-          return;
-        }
-  
-        object.userData.pendingSpawnOriginalMaterial = object.material;
-        object.userData.pendingSpawnOriginalCastShadow = object.castShadow;
-        object.userData.pendingSpawnOriginalReceiveShadow = object.receiveShadow;
-        object.userData.pendingSpawnOriginalRenderOrder = object.renderOrder;
-        object.material = Array.isArray(object.material)
-          ? object.material.map((material) => createPendingSpawnGlassMaterial(material))
-          : createPendingSpawnGlassMaterial(object.material);
-        object.castShadow = false;
-        object.receiveShadow = false;
-        object.renderOrder = Math.max(object.renderOrder || 0, PENDING_SPAWN_RENDER_ORDER);
+      applyPendingSpawnVisualsToState(state, {
+        createPreviewMaterial: createPendingSpawnGlassMaterial,
+        renderOrder: PENDING_SPAWN_RENDER_ORDER,
       });
-  
-      state.raycastTargetsDirty = true;
     },
     restorePendingSpawnVisuals(state) {
-      state.root.traverse((object) => {
-        if (Object.prototype.hasOwnProperty.call(object.userData, "pendingSpawnPreviousVisible")) {
-          object.visible = object.userData.pendingSpawnPreviousVisible;
-          delete object.userData.pendingSpawnPreviousVisible;
-        }
-  
-        if (!object.isMesh || !Object.prototype.hasOwnProperty.call(object.userData, "pendingSpawnOriginalMaterial")) {
-          return;
-        }
-  
-        const previewMaterial = object.material;
-        object.material = object.userData.pendingSpawnOriginalMaterial;
-        disposePendingSpawnMaterials(previewMaterial);
-  
-        object.castShadow = object.userData.pendingSpawnOriginalCastShadow;
-        object.receiveShadow = object.userData.pendingSpawnOriginalReceiveShadow;
-        object.renderOrder = object.userData.pendingSpawnOriginalRenderOrder;
-        delete object.userData.pendingSpawnOriginalMaterial;
-        delete object.userData.pendingSpawnOriginalCastShadow;
-        delete object.userData.pendingSpawnOriginalReceiveShadow;
-        delete object.userData.pendingSpawnOriginalRenderOrder;
+      restorePendingSpawnVisualsToState(state, {
+        disposePreviewMaterials: disposePendingSpawnMaterials,
       });
-  
-      state.raycastTargetsDirty = true;
     },
     syncLooperTransformReference(state) {
       const data = state?.looperData;

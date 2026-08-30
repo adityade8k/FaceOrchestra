@@ -1,4 +1,4 @@
-import { DEBUG_SHOW_COLLIDERS } from "../config/debug.js";
+import { DEBUG_MODE } from "../config/debug.js";
 import {
   HONK_CONNECTION_TARGET_NAME,
   LOOPER_DEBUG_COLORS,
@@ -8,7 +8,7 @@ import {
   getLooperControlName,
 } from "../instruments/looper/looperNames.js";
 
-export const HIT_MARKER_OPACITY = DEBUG_SHOW_COLLIDERS ? 0.24 : 0;
+export const HIT_MARKER_OPACITY = DEBUG_MODE ? 0.24 : 0;
 export const RAY_COLOR_DEFAULT = 0xf6d878;
 export const RAY_COLOR_HOVER = 0x45f6ff;
 

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
+import { DEBUG_MODE } from "../../config/debug.js";
 import {
   HONK_CONNECTION_TARGET_NAME,
   LOOPER_BUTTON_ACTIONS,
@@ -509,7 +509,7 @@ export const LooperConnectionRuntimeMethods = {
       target.userData.currentHitColor = color;
       target.material.color.setHex(color);
       if (typeof opacity === "number") {
-        const visibleOpacity = DEBUG_SHOW_COLLIDERS ? opacity : 0;
+        const visibleOpacity = DEBUG_MODE ? opacity : 0;
         target.userData.baseHitOpacity = visibleOpacity;
         target.material.opacity = visibleOpacity;
       }

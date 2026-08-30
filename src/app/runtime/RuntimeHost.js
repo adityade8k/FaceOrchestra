@@ -118,7 +118,10 @@ export class RuntimeHost {
       profileResolver: (_target, source) => this.getTransformProfile(source),
     });
 
-    this.honkColliderFactory = new HonkColliderFactory({ THREE });
+    this.honkColliderFactory = new HonkColliderFactory({
+      THREE,
+      showDebug: this.debugMode,
+    });
     this.metronomeColliderFactory = new MetronomeColliderFactory({
       THREE,
       showDebug: this.debugMode,

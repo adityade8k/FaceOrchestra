@@ -120,8 +120,9 @@ export const METRONOME_PENDULUM_SETTINGS = Object.freeze({
   swingDegrees: 5,
 });
 
-// Each handle rotates about its authored child-local origin. Collider placement
-// and the representative drag anchor are derived from that child's geometry.
+// Each axis is handle-local. The imported parent transform maps local Y to the
+// Metronome root's Z axis. Each handle rotates about its authored child-local
+// origin; collider placement and the drag anchor derive from child geometry.
 export const METRONOME_HANDLE_CONTROLS = Object.freeze([
   Object.freeze({
     nodeName: "L_handle_geo",

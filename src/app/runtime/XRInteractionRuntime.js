@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { DEBUG_SHOW_COLLIDERS, DEBUG_SHOW_RAYS } from "../../config/debug.js";
+import { DEBUG_SHOW_RAYS } from "../../config/debug.js";
 import {
   EAR_DRAG_SENSITIVITY,
   INTERACTION_TARGET_NAMES,
@@ -461,9 +461,7 @@ export const XRInteractionRuntimeMethods = {
   
       const baseOpacity =
         typeof target.userData.baseHitOpacity === "number" ? target.userData.baseHitOpacity : HIT_MARKER_OPACITY;
-      const showColliderHighlight = target.userData.isMetronomeTarget
-        ? this.debugMode
-        : DEBUG_SHOW_COLLIDERS;
+      const showColliderHighlight = this.debugMode;
       target.material.opacity =
         showColliderHighlight && highlighted ? Math.max(baseOpacity, 0.52) : baseOpacity;
       target.material.transparent = true;

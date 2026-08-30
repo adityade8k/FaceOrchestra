@@ -65,6 +65,13 @@ export class MetronomeHandleRig {
     const restPosition = handle.position.clone();
     const restQuaternion = handle.quaternion.clone();
     const restScale = handle.scale.clone();
+    const rootAxis = resolveHandleAxisInRootSpace({
+      THREE: this.THREE,
+      root: this.root,
+      handle,
+      localAxis: axis,
+      restQuaternion,
+    });
 
     const restFrame = new this.THREE.Group();
     restFrame.name = `METRONOME_${config.parameter}_rest_frame`;
@@ -103,6 +110,7 @@ export class MetronomeHandleRig {
       collider,
       restFrame,
       axis,
+      rootAxis,
       anchor,
       axialDistance,
       pathCenter,
@@ -303,6 +311,25 @@ export class MetronomeHandleRig {
     this.disposables.clear();
     this.controls.clear();
   }
+}
+
+export function resolveHandleAxisInRootSpace({
+  THREE,
+  root,
+  handle,
+  localAxis,
+  restQuaternion = handle?.quaternion,
+} = {}) {
+  root?.updateMatrixWorld?.(true);
+  handle?.parent?.updateMatrixWorld?.(true);
+  const parentWorldQuaternion = handle.parent.getWorldQuaternion(new THREE.Quaternion());
+  const rootWorldQuaternion = root.getWorldQuaternion(new THREE.Quaternion());
+  return localAxis
+    .clone()
+    .applyQuaternion(restQuaternion)
+    .applyQuaternion(parentWorldQuaternion)
+    .applyQuaternion(rootWorldQuaternion.invert())
+    .normalize();
 }
 
 function getValueRange(parameter) {
