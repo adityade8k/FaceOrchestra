@@ -5,13 +5,17 @@ import {
 import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
 import {
   clamp,
+  generateArcPoints,
+  getArcPointAtAngle,
   mapAngleToValue,
   mapValueToAngle,
   projectOntoPlane,
+  resolveArcMotion,
+  rotateOffsetAroundAxis,
   signedAngleOnPlane,
   unwrapAngleDelta,
   vectorLength,
-} from "./metronomeArcMath.js";
+} from "../core/arcMotionMath.js";
 
 const PLANE_TOLERANCE = 1e-4;
 const RAY_EPSILON = 1e-5;
@@ -32,30 +36,49 @@ export class MetronomeHandleRig {
       console.warn(`Metronome handle node "${config.nodeName}" was not found; ${config.parameter} control disabled.`);
       return;
     }
-    const axis = vector(this.THREE, config.axis);
-    if (axis.lengthSq() < 1e-12) {
-      console.warn(`Metronome handle "${config.nodeName}" has a zero-length rotation axis; control disabled.`);
+    let arc;
+    try {
+      arc = resolveArcMotion({
+        center: { x: 0, y: 0, z: 0 },
+        axis: config.axis,
+        colliderOffset: config.colliderOffset,
+        minAngleDegrees: config.minAngleDegrees,
+        maxAngleDegrees: config.maxAngleDegrees,
+        referenceAngleDegrees: config.referenceAngleDegrees || 0,
+      }, { label: `${config.parameter} handle arc` });
+    } catch (error) {
+      console.warn(`Metronome handle "${config.nodeName}" is invalid; control disabled.`, error);
       return;
     }
-    axis.normalize();
-    const rawOffset = vector(this.THREE, config.colliderOffset);
-    const normalDistance = rawOffset.dot(axis);
-    const projectedOffset = rawOffset.clone().addScaledVector(axis, -normalDistance);
-    const radius = projectedOffset.length();
-    if (radius < 1e-6) {
-      console.warn(`Metronome handle "${config.nodeName}" collider offset produces a zero arc radius; control disabled.`);
-      return;
-    }
-    if (Math.abs(normalDistance) > Math.max(radius * 0.01, PLANE_TOLERANCE)) {
+    const axis = vector(this.THREE, arc.axis);
+    const projectedOffset = vector(this.THREE, arc.colliderOffset);
+    const radius = arc.orbitRadius;
+    if (Math.abs(arc.parallelOffsetAmount) > Math.max(radius * 0.01, PLANE_TOLERANCE)) {
       console.warn(`Metronome handle "${config.nodeName}" collider offset is outside its movement plane; projecting it onto the plane.`);
     }
 
+    const restPosition = handle.position.clone();
+    const restQuaternion = handle.quaternion.clone();
+    const restScale = handle.scale.clone();
+    const center = vector(this.THREE, config.center ?? { x: 0, y: 0, z: 0 });
+    const pivotPosition = center.clone()
+      .multiply(restScale)
+      .applyQuaternion(restQuaternion)
+      .add(restPosition);
+
     const restFrame = new this.THREE.Group();
     restFrame.name = `METRONOME_${config.parameter}_rest_frame`;
-    restFrame.position.copy(handle.position);
-    restFrame.quaternion.copy(handle.quaternion);
-    restFrame.scale.copy(handle.scale);
+    restFrame.position.copy(pivotPosition);
+    restFrame.quaternion.copy(restQuaternion);
+    restFrame.scale.copy(restScale);
     handle.parent.add(restFrame);
+
+    const colliderFrame = new this.THREE.Group();
+    colliderFrame.name = `METRONOME_${config.parameter}_collider_frame`;
+    colliderFrame.position.copy(pivotPosition);
+    colliderFrame.quaternion.copy(restQuaternion);
+    colliderFrame.scale.copy(restScale);
+    handle.parent.add(colliderFrame);
 
     const geometry = owned(new this.THREE.SphereGeometry(
       config.colliderRadius,
@@ -82,19 +105,22 @@ export class MetronomeHandleRig {
       interactionRole: METRONOME_INTERACTION_ROLES[config.parameter],
       baseHitOpacity: showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
     });
-    handle.add(collider);
+    colliderFrame.add(collider);
 
     const control = {
       config,
       handle,
       collider,
+      colliderFrame,
       restFrame,
       axis,
+      center,
+      pivotPosition,
       neutralDirection: projectedOffset.clone().normalize(),
       radius,
-      restPosition: handle.position.clone(),
-      restQuaternion: handle.quaternion.clone(),
-      restScale: handle.scale.clone(),
+      restPosition,
+      restQuaternion,
+      restScale,
       minAngle: this.THREE.MathUtils.degToRad(config.minAngleDegrees),
       maxAngle: this.THREE.MathUtils.degToRad(config.maxAngleDegrees),
       referenceAngle: this.THREE.MathUtils.degToRad(config.referenceAngleDegrees || 0),
@@ -127,8 +153,17 @@ export class MetronomeHandleRig {
     control.handle.position.copy(control.restPosition);
     control.handle.quaternion.copy(control.restQuaternion).multiply(delta);
     control.handle.scale.copy(control.restScale);
-    control.collider.position.copy(control.neutralDirection).multiplyScalar(control.radius);
+    const colliderPoint = getArcPointAtAngle({
+      center: { x: 0, y: 0, z: 0 },
+      axis: vectorObject(control.axis),
+      colliderOffset: vectorObject(control.neutralDirection.clone().multiplyScalar(control.radius)),
+      minAngleDegrees: control.config.minAngleDegrees,
+      maxAngleDegrees: control.config.maxAngleDegrees,
+      referenceAngleDegrees: control.config.referenceAngleDegrees || 0,
+    }, this.THREE.MathUtils.radToDeg(control.angle));
+    control.collider.position.copy(vector(this.THREE, colliderPoint));
     control.handle.updateMatrixWorld(true);
+    control.colliderFrame.updateMatrixWorld(true);
   }
 
   beginDrag(parameter, rayOrigin, rayDirection) {
@@ -151,6 +186,9 @@ export class MetronomeHandleRig {
       if (drag.previousPointerAngle !== null) {
         let delta = unwrapAngleDelta(pointerAngle, drag.previousPointerAngle);
         if (drag.control.config.invertDrag) delta *= -1;
+        delta *= Number.isFinite(drag.control.config.dragSensitivity)
+          ? drag.control.config.dragSensitivity
+          : 1;
         // Reject pathological one-frame jumps but preserve the last valid state.
         if (Math.abs(delta) < Math.PI * 0.75) drag.accumulatedDelta += delta;
       }
@@ -194,7 +232,14 @@ export class MetronomeHandleRig {
     const settings = METRONOME_SETTINGS.debug;
     const group = control.restFrame;
     group.userData.isMetronomeDebug = true;
-    const basis = createPlaneBasis(this.THREE, control.axis, control.neutralDirection);
+    const arcConfig = {
+      center: { x: 0, y: 0, z: 0 },
+      axis: vectorObject(control.axis),
+      colliderOffset: vectorObject(control.neutralDirection.clone().multiplyScalar(control.radius)),
+      minAngleDegrees: control.config.minAngleDegrees,
+      maxAngleDegrees: control.config.maxAngleDegrees,
+      referenceAngleDegrees: control.config.referenceAngleDegrees || 0,
+    };
 
     const pivot = new this.THREE.Mesh(
       owned(new this.THREE.SphereGeometry(settings.pivotRadius, 12, 8)),
@@ -202,13 +247,16 @@ export class MetronomeHandleRig {
     );
     group.add(pivot);
 
-    const circlePoints = arcPoints(this.THREE, basis, control.radius, 0, Math.PI * 2, settings.circleSegments);
+    const circlePoints = toThreePoints(this.THREE, generateArcPoints(arcConfig, {
+      startAngleDegrees: -180 - arcConfig.referenceAngleDegrees,
+      endAngleDegrees: 180 - arcConfig.referenceAngleDegrees,
+      segments: settings.circleSegments,
+    }));
     group.add(line(this.THREE, circlePoints, control.config.planeColor, settings.ringOpacity, this.disposables, true));
 
-    const arc = arcPoints(
-      this.THREE, basis, control.radius,
-      control.minAngle, control.maxAngle, settings.circleSegments,
-    );
+    const arc = toThreePoints(this.THREE, generateArcPoints(arcConfig, {
+      segments: settings.circleSegments,
+    }));
     group.add(line(this.THREE, arc, control.config.arcColor, settings.arcOpacity, this.disposables, false));
 
     const plane = new this.THREE.Mesh(
@@ -229,8 +277,12 @@ export class MetronomeHandleRig {
 
     if (settings.radialLimits) {
       for (const angle of [control.minAngle, control.maxAngle]) {
-        const endpoint = rotateAroundAxis(this.THREE, control.neutralDirection, control.axis, angle)
-          .multiplyScalar(control.radius);
+        const rotated = rotateOffsetAroundAxis(
+          arcConfig.colliderOffset,
+          arcConfig.axis,
+          angle + control.referenceAngle,
+        );
+        const endpoint = vector(this.THREE, rotated);
         group.add(line(
           this.THREE,
           [new this.THREE.Vector3(), endpoint],
@@ -249,7 +301,7 @@ export class MetronomeHandleRig {
 
   dispose() {
     for (const control of this.controls.values()) {
-      control.collider.removeFromParent();
+      control.colliderFrame.removeFromParent();
       control.restFrame.removeFromParent();
     }
     for (const disposable of this.disposables) disposable.dispose?.();
@@ -274,22 +326,6 @@ function owned(resource) {
   return resource;
 }
 
-function createPlaneBasis(THREE, axis, neutral) {
-  return { axis, first: neutral, second: new THREE.Vector3().crossVectors(axis, neutral).normalize() };
-}
-
-function arcPoints(THREE, basis, radius, start, end, segments) {
-  const points = [];
-  for (let index = 0; index <= segments; index += 1) {
-    const angle = start + (end - start) * (index / segments);
-    points.push(
-      basis.first.clone().multiplyScalar(Math.cos(angle) * radius)
-        .addScaledVector(basis.second, Math.sin(angle) * radius),
-    );
-  }
-  return points;
-}
-
 function line(THREE, points, color, opacity, disposables, loop) {
   const geometry = owned(new THREE.BufferGeometry().setFromPoints(points));
   const material = owned(new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthTest: false }));
@@ -301,6 +337,10 @@ function line(THREE, points, color, opacity, disposables, loop) {
   return result;
 }
 
-function rotateAroundAxis(THREE, vectorValue, axis, angle) {
-  return vectorValue.clone().applyAxisAngle(axis, angle);
+function vectorObject(value) {
+  return { x: value.x, y: value.y, z: value.z };
+}
+
+function toThreePoints(THREE, points) {
+  return points.map((point) => vector(THREE, point));
 }

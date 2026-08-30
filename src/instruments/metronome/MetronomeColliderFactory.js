@@ -1,6 +1,5 @@
 import { DEBUG_MODE } from "../../config/debug.js";
 import {
-  METRONOME_BODY_COLLIDER,
   METRONOME_CONNECTION_PORTS,
   METRONOME_CONNECTION_ROLE,
   METRONOME_SETTINGS,
@@ -26,15 +25,14 @@ export class MetronomeColliderFactory {
     const bodyTargets = {};
     const modelBounds = new this.THREE.Box3().setFromObject(root);
     const bodyTarget = createBodyGripTarget(root, bodyTargets, {
-      makeHitTargetMaterial: () => this.createMaterial(0xffffff),
-      hitMarkerOpacity: this.showDebug ? METRONOME_SETTINGS.debugOpacity : 0,
-      normalizedPosition: METRONOME_BODY_COLLIDER.position,
-      relativeScale: METRONOME_BODY_COLLIDER.scale,
+      interactionRole: METRONOME_INTERACTION_ROLES.body,
     });
     if (bodyTarget) {
-      bodyTarget.userData.isMetronomeTarget = true;
-      bodyTarget.userData.metronomeControl = null;
-      bodyTarget.userData.interactionRole = METRONOME_INTERACTION_ROLES.body;
+      root.traverse((object) => {
+        if (!object.userData?.isBodyGripTarget) return;
+        object.userData.isMetronomeTarget = true;
+        object.userData.metronomeControl = null;
+      });
       targets[METRONOME_INTERACTION_ROLES.body] = bodyTarget;
     }
     const buttonRig = new MetronomeButtonRig({ root });

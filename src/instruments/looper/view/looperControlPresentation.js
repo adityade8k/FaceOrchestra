@@ -1,3 +1,5 @@
+import { getArcPointForValue } from "../../core/arcMotionMath.js";
+
 export function getLooperControlColliderPosition(userData = {}, value = 0) {
   const clamped = clamp(value, -1, 1);
   if (userData.movementMode !== "arc") {
@@ -8,24 +10,7 @@ export function getLooperControlColliderPosition(userData = {}, value = 0) {
     };
   }
 
-  const minAngle = finite(userData.arcMinAngle, 0);
-  const maxAngle = finite(userData.arcMaxAngle, 0);
-  const angle = mapLinear(clamped, -1, 1, minAngle, maxAngle);
-  const midpointAngle = mapLinear(0.5, 0, 1, minAngle, maxAngle);
-  const side = finite(userData.arcSide, 1);
-  const radius = Math.max(finite(userData.arcRadius, 0), 0);
-  const midpointX = -side * Math.cos(midpointAngle) * radius;
-  const midpointY = Math.sin(midpointAngle) * radius;
-  const localX = -side * Math.cos(angle) * radius - midpointX;
-  const localY = Math.sin(angle) * radius - midpointY;
-  const rotationZ = finite(userData.arcRotationZ, 0);
-  const rotationCos = Math.cos(rotationZ);
-  const rotationSin = Math.sin(rotationZ);
-  return {
-    x: finite(userData.neutralX, 0) + localX * rotationCos - localY * rotationSin,
-    y: finite(userData.neutralY, 0) + localX * rotationSin + localY * rotationCos,
-    z: finite(userData.neutralZ, 0),
-  };
+  return getArcPointForValue(userData.arcMotion || userData.arc, clamped);
 }
 
 export function getLooperControlMorphWeights(value = 0) {

@@ -13,12 +13,12 @@ const HONK_ROLES = Object.freeze({
 
 export function getInteractionRole(kind, target) {
   if (kind === "metronome") return target?.userData?.interactionRole || "metronome.interaction";
+  if (target?.userData?.isBodyGripTarget) return `${kind}.body`;
   if (kind === "honk") return HONK_ROLES[target?.name] || "honk.interaction";
   if (kind === "looper") {
     if (target?.userData.isLooperButton) return `looper.button.${target.userData.looperAction}`;
     if (target?.userData.isLooperControl) return `looper.control.${target.userData.looperControl}`;
     if (target?.userData.isLooperNode) return "looper.track-node";
-    if (target?.name === INTERACTION_TARGET_NAMES.body) return "looper.body";
     return "looper.interaction";
   }
   if (kind === "stick") return "stick.strike-volume";

@@ -8,6 +8,13 @@ import {
 } from "../../config/looper.js";
 import { LooperControlMapping } from "../../instruments/looper/looperControlMapping.js";
 import {
+  getArcAngleForPoint,
+  getArcAngleForValue,
+  getArcValueForAngle,
+  intersectRayWithPlane,
+  unwrapAngleNear,
+} from "../../instruments/core/arcMotionMath.js";
+import {
   getLooperControlColliderPosition,
   getLooperControlMorphWeights,
 } from "../../instruments/looper/view/looperControlPresentation.js";
@@ -17,6 +24,10 @@ import {
 } from "../../instruments/looper/looperNames.js";
 
 const tempControlDragPosition = new THREE.Vector3();
+const tempControlRayEnd = new THREE.Vector3();
+const tempControlRayDirection = new THREE.Vector3();
+const tempControlQuaternion = new THREE.Quaternion();
+const DEG_TO_RAD = Math.PI / 180;
 
 
 export const LooperTransportRuntimeMethods = {
@@ -49,6 +60,10 @@ export const LooperTransportRuntimeMethods = {
       }
   
       if (target.userData.isLooperControl) {
+        const startValue = this.getLooperControlValue(looperState, target.userData.looperControl);
+        const startPointerAngle = target.userData.movementMode === "arc"
+          ? this.getArcControlPointerAngle(controller, looperState, target)
+          : null;
         controllerState.activeTriggerInteraction = {
           type: "looperControlDrag",
           looperState,
@@ -56,9 +71,13 @@ export const LooperTransportRuntimeMethods = {
           morphTargets: target.userData.looperMorphTargets || null,
           sphere: target,
           dragStartY: controller.position.y,
-          dragStartLocalPosition: this.getControllerLocalPosition(controller, looperState).clone(),
-          dragStartValue: this.getLooperControlValue(looperState, target.userData.looperControl),
+          dragStartValue: startValue,
           dragStartSphereY: target.position.y,
+          startControlAngle: target.userData.movementMode === "arc"
+            ? getArcAngleForValue(target.userData.arcMotion, startValue) * DEG_TO_RAD
+            : null,
+          startPointerAngle,
+          lastUnwrappedPointerAngle: startPointerAngle,
         };
         return true;
       }
@@ -140,21 +159,19 @@ export const LooperTransportRuntimeMethods = {
         return;
       }
   
-      const deltaY = controller.position.y - interaction.dragStartY;
-      const dragDelta = sphere.userData.movementMode === "arc"
-        ? this.getArcControlDragDelta(controller, looperState, sphere, interaction)
-        : deltaY / this.getInstrumentWorldScaleY(looperState);
-      const nextValue = this.getControlValueFromDrag(sphere, interaction, dragDelta);
+      let nextValue;
+      if (sphere.userData.movementMode === "arc") {
+        nextValue = this.getArcControlValueFromDrag(controller, looperState, sphere, interaction);
+      } else {
+        const deltaY = controller.position.y - interaction.dragStartY;
+        const dragDelta = deltaY / this.getInstrumentWorldScaleY(looperState);
+        nextValue = this.getControlValueFromDrag(sphere, interaction, dragDelta);
+      }
 
       this.setLooperControlValue(looperState, interaction.control, nextValue, true, interaction.morphTargets);
     },
     getControlValueFromDrag(sphere, interaction, dragDelta) {
       const scaledDragDelta = dragDelta * (sphere.userData.dragSensitivity ?? 1);
-      if (sphere.userData.movementMode === "arc") {
-        const dragRange = Math.max(Math.abs(sphere.userData.dragRange || sphere.userData.maxY - sphere.userData.minY), 0.0001);
-        return THREE.MathUtils.clamp(interaction.dragStartValue + scaledDragDelta / dragRange, -1, 1);
-      }
-  
       const nextY = THREE.MathUtils.clamp(
         interaction.dragStartSphereY + scaledDragDelta,
         sphere.userData.minY,
@@ -169,26 +186,50 @@ export const LooperTransportRuntimeMethods = {
       instrumentState.root.worldToLocal(tempControlDragPosition);
       return tempControlDragPosition;
     },
-    getArcControlDragDelta(controller, instrumentState, sphere, interaction) {
-      const startPosition = interaction.dragStartLocalPosition;
-      if (!startPosition) {
-        return (controller.position.y - interaction.dragStartY) / this.getInstrumentWorldScaleY(instrumentState);
+    getArcControlValueFromDrag(controller, instrumentState, sphere, interaction) {
+      const arc = sphere.userData.arcMotion;
+      const pointerAngle = this.getArcControlPointerAngle(controller, instrumentState, sphere);
+      if (!arc || pointerAngle === null || interaction.startPointerAngle === null) {
+        return interaction.dragStartValue;
       }
-  
-      const currentPosition = this.getControllerLocalPosition(controller, instrumentState);
-      const midpointAngle = THREE.MathUtils.lerp(sphere.userData.arcMinAngle, sphere.userData.arcMaxAngle, 0.5);
-      const localAxisX = sphere.userData.arcSide * Math.sin(midpointAngle);
-      const localAxisY = Math.cos(midpointAngle);
-      const rotationZ = sphere.userData.arcRotationZ || 0;
-      const rotationCos = Math.cos(rotationZ);
-      const rotationSin = Math.sin(rotationZ);
-      const axisX = localAxisX * rotationCos - localAxisY * rotationSin;
-      const axisY = localAxisX * rotationSin + localAxisY * rotationCos;
-      const axisLength = Math.hypot(axisX, axisY) || 1;
-      const deltaX = currentPosition.x - startPosition.x;
-      const deltaY = currentPosition.y - startPosition.y;
-  
-      return (deltaX * axisX + deltaY * axisY) / axisLength;
+      const unwrappedPointerAngle = unwrapAngleNear(
+        pointerAngle,
+        interaction.lastUnwrappedPointerAngle ?? interaction.startPointerAngle,
+      );
+      interaction.lastUnwrappedPointerAngle = unwrappedPointerAngle;
+      const direction = sphere.userData.invertDrag ? -1 : 1;
+      const sensitivity = sphere.userData.dragSensitivity ?? 1;
+      const nextAngleRadians = THREE.MathUtils.clamp(
+        interaction.startControlAngle +
+          (unwrappedPointerAngle - interaction.startPointerAngle) * sensitivity * direction,
+        arc.minAngleDegrees * DEG_TO_RAD,
+        arc.maxAngleDegrees * DEG_TO_RAD,
+      );
+      return getArcValueForAngle(arc, nextAngleRadians / DEG_TO_RAD);
+    },
+    getArcControlPointerAngle(controller, instrumentState, sphere) {
+      const arc = sphere?.userData?.arcMotion;
+      if (!arc) return null;
+      instrumentState.root.updateMatrixWorld(true);
+      controller.updateMatrixWorld(true);
+      controller.getWorldPosition(tempControlDragPosition);
+      controller.getWorldQuaternion(tempControlQuaternion);
+      tempControlRayDirection.set(0, 0, -1).applyQuaternion(tempControlQuaternion).normalize();
+      tempControlRayEnd.copy(tempControlDragPosition).add(tempControlRayDirection);
+      instrumentState.root.worldToLocal(tempControlDragPosition);
+      instrumentState.root.worldToLocal(tempControlRayEnd);
+      tempControlRayDirection.copy(tempControlRayEnd).sub(tempControlDragPosition).normalize();
+      const intersection = intersectRayWithPlane(
+        tempControlDragPosition,
+        tempControlRayDirection,
+        arc.center,
+        arc.axis,
+      );
+      const localPoint = intersection
+        ? new THREE.Vector3(intersection.x, intersection.y, intersection.z)
+        : tempControlDragPosition;
+      const angleDegrees = getArcAngleForPoint(arc, localPoint);
+      return angleDegrees === null ? null : angleDegrees * DEG_TO_RAD;
     },
     positionControlColliderFromValue(sphere, value) {
       if (!sphere) {

@@ -43,6 +43,8 @@ export const METRONOME_SETTINGS = Object.freeze({
 
 export const METRONOME_CONNECTION_ROLE = "metronome.connection-port";
 
+// Legacy editor-schema compatibility only. Runtime grip raycasts use the
+// imported visible meshes and the editor intentionally exposes no body box.
 export const METRONOME_BODY_COLLIDER = Object.freeze({
   position: Object.freeze({ x: 0, y: 0, z: 0 }),
   scale: Object.freeze({ x: 0.7, y: 0.8, z: 0.8 }),
@@ -118,12 +120,15 @@ export const METRONOME_PENDULUM_SETTINGS = Object.freeze({
   swingDegrees: 5,
 });
 
-// Axis and offset are expressed in each imported handle's stable rest-local frame.
+// Center, axis, and offset are expressed in each imported handle's stable
+// rest-local frame. Center (0, 0, 0) is the authored GLB node origin, but
+// moving it repositions only the interaction plane/collider, not the GLB mesh.
 // Swapping the `parameter` values is sufficient to swap the two controls.
 export const METRONOME_HANDLE_CONTROLS = Object.freeze([
   Object.freeze({
     nodeName: "L_handle_geo",
     parameter: "bpm",
+    center: Object.freeze({ x: 0, y: 0, z: 0 }),
     axis: Object.freeze({ x: 0, y: 1, z: 0 }),
     minAngleDegrees: -50,
     maxAngleDegrees: 90,
@@ -134,11 +139,13 @@ export const METRONOME_HANDLE_CONTROLS = Object.freeze([
     pivotColor: 0xffd0a8,
     planeColor: 0xff8c42,
     arcColor: 0xffc08a,
+    dragSensitivity: 1,
     invertDrag: false,
   }),
   Object.freeze({
     nodeName: "R_handle_geo",
     parameter: "volume",
+    center: Object.freeze({ x: 0, y: 0, z: 0 }),
     axis: Object.freeze({ x: 0, y: 1, z: 0 }),
     minAngleDegrees: -90,
     maxAngleDegrees: 40,
@@ -149,6 +156,7 @@ export const METRONOME_HANDLE_CONTROLS = Object.freeze([
     pivotColor: 0xbdeaff,
     planeColor: 0x5ac8fa,
     arcColor: 0x9ee5ff,
+    dragSensitivity: 1,
     invertDrag: false,
   }),
 ]);

@@ -33,6 +33,7 @@ import { LooperColliderFactory } from "../../instruments/looper/LooperColliderFa
 import { applyStandardInstrumentMaterials } from "../../scene/materialUtils.js";
 import { MetronomePendulumRig } from "../../instruments/metronome/MetronomePendulumRig.js";
 import { applyMetronomeSpawnOrientation } from "../../instruments/metronome/metronomeSpawnOrientation.js";
+import { METRONOME_INTERACTION_ROLES } from "../../instruments/metronome/MetronomeInstrument.js";
 
 const CONTROLLER_RAY_LENGTH = 1.6;
 const RAY_COLOR_DEFAULT = 0xf6d878;
@@ -160,10 +161,7 @@ export const InstrumentAssetRuntimeMethods = {
   },
 
   createBodyGripTarget(root, hitTargets) {
-    createBodyGripTargetObject(root, hitTargets, {
-      makeHitTargetMaterial: (name) => makeHitTargetMaterial(name),
-      hitMarkerOpacity: HIT_MARKER_OPACITY,
-    });
+    createBodyGripTargetObject(root, hitTargets, { interactionRole: "looper.body" });
   },
 
   createMorphTargetSpheres(root, hitTargets) {
@@ -280,6 +278,7 @@ export const InstrumentAssetRuntimeMethods = {
       const created = this.honkColliderFactory.create(root);
       domainTargets = created.targets;
       hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
+      hitTargets[INTERACTION_TARGET_NAMES.body] = domainTargets[HONK_INTERACTION_ROLES.body];
     } else if (kind === "metronome") {
       const created = this.metronomeColliderFactory.create(root);
       domainTargets = created.targets;
@@ -287,6 +286,7 @@ export const InstrumentAssetRuntimeMethods = {
       buttonRig = created.buttonRig;
       pendulumRig = new MetronomePendulumRig({ THREE, root });
       hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
+      hitTargets[INTERACTION_TARGET_NAMES.body] = domainTargets[METRONOME_INTERACTION_ROLES.body];
     } else {
       this.createLooperColliders(root, hitTargets);
       this.createBodyGripTarget(root, hitTargets);
@@ -355,7 +355,7 @@ function decorateInstrumentEntity(state, { componentOption, hitTargets, morphMes
   state.componentLabel = componentOption.label;
   state.morphMeshes = morphMeshes;
   state.hitTargets = hitTargets;
-  state.hitTargetList = Object.values(hitTargets);
+  state.hitTargetList = [...new Set(Object.values(hitTargets).filter(Boolean))];
   state.gripTargetList = collectGripTargets(state.root);
   state.missingMorphWarnings ||= new Set();
   state.currentVowelIndex = state.morphs?.currentVowelIndex ?? -1;

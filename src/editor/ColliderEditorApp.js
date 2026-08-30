@@ -2,30 +2,21 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
-import { ASSET_PATHS } from "../config/assets.js";
 import { applyStandardInstrumentMaterials, loadMaterialTextureSet } from "../scene/materialUtils.js";
-import { MetronomeEditorAdapter } from "./MetronomeEditorAdapter.js";
+import { getColliderEditorInstrument } from "./ColliderEditorInstrumentRegistry.js";
 import {
   CalibrationSchemaError,
-  cloneMetronomeCalibration,
   colorNumberToJson,
   colorToNumber,
-  createRepositoryMetronomeCalibration,
-  generateMetronomeConfigJavaScript,
-  METRONOME_EDITOR_AUTOSAVE_KEY,
-  parseMetronomeCalibration,
-  serializeMetronomeCalibration,
-  validateMetronomeCalibration,
 } from "./calibration/metronomeCalibrationSchema.js";
-
-const MODEL_TEXTURE_PATHS = ASSET_PATHS.textures.metronome;
-const MODEL_LOAD_KEY = "metronome-editor-model";
 
 export class ColliderEditorApp {
   constructor() {
     this.elements = collectElements();
-    this.repositoryState = createRepositoryMetronomeCalibration();
-    this.state = cloneMetronomeCalibration(this.repositoryState);
+    this.instrumentId = this.elements.instrumentSelector.value || "metronome";
+    this.profile = getColliderEditorInstrument(this.instrumentId);
+    this.repositoryState = this.profile.createRepositoryState();
+    this.state = this.profile.clone(this.repositoryState);
     this.undoStack = [];
     this.redoStack = [];
     this.selectedId = null;
@@ -44,17 +35,40 @@ export class ColliderEditorApp {
     this.modelSourceLabel = "repository GLB";
 
     this.setupViewport();
-    this.adapter = new MetronomeEditorAdapter({ scene: this.scene });
+    this.adapter = this.profile.createAdapter({ scene: this.scene });
     this.bindUI();
   }
 
   async initialize() {
-    this.setStatus("Loading repository metronome…", "loading");
+    this.setStatus(`Loading repository ${this.profile.modelLabel}…`, "loading");
     await this.loadModel(this.state.modelPath, { sourceLabel: "repository GLB", applyTextures: true });
     this.renderAll();
     this.offerDraftRestore();
     this.animate();
     return this;
+  }
+
+  async switchInstrument(instrumentId) {
+    if (instrumentId === this.instrumentId) return;
+    this.transform.detach();
+    this.adapter.dispose();
+    if (this.modelRoot) {
+      this.modelRoot.removeFromParent();
+      disposeModel(this.modelRoot);
+      this.modelRoot = null;
+    }
+    this.instrumentId = instrumentId;
+    this.profile = getColliderEditorInstrument(instrumentId);
+    this.repositoryState = this.profile.createRepositoryState();
+    this.state = this.profile.clone(this.repositoryState);
+    this.undoStack.length = 0;
+    this.redoStack.length = 0;
+    this.selectedId = null;
+    this.selectedObject = null;
+    this.adapter = this.profile.createAdapter({ scene: this.scene });
+    this.modelSourceLabel = "repository GLB";
+    await this.loadModel(this.state.modelPath, { sourceLabel: "repository GLB", applyTextures: true });
+    this.offerDraftRestore();
   }
 
   setupViewport() {
@@ -96,7 +110,7 @@ export class ColliderEditorApp {
       this.orbit.enabled = !value;
     });
     this.transform.addEventListener("mouseDown", () => {
-      this.transformSnapshot = cloneMetronomeCalibration(this.state);
+      this.transformSnapshot = this.profile.clone(this.state);
     });
     this.transform.addEventListener("objectChange", () => {
       if (!this.selectedId) return;
@@ -148,6 +162,7 @@ export class ColliderEditorApp {
       button.addEventListener("click", () => this.handleAction(button.dataset.action));
     });
     this.elements.cameraMode.addEventListener("change", () => this.setCameraMode(this.elements.cameraMode.value));
+    this.elements.instrumentSelector.addEventListener("change", () => this.switchInstrument(this.elements.instrumentSelector.value));
     this.elements.cameraPreset.addEventListener("change", () => {
       if (this.elements.cameraPreset.value) this.setCameraPreset(this.elements.cameraPreset.value);
       this.elements.cameraPreset.value = "";
@@ -178,10 +193,10 @@ export class ColliderEditorApp {
       const gltf = await this.glbLoader.loadAsync(path);
       if (applyTextures) {
         try {
-          const textures = await loadMaterialTextureSet(this.textureLoader, MODEL_TEXTURE_PATHS);
+          const textures = await loadMaterialTextureSet(this.textureLoader, this.profile.texturePaths);
           applyStandardInstrumentMaterials(gltf.scene, textures, { bumpScale: 0.035 });
         } catch (textureError) {
-          console.warn("Collider editor could not load the optional metronome texture set:", textureError);
+          console.warn(`Collider editor could not load the optional ${this.profile.modelLabel} texture set:`, textureError);
           this.setStatus("Model loaded; one or more editor textures failed to load.", "warning");
         }
       }
@@ -191,7 +206,7 @@ export class ColliderEditorApp {
         disposeModel(this.modelRoot);
       }
       this.modelRoot = gltf.scene;
-      this.modelRoot.name = MODEL_LOAD_KEY;
+      this.modelRoot.name = `${this.instrumentId}-editor-model`;
       this.scene.add(this.modelRoot);
       this.modelSourceLabel = sourceLabel || customName || "model";
       this.adapter.load(this.modelRoot, this.state);
@@ -201,7 +216,7 @@ export class ColliderEditorApp {
       this.frameModel();
       const warnings = this.adapter.getMissingNodeWarnings();
       this.setStatus(
-        warnings.length ? `Loaded with ${warnings.length} missing-node warning${warnings.length === 1 ? "" : "s"}.` : "Metronome calibration model loaded.",
+        warnings.length ? `Loaded with ${warnings.length} missing-node warning${warnings.length === 1 ? "" : "s"}.` : `${this.profile.label} calibration model loaded.`,
         warnings.length ? "warning" : "success",
       );
       setTimeout(() => this.elements.viewportStatus.classList.add("hidden"), 2600);
@@ -347,15 +362,6 @@ export class ColliderEditorApp {
     container.append(group);
   }
 
-  renderBodyInspector(container) {
-    const config = this.state.metronome.bodyCollider;
-    const group = createGroup("Bounds-normalized body box");
-    group.append(this.vectorField("Position", config.position, { step: 0.001, entityId: "body" }));
-    group.append(this.vectorField("XYZ scale", config.scale, { step: 0.001, entityId: "body" }));
-    group.append(diagnosticBlock(this.adapter.getDiagnostics("body")));
-    container.append(group);
-  }
-
   renderPortInspector(container, entity) {
     const config = this.state.metronome.connectionPorts[entity.index];
     const identity = createGroup("Connection-port identity");
@@ -394,16 +400,23 @@ export class ColliderEditorApp {
     const binding = createGroup("GLB binding");
     binding.append(this.nodeNameField("Node name", config, "nodeName", { entityId: entity.id }));
     binding.append(this.textField("Parameter", config, "parameter", { entityId: entity.id }));
+    binding.append(this.numberField("Drag sensitivity", config, "dragSensitivity", { step: 0.1, entityId: entity.id }));
     binding.append(this.checkboxField("Invert drag", config, "invertDrag", { entityId: entity.id }));
     container.append(binding);
 
     const movement = createGroup("Runtime movement math");
+    movement.append(this.vectorField("Circular-plane center", config.center, { step: 0.001, entityId: entity.id }));
+    movement.append(readonlyField("Center coordinates", "GLB handle rest-local · (0, 0, 0) is the authored node origin"));
     movement.append(this.vectorField("Axis", config.axis, { step: 0.001, entityId: entity.id }));
     movement.append(this.numberField("Minimum angle", config, "minAngleDegrees", { step: 0.1, entityId: entity.id }));
     movement.append(this.numberField("Maximum angle", config, "maxAngleDegrees", { step: 0.1, entityId: entity.id }));
     movement.append(this.numberField("Reference angle", config, "referenceAngleDegrees", { step: 0.1, entityId: entity.id }));
-    movement.append(this.vectorField("Collider offset", config.colliderOffset, { step: 0.001, entityId: entity.id }));
-    movement.append(this.numberField("Collider radius", config, "colliderRadius", { step: 0.001, entityId: entity.id }));
+    movement.append(this.vectorField("Rest radial vector", config.colliderOffset, { step: 0.001, entityId: entity.id }));
+    movement.append(this.derivedNumberField("Plane orbit radius", this.adapter.getOrbitRadius(entity.id), (value) => {
+      this.adapter.setOrbitRadius(entity.id, value);
+    }, { step: 0.01, entityId: entity.id }));
+    movement.append(this.numberField("Collider geometry radius", config, "colliderRadius", { step: 0.001, entityId: entity.id }));
+    movement.append(messageElement("Move the assembly gizmo to translate the pivot, plane, path, and collider together. The authored GLB handle stays in place and only rotates during value preview. Plane radius and collider geometry size remain independent.", "success"));
     container.append(movement);
 
     const colors = createGroup("Debug colors");
@@ -417,18 +430,13 @@ export class ColliderEditorApp {
     const [minimum, maximum, step] = config.parameter === "bpm"
       ? [settings.minBpm, settings.maxBpm, 1]
       : [settings.minVolume, settings.maxVolume, 0.01];
-    const slider = rangeField(
-      `${config.parameter.toUpperCase()} value`,
-      entity.previewValue ?? (config.parameter === "bpm" ? settings.defaultBpm : settings.defaultVolume),
-      minimum,
-      maximum,
-      step,
-      (value) => {
-        this.adapter.setHandlePreview(entity.id, value);
-        this.renderInspector();
-      },
-    );
+    const actualPreview = entity.previewValue ?? (config.parameter === "bpm" ? settings.defaultBpm : settings.defaultVolume);
+    const normalizedPreview = ((actualPreview - minimum) / (maximum - minimum || 1)) * 2 - 1;
+    const slider = rangeField("Normalized value", normalizedPreview, -1, 1, 0.01, (value) => {
+      this.adapter.setHandlePreview(entity.id, minimum + ((value + 1) * 0.5) * (maximum - minimum));
+    });
     preview.append(slider);
+    preview.append(readonlyField(`${config.parameter.toUpperCase()} range`, `${minimum} – ${maximum} · step ${step}`));
     preview.append(loopField("Loop full range", this.adapter.handleLoops.has(entity.id), (enabled) => this.adapter.setHandleLoop(entity.id, enabled)));
     preview.append(diagnosticBlock(this.adapter.getDiagnostics(entity.id)));
     container.append(preview);
@@ -481,6 +489,52 @@ export class ColliderEditorApp {
     container.append(preview);
   }
 
+  renderLooperArcInspector(container, entity) {
+    const config = this.state.looper.controlColliders[entity.control];
+    const arc = config.arc;
+    const coordinates = createGroup("Pivot-centered arc · GLB root-local");
+    coordinates.append(this.vectorField("Circular-plane center", arc.center, { step: 0.001, entityId: entity.id }));
+    coordinates.append(this.vectorField("Rest radial vector", arc.colliderOffset, { step: 0.001, entityId: entity.id }));
+    coordinates.append(this.derivedNumberField("Plane orbit radius", this.adapter.getOrbitRadius(entity.id), (value) => {
+      this.adapter.setOrbitRadius(entity.id, value);
+    }, { step: 0.001, entityId: entity.id }));
+    coordinates.append(this.vectorField("Axis / plane normal", arc.axis, { step: 0.001, entityId: entity.id }));
+    coordinates.append(this.numberField("Minimum angle", arc, "minAngleDegrees", { step: 0.1, entityId: entity.id }));
+    coordinates.append(this.numberField("Maximum angle", arc, "maxAngleDegrees", { step: 0.1, entityId: entity.id }));
+    coordinates.append(this.numberField("Reference angle", arc, "referenceAngleDegrees", { step: 0.1, entityId: entity.id }));
+    coordinates.append(messageElement("This is one selectable assembly. Its gizmo translates the pivot, plane, path, and collider together. Plane radius scales the radial vector without changing collider geometry size.", "success"));
+    container.append(coordinates);
+
+    const interaction = createGroup("Collider geometry & interaction");
+    interaction.append(this.numberField("Collider geometry radius", config, "colliderRadius", { step: 0.001, entityId: entity.id }));
+    interaction.append(this.numberField("Drag sensitivity", config, "dragSensitivity", { step: 0.1, entityId: entity.id }));
+    interaction.append(this.checkboxField("Invert drag", config, "invertDrag", { entityId: entity.id }));
+    container.append(interaction);
+
+    const colors = createGroup("Debug colors");
+    for (const [label, field] of [["Collider", "colliderColor"], ["Pivot", "pivotColor"], ["Plane", "planeColor"], ["Arc", "arcColor"]]) {
+      colors.append(this.colorField(label, config, field, { entityId: entity.id }));
+    }
+    container.append(colors);
+
+    const preview = createGroup("Movement & morph preview");
+    const previewValue = this.adapter.controlPreviews.get(entity.control)
+      ?? entity.previewValue
+      ?? 0;
+    preview.append(rangeField("Normalized value", previewValue, -1, 1, 0.01, (value) => {
+      this.adapter.setControlPreview(entity.control, value);
+    }));
+    preview.append(loopField(
+      "Loop full range",
+      this.adapter.controlLoops.has(entity.control),
+      (enabled) => this.adapter.setControlLoop(entity.control, enabled),
+    ));
+    preview.append(readonlyField("Morph down", config.morphTargets.down));
+    preview.append(readonlyField("Morph up", config.morphTargets.up));
+    preview.append(diagnosticBlock(this.adapter.getDiagnostics(entity.id)));
+    container.append(preview);
+  }
+
   textField(label, object, key, { entityId }) {
     const input = document.createElement("input");
     input.type = "text";
@@ -500,10 +554,24 @@ export class ColliderEditorApp {
     input.type = "number";
     input.step = String(step);
     input.value = String(object[key]);
-    input.addEventListener("change", () => {
+    this.bindNumericPreview(input, label, entityId, () => {
       const value = Number(input.value);
-      if (!Number.isFinite(value)) return this.showValidationError(`${label} must be finite.`);
-      this.commitMutation(() => { object[key] = value; }, { selectId: entityId });
+      if (!Number.isFinite(value)) throw new TypeError(`${label} must be finite.`);
+      object[key] = value;
+    });
+    return fieldRow(label, input);
+  }
+
+  derivedNumberField(label, value, setter, { step = 0.001, entityId }) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = String(step);
+    input.min = "0.000001";
+    input.value = String(value);
+    this.bindNumericPreview(input, label, entityId, () => {
+      const next = Number(input.value);
+      if (!Number.isFinite(next) || next <= 0) throw new TypeError(`${label} must be greater than zero.`);
+      setter(next);
     });
     return fieldRow(label, input);
   }
@@ -514,10 +582,10 @@ export class ColliderEditorApp {
     input.step = String(step);
     input.placeholder = "null";
     input.value = object[key] === null ? "" : String(object[key]);
-    input.addEventListener("change", () => {
+    this.bindNumericPreview(input, label, entityId, () => {
       const value = input.value.trim() === "" ? null : Number(input.value);
-      if (value !== null && !Number.isFinite(value)) return this.showValidationError(`${label} must be finite or empty.`);
-      this.commitMutation(() => { object[key] = value; }, { selectId: entityId });
+      if (value !== null && !Number.isFinite(value)) throw new TypeError(`${label} must be finite or empty.`);
+      object[key] = value;
     });
     return fieldRow(label, input);
   }
@@ -533,15 +601,61 @@ export class ColliderEditorApp {
       input.type = "number";
       input.step = String(step);
       input.value = String(vector[axis]);
-      input.addEventListener("change", () => {
+      this.bindNumericPreview(input, `${label}.${axis}`, entityId, () => {
         const value = Number(input.value);
-        if (!Number.isFinite(value)) return this.showValidationError(`${label}.${axis} must be finite.`);
-        this.commitMutation(() => { vector[axis] = value; }, { selectId: entityId });
+        if (!Number.isFinite(value)) throw new TypeError(`${label}.${axis} must be finite.`);
+        vector[axis] = value;
       });
       axisLabel.append(name, input);
       wrapper.append(axisLabel);
     }
     return fieldRow(label, wrapper);
+  }
+
+  bindNumericPreview(input, label, entityId, applyValue) {
+    let snapshot = null;
+    let committed = false;
+    const capture = () => {
+      if (!snapshot) snapshot = this.profile.clone(this.state);
+    };
+    const preview = () => {
+      capture();
+      try {
+        applyValue();
+        this.previewStateMutation(entityId);
+      } catch (error) {
+        this.showValidationError(error.message || `${label} is invalid.`);
+      }
+    };
+    const commit = () => {
+      if (committed) return;
+      committed = true;
+      if (snapshot && !sameState(snapshot, this.state)) {
+        this.undoStack.push(snapshot);
+        this.redoStack.length = 0;
+        this.scheduleAutosave();
+      }
+      this.rebuildAdapter(entityId);
+      this.markDirty({ autosave: false });
+      this.renderAll();
+    };
+    input.addEventListener("focus", capture);
+    input.addEventListener("input", preview);
+    input.addEventListener("change", commit);
+    input.addEventListener("blur", commit);
+  }
+
+  previewStateMutation(entityId) {
+    this.transform.detach();
+    this.adapter.setState(this.state);
+    const entity = this.adapter.entities.get(entityId);
+    this.selectedId = entity?.id || null;
+    this.selectedObject = entity?.object || null;
+    if (entity?.transformable && entity.object) this.transform.attach(entity.object);
+    this.markDirty({ autosave: false });
+    this.updateSelectionHelpers();
+    this.renderValidation();
+    this.updateExportText();
   }
 
   colorField(label, object, key, { entityId }) {
@@ -577,7 +691,7 @@ export class ColliderEditorApp {
   }
 
   commitMutation(mutator, { selectId = this.selectedId, rebuild = true } = {}) {
-    const before = cloneMetronomeCalibration(this.state);
+    const before = this.profile.clone(this.state);
     mutator();
     if (sameState(before, this.state)) return;
     this.undoStack.push(before);
@@ -603,7 +717,7 @@ export class ColliderEditorApp {
   undo() {
     const previous = this.undoStack.pop();
     if (!previous) return;
-    this.redoStack.push(cloneMetronomeCalibration(this.state));
+    this.redoStack.push(this.profile.clone(this.state));
     this.state = previous;
     this.rebuildAdapter();
     this.markDirty();
@@ -613,7 +727,7 @@ export class ColliderEditorApp {
   redo() {
     const next = this.redoStack.pop();
     if (!next) return;
-    this.undoStack.push(cloneMetronomeCalibration(this.state));
+    this.undoStack.push(this.profile.clone(this.state));
     this.state = next;
     this.rebuildAdapter();
     this.markDirty();
@@ -624,23 +738,16 @@ export class ColliderEditorApp {
     const entity = this.adapter.entities.get(this.selectedId);
     if (!entity) return;
     this.commitMutation(() => {
-      const source = this.repositoryState.metronome;
-      const target = this.state.metronome;
-      if (entity.type === "settings") target.settings = cloneMetronomeCalibration(source.settings);
-      if (entity.type === "body") target.bodyCollider = cloneMetronomeCalibration(source.bodyCollider);
-      if (entity.type === "port") target.connectionPorts[entity.index] = cloneMetronomeCalibration(source.connectionPorts[entity.index]);
-      if (entity.type === "handle") target.handleControls[entity.index] = cloneMetronomeCalibration(source.handleControls[entity.index]);
-      if (entity.type === "eye") target.eyeControls[entity.index] = cloneMetronomeCalibration(source.eyeControls[entity.index]);
-      if (entity.type === "pendulum") target.pendulum = cloneMetronomeCalibration(source.pendulum);
+      this.profile.resetEntity(this.state, this.repositoryState, entity);
     }, { selectId: this.selectedId });
   }
 
   async resetAll() {
-    const before = cloneMetronomeCalibration(this.state);
+    const before = this.profile.clone(this.state);
     this.undoStack.push(before);
     this.redoStack.length = 0;
-    this.state = cloneMetronomeCalibration(this.repositoryState);
-    localStorage.removeItem(METRONOME_EDITOR_AUTOSAVE_KEY);
+    this.state = this.profile.clone(this.repositoryState);
+    localStorage.removeItem(this.profile.autosaveKey);
     await this.loadModel(this.state.modelPath, { sourceLabel: "repository GLB", applyTextures: true });
     this.selectedId = null;
     this.updateDirtyIndicator();
@@ -791,7 +898,7 @@ export class ColliderEditorApp {
     const container = this.elements.validationMessages;
     container.replaceChildren();
     try {
-      const { warnings } = validateMetronomeCalibration(this.state, { nodeNames: this.adapter.nodeNames });
+      const { warnings } = this.profile.validate(this.state, { nodeNames: this.adapter.nodeNames });
       for (const warning of warnings) container.append(messageElement(warning, "warning"));
       if (!warnings.length) container.append(messageElement("Configuration is exportable.", "success"));
     } catch (error) {
@@ -807,8 +914,8 @@ export class ColliderEditorApp {
   updateExportText() {
     try {
       this.elements.exportText.value = this.currentExportMode === "javascript"
-        ? generateMetronomeConfigJavaScript(this.state, { nodeNames: this.adapter.nodeNames })
-        : serializeMetronomeCalibration(this.state, { nodeNames: this.adapter.nodeNames });
+        ? this.profile.generateJavaScript(this.state, { nodeNames: this.adapter.nodeNames })
+        : this.profile.serialize(this.state, { nodeNames: this.adapter.nodeNames });
     } catch (error) {
       this.elements.exportText.value = `Export blocked by validation:\n${error.message}`;
     }
@@ -816,7 +923,7 @@ export class ColliderEditorApp {
 
   async copyJson() {
     try {
-      const text = serializeMetronomeCalibration(this.state, { nodeNames: this.adapter.nodeNames });
+      const text = this.profile.serialize(this.state, { nodeNames: this.adapter.nodeNames });
       this.currentExportMode = "json";
       this.elements.exportText.value = text;
       await copyText(text);
@@ -826,7 +933,7 @@ export class ColliderEditorApp {
 
   async copyJavaScript() {
     try {
-      const text = generateMetronomeConfigJavaScript(this.state, { nodeNames: this.adapter.nodeNames });
+      const text = this.profile.generateJavaScript(this.state, { nodeNames: this.adapter.nodeNames });
       this.currentExportMode = "javascript";
       this.elements.exportText.value = text;
       await copyText(text);
@@ -836,11 +943,11 @@ export class ColliderEditorApp {
 
   downloadJson() {
     try {
-      const text = serializeMetronomeCalibration(this.state, { nodeNames: this.adapter.nodeNames });
+      const text = this.profile.serialize(this.state, { nodeNames: this.adapter.nodeNames });
       const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = "metronome-calibration.json";
+      link.download = this.profile.downloadName;
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) { this.showValidationError(error.message); }
@@ -857,8 +964,8 @@ export class ColliderEditorApp {
 
   async importJsonText(text) {
     try {
-      const imported = parseMetronomeCalibration(text, { nodeNames: this.adapter.nodeNames });
-      const before = cloneMetronomeCalibration(this.state);
+      const imported = this.profile.parse(text, { nodeNames: this.adapter.nodeNames });
+      const before = this.profile.clone(this.state);
       this.state = imported;
       this.undoStack.push(before);
       this.redoStack.length = 0;
@@ -877,7 +984,7 @@ export class ColliderEditorApp {
   }
 
   offerDraftRestore() {
-    const draft = localStorage.getItem(METRONOME_EDITOR_AUTOSAVE_KEY);
+    const draft = localStorage.getItem(this.profile.autosaveKey);
     if (!draft) return;
     const dialog = this.elements.draftDialog;
     dialog.addEventListener("close", () => {
@@ -890,10 +997,10 @@ export class ColliderEditorApp {
   restoreDraft(text) {
     try {
       const draft = JSON.parse(text);
-      if (draft?.schemaVersion !== this.repositoryState.schemaVersion || !draft.metronome) {
+      if (draft?.schemaVersion !== this.repositoryState.schemaVersion || !(draft.metronome || draft.looper)) {
         throw new TypeError("Draft schema is not recognized.");
       }
-      this.state = draft;
+      this.state = this.profile.parse(JSON.stringify(draft), { nodeNames: this.adapter.nodeNames });
       this.undoStack.length = 0;
       this.redoStack.length = 0;
       this.rebuildAdapter();
@@ -905,7 +1012,7 @@ export class ColliderEditorApp {
   }
 
   discardDraft() {
-    localStorage.removeItem(METRONOME_EDITOR_AUTOSAVE_KEY);
+    localStorage.removeItem(this.profile.autosaveKey);
     this.setStatus("Collider-editor draft discarded. Production scene storage was not touched.", "success");
   }
 
@@ -917,7 +1024,7 @@ export class ColliderEditorApp {
   scheduleAutosave() {
     clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => {
-      localStorage.setItem(METRONOME_EDITOR_AUTOSAVE_KEY, JSON.stringify(this.state));
+      localStorage.setItem(this.profile.autosaveKey, JSON.stringify(this.state));
       this.updateDirtyIndicator("Draft autosaved");
     }, 250);
   }
@@ -991,6 +1098,7 @@ function collectElements() {
     validationMessages: document.querySelector("#validation-messages"),
     exportText: document.querySelector("#export-text"),
     cameraMode: document.querySelector("#camera-mode"),
+    instrumentSelector: document.querySelector("#instrument-selector"),
     cameraPreset: document.querySelector("#camera-preset"),
     modelDisplay: document.querySelector("#model-display"),
     toggleGrid: document.querySelector("#toggle-grid"),

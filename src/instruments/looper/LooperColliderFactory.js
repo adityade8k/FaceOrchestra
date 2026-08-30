@@ -17,6 +17,10 @@ import {
   LOOPER_TRACK_COUNT,
 } from "../../config/looper.js";
 import {
+  generateArcPoints,
+  resolveArcMotion,
+} from "../core/arcMotionMath.js";
+import {
   getLooperButtonName,
   getLooperControlName,
   getLooperNodeName,
@@ -57,7 +61,7 @@ export class LooperColliderFactory {
       getNumber(nodeLayout.sphereRings, LOOPER_NODE_COLLIDER_LAYOUT.sphereRings),
     );
     const controlGeometry = new THREE.SphereGeometry(
-      maxSize * LOOPER_COLLIDER_GEOMETRY.controlSphereScale,
+      1,
       LOOPER_COLLIDER_GEOMETRY.controlSphereSegments,
       LOOPER_COLLIDER_GEOMETRY.controlSphereRings,
     );
@@ -150,33 +154,16 @@ export class LooperColliderFactory {
       gap: LOOPER_DEBUG_COLORS.controlGap,
     };
     for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
-      const color = controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
+      const color = controlConfig.colliderColor || controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
       const controlSphere = new THREE.Mesh(
         controlGeometry.clone(),
         this.makeHitTargetMaterial(getLooperControlName(control), color, looperColliderOpacity),
       );
-      const controlPosition = applyConfiguredColliderTransform(
-        controlSphere,
-        controlConfig,
-        LOOPER_COLLIDER_GEOMETRY.controlDefaultTransform,
-      );
-      const movementRange = getNumber(
-        controlConfig.movementRange,
-        LOOPER_CONTROL_MOTION_DEFAULTS.movementRange,
-      );
-      configureControlMotion(controlSphere, controlConfig, {
-        neutralX: controlPosition.x,
-        neutralY: controlPosition.y,
-        neutralZ: controlPosition.z,
-        size: tempBoxSize,
-      });
+      configureControlMotion(controlSphere, controlConfig, { size: tempBoxSize, maxSize });
       addCollider(controlSphere, getLooperControlName(control), color, {
         isLooperControl: true,
         looperControl: control,
         looperMorphTargets: controlConfig.morphTargets,
-        neutralY: controlPosition.y,
-        minY: controlPosition.y - tempBoxSize.y * movementRange,
-        maxY: controlPosition.y + tempBoxSize.y * movementRange,
       });
       const defaultPosition = getLooperControlColliderPosition(
         controlSphere.userData,
@@ -233,44 +220,45 @@ function applyConfiguredColliderTransform(mesh, config = {}, defaults = {}) {
   return mesh.position;
 }
 
-function configureControlMotion(mesh, controlConfig, { neutralX, neutralY, neutralZ, size }) {
+function configureControlMotion(mesh, controlConfig, { size, maxSize }) {
   mesh.userData.movementMode =
     controlConfig?.movementMode || LOOPER_CONTROL_MOTION_DEFAULTS.movementMode;
-  mesh.userData.neutralX = neutralX;
-  mesh.userData.neutralY = neutralY;
-  mesh.userData.neutralZ = neutralZ;
-  mesh.userData.dragRange = Math.max(
-    size.y * getNumber(controlConfig?.movementRange, LOOPER_CONTROL_MOTION_DEFAULTS.movementRange),
-    LOOPER_CONTROL_MOTION_DEFAULTS.minDragRange,
-  );
   mesh.userData.dragSensitivity = Math.max(
     getNumber(controlConfig?.dragSensitivity, LOOPER_CONTROL_MOTION_DEFAULTS.dragSensitivity),
     LOOPER_CONTROL_MOTION_DEFAULTS.minDragSensitivity,
   );
+  mesh.userData.invertDrag = Boolean(controlConfig?.invertDrag);
 
   if (mesh.userData.movementMode !== "arc" || !controlConfig?.arc) {
+    const defaultPosition = LOOPER_COLLIDER_GEOMETRY.controlDefaultTransform;
+    mesh.position.set(
+      tempBoxCenter.x + tempBoxSize.x * getNumber(controlConfig?.x, defaultPosition.x),
+      tempBoxCenter.y + tempBoxSize.y * getNumber(controlConfig?.y, defaultPosition.y),
+      tempBoxCenter.z + tempBoxSize.z * getNumber(controlConfig?.z, defaultPosition.z),
+    );
+    mesh.scale.setScalar(maxSize * LOOPER_COLLIDER_GEOMETRY.controlSphereScale);
+    mesh.userData.neutralX = mesh.position.x;
+    mesh.userData.neutralY = mesh.position.y;
+    mesh.userData.neutralZ = mesh.position.z;
+    mesh.userData.dragRange = Math.max(
+      size.y * getNumber(controlConfig?.movementRange, LOOPER_CONTROL_MOTION_DEFAULTS.movementRange),
+      LOOPER_CONTROL_MOTION_DEFAULTS.minDragRange,
+    );
+    mesh.userData.minY = mesh.position.y - mesh.userData.dragRange;
+    mesh.userData.maxY = mesh.position.y + mesh.userData.dragRange;
     return;
   }
 
-  const radius = Math.max(
-    size.x * getNumber(controlConfig.arc.radius, LOOPER_CONTROL_MOTION_DEFAULTS.defaultArcRadius),
-    LOOPER_CONTROL_MOTION_DEFAULTS.minArcRadius,
-  );
-  const defaultArcSide = LOOPER_CONTROL_MOTION_DEFAULTS.defaultArcSide;
-  const side =
-    getNumber(controlConfig.arc.side, defaultArcSide) <
-      LOOPER_CONTROL_MOTION_DEFAULTS.arcSideNegativeThreshold
-      ? -defaultArcSide
-      : defaultArcSide;
-  mesh.userData.arcRadius = radius;
-  mesh.userData.arcSide = side;
-  mesh.userData.arcRotationZ = mesh.rotation.z;
-  mesh.userData.arcMinAngle = THREE.MathUtils.degToRad(
-    getNumber(controlConfig.arc.minDegrees, LOOPER_CONTROL_MOTION_DEFAULTS.defaultArcMinDegrees),
-  );
-  mesh.userData.arcMaxAngle = THREE.MathUtils.degToRad(
-    getNumber(controlConfig.arc.maxDegrees, LOOPER_CONTROL_MOTION_DEFAULTS.defaultArcMaxDegrees),
-  );
+  mesh.userData.arcMotion = resolveArcMotion(controlConfig.arc, {
+    label: `${controlConfig.morphTargets?.up || "Looper control"} arc`,
+  });
+  if (Math.abs(mesh.userData.arcMotion.parallelOffsetAmount) > 1e-8) {
+    console.warn("Looper arc colliderOffset contains an axis-parallel component; the visible/runtime offset is projected onto the circular plane.");
+  }
+  mesh.scale.setScalar(Math.max(
+    getNumber(controlConfig.colliderRadius, maxSize * LOOPER_COLLIDER_GEOMETRY.controlSphereScale),
+    LOOPER_CONTROL_MOTION_DEFAULTS.minDragRange,
+  ));
 }
 
 function createColliderTransformDebug(mesh, name, length) {
@@ -318,33 +306,9 @@ function createControlArcDebug(root, name, color, userData) {
   }
 
   tempArcPoints.length = 0;
-  const steps = COLLIDER_DEBUG_VISUAL_SETTINGS.arcSteps;
-  const midpointAngle = THREE.MathUtils.lerp(
-    userData.arcMinAngle,
-    userData.arcMaxAngle,
-    COLLIDER_DEBUG_VISUAL_SETTINGS.arcMidpointT,
-  );
-  const midpointX = -userData.arcSide * Math.cos(midpointAngle) * userData.arcRadius;
-  const midpointY = Math.sin(midpointAngle) * userData.arcRadius;
-  const rotationZ = getNumber(
-    userData.arcRotationZ,
-    LOOPER_CONTROL_MOTION_DEFAULTS.defaultArcRotationZ,
-  );
-  const rotationCos = Math.cos(rotationZ);
-  const rotationSin = Math.sin(rotationZ);
-  for (let index = 0; index <= steps; index += 1) {
-    const t = index / steps;
-    const angle = THREE.MathUtils.lerp(userData.arcMinAngle, userData.arcMaxAngle, t);
-    const localX = -userData.arcSide * Math.cos(angle) * userData.arcRadius - midpointX;
-    const localY = Math.sin(angle) * userData.arcRadius - midpointY;
-    tempArcPoints.push(
-      new THREE.Vector3(
-        userData.neutralX + localX * rotationCos - localY * rotationSin,
-        userData.neutralY + localX * rotationSin + localY * rotationCos,
-        userData.neutralZ,
-      ),
-    );
-  }
+  for (const point of generateArcPoints(userData.arcMotion, {
+    segments: COLLIDER_DEBUG_VISUAL_SETTINGS.arcSteps,
+  })) tempArcPoints.push(new THREE.Vector3(point.x, point.y, point.z));
 
   const geometry = new THREE.BufferGeometry().setFromPoints(tempArcPoints);
   markOwnedResource(geometry);

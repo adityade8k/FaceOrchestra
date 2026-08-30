@@ -49,12 +49,6 @@ export const NOSE_DRAG_SENSITIVITY = 1.8;
 
 export const BEND_ALIGNED_COLLIDER_GROUP_NAME = "BEND_aligned_interaction_colliders";
 
-export const GRIP_TRANSFORM_COLLIDER_SETTINGS = {
-  relativeScale: { x: 0.7, y: 0.8, z: 0.8 },
-  defaultRelativeScale: 1,
-  renderOrder: 5,
-};
-
 export const MORPH_TARGET_COLLIDER_SETTINGS = {
   sphereSegments: 24,
   sphereRings: 16,

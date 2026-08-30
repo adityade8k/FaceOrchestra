@@ -8,6 +8,13 @@ import {
   radiusToColliderScale,
 } from "../instruments/core/calibrationMath.js";
 import {
+  generateArcPoints,
+  getArcPointAtAngle,
+  setArcOrbitRadius,
+} from "../instruments/core/arcMotionMath.js";
+import {
+  handleCenterFromPivotPosition,
+  handlePivotPositionFromCenter,
   mapHandleValueToAngles,
   projectHandleColliderOffset,
 } from "./calibration/handleCalibrationMath.js";
@@ -103,7 +110,6 @@ export class MetronomeEditorAdapter {
     this.pathObjects = [];
 
     this.createSettingsEntity();
-    this.createBodyCollider();
     this.state.metronome.connectionPorts.forEach((config, index) => this.createConnectionPort(config, index));
     this.state.metronome.handleControls.forEach((config, index) => this.createHandle(config, index));
     this.createPendulum(this.state.metronome.pendulum);
@@ -119,30 +125,6 @@ export class MetronomeEditorAdapter {
       detail: "Spawn and model source",
       object: this.root,
       transformable: false,
-    });
-  }
-
-  createBodyCollider() {
-    const config = this.state.metronome.bodyCollider;
-    const position = normalizedPositionToModel(config.position, this.boundsCenter, this.boundsSize);
-    const material = colliderMaterial(0xf6d878, 0.26);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
-    mesh.name = "EDITOR_metronome_body";
-    mesh.position.set(position.x, position.y, position.z);
-    mesh.scale.set(
-      this.boundsSize.x * config.scale.x,
-      this.boundsSize.y * config.scale.y,
-      this.boundsSize.z * config.scale.z,
-    );
-    this.root.add(mesh);
-    this.registerOwned(mesh);
-    this.registerColliderEntity({
-      id: "body",
-      type: "body",
-      label: "Body grip collider",
-      detail: "Bounds-derived box",
-      object: mesh,
-      transformModes: ["translate", "scale"],
     });
   }
 
@@ -216,6 +198,12 @@ export class MetronomeEditorAdapter {
       const projected = toVector(calibration.projectedOffset);
       const orbitRadius = calibration.orbitRadius;
       const neutral = toVector(calibration.neutralDirection);
+      const pivotPosition = handlePivotPositionFromCenter(
+        config.center ?? { x: 0, y: 0, z: 0 },
+        rest.position,
+        rest.quaternion,
+        rest.scale,
+      );
 
       const collider = new THREE.Mesh(
         new THREE.SphereGeometry(1, 24, 16),
@@ -224,33 +212,44 @@ export class MetronomeEditorAdapter {
       collider.name = `EDITOR_handle_${config.parameter}`;
       collider.position.copy(projected);
       collider.scale.setScalar(config.colliderRadius);
-      node.add(collider);
-      this.registerOwned(collider);
 
       const frame = new THREE.Group();
       frame.name = `EDITOR_${config.parameter}_motion_path`;
-      frame.position.copy(rest.position);
+      frame.position.copy(toVector(pivotPosition));
       frame.quaternion.copy(rest.quaternion);
       frame.scale.copy(rest.scale);
       node.parent.add(frame);
-      this.buildHandleDebug(frame, config, axis, neutral, orbitRadius);
-      this.registerOwned(frame, { path: true });
+      frame.add(collider);
+      const pathFrame = new THREE.Group();
+      pathFrame.name = `EDITOR_${config.parameter}_path_visuals`;
+      frame.add(pathFrame);
+      this.buildHandleDebug(pathFrame, config, axis, neutral, orbitRadius);
+      this.registerOwned(frame);
+      this.pathObjects.push(pathFrame);
 
       const entity = {
         id,
         type: "handle",
         index,
-        label: `${config.parameter.toUpperCase()} handle`,
-        detail: config.nodeName,
-        object: collider,
+        label: `${config.parameter.toUpperCase()} arc assembly`,
+        detail: `${config.nodeName} · pivot, plane, path, and collider`,
+        object: frame,
         node,
+        frame,
+        collider,
+        pathFrame,
         rest,
         axis,
         neutral,
         orbitRadius,
-        transformModes: ["translate", "scale"],
+        transformable: true,
+        transformModes: ["translate"],
       };
-      this.registerColliderEntity(entity);
+      frame.userData.editorEntityId = id;
+      collider.userData.editorEntityId = id;
+      this.entities.set(id, entity);
+      this.pickables.push(frame, collider);
+      this.colliderObjects.push(collider);
       this.applyHandlePreview(entity);
     } catch (error) {
       this.entities.set(id, {
@@ -266,6 +265,14 @@ export class MetronomeEditorAdapter {
   }
 
   buildHandleDebug(frame, config, axis, neutral, radius) {
+    const arcConfig = {
+      center: { x: 0, y: 0, z: 0 },
+      axis: vectorObject(axis),
+      colliderOffset: vectorObject(neutral.clone().multiplyScalar(radius)),
+      minAngleDegrees: config.minAngleDegrees,
+      maxAngleDegrees: config.maxAngleDegrees,
+      referenceAngleDegrees: config.referenceAngleDegrees || 0,
+    };
     const pivotRadius = Math.max(radius * 0.045, 0.04);
     const pivot = new THREE.Mesh(
       new THREE.SphereGeometry(pivotRadius, 14, 10),
@@ -276,15 +283,14 @@ export class MetronomeEditorAdapter {
     const axisArrow = new THREE.ArrowHelper(axis, new THREE.Vector3(), radius * 1.3, config.pivotColor, radius * 0.18, radius * 0.1);
     frame.add(axisArrow);
 
-    const second = new THREE.Vector3().crossVectors(axis, neutral).normalize();
-    frame.add(makeLineLoop(arcPoints(neutral, second, radius, 0, Math.PI * 2, 96), config.planeColor, 0.72));
-    frame.add(makeLine(
-      arcPoints(neutral, second, radius, config.minAngleDegrees * DEG_TO_RAD, config.maxAngleDegrees * DEG_TO_RAD, 64),
-      config.arcColor,
-      1,
-    ));
+    frame.add(makeLineLoop(toThreePoints(generateArcPoints(arcConfig, {
+      startAngleDegrees: -180 - arcConfig.referenceAngleDegrees,
+      endAngleDegrees: 180 - arcConfig.referenceAngleDegrees,
+      segments: 96,
+    })), config.planeColor, 0.72));
+    frame.add(makeLine(toThreePoints(generateArcPoints(arcConfig, { segments: 64 })), config.arcColor, 1));
     for (const degrees of [config.minAngleDegrees, config.maxAngleDegrees]) {
-      const endpoint = neutral.clone().applyAxisAngle(axis, degrees * DEG_TO_RAD).multiplyScalar(radius);
+      const endpoint = toVector(getArcPointAtAngle(arcConfig, degrees));
       frame.add(makeLine([new THREE.Vector3(), endpoint], config.arcColor, 0.9));
     }
 
@@ -300,7 +306,6 @@ export class MetronomeEditorAdapter {
     );
     plane.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), axis);
     frame.add(plane);
-    frame.traverse((object) => { object.raycast = () => {}; });
   }
 
   createPendulum(config) {
@@ -408,13 +413,7 @@ export class MetronomeEditorAdapter {
   syncTransformToState(entityId) {
     const entity = this.entities.get(entityId);
     if (!entity?.object) return;
-    if (entity.type === "body") {
-      const config = this.state.metronome.bodyCollider;
-      Object.assign(config.position, modelPositionToNormalized(entity.object.position, this.boundsCenter, this.boundsSize));
-      config.scale.x = entity.object.scale.x / this.boundsSize.x;
-      config.scale.y = entity.object.scale.y / this.boundsSize.y;
-      config.scale.z = entity.object.scale.z / this.boundsSize.z;
-    } else if (entity.type === "port") {
+    if (entity.type === "port") {
       const config = this.state.metronome.connectionPorts[entity.index];
       Object.assign(config.position, modelPositionToNormalized(entity.object.position, this.boundsCenter, this.boundsSize));
       const radius = averageScale(entity.object.scale);
@@ -423,14 +422,43 @@ export class MetronomeEditorAdapter {
       entity.arrow.position.copy(entity.object.position);
     } else if (entity.type === "handle") {
       const config = this.state.metronome.handleControls[entity.index];
-      config.colliderOffset.x = entity.object.position.x;
-      config.colliderOffset.y = entity.object.position.y;
-      config.colliderOffset.z = entity.object.position.z;
-      config.colliderRadius = averageScale(entity.object.scale);
+      config.center ||= { x: 0, y: 0, z: 0 };
+      Object.assign(config.center, handleCenterFromPivotPosition(
+        entity.object.position,
+        entity.rest.position,
+        entity.rest.quaternion,
+        entity.rest.scale,
+      ));
+      this.applyHandlePreview(entity);
     } else if (entity.type === "eye") {
       const config = this.state.metronome.eyeControls[entity.index];
       config.colliderScale = averageScale(entity.object.scale);
     }
+  }
+
+  getOrbitRadius(entityId) {
+    const entity = this.entities.get(entityId);
+    if (entity?.type !== "handle") return null;
+    return projectHandleColliderOffset(
+      this.state.metronome.handleControls[entity.index].colliderOffset,
+      this.state.metronome.handleControls[entity.index].axis,
+      this.state.metronome.handleControls[entity.index].parameter,
+    ).orbitRadius;
+  }
+
+  setOrbitRadius(entityId, orbitRadius) {
+    const entity = this.entities.get(entityId);
+    if (entity?.type !== "handle") return;
+    const config = this.state.metronome.handleControls[entity.index];
+    const resized = setArcOrbitRadius({
+      center: config.center ?? { x: 0, y: 0, z: 0 },
+      axis: config.axis,
+      colliderOffset: config.colliderOffset,
+      minAngleDegrees: config.minAngleDegrees,
+      maxAngleDegrees: config.maxAngleDegrees,
+      referenceAngleDegrees: config.referenceAngleDegrees,
+    }, orbitRadius);
+    Object.assign(config.colliderOffset, resized.colliderOffset);
   }
 
   applyHandlePreview(entityOrId) {
@@ -456,6 +484,15 @@ export class MetronomeEditorAdapter {
     entity.node.position.copy(entity.rest.position);
     entity.node.quaternion.copy(entity.rest.quaternion).multiply(delta);
     entity.node.scale.copy(entity.rest.scale);
+    const colliderPoint = getArcPointAtAngle({
+      center: { x: 0, y: 0, z: 0 },
+      axis: config.axis,
+      colliderOffset: config.colliderOffset,
+      minAngleDegrees: config.minAngleDegrees,
+      maxAngleDegrees: config.maxAngleDegrees,
+      referenceAngleDegrees: config.referenceAngleDegrees,
+    }, movementAngle / DEG_TO_RAD);
+    entity.collider.position.copy(toVector(colliderPoint));
     entity.node.updateMatrixWorld(true);
     entity.previewValue = value;
     entity.movementAngleDegrees = movementAngle / DEG_TO_RAD;
@@ -551,12 +588,6 @@ export class MetronomeEditorAdapter {
   getDiagnostics(entityId) {
     const entity = this.entities.get(entityId);
     if (!entity) return {};
-    if (entity.type === "body") {
-      return {
-        actualPosition: vectorObject(entity.object.position),
-        actualSize: vectorObject(entity.object.scale),
-      };
-    }
     if (entity.type === "port") {
       return {
         actualPosition: vectorObject(entity.object.position),
@@ -567,6 +598,8 @@ export class MetronomeEditorAdapter {
     if (entity.type === "handle") {
       return {
         orbitRadius: entity.orbitRadius,
+        center: vectorObject(this.state.metronome.handleControls[entity.index].center),
+        actualPivotPosition: vectorObject(entity.object.position),
         movementAngleDegrees: entity.movementAngleDegrees,
         appliedAngleDegrees: entity.appliedAngleDegrees,
       };
@@ -636,15 +669,6 @@ function colliderMaterial(color, opacity) {
   });
 }
 
-function arcPoints(first, second, radius, start, end, segments) {
-  const points = [];
-  for (let index = 0; index <= segments; index += 1) {
-    const angle = start + (end - start) * (index / segments);
-    points.push(first.clone().multiplyScalar(Math.cos(angle) * radius).addScaledVector(second, Math.sin(angle) * radius));
-  }
-  return points;
-}
-
 function makeLine(points, color, opacity) {
   const line = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints(points),
@@ -669,6 +693,10 @@ function toVector(value) {
 
 function vectorObject(value) {
   return { x: value.x, y: value.y, z: value.z };
+}
+
+function toThreePoints(points) {
+  return points.map(toVector);
 }
 
 function averageScale(scale) {

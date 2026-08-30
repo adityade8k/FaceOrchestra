@@ -2,10 +2,8 @@ import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
 import {
   BEND_ALIGNED_COLLIDER_GROUP_NAME,
   BEND_ALIGNED_INTERACTION_TYPES,
-  GRIP_TRANSFORM_COLLIDER_SETTINGS,
   HONK_CONNECTION_COLLIDER_SETTINGS,
   INTERACTION_COLLIDERS,
-  INTERACTION_TARGET_NAMES,
   INTERACTION_TYPES,
   MORPH_TARGET_COLLIDER_SETTINGS,
   MORPH_TARGET_NAMES,
@@ -15,6 +13,7 @@ import {
   HONK_CONNECTION_TARGET_NAME,
   LOOPER_DEBUG_COLORS,
 } from "../../config/looper.js";
+import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
 import { HONK_INTERACTION_ROLES } from "./HonkInstrument.js";
 
 export class HonkColliderFactory {
@@ -69,22 +68,10 @@ export class HonkColliderFactory {
   }
 
   createBodyTarget(root) {
-    const relativeScale = GRIP_TRANSFORM_COLLIDER_SETTINGS.relativeScale;
-    const target = new this.THREE.Mesh(
-      new this.THREE.BoxGeometry(
-        this.size.x * axisScale(relativeScale, "x"),
-        this.size.y * axisScale(relativeScale, "y"),
-        this.size.z * axisScale(relativeScale, "z"),
-      ),
-      this.createMaterial(0xffffff),
-    );
-    markOwnedGeometry(target.geometry);
-    target.name = INTERACTION_TARGET_NAMES.body;
-    target.position.copy(this.center);
-    target.renderOrder = GRIP_TRANSFORM_COLLIDER_SETTINGS.renderOrder;
-    markTarget(target, "honk.body", this.showDebug ? 0.24 : 0);
-    root.add(target);
-    return target;
+    const hitTargets = {};
+    return createBodyGripTarget(root, hitTargets, {
+      interactionRole: HONK_INTERACTION_ROLES.body,
+    });
   }
 
   createInteractionTarget(parent, bendAlignedGroup, config) {
@@ -217,9 +204,4 @@ function markTarget(target, role, opacity) {
 
 function markOwnedGeometry(geometry) {
   geometry.userData.disposeWithOwner = true;
-}
-
-function axisScale(scale, axis) {
-  if (Number.isFinite(scale)) return scale;
-  return Number.isFinite(scale?.[axis]) ? scale[axis] : 1;
 }

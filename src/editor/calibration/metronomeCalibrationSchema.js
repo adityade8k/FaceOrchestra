@@ -24,6 +24,7 @@ const COLOR_FIELDS = new Set([
   "arcColor",
 ]);
 const REQUIRED_PORT_IDS = Object.freeze(METRONOME_CONNECTION_PORTS.map(({ portId }) => portId));
+const ZERO_VECTOR = Object.freeze({ x: 0, y: 0, z: 0 });
 
 export class CalibrationSchemaError extends TypeError {
   constructor(errors) {
@@ -215,11 +216,14 @@ function validateHandles(handles, errors) {
     const path = `handleControls[${index}]`;
     validateRequiredString(handle?.nodeName, `${path}.nodeName`, errors);
     validateRequiredString(handle?.parameter, `${path}.parameter`, errors);
+    validateVector(handle?.center ?? ZERO_VECTOR, `${path}.center`, errors);
     validateAxis(handle?.axis, `${path}.axis`, errors);
     for (const field of ["minAngleDegrees", "maxAngleDegrees", "referenceAngleDegrees", "colliderRadius"]) {
       validateFinite(handle?.[field], `${path}.${field}`, errors);
     }
+    if (handle?.dragSensitivity !== undefined) validateFinite(handle.dragSensitivity, `${path}.dragSensitivity`, errors);
     if (Number.isFinite(handle?.colliderRadius) && handle.colliderRadius < 0) errors.push(`${path}.colliderRadius cannot be negative.`);
+    if (Number.isFinite(handle?.dragSensitivity) && handle.dragSensitivity < 0) errors.push(`${path}.dragSensitivity cannot be negative.`);
     if (Number.isFinite(handle?.minAngleDegrees) && Number.isFinite(handle?.maxAngleDegrees)
       && handle.minAngleDegrees >= handle.maxAngleDegrees) {
       errors.push(`${path}.minAngleDegrees must be less than maxAngleDegrees.`);
@@ -311,6 +315,7 @@ function orderedHandle(handle) {
   return {
     nodeName: handle.nodeName,
     parameter: handle.parameter,
+    center: roundedVector(handle.center ?? ZERO_VECTOR),
     axis: roundedVector(normalizeCalibrationAxis(handle.axis, `${handle.parameter} axis`)),
     minAngleDegrees: rounded(handle.minAngleDegrees),
     maxAngleDegrees: rounded(handle.maxAngleDegrees),
@@ -321,6 +326,7 @@ function orderedHandle(handle) {
     pivotColor: colorNumberToJson(handle.pivotColor),
     planeColor: colorNumberToJson(handle.planeColor),
     arcColor: colorNumberToJson(handle.arcColor),
+    dragSensitivity: rounded(handle.dragSensitivity ?? 1),
     invertDrag: handle.invertDrag,
   };
 }

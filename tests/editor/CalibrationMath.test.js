@@ -10,6 +10,8 @@ import {
   roundCalibrationNumber,
 } from "../../src/instruments/core/calibrationMath.js";
 import {
+  handleCenterFromPivotPosition,
+  handlePivotPositionFromCenter,
   mapHandleValueToAngles,
   projectHandleColliderOffset,
 } from "../../src/editor/calibration/handleCalibrationMath.js";
@@ -73,6 +75,23 @@ test("handle offsets use the runtime plane projection", () => {
   );
 });
 
+test("Metronome assembly center and gizmo position round-trip through the GLB rest frame", () => {
+  const center = { x: 1, y: 2, z: 3 };
+  const restPosition = { x: 10, y: 20, z: 30 };
+  const restQuaternion = { x: 0, y: 0, z: Math.SQRT1_2, w: Math.SQRT1_2 };
+  const restScale = { x: 2, y: 3, z: 4 };
+  const pivot = handlePivotPositionFromCenter(center, restPosition, restQuaternion, restScale);
+  closeVector(pivot, { x: 4, y: 22, z: 42 });
+  closeVector(
+    handleCenterFromPivotPosition(pivot, restPosition, restQuaternion, restScale),
+    center,
+  );
+  assert.throws(
+    () => handleCenterFromPivotPosition(pivot, restPosition, restQuaternion, { x: 1, y: 0, z: 1 }),
+    /scale\.y cannot be zero/,
+  );
+});
+
 test("handle min, max, and reference angles map exactly", () => {
   const minimum = mapHandleValueToAngles({
     value: 30, valueMin: 30, valueMax: 240,
@@ -93,3 +112,9 @@ test("export rounding is stable and removes negative zero", () => {
   assert.equal(roundCalibrationNumber(-0.00000001, 6), 0);
   assert.throws(() => roundCalibrationNumber(Number.NaN), /finite/);
 });
+
+function closeVector(actual, expected) {
+  for (const axis of ["x", "y", "z"]) {
+    assert.ok(Math.abs(actual[axis] - expected[axis]) < 1e-12, `${axis}: ${actual[axis]} vs ${expected[axis]}`);
+  }
+}

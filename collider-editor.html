@@ -23,6 +23,12 @@
           <span id="dirty-indicator">Repository configuration</span>
         </div>
         <div class="toolbar-group">
+          <label>Instrument
+            <select id="instrument-selector" aria-label="Instrument">
+              <option value="metronome">Metronome</option>
+              <option value="looper">Looper</option>
+            </select>
+          </label>
           <button data-action="translate" title="Translate (W)">Move</button>
           <button data-action="rotate" title="Rotate (E)">Rotate</button>
           <button data-action="scale" title="Scale (R)">Scale</button>
@@ -71,7 +77,7 @@
       <main id="editor-main">
         <section id="viewport-panel" aria-label="Three.js viewport">
           <div id="viewport"></div>
-          <div id="viewport-status" class="status-banner" data-level="loading">Loading metronome…</div>
+          <div id="viewport-status" class="status-banner" data-level="loading">Loading instrument…</div>
           <div id="view-cube-label">Perspective · repository GLB</div>
         </section>
 

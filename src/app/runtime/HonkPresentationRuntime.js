@@ -236,7 +236,7 @@ export const HonkPresentationRuntimeMethods = {
     },
     setLockIndicatorVisible(instrumentState, visible) {
       const bodyTarget = instrumentState?.hitTargets?.[INTERACTION_TARGET_NAMES.body];
-      if (!bodyTarget?.material) {
+      if (!bodyTarget?.material || bodyTarget.userData?.usesVisibleMeshForGrip) {
         return;
       }
   

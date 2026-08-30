@@ -421,7 +421,7 @@ export const XRInteractionRuntimeMethods = {
         const hitInstrumentState = this.instrumentRegistry.getFromObject3D(nextTarget);
         const unlockedInteractionTarget =
           nextTarget &&
-          nextTarget.name !== INTERACTION_TARGET_NAMES.body &&
+          !nextTarget.userData.isBodyGripTarget &&
           hitInstrumentState &&
           !hitInstrumentState?.locked
             ? nextTarget
@@ -455,7 +455,7 @@ export const XRInteractionRuntimeMethods = {
       }
     },
     setTargetHighlight(target, highlighted) {
-      if (!target?.material) {
+      if (!target?.material || target.userData?.usesVisibleMeshForGrip) {
         return;
       }
   

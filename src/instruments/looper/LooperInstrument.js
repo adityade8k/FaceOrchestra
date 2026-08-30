@@ -190,7 +190,6 @@ function disposeOwnedLooperResources(root) {
   root?.traverse?.((object) => {
     const isOwnedViewObject = Boolean(
       object.userData?.isLooperCollider ||
-      object.userData?.isBodyGripTarget ||
       object.name?.startsWith("DEBUG_"),
     );
     const geometry = object.geometry;

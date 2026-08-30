@@ -41,6 +41,15 @@ test("JSON export and import round-trip without value drift", () => {
   assert.equal(imported.metronome.connectionPorts[0].colliderColor, 0x8b5cf6);
 });
 
+test("legacy Metronome handle calibration gains a zero center without positional drift", () => {
+  const calibration = createRepositoryMetronomeCalibration();
+  for (const handle of calibration.metronome.handleControls) delete handle.center;
+  const imported = parseMetronomeCalibration(JSON.stringify(calibration));
+  for (const handle of imported.metronome.handleControls) {
+    assert.deepEqual(handle.center, { x: 0, y: 0, z: 0 });
+  }
+});
+
 test("invalid schemas are rejected", () => {
   const calibration = createRepositoryMetronomeCalibration();
   calibration.schemaVersion = 99;
@@ -101,7 +110,7 @@ test("repository state clones are mutable without mutating imported frozen confi
   assert.notEqual(second.metronome.connectionPorts[0].position.x, first.metronome.connectionPorts[0].position.x);
 });
 
-test("metronome body calibration is seeded to the previous automatic runtime box", () => {
+test("legacy metronome body-box calibration remains import-compatible", () => {
   assert.deepEqual(METRONOME_BODY_COLLIDER, {
     position: { x: 0, y: 0, z: 0 },
     scale: { x: 0.7, y: 0.8, z: 0.8 },

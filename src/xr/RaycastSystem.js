@@ -47,7 +47,7 @@ export class RaycastSystem {
       this.intersections.find(({ object }) => object.userData.isHonkConnectionTarget) ||
       this.intersections.find(({ object }) => this.isLooperTarget(object)) ||
       this.intersections.find(({ object }) => object.userData.isProceduralMorphTarget) ||
-      this.intersections.find(({ object }) => object.name !== INTERACTION_TARGET_NAMES.body) ||
+      this.intersections.find(({ object }) => !object.userData.isBodyGripTarget) ||
       nearest;
     if (this.debug && hit) console.log("Ray hit:", hit.object.name);
     return hit || null;
@@ -57,13 +57,22 @@ export class RaycastSystem {
     if (!controller) return null;
     this.setFromController(controller);
     this.targets.length = 0;
+    const seen = new Set();
     for (const instrument of this.getInstruments()) {
-      const body = instrument?.hitTargets?.[INTERACTION_TARGET_NAMES.body];
-      if (instrument?.locked && instrument.root?.visible && this.canLock(instrument) && body) this.targets.push(body);
+      if (!instrument?.locked || !instrument.root?.visible || !this.canLock(instrument)) continue;
+      for (const target of [
+        instrument.hitTargets?.[INTERACTION_TARGET_NAMES.body],
+        ...(instrument.gripTargetList || []),
+      ]) {
+        if (target?.visible !== false && target?.userData.isBodyGripTarget && !seen.has(target)) {
+          seen.add(target);
+          this.targets.push(target);
+        }
+      }
     }
     if (!this.targets.length) return null;
     this.intersections.length = 0;
-    this.raycaster.intersectObjects(this.targets, false, this.intersections);
+    this.raycaster.intersectObjects(this.targets, true, this.intersections);
     return this.resolveOwner(this.intersections[0]?.object) || null;
   }
 
