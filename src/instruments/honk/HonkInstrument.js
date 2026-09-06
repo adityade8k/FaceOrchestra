@@ -205,6 +205,10 @@ export class HonkInstrument extends InstrumentEntity {
     this.performance.clearAutomationLayer(layerId);
   }
 
+  hasAutomation() {
+    return this.performance.hasAutomation();
+  }
+
   applyTuning(tuning) {
     this.tuning = createHonkTuning(tuning);
     this.performance.setLiveState({

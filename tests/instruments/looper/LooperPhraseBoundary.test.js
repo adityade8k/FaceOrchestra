@@ -27,15 +27,15 @@ function createReportedReproduction() {
   timeline.beatIntervalMs = 500;
   addHonkNote(timeline, "track-0", 100, 200);
   addHonkNote(timeline, "track-0", 1100, 1200);
-  addHonkNote(timeline, "track-0", 1600, 2100);
+  addHonkNote(timeline, "track-0", 1600, 1900);
   timeline.setGapBeats(0);
   return timeline;
 }
 
-test("zero gap derives the reported 100/1100/1600 phrase from attacks, not its late release", () => {
+test("zero gap preserves the reported 100/1100/1600 X o X X phrase", () => {
   const timeline = createReportedReproduction();
 
-  assert.equal(timeline.contentEndMs, 2100);
+  assert.equal(timeline.contentEndMs, 1900);
   assert.equal(timeline.recordedDurationMs, 2000);
   assert.equal(timeline.durationMs, 2000);
   assert.deepEqual(timeline.getMusicalOnsetTimes(), [100, 1100, 1600]);
@@ -64,11 +64,25 @@ test("Honk playback releases at wrap and repeats attacks with a 2000 ms period",
   assert.deepEqual(attacks, [100, 1100, 1600, 2100, 3100, 3600, 4100]);
 });
 
-test("a smoothed final release crossing the phrase beat does not add a beat", () => {
+test("a synthetic final release crossing the phrase beat does not add a beat", () => {
   const timeline = new LooperTimeline();
   timeline.beatIntervalMs = 500;
   addHonkNote(timeline, "track-0", 100, 200);
-  addHonkNote(timeline, "track-0", 900, 1300);
+  timeline.addActionEvent("track-0", {
+    trackIndex: 0,
+    type: LooperActionEventType.SqueezeStart,
+    timeMs: 900,
+    value: 1,
+    interpolation: "linear",
+  });
+  timeline.addActionEvent("track-0", {
+    trackIndex: 0,
+    type: LooperActionEventType.SqueezeEnd,
+    timeMs: 1300,
+    value: 0,
+    interpolation: "linear",
+    synthetic: true,
+  });
   timeline.finalizeDuration();
 
   assert.equal(timeline.contentEndMs, 1300);
@@ -84,7 +98,7 @@ test("an attack exactly on a beat requires the following beat boundary", () => {
   assert.equal(timeline.durationMs, 1500);
 });
 
-test("a single-note beat-aware loop has a minimum one-beat period", () => {
+test("a single-note beat-aware loop includes a real release beyond its onset beat", () => {
   const atZero = new LooperTimeline();
   atZero.beatIntervalMs = 500;
   addHonkNote(atZero, "track-0", 0, 100);
@@ -96,7 +110,7 @@ test("a single-note beat-aware loop has a minimum one-beat period", () => {
   afterZero.finalizeDuration();
 
   assert.equal(atZero.durationMs, 500);
-  assert.equal(afterZero.durationMs, 500);
+  assert.equal(afterZero.durationMs, 1000);
 });
 
 test("the latest onset across tracks and simultaneous chord attacks sets one phrase boundary", () => {
@@ -109,7 +123,7 @@ test("the latest onset across tracks and simultaneous chord attacks sets one phr
   timeline.finalizeDuration();
 
   assert.deepEqual(timeline.getMusicalOnsetTimes(), [100, 100, 700, 700]);
-  assert.equal(timeline.durationMs, 1000);
+  assert.equal(timeline.durationMs, 1500);
 });
 
 test("percussion-only and mixed loops use percussion and Honk onsets", () => {
@@ -126,7 +140,7 @@ test("percussion-only and mixed loops use percussion and Honk onsets", () => {
   mixed.finalizeDuration();
 
   assert.equal(percussion.durationMs, 1000);
-  assert.equal(mixed.durationMs, 1500);
+  assert.equal(mixed.durationMs, 2000);
 });
 
 test("Gap 0-4 adds exactly one whole beat per step without changing its base", () => {
@@ -166,7 +180,7 @@ test("JSON restoration repairs a stored extra-beat duration and preserves exact 
 
   const restored = LooperTimeline.fromJSON(serialized);
 
-  assert.equal(restored.contentEndMs, 2100);
+  assert.equal(restored.contentEndMs, 1900);
   assert.equal(restored.recordedDurationMs, 2000);
   assert.equal(restored.durationMs, 2000);
   restored.setGapBeats(1);

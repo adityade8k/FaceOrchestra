@@ -32,7 +32,7 @@ export class LooperTrackTimeline {
     copyActionState(this.baselineActionState, actionState);
   }
 
-  addFieldEvent(field, timeMs, value, interpolation = "linear") {
+  addFieldEvent(field, timeMs, value, interpolation = "linear", synthetic = false) {
     const type = {
       squeeze: LooperActionEventType.Squeeze,
       bend: LooperActionEventType.Bend,
@@ -44,10 +44,14 @@ export class LooperTrackTimeline {
     if (!type) {
       return null;
     }
-    return this.addEvent(type, timeMs, { value, interpolation });
+    return this.addEvent(type, timeMs, { value, interpolation, synthetic });
   }
 
-  addEvent(type, timeMs, { value = undefined, values = null, interpolation = "step" } = {}) {
+  addEvent(
+    type,
+    timeMs,
+    { value = undefined, values = null, interpolation = "step", synthetic = false } = {},
+  ) {
     const event = new LooperActionEvent({
       id: this.nextEventId,
       type,
@@ -55,6 +59,7 @@ export class LooperTrackTimeline {
       value,
       values,
       interpolation,
+      synthetic,
     });
     this.nextEventId += 1;
     this.events.push(event);
@@ -96,6 +101,16 @@ export class LooperTrackTimeline {
     let endMs = 0;
     for (const event of this.events) {
       endMs = Math.max(endMs, event.timeMs);
+    }
+    return endMs;
+  }
+
+  getIntentionalContentEndMs() {
+    let endMs = 0;
+    for (const event of this.events) {
+      if (!event.synthetic) {
+        endMs = Math.max(endMs, event.timeMs);
+      }
     }
     return endMs;
   }

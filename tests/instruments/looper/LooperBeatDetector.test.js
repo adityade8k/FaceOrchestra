@@ -24,9 +24,9 @@ test("beat detector infers tempo, clusters chords, and stabilizes the loop bound
     timeline.getTrack("track-1").events[0].timeMs,
   ];
   assert.deepEqual(firstChordTimes, [analysis.originMs, analysis.originMs]);
-  assert.equal(timeline.durationMs, analysis.beatIntervalMs * 3);
-  assert.ok(timeline.contentEndMs > timeline.durationMs);
-  assert.ok(Math.abs(timeline.durationMs / analysis.beatIntervalMs - 3) < 1e-9);
+  assert.equal(timeline.durationMs, analysis.beatIntervalMs * 4);
+  assert.ok(timeline.contentEndMs < timeline.durationMs);
+  assert.ok(Math.abs(timeline.durationMs / analysis.beatIntervalMs - 4) < 1e-9);
 });
 
 test("beat correction leaves pitch actions continuous while snapping note gates", () => {
@@ -63,11 +63,8 @@ test("beat correction drops the record-to-Stop rest and ends on the next phrase 
     .map((event) => event.timeMs);
   assert.equal(attacks[0], 300);
   assert.equal(attacks[2] - attacks[1], 625);
-  assert.equal(timeline.durationMs, 1500);
-  assert.equal(
-    timeline.durationMs + attacks[0] - attacks.at(-1),
-    analysis.beatIntervalMs,
-  );
+  assert.equal(timeline.durationMs, 2000);
+  assert.ok(timeline.durationMs >= 1500);
 });
 
 function addNote(timeline, trackId, trackIndex, startMs, endMs) {

@@ -26,17 +26,16 @@ export const LOOPER_WIRE_SETTINGS = {
   tubularSegmentsPerSpan: 5,
 };
 export const LOOPER_MIN_ACTION_DURATION_MS = 24;
-// Capture gesture automation at display-frame resolution. The recorder still
-// applies per-field change thresholds, so stationary controls do not generate
-// redundant events.
-export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 16;
+export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 33;
 export const LOOPER_GESTURE_EVENT_EPSILONS = Object.freeze({
-  squeeze: 0.008,
-  bend: 0.01,
-  earLeft: 0.0075,
-  earRight: 0.0075,
-  nose: 0.0075,
+  squeeze: 0.018,
+  bend: 0.02,
+  earLeft: 0.015,
+  earRight: 0.015,
+  nose: 0.015,
 });
+export const LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD = 0.025;
+export const LOOPER_SQUEEZE_GATE_CLOSE_THRESHOLD = 0.015;
 export const LOOPER_MAX_RECORDING_DURATION_MS = 120000;
 export const LOOPER_BEAT_DETECTION_SETTINGS = Object.freeze({
   minBpm: 60,

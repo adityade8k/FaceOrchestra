@@ -54,6 +54,7 @@ export class LooperActionEvent {
     value = undefined,
     values = null,
     interpolation = "step",
+    synthetic = false,
   } = {}) {
     this.id = id;
     this.timeMs = Math.max(Number.isFinite(timeMs) ? timeMs : 0, 0);
@@ -61,6 +62,7 @@ export class LooperActionEvent {
     this.value = value;
     this.values = values ? actionStateToJSON(values) : null;
     this.interpolation = interpolation;
+    this.synthetic = Boolean(synthetic);
   }
 
   clone() {
@@ -80,6 +82,9 @@ export class LooperActionEvent {
     if (this.values) {
       serialized.values = actionStateToJSON(this.values);
     }
+    if (this.synthetic) {
+      serialized.synthetic = true;
+    }
     return serialized;
   }
 
@@ -91,6 +96,7 @@ export class LooperActionEvent {
       value: serialized.value,
       values: serialized.values,
       interpolation: serialized.interpolation || "step",
+      synthetic: serialized.synthetic,
     });
   }
 }

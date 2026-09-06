@@ -141,14 +141,11 @@ export class FaceOrchestraApp {
       runtime.updateClockedLooperTransports(frame.now);
     }, { label: "locks and looper assignments" });
 
-    this.frameScheduler.add("AUTOMATION", (frame) => {
-      runtime.updateLooperRecordings(frame.now);
-    }, { label: "record and advance looper transport" });
-
     this.frameScheduler.add("PERFORMANCE", (frame) => {
       runtime.updateMetronomeConnections(frame.now);
       runtime.updateHorn(frame.now);
-    }, { label: "resolve live input plus automation" });
+      runtime.updateLooperRecordings(frame.now);
+    }, { label: "resolve current live input, then record its canonical state" });
 
     this.frameScheduler.add("PRESENTATION", (frame) => {
       runtime.updateLooperMorphAnimations(frame.now);

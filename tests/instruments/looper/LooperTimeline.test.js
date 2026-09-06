@@ -161,6 +161,36 @@ test("LooperTimeline adds a stepped BPM-based gap of up to four beats", () => {
   assert.equal(restored.durationMs, 2500);
 });
 
+test("beat phrase includes late intentional morphs but excludes synthetic Stop releases", () => {
+  const timeline = new LooperTimeline();
+  timeline.beatIntervalMs = 500;
+  timeline.addActionEvent("track-0", {
+    trackIndex: 0,
+    type: LooperActionEventType.SqueezeStart,
+    timeMs: 100,
+    value: 1,
+  });
+  timeline.addActionEvent("track-0", {
+    trackIndex: 0,
+    type: LooperActionEventType.SqueezeEnd,
+    timeMs: 200,
+    value: 0,
+  });
+  timeline.addFieldEvent("track-0", "earLeft", 1200, 1, { trackIndex: 0 });
+  timeline.addActionEvent("track-0", {
+    trackIndex: 0,
+    type: LooperActionEventType.SqueezeEnd,
+    timeMs: 5000,
+    value: 0,
+    synthetic: true,
+  });
+  timeline.finalizeDuration();
+
+  assert.equal(timeline.getIntentionalContentEndMs(), 1200);
+  assert.equal(timeline.recordedDurationMs, 1500);
+  assert.equal(timeline.contentEndMs, 5000);
+});
+
 test("LooperTimeline orders simultaneous drum events deterministically", () => {
   const timeline = new LooperTimeline();
   timeline.addDrumHitEvent("track-2", { trackIndex: 2, timeMs: 20, drumType: "boink" });

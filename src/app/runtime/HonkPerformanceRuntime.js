@@ -8,8 +8,14 @@ import {
   MORPH_TARGET_NAMES,
   SQUEEZE_SENSITIVITY,
 } from "../../config/honk.js";
+import { LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD } from "../../config/looper.js";
 import { HONK_INTERACTION_PROFILE } from "../../instruments/honk/HonkInteractionProfile.js";
 import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
+import {
+  REFERENCE_FRAME_MS,
+  captureCanonicalHonkPerformance,
+  resolvePresentationValue,
+} from "./HonkPerformanceSampling.js";
 
 const tempBendQuaternion = new THREE.Quaternion();
 const tempBendEuler = new THREE.Euler();
@@ -113,7 +119,7 @@ export const HonkPerformanceRuntimeMethods = {
       }
   
       this.updateLooperPlayback(now);
-      this.applyResolvedHonkPerformanceStates();
+      this.applyResolvedHonkPerformanceStates(now);
   
       for (const { interaction } of activeHoldInteractions) {
         for (const synthState of interaction.activeChain || []) {
@@ -145,7 +151,7 @@ export const HonkPerformanceRuntimeMethods = {
         });
       }
     },
-    applyResolvedHonkPerformanceStates() {
+    applyResolvedHonkPerformanceStates(now = performance.now()) {
       for (const state of this.instrumentStates) {
         if (state.kind !== "honk") {
           continue;
@@ -154,14 +160,27 @@ export const HonkPerformanceRuntimeMethods = {
         const resolved = state.getResolvedPerformanceState?.();
         const targetSqueeze = resolved?.squeeze ?? (state.hornHolders.size > 0 ? 1 : 0);
         const targetBend = resolved?.bend ?? 0;
-  
-        state.hornSqueezeValue = THREE.MathUtils.lerp(
+        const deltaMs = Number.isFinite(state.lastHonkPerformanceUpdateMs)
+          ? Math.max(now - state.lastHonkPerformanceUpdateMs, 0)
+          : REFERENCE_FRAME_MS;
+        state.lastHonkPerformanceUpdateMs = now;
+        const hasAutomation = state.hasAutomation?.() ?? state.performance?.hasAutomation?.() ?? false;
+
+        state.hornSqueezeValue = resolvePresentationValue(
           state.hornSqueezeValue,
           targetSqueeze,
           SQUEEZE_SENSITIVITY,
+          deltaMs,
+          hasAutomation,
         );
         state.targetBendValue = targetBend;
-        state.bendValue = THREE.MathUtils.lerp(state.bendValue, state.targetBendValue, BEND_SMOOTHING);
+        state.bendValue = resolvePresentationValue(
+          state.bendValue,
+          state.targetBendValue,
+          BEND_SMOOTHING,
+          deltaMs,
+          hasAutomation,
+        );
         if (resolved) {
           state.applyMorphPerformanceState({
             ...resolved,
@@ -185,20 +204,10 @@ export const HonkPerformanceRuntimeMethods = {
       return false;
     },
     captureLooperActionFromHonk(honkState) {
-      if (honkState?.kind !== "honk" || !honkState.root?.visible) {
-        return null;
-      }
-  
-      const live = honkState.getLivePerformanceState?.();
-      return {
-        musicalOnset: Boolean((live?.squeeze || 0) > 0 || honkState.hornHolders?.size > 0),
-        squeeze: honkState.hornSqueezeValue || 0,
-        bend: honkState.bendValue || 0,
-        earLeft: live?.earLeft ?? honkState.getEarAmount("left"),
-        earRight: live?.earRight ?? honkState.getEarAmount("right"),
-        nose: live?.nose ?? honkState.getMorphValue(MORPH_TARGET_NAMES.nose),
-        vowel: live?.vowel ?? honkState.currentVowelLetter ?? "neutral",
-      };
+      return captureCanonicalHonkPerformance(
+        honkState,
+        LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD,
+      );
     },
     setHonkAutomationLayer(honkState, layerId, snapshot) {
       if (!honkState?.setAutomationLayer) {

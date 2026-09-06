@@ -1,7 +1,7 @@
 import { resetActionState } from "./actionState.js";
 import { LooperTrackTimeline } from "./LooperTrackTimeline.js";
 
-export const LOOPER_TIMELINE_SCHEMA_VERSION = 3;
+export const LOOPER_TIMELINE_SCHEMA_VERSION = 4;
 export const LooperTimingMode = Object.freeze({
   Ordinary: "ordinary",
   Metronome: "metronome",
@@ -192,13 +192,22 @@ export class LooperTimeline {
 
   addActionEvent(
     trackId,
-    { nodeId = null, trackIndex = null, type, timeMs, value, values, interpolation } = {},
+    {
+      nodeId = null,
+      trackIndex = null,
+      type,
+      timeMs,
+      value,
+      values,
+      interpolation,
+      synthetic = false,
+    } = {},
   ) {
     const track = this.ensureTrack(trackId, { nodeId, trackIndex });
     if (!track || !type) {
       return null;
     }
-    return track.addEvent(type, timeMs, { value, values, interpolation });
+    return track.addEvent(type, timeMs, { value, values, interpolation, synthetic });
   }
 
   addDrumHitEvent(trackId, { nodeId = null, trackIndex = null, timeMs, drumType } = {}) {
@@ -214,13 +223,13 @@ export class LooperTimeline {
     field,
     timeMs,
     value,
-    { nodeId = null, trackIndex = null, interpolation = "linear" } = {},
+    { nodeId = null, trackIndex = null, interpolation = "linear", synthetic = false } = {},
   ) {
     const track = this.ensureTrack(trackId, { nodeId, trackIndex });
     if (!track) {
       return null;
     }
-    return track.addFieldEvent(field, timeMs, value, interpolation);
+    return track.addFieldEvent(field, timeMs, value, interpolation, synthetic);
   }
 
   finalizeDuration(minDurationMs = 1) {
@@ -253,11 +262,13 @@ export class LooperTimeline {
 
   getBeatPhraseBoundaryMs(minDurationMs = 1) {
     const lastOnsetMs = this.getLastMusicalOnsetMs();
-    if (!Number.isFinite(lastOnsetMs)) {
-      return this.quantizeDurationToBeats(minDurationMs);
-    }
-    const beatIndex = Math.floor(lastOnsetMs / this.beatIntervalMs) + 1;
-    return Math.max(beatIndex, 1) * this.beatIntervalMs;
+    const onsetBoundaryMs = Number.isFinite(lastOnsetMs)
+      ? (Math.floor(lastOnsetMs / this.beatIntervalMs) + 1) * this.beatIntervalMs
+      : 0;
+    const intentionalBoundaryMs = this.quantizeDurationToBeats(
+      Math.max(this.getIntentionalContentEndMs(), minDurationMs),
+    );
+    return Math.max(onsetBoundaryMs, intentionalBoundaryMs, this.beatIntervalMs);
   }
 
   getMusicalOnsetTimes() {
@@ -279,6 +290,16 @@ export class LooperTimeline {
     for (const track of this.tracks.values()) {
       if (track.active) {
         endMs = Math.max(endMs, track.getContentEndMs());
+      }
+    }
+    return endMs;
+  }
+
+  getIntentionalContentEndMs() {
+    let endMs = 0;
+    for (const track of this.tracks.values()) {
+      if (track.active) {
+        endMs = Math.max(endMs, track.getIntentionalContentEndMs());
       }
     }
     return endMs;

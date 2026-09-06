@@ -50,10 +50,10 @@ test("a Metronome-connected onset exactly on a beat repeats on the next phrase b
   );
 });
 
-test("a release tail after the phrase boundary and a held-at-Stop safety release add no beats", () => {
+test("a real late release extends the phrase while a held-at-Stop safety release does not", () => {
   const tail = recordHonkPhrase({ stopMs: 5000, finalReleaseMs: 2400 });
   assert.equal(tail.timeline.contentEndMs, 2400);
-  assert.equal(tail.timeline.recordedDurationMs, 2000);
+  assert.equal(tail.timeline.recordedDurationMs, 2500);
 
   const held = recordHonkPhrase({ stopMs: 5000, holdFinalNote: true });
   const track = held.timeline.getTrack("track-0");
@@ -61,6 +61,7 @@ test("a release tail after the phrase boundary and a held-at-Stop safety release
     event.type === LooperActionEventType.SqueezeEnd && event.timeMs === 5000
   ));
   assert.equal(releasesAtStop.length, 1);
+  assert.equal(releasesAtStop[0].synthetic, true);
   assert.equal(held.timeline.recordedDurationMs, 2000);
   assert.equal(held.timeline.durationMs, 2000);
   assert.deepEqual(held.timeline.getMusicalOnsetTimes(), [100, 1100, 1600]);
@@ -186,7 +187,7 @@ test("controller restoration repairs Stop-time padding without changing attacks"
 function recordHonkPhrase({
   stopMs,
   connected = true,
-  finalReleaseMs = 2100,
+  finalReleaseMs = 1900,
   holdFinalNote = false,
 } = {}) {
   const harness = createHarness({ connected });
