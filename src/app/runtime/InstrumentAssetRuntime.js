@@ -31,6 +31,7 @@ import { MorphTargetController, findMorphMeshes } from "../../instruments/honk/M
 import { LooperColliderFactory } from "../../instruments/looper/LooperColliderFactory.js";
 import { applyStandardInstrumentMaterials } from "../../scene/materialUtils.js";
 import { MetronomePendulumRig } from "../../instruments/metronome/MetronomePendulumRig.js";
+import { attachMetronomeButtonAssets } from "../../instruments/metronome/metronomeButtonAssets.js";
 import { applyMetronomeSpawnOrientation } from "../../instruments/metronome/metronomeSpawnOrientation.js";
 import { METRONOME_INTERACTION_ROLES } from "../../instruments/metronome/MetronomeInstrument.js";
 
@@ -137,6 +138,11 @@ export const InstrumentAssetRuntimeMethods = {
     if (option.kind === "looper") {
       applyStandardInstrumentMaterials(template, await this.loadLooperMaterialTextures());
     } else if (option.kind === "metronome") {
+      const buttonSource = await this.assetRepository.loadModel(
+        "metronomeControls",
+        ASSET_PATHS.models.metronomeControls,
+      );
+      attachMetronomeButtonAssets(template, buttonSource);
       const textures = await this.assetRepository.loadTextureSet("metronome", ASSET_PATHS.textures.metronome);
       applyStandardInstrumentMaterials(template, textures, { bumpScale: 0.035 });
     }

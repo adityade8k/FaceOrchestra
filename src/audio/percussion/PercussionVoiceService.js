@@ -13,6 +13,10 @@ export class PercussionVoiceService {
       this.triggerHihat(context, volume);
       return;
     }
+    if (type === PERCUSSION_TYPES.metronomeWood) {
+      this.triggerMetronomeWood(context, volume);
+      return;
+    }
 
     this.triggerBoink(context, volume);
   }
@@ -314,6 +318,86 @@ export class PercussionVoiceService {
 
     const cleanupSource = metallicOscillators.at(-1)?.oscillator || source;
     cleanupSource.onended = cleanup;
+  }
+
+  triggerMetronomeWood(context, volume = 1) {
+    if (!context) {
+      return;
+    }
+
+    const settings = PERCUSSION_PROFILES.metronomeWood;
+    const now = context.currentTime;
+    const output = context.createGain();
+    const bodyBus = context.createGain();
+    const bodyFilter = context.createBiquadFilter();
+    const noiseSource = context.createBufferSource();
+    const noiseFilter = context.createBiquadFilter();
+    const noiseGain = context.createGain();
+    const bodySeconds = Math.max(settings.bodyDecaySeconds, 0.03);
+    const noiseSeconds = Math.max(settings.noiseSeconds, 0.005);
+    const stopAt = now + Math.max(bodySeconds, noiseSeconds) + 0.03;
+
+    output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
+    output.connect(this.getDestination(context));
+    bodyFilter.type = "bandpass";
+    bodyFilter.frequency.setValueAtTime(settings.bodyFrequencies[1], now);
+    bodyFilter.Q.setValueAtTime(0.7, now);
+    bodyBus.connect(bodyFilter);
+    bodyFilter.connect(output);
+
+    const oscillators = settings.bodyFrequencies.map((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = index === 0 ? "triangle" : "sine";
+      oscillator.frequency.setValueAtTime(frequency, now);
+      oscillator.frequency.exponentialRampToValueAtTime(
+        frequency * settings.pitchDropRatio,
+        now + bodySeconds,
+      );
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(
+        settings.bodyGains[index] ?? 0.1,
+        now + settings.bodyAttackSeconds,
+      );
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + bodySeconds / Math.sqrt(index + 1));
+      oscillator.connect(gain);
+      gain.connect(bodyBus);
+      oscillator.start(now);
+      oscillator.stop(stopAt);
+      return { oscillator, gain };
+    });
+
+    const sampleCount = Math.max(Math.floor(context.sampleRate * noiseSeconds), 1);
+    const noiseBuffer = context.createBuffer(1, sampleCount, context.sampleRate);
+    const samples = noiseBuffer.getChannelData(0);
+    for (let index = 0; index < sampleCount; index += 1) {
+      samples[index] = Math.random() * 2 - 1;
+    }
+    noiseSource.buffer = noiseBuffer;
+    noiseFilter.type = "bandpass";
+    noiseFilter.frequency.setValueAtTime(settings.noiseFilterFrequency, now);
+    noiseFilter.Q.setValueAtTime(settings.noiseFilterQ, now);
+    noiseGain.gain.setValueAtTime(settings.noiseGain, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + noiseSeconds);
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(output);
+    noiseSource.start(now);
+    noiseSource.stop(now + noiseSeconds);
+
+    const cleanup = () => {
+      for (const { oscillator, gain } of oscillators) {
+        disconnectNode(oscillator);
+        disconnectNode(gain);
+      }
+      disconnectNode(noiseSource);
+      disconnectNode(noiseFilter);
+      disconnectNode(noiseGain);
+      disconnectNode(bodyBus);
+      disconnectNode(bodyFilter);
+      disconnectNode(output);
+    };
+    oscillators[0].oscillator.onended = cleanup;
   }
 }
 

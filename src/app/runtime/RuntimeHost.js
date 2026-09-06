@@ -26,6 +26,7 @@ import { StickCollisionSystem, ThreeStickCollisionAdapter } from "../../instrume
 import { StickEquipmentSystem } from "../../instruments/stick/StickEquipmentSystem.js";
 import { StickHapticsAdapter } from "../../instruments/stick/StickHapticsAdapter.js";
 import { StickInstrument } from "../../instruments/stick/StickInstrument.js";
+import { routeStickStrikeToLooperRecordings } from "../../instruments/stick/StickLooperRecordingRouter.js";
 import { PersistenceStore } from "../../persistence/PersistenceStore.js";
 import { ScenePersistence } from "../../persistence/ScenePersistence.js";
 import { SceneRestorer } from "../../persistence/SceneRestorer.js";
@@ -349,14 +350,13 @@ export class RuntimeHost {
       this.stickHaptics.handleStrike(event)?.catch?.((error) => console.warn("Stick haptics failed:", error));
       this.playStickPercussion(event.percussionType, { volume: 1 });
       const target = context.target;
-      if (target?.kind === "looper") {
-        target.recordSelfDrumHit(event.percussionType, event.timestamp);
-        return;
-      }
-      for (const looper of this.instrumentRegistry.getByKind("looper")) {
-        const track = looper.tracks.find(({ connectedHonkId }) => connectedHonkId === target?.id);
-        if (track) looper.recordTrackDrumHit(track.trackId, event.percussionType, event.timestamp);
-      }
+      routeStickStrikeToLooperRecordings({
+        event,
+        target,
+        loopers: this.instrumentRegistry.getByKind("looper"),
+        metronomeConnectionManager: this.metronomeConnectionManager,
+        resolveInstrument: (instrumentId) => this.instrumentRegistry.get(instrumentId),
+      });
     });
   }
 

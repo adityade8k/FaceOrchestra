@@ -88,6 +88,47 @@ test("only vertices affected by the configured morph pair contribute", () => {
   assert.ok(result.neutralAnchor.y < 1);
 });
 
+test("motion filtering centers control colliders on the moving end ball instead of its stem", () => {
+  const ballCorners = [];
+  for (const y of [-1, 1]) {
+    for (const z of [-1, 1]) {
+      ballCorners.push(10, y, z, 12, y, z);
+    }
+  }
+  const base = attribute([
+    0, 0, 0,
+    5, 0, 0,
+    ...ballCorners,
+  ]);
+  const up = attribute([
+    0, 0.2, 0,
+    0, 0.2, 0,
+    ...new Array(ballCorners.length / 3).fill([0, 2, 0]).flat(),
+  ]);
+  const down = attribute([
+    0, -0.2, 0,
+    0, -0.2, 0,
+    ...new Array(ballCorners.length / 3).fill([0, -2, 0]).flat(),
+  ]);
+
+  const result = deriveMorphAnchorPath({
+    basePosition: base,
+    upPosition: up,
+    downPosition: down,
+    morphTargetsRelative: true,
+    motionSelectionRatio: 0.5,
+    useBoundsCenter: true,
+    colliderPadding: 1.15,
+  });
+
+  assert.equal(result.affectedVertexCount, 10);
+  assert.equal(result.selectedVertexCount, 8);
+  closePoint(result.neutralAnchor, { x: 11, y: 0, z: 0 });
+  closePoint(result.upAnchor, { x: 11, y: 2, z: 0 });
+  closePoint(result.downAnchor, { x: 11, y: -2, z: 0 });
+  assert.ok(Math.abs(result.colliderRadius - 1.15) < 1e-12);
+});
+
 test("mesh discovery uses both exact morph names and disables only a missing pair", () => {
   const mesh = {
     geometry: {

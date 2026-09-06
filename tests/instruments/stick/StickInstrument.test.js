@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { INSTRUMENT_KINDS } from "../../../src/instruments/core/capabilities.js";
-import { StickCollisionSystem } from "../../../src/instruments/stick/StickCollisionSystem.js";
+import {
+  isStickPercussionMesh,
+  StickCollisionSystem,
+} from "../../../src/instruments/stick/StickCollisionSystem.js";
 import { StickInstrument } from "../../../src/instruments/stick/StickInstrument.js";
 
 test("stick emits one semantic strike per contact and can retrigger after separation", () => {
@@ -27,29 +30,39 @@ test("stick emits one semantic strike per contact and can retrigger after separa
   assert.ok(stick.beginContact(target, { timestamp: 13 }));
 });
 
-test("collision system emits boink/hihat strikes without mutating a looper timeline", () => {
+test("collision system emits boink, hihat, and wooden metronome strikes", () => {
   const stick = createStick();
   stick.equip("left");
   const honk = { id: "honk-1", kind: INSTRUMENT_KINDS.honk, visible: true, disposed: false };
   const looper = { id: "looper-1", kind: INSTRUMENT_KINDS.looper, visible: true, disposed: false };
-  const touching = new Set([honk.id, looper.id]);
+  const metronome = {
+    id: "metronome-1",
+    kind: INSTRUMENT_KINDS.metronome,
+    visible: true,
+    disposed: false,
+  };
+  const touching = new Set([honk.id, looper.id, metronome.id]);
   const strikes = [];
   const collisions = new StickCollisionSystem({
     getSticks: () => [stick],
-    getTargets: () => [honk, looper],
+    getTargets: () => [honk, looper, metronome],
     collisionTester: ({ target }) => touching.has(target.id),
     positionReader: () => [0, 0, 0],
   });
   collisions.subscribe((event) => strikes.push(event));
   collisions.update(100);
   collisions.update(101);
-  assert.deepEqual(strikes.map((event) => event.percussionType).sort(), ["boink", "hihat"]);
+  assert.deepEqual(strikes.map((event) => event.percussionType).sort(), [
+    "boink",
+    "hihat",
+    "metronomeWood",
+  ]);
 
   touching.clear();
   collisions.update(102);
   touching.add(honk.id);
   collisions.update(103);
-  assert.equal(strikes.length, 3);
+  assert.equal(strikes.length, 4);
 });
 
 test("unequipping clears contacts and deactivates the strike collider", () => {
@@ -61,6 +74,46 @@ test("unequipping clears contacts and deactivates the strike collider", () => {
   assert.equal(stick.colliderActive, false);
   assert.equal(stick.contactTargetIds.size, 0);
   assert.equal(stick.visible, false);
+});
+
+test("authored meshes reused as Ver-9 body grip targets remain strikeable", () => {
+  const body = {
+    isMesh: true,
+    visible: true,
+    name: "metronome_body_geo",
+    parent: null,
+    userData: {
+      isHitTarget: true,
+      isBodyGripTarget: true,
+      usesVisibleMeshForGrip: true,
+      interactionTarget: {
+        targetId: "target-body",
+        ownerId: "metronome-1",
+        role: "metronome.body",
+      },
+    },
+  };
+
+  assert.equal(isStickPercussionMesh(body), true);
+});
+
+test("procedural interaction colliders remain excluded from stick percussion", () => {
+  const button = {
+    isMesh: true,
+    visible: true,
+    name: "HIT_play",
+    parent: null,
+    userData: {
+      isHitTarget: true,
+      interactionTarget: {
+        targetId: "target-play",
+        ownerId: "metronome-1",
+        role: "metronome.button.play",
+      },
+    },
+  };
+
+  assert.equal(isStickPercussionMesh(button), false);
 });
 
 function createStick() {

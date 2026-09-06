@@ -26,7 +26,17 @@ export const LOOPER_WIRE_SETTINGS = {
   tubularSegmentsPerSpan: 5,
 };
 export const LOOPER_MIN_ACTION_DURATION_MS = 24;
-export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 33;
+// Capture gesture automation at display-frame resolution. The recorder still
+// applies per-field change thresholds, so stationary controls do not generate
+// redundant events.
+export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 16;
+export const LOOPER_GESTURE_EVENT_EPSILONS = Object.freeze({
+  squeeze: 0.008,
+  bend: 0.01,
+  earLeft: 0.0075,
+  earRight: 0.0075,
+  nose: 0.0075,
+});
 export const LOOPER_MAX_RECORDING_DURATION_MS = 120000;
 export const LOOPER_BEAT_DETECTION_SETTINGS = Object.freeze({
   minBpm: 60,
@@ -167,6 +177,9 @@ export const LOOPER_COLLIDER_GEOMETRY = {
   buttonDefaultTransform: { x: 0, y: 0.34, z: 0.56 },
   buttonDebugAxisScale: 0.07,
   controlDebugAxisScale: 0.065,
+  // Handle morphs also move the stems. Keep the collider centered on the
+  // end-ball vertices, whose up-to-down travel is at least half the maximum.
+  controlTipMotionRatio: 0.5,
 };
 
 export const LOOPER_COLLIDER_TRANSFORM_DEFAULTS = {

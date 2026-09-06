@@ -1,4 +1,4 @@
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = false;
 
 export const DEBUG_SHOW_RAYS = true;
 export const DEBUG_LOG_RAYCAST = false;

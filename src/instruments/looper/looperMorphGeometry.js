@@ -9,7 +9,11 @@ const IDENTITY_MATRIX = Object.freeze([
 export function deriveLooperControlGeometry(
   root,
   morphTargets,
-  { colliderPadding = 1 } = {},
+  {
+    colliderPadding = 1,
+    motionSelectionRatio = 0,
+    useBoundsCenter = false,
+  } = {},
 ) {
   const upName = morphTargets?.up;
   const downName = morphTargets?.down;
@@ -45,6 +49,8 @@ export function deriveLooperControlGeometry(
     morphTargetsRelative: Boolean(geometry.morphTargetsRelative),
     meshToRootMatrixElements: matrixElements,
     colliderPadding,
+    motionSelectionRatio,
+    useBoundsCenter,
   });
   return result ? { ...result, mesh: match.mesh } : null;
 }
@@ -56,20 +62,20 @@ export function deriveMorphAnchorPath({
   morphTargetsRelative = true,
   meshToRootMatrixElements = IDENTITY_MATRIX,
   colliderPadding = 1,
+  motionSelectionRatio = 0,
+  useBoundsCenter = false,
 } = {}) {
   const count = basePosition?.count;
   if (
     !Number.isInteger(count) || count <= 0 ||
     upPosition?.count !== count || downPosition?.count !== count ||
     !isMatrix(meshToRootMatrixElements) ||
-    !Number.isFinite(colliderPadding) || colliderPadding <= 0
+    !Number.isFinite(colliderPadding) || colliderPadding <= 0 ||
+    !Number.isFinite(motionSelectionRatio) ||
+    motionSelectionRatio < 0 || motionSelectionRatio > 1
   ) return null;
 
-  const neutralSum = point();
-  const upSum = point();
-  const downSum = point();
-  const bounds = createBounds();
-  let affectedVertexCount = 0;
+  const affectedVertices = [];
 
   for (let index = 0; index < count; index += 1) {
     const neutralLocal = readPoint(basePosition, index);
@@ -88,23 +94,58 @@ export function deriveMorphAnchorPath({
     const neutral = applyMatrix(neutralLocal, meshToRootMatrixElements);
     const up = applyMatrix(upLocal, meshToRootMatrixElements);
     const down = applyMatrix(downLocal, meshToRootMatrixElements);
+    affectedVertices.push({
+      neutral,
+      up,
+      down,
+      motionSpan: distance(up, down),
+    });
+  }
+
+  if (affectedVertices.length === 0) return null;
+  const maximumMotionSpan = affectedVertices.reduce(
+    (maximum, { motionSpan }) => Math.max(maximum, motionSpan),
+    0,
+  );
+  const minimumMotionSpan = maximumMotionSpan * motionSelectionRatio;
+  const selectedVertices = motionSelectionRatio > 0 && maximumMotionSpan > EPSILON
+    ? affectedVertices.filter(({ motionSpan }) => motionSpan >= minimumMotionSpan)
+    : affectedVertices;
+  if (selectedVertices.length === 0) return null;
+
+  const neutralSum = point();
+  const upSum = point();
+  const downSum = point();
+  const neutralBounds = createBounds();
+  const upBounds = createBounds();
+  const downBounds = createBounds();
+  const colliderBounds = createBounds();
+  for (const { neutral, up, down } of selectedVertices) {
     accumulate(neutralSum, neutral);
     accumulate(upSum, up);
     accumulate(downSum, down);
-    expandBounds(bounds, neutral);
-    expandBounds(bounds, up);
-    expandBounds(bounds, down);
-    affectedVertexCount += 1;
+    expandBounds(neutralBounds, neutral);
+    expandBounds(upBounds, up);
+    expandBounds(downBounds, down);
+    expandBounds(colliderBounds, neutral);
+    expandBounds(colliderBounds, up);
+    expandBounds(colliderBounds, down);
   }
 
-  if (affectedVertexCount === 0) return null;
-  const neutralAnchor = divide(neutralSum, affectedVertexCount);
-  const upAnchor = divide(upSum, affectedVertexCount);
-  const downAnchor = divide(downSum, affectedVertexCount);
+  const selectedVertexCount = selectedVertices.length;
+  const neutralAnchor = useBoundsCenter
+    ? getBoundsCenter(neutralBounds)
+    : divide(neutralSum, selectedVertexCount);
+  const upAnchor = useBoundsCenter
+    ? getBoundsCenter(upBounds)
+    : divide(upSum, selectedVertexCount);
+  const downAnchor = useBoundsCenter
+    ? getBoundsCenter(downBounds)
+    : divide(downSum, selectedVertexCount);
   const dimensions = {
-    x: bounds.max.x - bounds.min.x,
-    y: bounds.max.y - bounds.min.y,
-    z: bounds.max.z - bounds.min.z,
+    x: colliderBounds.max.x - colliderBounds.min.x,
+    y: colliderBounds.max.y - colliderBounds.min.y,
+    z: colliderBounds.max.z - colliderBounds.min.z,
   };
   const positiveDimensions = Object.values(dimensions).filter((value) => value > EPSILON);
   if (positiveDimensions.length === 0) return null;
@@ -116,7 +157,8 @@ export function deriveMorphAnchorPath({
     upAnchor,
     downAnchor,
     colliderRadius,
-    affectedVertexCount,
+    affectedVertexCount: affectedVertices.length,
+    selectedVertexCount,
   };
 }
 
@@ -181,6 +223,10 @@ function divide(value, divisor) {
   return point(value.x / divisor, value.y / divisor, value.z / divisor);
 }
 
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
 function createBounds() {
   return {
     min: point(Infinity, Infinity, Infinity),
@@ -193,4 +239,12 @@ function expandBounds(bounds, value) {
     bounds.min[axis] = Math.min(bounds.min[axis], value[axis]);
     bounds.max[axis] = Math.max(bounds.max[axis], value[axis]);
   }
+}
+
+function getBoundsCenter(bounds) {
+  return point(
+    (bounds.min.x + bounds.max.x) * 0.5,
+    (bounds.min.y + bounds.max.y) * 0.5,
+    (bounds.min.z + bounds.max.z) * 0.5,
+  );
 }

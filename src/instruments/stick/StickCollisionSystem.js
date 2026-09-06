@@ -132,7 +132,7 @@ export class ThreeStickCollisionAdapter {
     this.stickInverseMatrix.copy(collider.matrixWorld).invert();
     let touched = false;
     root.traverse((object) => {
-      if (touched || !isPercussionMesh(object)) return;
+      if (touched || !isStickPercussionMesh(object)) return;
       this.targetBounds.setFromObject(object);
       if (
         this.targetBounds.isEmpty() ||
@@ -188,22 +188,41 @@ function readStickWorldPosition(stick) {
 function isStrikeTarget(target) {
   return Boolean(
     target?.id && !target.disposed && target.visible !== false &&
-    (target.kind === INSTRUMENT_KINDS.honk || target.kind === INSTRUMENT_KINDS.looper),
+    (
+      target.kind === INSTRUMENT_KINDS.honk ||
+      target.kind === INSTRUMENT_KINDS.looper ||
+      target.kind === INSTRUMENT_KINDS.metronome
+    ),
   );
 }
 
-function isPercussionMesh(object) {
+export function isStickPercussionMesh(object) {
   if (!object?.isMesh || object.visible === false) return false;
+  const isAuthoredBodyMesh = isAuthoredBodyGripMesh(object);
   if (
-    object.userData?.interactionTarget || object.userData?.isHitTarget || object.userData?.isNoteLabel ||
+    (!isAuthoredBodyMesh && (object.userData?.interactionTarget || object.userData?.isHitTarget)) ||
+    object.userData?.isNoteLabel ||
     object.userData?.isStickStrikeCollider || object.name?.startsWith("HIT_") || object.name?.startsWith("DEBUG_")
   ) return false;
   let parent = object.parent;
   while (parent) {
-    if (parent.userData?.interactionTarget || parent.userData?.isHitTarget || parent.userData?.isNoteLabel) return false;
+    if (
+      (
+        !isAuthoredBodyGripMesh(parent) &&
+        (parent.userData?.interactionTarget || parent.userData?.isHitTarget)
+      ) ||
+      parent.userData?.isNoteLabel
+    ) return false;
     parent = parent.parent;
   }
   return true;
+}
+
+function isAuthoredBodyGripMesh(object) {
+  return Boolean(
+    object?.userData?.isBodyGripTarget &&
+    object.userData.usesVisibleMeshForGrip,
+  );
 }
 
 function performanceNow() {

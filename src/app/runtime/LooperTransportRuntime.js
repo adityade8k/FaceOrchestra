@@ -120,10 +120,16 @@ export const LooperTransportRuntimeMethods = {
       }
   
       if (action === "play") {
-        this.setLooperButtonMorph(looperState, "play", 1, morphName);
         this.setLooperButtonMorph(looperState, "record", 0);
-        this.startPlayback(looperState);
+        const accepted = this.startPlayback(looperState);
         this.updateLooperVisuals(looperState);
+        // A rejected Play (for example, before anything is recorded) still
+        // needs to show the physical button press instead of being reset in
+        // the same frame by updateLooperVisuals().
+        if (!accepted) {
+          this.triggerLooperButtonMorph(looperState, "play", performance.now(), morphName);
+          this.updateLooperVisuals(looperState);
+        }
         return;
       }
   

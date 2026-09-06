@@ -3,6 +3,19 @@ import assert from "node:assert/strict";
 import { MetronomeInstrument } from "../../../src/instruments/metronome/MetronomeInstrument.js";
 import { getMetronomePendulumAngle } from "../../../src/instruments/metronome/MetronomePendulumRig.js";
 
+test("default controls initialize the handle rig at both value-range midpoints", () => {
+  const values = {};
+  const metronome = new MetronomeInstrument({
+    id: "metro-default-handles",
+    root: object3D(),
+    handleRig: { setValue: (parameter, value) => { values[parameter] = value; } },
+  });
+
+  assert.equal(metronome.bpm, 135);
+  assert.equal(metronome.volume, 0.5);
+  assert.deepEqual(values, { bpm: 135, volume: 0.5 });
+});
+
 test("metronome clamps controls, schedules clicks by BPM, and pauses", () => {
   const clicks = [];
   const metronome = new MetronomeInstrument({

@@ -1,4 +1,5 @@
 import {
+  LOOPER_GESTURE_EVENT_EPSILONS,
   LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
   LOOPER_MAX_RECORDING_DURATION_MS,
   LOOPER_BEAT_DETECTION_SETTINGS,
@@ -58,6 +59,7 @@ export class LooperController {
     this.adapter = adapter;
     this.recorder = new LooperGestureRecorder({
       sampleIntervalMs: LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
+      epsilons: LOOPER_GESTURE_EVENT_EPSILONS,
     });
     this.beatDetector = new LooperBeatDetector(LOOPER_BEAT_DETECTION_SETTINGS);
     this.applier = new LooperGestureApplier(adapter);

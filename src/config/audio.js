@@ -52,6 +52,7 @@ export const VOICE_GAIN_SETTINGS = {
 export const STICK_PERCUSSION_TYPES = {
   boink: "boink",
   hihat: "hihat",
+  metronomeWood: "metronomeWood",
 };
 
 export const STICK_PERCUSSION_SETTINGS = {
@@ -107,5 +108,17 @@ export const STICK_PERCUSSION_SETTINGS = {
     metallicEchoFeedback: 0.32,
     metallicEchoDampingFrequency: 7600,
     metallicEchoTailSeconds: 0.22,
+  },
+  metronomeWood: {
+    gain: 0.68,
+    bodyFrequencies: [510, 790, 1120],
+    bodyGains: [0.72, 0.34, 0.16],
+    bodyDecaySeconds: 0.12,
+    bodyAttackSeconds: 0.0015,
+    pitchDropRatio: 0.92,
+    noiseGain: 0.22,
+    noiseSeconds: 0.035,
+    noiseFilterFrequency: 1650,
+    noiseFilterQ: 0.85,
   },
 };

@@ -1,21 +1,17 @@
 import {
+  LOOPER_GESTURE_EVENT_EPSILONS,
+  LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
+} from "../../config/looper.js";
+import {
   cloneActionState,
   createActionState,
   hasActionValue,
 } from "./timeline/actionState.js";
 import { LooperActionEventType } from "./timeline/LooperActionEvent.js";
 
-const DEFAULT_EPSILONS = {
-  squeeze: 0.018,
-  bend: 0.02,
-  earLeft: 0.015,
-  earRight: 0.015,
-  nose: 0.015,
-};
-
 const MORPH_FIELDS = ["earLeft", "earRight", "nose", "vowel"];
 const CONTINUOUS_FIELDS = ["squeeze", "bend"];
-const SQUEEZE_GATE_EPSILON = 0.025;
+const SQUEEZE_GATE_EPSILON = 0.01;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -48,9 +44,12 @@ function normalizeActionState(source) {
 }
 
 export class LooperGestureRecorder {
-  constructor({ sampleIntervalMs = 33, epsilons = DEFAULT_EPSILONS } = {}) {
+  constructor({
+    sampleIntervalMs = LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
+    epsilons = LOOPER_GESTURE_EVENT_EPSILONS,
+  } = {}) {
     this.sampleIntervalMs = sampleIntervalMs;
-    this.epsilons = { ...DEFAULT_EPSILONS, ...epsilons };
+    this.epsilons = { ...LOOPER_GESTURE_EVENT_EPSILONS, ...epsilons };
   }
 
   isMusicalOnset(action) {

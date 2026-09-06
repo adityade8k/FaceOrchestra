@@ -10,8 +10,13 @@ import { SpawnCatalog, resolveCatalogInstrumentSpawn } from "../../src/spawning/
 test("metronome remains visible in the spawn catalog and uses its GLB model", () => {
   const entry = SPAWN_CATALOG_ENTRIES.find(({ id }) => id === "metronome");
   assert.equal(ASSET_PATHS.models.metronome, "./model/metronome/metronome_outlets.glb");
+  assert.equal(ASSET_PATHS.models.metronomeControls, "./model/metronome/metronome_02.glb");
   assert.equal(
     existsSync(new URL(`../../${ASSET_PATHS.models.metronome.slice(2)}`, import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL(`../../${ASSET_PATHS.models.metronomeControls.slice(2)}`, import.meta.url)),
     true,
   );
   assert.equal(entry.modelPath, ASSET_PATHS.models.metronome);

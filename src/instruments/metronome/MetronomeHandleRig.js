@@ -16,6 +16,7 @@ import {
 } from "../core/arcMotionMath.js";
 
 const RAY_EPSILON = 1e-5;
+const PLANE_TOLERANCE = 1e-4;
 
 export class MetronomeHandleRig {
   constructor({ THREE, root, configs = METRONOME_HANDLE_CONTROLS, showDebug = true } = {}) {
@@ -24,6 +25,11 @@ export class MetronomeHandleRig {
     this.controls = new Map();
     this.targets = {};
     this.disposables = new Set();
+    this.originalChildIndices = new Map();
+    for (const config of configs) {
+      const handle = this.root.getObjectByName(config.nodeName);
+      if (handle?.parent) this.originalChildIndices.set(handle, handle.parent.children.indexOf(handle));
+    }
     for (const config of configs) this.createControl(config, showDebug);
   }
 
@@ -33,7 +39,7 @@ export class MetronomeHandleRig {
       console.warn(`Metronome handle node "${config.nodeName}" was not found; ${config.parameter} control disabled.`);
       return;
     }
-    if (!handle.geometry?.clone) {
+    if (!handle.geometry) {
       console.warn(`Metronome handle node "${config.nodeName}" has no geometry; ${config.parameter} control disabled.`);
       return;
     }
@@ -44,42 +50,61 @@ export class MetronomeHandleRig {
     }
     axis.normalize();
 
-    const geometry = owned(handle.geometry.clone());
-    geometry.computeBoundingSphere?.();
-    const anchor = geometry.boundingSphere?.center?.clone?.();
-    if (!anchor) {
-      geometry.dispose?.();
-      console.warn(`Metronome handle node "${config.nodeName}" has invalid geometry bounds; ${config.parameter} control disabled.`);
-      return;
-    }
-    const axialDistance = anchor.dot(axis);
-    const pathCenter = axis.clone().multiplyScalar(axialDistance);
-    const radialOffset = anchor.clone().sub(pathCenter);
+    const colliderOffset = vector(this.THREE, config.colliderOffset);
+    const axialDistance = colliderOffset.dot(axis);
+    const radialOffset = colliderOffset.clone().addScaledVector(axis, -axialDistance);
     const radius = radialOffset.length();
     if (radius < 1e-6) {
-      geometry.dispose?.();
-      console.warn(`Metronome handle node "${config.nodeName}" has no radial geometry offset; ${config.parameter} control disabled.`);
+      console.warn(`Metronome handle "${config.nodeName}" collider offset produces a zero arc radius; control disabled.`);
       return;
     }
+    if (Math.abs(axialDistance) > Math.max(radius * 0.01, PLANE_TOLERANCE)) {
+      console.warn(`Metronome handle "${config.nodeName}" collider offset is outside its movement plane; projecting it onto the plane.`);
+      colliderOffset.copy(radialOffset);
+    }
 
-    const restPosition = handle.position.clone();
-    const restQuaternion = handle.quaternion.clone();
-    const restScale = handle.scale.clone();
+    const originalParent = handle.parent;
+    const originalChildIndex = this.originalChildIndices.get(handle);
+    const importedPosition = handle.position.clone();
+    const importedQuaternion = handle.quaternion.clone();
+    const importedScale = handle.scale.clone();
+
+    const pivotGroup = new this.THREE.Group();
+    pivotGroup.name = `METRONOME_${config.parameter}_pivot`;
+    pivotGroup.position.copy(vector(this.THREE, config.pivot));
+    originalParent.add(pivotGroup);
+    const restPivotPosition = pivotGroup.position.clone();
+    const restPivotQuaternion = pivotGroup.quaternion.clone();
+    const restPivotScale = pivotGroup.scale.clone();
+
+    // The pivot is an identity transform apart from translation and shares the
+    // handle's original parent, so this preserves the imported parent-space
+    // transform exactly at rest.
+    pivotGroup.add(handle);
+    handle.position.copy(importedPosition).sub(restPivotPosition);
+    handle.quaternion.copy(importedQuaternion);
+    handle.scale.copy(importedScale);
+
     const rootAxis = resolveHandleAxisInRootSpace({
       THREE: this.THREE,
       root: this.root,
-      handle,
+      handle: pivotGroup,
       localAxis: axis,
-      restQuaternion,
+      restQuaternion: restPivotQuaternion,
     });
 
     const restFrame = new this.THREE.Group();
     restFrame.name = `METRONOME_${config.parameter}_rest_frame`;
-    restFrame.position.copy(restPosition);
-    restFrame.quaternion.copy(restQuaternion);
-    restFrame.scale.copy(restScale);
-    handle.parent.add(restFrame);
+    restFrame.position.copy(restPivotPosition);
+    restFrame.quaternion.copy(restPivotQuaternion);
+    restFrame.scale.copy(restPivotScale);
+    originalParent.add(restFrame);
 
+    const geometry = owned(new this.THREE.SphereGeometry(
+      config.colliderRadius,
+      METRONOME_SETTINGS.sphereSegments,
+      METRONOME_SETTINGS.sphereRings,
+    ));
     const material = owned(new this.THREE.MeshBasicMaterial({
       color: config.colliderColor,
       transparent: true,
@@ -90,9 +115,7 @@ export class MetronomeHandleRig {
     }));
     const collider = new this.THREE.Mesh(geometry, material);
     collider.name = `HIT_metronome_${config.parameter}`;
-    collider.position.set(0, 0, 0);
-    collider.quaternion.identity();
-    collider.scale.set(1, 1, 1);
+    collider.position.copy(colliderOffset);
     collider.renderOrder = METRONOME_SETTINGS.renderOrder;
     Object.assign(collider.userData, {
       isHitTarget: true,
@@ -102,24 +125,28 @@ export class MetronomeHandleRig {
       interactionRole: METRONOME_INTERACTION_ROLES[config.parameter],
       baseHitOpacity: showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
     });
-    handle.add(collider);
+    pivotGroup.add(collider);
 
     const control = {
       config,
       handle,
       collider,
+      pivotGroup,
       restFrame,
       axis,
       rootAxis,
-      anchor,
-      axialDistance,
-      pathCenter,
+      colliderOffset,
       radialOffset,
       neutralDirection: radialOffset.clone().normalize(),
       radius,
-      restPosition,
-      restQuaternion,
-      restScale,
+      originalParent,
+      originalChildIndex,
+      importedPosition,
+      importedQuaternion,
+      importedScale,
+      restPivotPosition,
+      restPivotQuaternion,
+      restPivotScale,
       minAngle: this.THREE.MathUtils.degToRad(config.minAngleDegrees),
       maxAngle: this.THREE.MathUtils.degToRad(config.maxAngleDegrees),
       referenceAngle: this.THREE.MathUtils.degToRad(config.referenceAngleDegrees || 0),
@@ -149,10 +176,10 @@ export class MetronomeHandleRig {
       control.axis,
       control.angle + control.referenceAngle,
     );
-    control.handle.position.copy(control.restPosition);
-    control.handle.quaternion.copy(control.restQuaternion).multiply(delta);
-    control.handle.scale.copy(control.restScale);
-    control.handle.updateMatrixWorld(true);
+    control.pivotGroup.position.copy(control.restPivotPosition);
+    control.pivotGroup.quaternion.copy(control.restPivotQuaternion).multiply(delta);
+    control.pivotGroup.scale.copy(control.restPivotScale);
+    control.pivotGroup.updateMatrixWorld(true);
   }
 
   beginDrag(parameter, rayOrigin, rayDirection) {
@@ -206,7 +233,7 @@ export class MetronomeHandleRig {
     const distance = planePoint.clone().sub(rayOrigin).dot(normal) / denominator;
     if (!Number.isFinite(distance)) return null;
     const intersection = rayOrigin.clone().addScaledVector(rayDirection, distance);
-    const local = control.restFrame.worldToLocal(intersection.clone()).sub(control.pathCenter);
+    const local = control.restFrame.worldToLocal(intersection.clone());
     const projected = projectOntoPlane(local, control.axis);
     if (!projected || vectorLength(projected) < 1e-6) return null;
     return signedAngleOnPlane(control.neutralDirection, projected, control.axis);
@@ -215,7 +242,7 @@ export class MetronomeHandleRig {
   getDragPlane(control) {
     control.restFrame.updateMatrixWorld(true);
     return {
-      point: control.restFrame.localToWorld(control.pathCenter.clone()),
+      point: control.restFrame.localToWorld(new this.THREE.Vector3()),
       normal: control.axis.clone().transformDirection(control.restFrame.matrixWorld).normalize(),
     };
   }
@@ -225,9 +252,9 @@ export class MetronomeHandleRig {
     const group = control.restFrame;
     group.userData.isMetronomeDebug = true;
     const arcConfig = {
-      center: vectorObject(control.pathCenter),
+      center: { x: 0, y: 0, z: 0 },
       axis: vectorObject(control.axis),
-      colliderOffset: vectorObject(control.radialOffset),
+      colliderOffset: vectorObject(control.colliderOffset),
       minAngleDegrees: control.config.minAngleDegrees,
       maxAngleDegrees: control.config.maxAngleDegrees,
       referenceAngleDegrees: control.config.referenceAngleDegrees || 0,
@@ -238,6 +265,8 @@ export class MetronomeHandleRig {
       owned(new this.THREE.MeshBasicMaterial({ color: control.config.pivotColor, depthTest: false })),
     );
     group.add(pivot);
+    this.disposables.add(pivot.geometry);
+    this.disposables.add(pivot.material);
 
     const axisExtent = control.axis.clone().multiplyScalar(control.radius);
     group.add(line(
@@ -272,7 +301,6 @@ export class MetronomeHandleRig {
       })),
     );
     plane.quaternion.setFromUnitVectors(new this.THREE.Vector3(0, 0, 1), control.axis);
-    plane.position.copy(control.pathCenter);
     plane.userData.isMetronomeDebug = true;
     group.add(plane);
     this.disposables.add(plane.geometry);
@@ -285,10 +313,10 @@ export class MetronomeHandleRig {
           arcConfig.axis,
           angle + control.referenceAngle,
         );
-        const endpoint = vector(this.THREE, rotated).add(control.pathCenter);
+        const endpoint = vector(this.THREE, rotated);
         group.add(line(
           this.THREE,
-          [control.pathCenter.clone(), endpoint],
+          [new this.THREE.Vector3(), endpoint],
           control.config.arcColor,
           settings.arcOpacity,
           this.disposables,
@@ -305,10 +333,18 @@ export class MetronomeHandleRig {
   dispose() {
     for (const control of this.controls.values()) {
       control.collider.removeFromParent();
+      control.originalParent.add(control.handle);
+      control.handle.position.copy(control.importedPosition);
+      control.handle.quaternion.copy(control.importedQuaternion);
+      control.handle.scale.copy(control.importedScale);
+      restoreChildIndex(control.originalParent, control.handle, control.originalChildIndex);
+      control.pivotGroup.removeFromParent();
       control.restFrame.removeFromParent();
+      delete this.targets[METRONOME_INTERACTION_ROLES[control.config.parameter]];
     }
     for (const disposable of this.disposables) disposable.dispose?.();
     this.disposables.clear();
+    this.originalChildIndices.clear();
     this.controls.clear();
   }
 }
@@ -346,6 +382,13 @@ function owned(resource) {
   resource.userData ||= {};
   resource.userData.disposeWithOwner = true;
   return resource;
+}
+
+function restoreChildIndex(parent, child, index) {
+  const currentIndex = parent.children.indexOf(child);
+  if (currentIndex < 0 || currentIndex === index) return;
+  parent.children.splice(currentIndex, 1);
+  parent.children.splice(Math.min(index, parent.children.length), 0, child);
 }
 
 function line(THREE, points, color, opacity, disposables, loop) {

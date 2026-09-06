@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import {
+  LOOPER_GESTURE_EVENT_EPSILONS,
+  LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
+} from "../../../src/config/looper.js";
 import { LooperGestureRecorder } from "../../../src/instruments/looper/LooperGestureRecorder.js";
 import { LooperTrack } from "../../../src/instruments/looper/LooperTrack.js";
 import { LooperActionEventType } from "../../../src/instruments/looper/timeline/LooperActionEvent.js";
@@ -48,4 +52,31 @@ test("finalizing an active recording preserves its last sample and neutral relea
   assert.equal(restored.recording, false);
   assert.equal(restored.durationMs, timeline.durationMs);
   assert.deepEqual(restored.toJSON(), serialized);
+});
+
+test("gesture recording captures frame-level control changes with fine thresholds", () => {
+  const recorder = new LooperGestureRecorder({
+    sampleIntervalMs: LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
+    epsilons: LOOPER_GESTURE_EVENT_EPSILONS,
+  });
+  const timeline = new LooperTimeline();
+  const track = new LooperTrack({ index: 0, connectedHonkId: "honk-1" });
+  let action = { squeeze: 0, bend: 0, earLeft: 0, earRight: 0, nose: 0, vowel: "A" };
+  const capture = () => action;
+
+  recorder.start(timeline, [track], 1000, capture);
+  action = { ...action, earLeft: 0.009 };
+  recorder.updateTrack(timeline, track, 1008, capture);
+  action = { ...action, earLeft: 0.018 };
+  recorder.updateTrack(timeline, track, 1016, capture);
+  recorder.updateTrack(timeline, track, 1024, capture);
+
+  const earEvents = timeline.getTrack(track.trackId).events.filter(
+    ({ type }) => type === LooperActionEventType.EarLeft,
+  );
+  assert.equal(LOOPER_GESTURE_SAMPLE_INTERVAL_MS, 16);
+  assert.deepEqual(earEvents.map(({ timeMs, value }) => [timeMs, value]), [
+    [8, 0.009],
+    [24, 0.018],
+  ]);
 });

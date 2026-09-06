@@ -1,10 +1,10 @@
 export const METRONOME_COMPONENT_ID = "metronome";
 
 export const METRONOME_SETTINGS = Object.freeze({
-  defaultBpm: 120,
+  defaultBpm: 135,
   minBpm: 30,
   maxBpm: 240,
-  defaultVolume: 0.7,
+  defaultVolume: 0.5,
   minVolume: 0,
   maxVolume: 1,
   sphereSegments: 24,
@@ -54,7 +54,7 @@ export const METRONOME_CONNECTION_PORTS = Object.freeze([
   Object.freeze({
     portId: "port-0",
     name: "HIT_metronome_connection_port_0",
-    position: Object.freeze({ x: -0.62, y: -0.25, z: 0.01 }),
+    position: Object.freeze({ x: -0.36, y: -0.25, z: -0.03 }),
     colliderScale: 0.035,
     colliderColor: 0x8b5cf6,
     socketDirection: Object.freeze({ x: -1, y: 0, z: 0 }),
@@ -62,7 +62,7 @@ export const METRONOME_CONNECTION_PORTS = Object.freeze([
   Object.freeze({
     portId: "port-1",
     name: "HIT_metronome_connection_port_1",
-    position: Object.freeze({ x: -0.55, y: -0.10, z: 0.01 }),
+    position: Object.freeze({ x: -0.31, y: -0.115, z: -0.03 }),
     colliderScale: 0.035,
     colliderColor: 0xa78bfa,
     socketDirection: Object.freeze({ x: -1, y: 0, z: 0 }),
@@ -70,7 +70,7 @@ export const METRONOME_CONNECTION_PORTS = Object.freeze([
   Object.freeze({
     portId: "port-2",
     name: "HIT_metronome_connection_port_2",
-    position: Object.freeze({ x: 0.39, y: -0.28, z: 0.005 }),
+    position: Object.freeze({ x: 0.365, y: -0.24, z: -0.03 }),
     colliderScale: 0.03,
     colliderColor: 0xc084fc,
     socketDirection: Object.freeze({ x: 1, y: 0, z: 0 }),
@@ -78,7 +78,7 @@ export const METRONOME_CONNECTION_PORTS = Object.freeze([
   Object.freeze({
     portId: "port-3",
     name: "HIT_metronome_connection_port_3",
-    position: Object.freeze({ x: 0.32, y: -0.12, z: 0.005 }),
+    position: Object.freeze({ x: 0.32, y: -0.11, z: -0.05 }),
     colliderScale: 0.03,
     colliderColor: 0xe879f9,
     socketDirection: Object.freeze({ x: 1, y: 0, z: 0 }),
@@ -120,16 +120,20 @@ export const METRONOME_PENDULUM_SETTINGS = Object.freeze({
   swingDegrees: 5,
 });
 
-// Each axis is handle-local. The imported parent transform maps local Y to the
-// Metronome root's Z axis. Each handle rotates about its authored child-local
-// origin; collider placement and the drag anchor derive from child geometry.
+// The outlets asset bakes both handle positions into geometry, so each control
+// reconstructs its Ver-8 hinge in group1-local space. group1 maps local Y to
+// the Metronome root's Z axis. Default values are the parameter midpoints, so
+// both generated pivots initialize at the midpoint of their configured arcs.
 export const METRONOME_HANDLE_CONTROLS = Object.freeze([
   Object.freeze({
     nodeName: "L_handle_geo",
     parameter: "bpm",
     axis: Object.freeze({ x: 0, y: 1, z: 0 }),
-    minAngleDegrees: -50,
-    maxAngleDegrees: 90,
+    pivot: Object.freeze({ x: 9.907267464, y: 14.899678701, z: 10.923128679 }),
+    colliderOffset: Object.freeze({ x: 5, y: 0, z: -5 }),
+    colliderRadius: 1.6,
+    minAngleDegrees: -80,
+    maxAngleDegrees: 30,
     referenceAngleDegrees: 0,
     colliderColor: 0xff8c42,
     pivotColor: 0xffd0a8,
@@ -141,8 +145,11 @@ export const METRONOME_HANDLE_CONTROLS = Object.freeze([
     nodeName: "R_handle_geo",
     parameter: "volume",
     axis: Object.freeze({ x: 0, y: 1, z: 0 }),
-    minAngleDegrees: -90,
-    maxAngleDegrees: 40,
+    pivot: Object.freeze({ x: -10.089564549, y: 14.890084927, z: 10.666345168 }),
+    colliderOffset: Object.freeze({ x: -5, y: 0, z: -5 }),
+    colliderRadius: 1.6,
+    minAngleDegrees: -30,
+    maxAngleDegrees: 90,
     referenceAngleDegrees: 0,
     colliderColor: 0x5ac8fa,
     pivotColor: 0xbdeaff,

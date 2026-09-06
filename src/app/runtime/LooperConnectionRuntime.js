@@ -452,18 +452,22 @@ export const LooperConnectionRuntimeMethods = {
         }
       }
 
+      const playPressed =
+        (data.playing && !data.paused && !data.pauseArmed) ||
+        data.playArmed ||
+        data.buttonMorphReleaseTimes?.has("play");
       this.setLooperButtonMorph(looperState, "record", data.recording || data.recordArmed ? 1 : 0);
       this.setLooperButtonMorph(
         looperState,
         "play",
-        (data.playing && !data.paused) || data.playArmed ? 1 : 0,
+        playPressed ? 1 : 0,
       );
   
       for (const action of LOOPER_BUTTON_ACTIONS) {
         const target = looperState.hitTargets[getLooperButtonName(action)];
         const active =
           (action === "record" && (data.recording || data.recordArmed)) ||
-          (action === "play" && ((data.playing && !data.paused) || data.playArmed)) ||
+          (action === "play" && playPressed) ||
           (action === "pause" && (data.paused || data.pauseArmed)) ||
           (action === "stop" && !data.playing && !data.paused && !data.recording && !data.armed);
         this.setHitTargetDebugColor(

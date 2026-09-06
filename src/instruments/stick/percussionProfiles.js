@@ -4,6 +4,7 @@ import { INSTRUMENT_KINDS } from "../core/capabilities.js";
 export const STICK_PERCUSSION_BY_TARGET_KIND = Object.freeze({
   [INSTRUMENT_KINDS.honk]: STICK_PERCUSSION_TYPES.boink,
   [INSTRUMENT_KINDS.looper]: STICK_PERCUSSION_TYPES.hihat,
+  [INSTRUMENT_KINDS.metronome]: STICK_PERCUSSION_TYPES.metronomeWood,
 });
 
 export function getStickPercussionType(target) {

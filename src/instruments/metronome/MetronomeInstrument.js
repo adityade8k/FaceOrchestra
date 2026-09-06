@@ -29,6 +29,8 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.onTransportChange = onTransportChange;
     this.bpm = clamp(bpm, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm);
     this.volume = clamp(volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
+    this.handleRig?.setValue("bpm", this.bpm);
+    this.handleRig?.setValue("volume", this.volume);
     this.playing = false;
     this.nextTickMs = null;
     this.nextBeatIndex = null;

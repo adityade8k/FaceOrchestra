@@ -147,6 +147,8 @@ export class LooperColliderFactory {
     for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
       const calibration = deriveLooperControlGeometry(root, controlConfig.morphTargets, {
         colliderPadding: LOOPER_COLLIDER_GEOMETRY.controlColliderThicknessPadding,
+        motionSelectionRatio: LOOPER_COLLIDER_GEOMETRY.controlTipMotionRatio,
+        useBoundsCenter: true,
       });
       if (!calibration) {
         warnMissingControlGeometry(control, controlConfig.morphTargets);
