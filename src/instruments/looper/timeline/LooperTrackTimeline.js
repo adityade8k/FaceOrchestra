@@ -270,6 +270,13 @@ export class LooperTrackTimeline {
       return previousValue;
     }
 
+    // Stop-generated safety resets must not pull the preceding recorded curve
+    // toward neutral. They exist only to guarantee release at their timestamp;
+    // loop wrapping handles that release when the event is on/outside the end.
+    if (nextEvent.synthetic) {
+      return previousValue;
+    }
+
     // SqueezeStart/SqueezeEnd are note gates, not automation points. A linear
     // ramp from a release toward the next attack would fill a recorded rest with
     // a gradually rising Honk.
