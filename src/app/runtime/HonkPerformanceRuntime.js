@@ -13,6 +13,7 @@ import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
 import {
   REFERENCE_FRAME_MS,
   captureCanonicalHonkPerformance,
+  advanceHonkPresentation,
   resolvePresentationValue,
 } from "./HonkPerformanceSampling.js";
 
@@ -186,11 +187,18 @@ export const HonkPerformanceRuntimeMethods = {
         state.hornSqueezeValue = resolved?.squeeze ?? processedLive.squeeze;
         state.targetBendValue = resolved?.bend ?? processedLive.bend;
         state.bendValue = state.targetBendValue;
+        state.honkPresentation = advanceHonkPresentation(
+          state.honkPresentation,
+          { squeeze: state.hornSqueezeValue, bend: state.bendValue },
+          processedLive,
+          state.performance?.automationRevision ?? 0,
+          deltaMs,
+        );
         if (resolved) {
           state.applyMorphPerformanceState({
             ...resolved,
-            squeeze: state.hornSqueezeValue,
-            bend: state.bendValue,
+            squeeze: state.honkPresentation.squeeze,
+            bend: state.honkPresentation.bend,
           });
           this.applyResolvedHonkMorphState(state, resolved);
         }

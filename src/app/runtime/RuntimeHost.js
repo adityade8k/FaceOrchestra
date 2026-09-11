@@ -137,7 +137,9 @@ export class RuntimeHost {
     this.stickCollisionSystem = new StickCollisionSystem({
       getSticks: () => this.instrumentRegistry.getByKind("stick"),
       getTargets: () => this.instrumentStates,
-      collisionTester: (context) => this.stickCollisionAdapter.intersects(context),
+      collisionTester: (context) => context.target?.withInteractionPose
+        ? context.target.withInteractionPose(() => this.stickCollisionAdapter.intersects(context))
+        : this.stickCollisionAdapter.intersects(context),
     });
     this.instrumentLifecycle = new InstrumentLifecycleService({
       instrumentRegistry: this.instrumentRegistry,
@@ -379,6 +381,7 @@ export class RuntimeHost {
       resolveHonk: (honkId) => this.instrumentRegistry.get(honkId),
       isPlayableHonkId: (honkId) => this.instrumentRegistry.get(honkId)?.isPlayable?.() || false,
       captureActionByHonkId: (honkId) => this.captureLooperActionFromHonk(this.instrumentRegistry.get(honkId)),
+      getPlaybackTargetsRevision: () => this.honkContactGraph.revision,
       getPlaybackTargetIds: (_track, honkId) => {
         const component = this.honkContactGraph.getConnectedComponent(honkId);
         return component.size > 0 ? [...component] : [honkId];
@@ -476,6 +479,9 @@ export class RuntimeHost {
       honk.activeBends?.clear();
       honk.targetBendValue = 0;
       honk.resetLivePerformance();
+      honk.applyMorphPerformanceState(honk.getResolvedPerformanceState());
+      this.updateBendAlignedColliders(honk);
+      this.applyInstrumentVisualScale(honk, 1);
       honk.releaseAllAudioVoices();
     }
     for (const metronome of this.instrumentRegistry.getByKind("metronome")) metronome.pause();

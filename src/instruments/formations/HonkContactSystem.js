@@ -34,6 +34,11 @@ export class HonkContactSystem {
       }
     }
 
+    // Resolvers may reuse a mutable sphere and center between calls.
+    const spheres = candidates.map((honk) => {
+      const sphere = this.getColliderSphere(honk);
+      return sphere ? { radius: sphere.radius, center: readPoint(sphere.center) } : null;
+    });
     const observedPairs = new Set();
     for (let firstIndex = 0; firstIndex < candidates.length; firstIndex += 1) {
       for (let secondIndex = firstIndex + 1; secondIndex < candidates.length; secondIndex += 1) {
@@ -41,7 +46,7 @@ export class HonkContactSystem {
         const second = candidates[secondIndex];
         const pairKey = canonicalPairKey(first.id, second.id);
         observedPairs.add(pairKey);
-        this.updatePair(pairKey, first, second);
+        this.updatePair(pairKey, first, second, spheres[firstIndex], spheres[secondIndex]);
       }
     }
 
@@ -54,9 +59,7 @@ export class HonkContactSystem {
     return this.graph;
   }
 
-  updatePair(pairKey, first, second) {
-    const firstSphere = this.getColliderSphere(first);
-    const secondSphere = this.getColliderSphere(second);
+  updatePair(pairKey, first, second, firstSphere = this.getColliderSphere(first), secondSphere = this.getColliderSphere(second)) {
     const measurement = normalizeMeasurement(this.measurePair(first, second, firstSphere, secondSphere));
     const state = this.pairStates.get(pairKey) || {
       firstId: first.id,

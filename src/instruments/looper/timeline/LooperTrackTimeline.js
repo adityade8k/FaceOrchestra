@@ -30,6 +30,9 @@ export class LooperTrackTimeline {
     this.fieldEvents = new Map();
     this.gateEvents = [];
     this.performanceEvents = [];
+    this.drumEvents = [];
+    this.eventOwners = new Map();
+    this.hasDiscreteGates = false;
   }
 
   setBaseline(actionState) {
@@ -136,7 +139,7 @@ export class LooperTrackTimeline {
     this.sortEvents();
     const onsets = [];
     let squeezeActive = false;
-    const hasDiscreteGateTrack = this.gateEvents.some((event) => event.gateOnly);
+    const hasDiscreteGateTrack = this.hasDiscreteGates;
 
     for (const event of this.events) {
       if (isDrumHitEvent(event)) {
@@ -200,7 +203,16 @@ export class LooperTrackTimeline {
     this.fieldEvents.clear();
     this.gateEvents = [];
     this.performanceEvents = [];
+    this.drumEvents = [];
+    this.eventOwners = new Map();
+    this.hasDiscreteGates = false;
+    let owner;
     for (const event of this.events) {
+      if (event.type === LooperActionEventType.SqueezeStart) owner = event;
+      this.eventOwners.set(event, owner);
+      if (event.type === LooperActionEventType.SqueezeEnd) owner = null;
+      if (event.gateOnly && isHonkGateEvent(event)) this.hasDiscreteGates = true;
+      if (isDrumHitEvent(event)) this.drumEvents.push(event);
       if (isHonkGateEvent(event)) this.gateEvents.push(event);
       if (!isDrumHitEvent(event)) this.performanceEvents.push(event);
       for (const field of NUMERIC_ACTION_FIELDS) {
@@ -219,7 +231,7 @@ export class LooperTrackTimeline {
 
   getGateEventsAt(timeMs, epsilon = 0.001) {
     this.sortEvents();
-    return this.gateEvents.filter((event) => Math.abs(event.timeMs - timeMs) <= epsilon);
+    return sliceEventsBetween(this.gateEvents, timeMs - epsilon, timeMs + epsilon, { includeStart: true, includeEnd: true });
   }
 
   getGateEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
@@ -229,7 +241,7 @@ export class LooperTrackTimeline {
 
   getPerformanceEventsAt(timeMs, epsilon = 0.001) {
     this.sortEvents();
-    return this.performanceEvents.filter((event) => Math.abs(event.timeMs - timeMs) <= epsilon);
+    return sliceEventsBetween(this.performanceEvents, timeMs - epsilon, timeMs + epsilon, { includeStart: true, includeEnd: true });
   }
 
   getPerformanceEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
@@ -259,25 +271,36 @@ export class LooperTrackTimeline {
     }
 
     this.sortEvents();
-    return this.events.filter(
-      (event) => isDrumHitEvent(event) && Math.abs(event.timeMs - timeMs) <= epsilon,
-    );
+    return sliceEventsBetween(this.drumEvents, timeMs - epsilon, timeMs + epsilon,
+      { includeStart: true, includeEnd: true });
   }
 
   getDrumHitEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
-    if (!this.active || endMs < startMs) {
-      return [];
-    }
-
     this.sortEvents();
-    return this.events.filter((event) => {
-      if (!isDrumHitEvent(event)) {
-        return false;
-      }
-      const afterStart = includeStart ? event.timeMs >= startMs : event.timeMs > startMs;
-      const beforeEnd = includeEnd ? event.timeMs <= endMs : event.timeMs < endMs;
-      return afterStart && beforeEnd;
-    });
+    return sliceEventsBetween(this.drumEvents, startMs, endMs, { includeStart, includeEnd });
+  }
+
+  getOwningNote(event, durationMs = Infinity) {
+    this.sortEvents();
+    if (!this.eventOwners.has(event)) return null;
+    const owner = this.eventOwners.get(event);
+    if (owner) return { event: owner, cycleOffset: 0 };
+    if (owner === null) return null;
+    const last = this.gateEvents.at(-1);
+    const previous = last?.timeMs <= event.timeMs + durationMs ? last
+      : this.gateEvents[upperBoundByTime(this.gateEvents, event.timeMs + durationMs) - 1];
+    return previous?.type === LooperActionEventType.SqueezeStart
+      ? { event: previous, cycleOffset: -1 } : null;
+  }
+
+  getActiveNote(timeMs, durationMs) {
+    this.sortEvents();
+    const current = this.gateEvents[upperBoundByTime(this.gateEvents, timeMs) - 1];
+    // Before this cycle's first gate, the preceding cycle can still own a note.
+    const previous = this.gateEvents[upperBoundByTime(this.gateEvents, timeMs + durationMs) - 1];
+    const event = current || previous;
+    return event?.type === LooperActionEventType.SqueezeStart
+      ? { event, cycleOffset: current ? 0 : -1 } : null;
   }
 
   sample(timeMs, target, { inTailPadding = false } = {}) {
@@ -301,7 +324,7 @@ export class LooperTrackTimeline {
       target[field] = this.sampleNumericField(field, timeMs);
     }
     target.vowel = this.sampleStepField("vowel", timeMs);
-    if (this.gateEvents.some((event) => event.gateOnly) && !this.sampleGateActive(timeMs)) {
+    if (this.hasDiscreteGates && !this.sampleGateActive(timeMs)) {
       target.squeeze = 0;
     }
     return target;
@@ -314,6 +337,7 @@ export class LooperTrackTimeline {
   }
 
   sampleNumericField(field, timeMs) {
+    this.sortEvents();
     if (!this.hasRecordedField(field)) {
       return undefined;
     }
@@ -366,6 +390,7 @@ export class LooperTrackTimeline {
   }
 
   sampleStepField(field, timeMs) {
+    this.sortEvents();
     if (!this.hasRecordedField(field)) {
       return undefined;
     }

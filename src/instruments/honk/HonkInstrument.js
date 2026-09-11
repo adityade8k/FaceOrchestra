@@ -49,6 +49,7 @@ export class HonkInstrument extends InstrumentEntity {
     this.targetsByRole = new Map();
     this.lastResolvedPerformance = this.performance.getResolvedSnapshot();
     this.squeezeCollider = null;
+    this.honkPresentation = null;
     if (targets) {
       this.adoptHonkTargets(targets);
     }
@@ -147,7 +148,41 @@ export class HonkInstrument extends InstrumentEntity {
     this.performance.clearLiveInteractions();
   }
 
+  withInteractionPose(callback) {
+    const visual = this.honkPresentation;
+    if (!visual || !this.honkVisualRoot || this.interactionPoseActive) return callback();
+    const scale = this.honkVisualRoot.scale.x;
+    if (scale === 1 && visual.squeeze === this.hornSqueezeValue && visual.bend === this.bendValue) {
+      return callback();
+    }
+    this.interactionPoseActive = true;
+    this.honkVisualRoot.scale.setScalar(1);
+    this.morphs.setSqueeze?.(this.hornSqueezeValue);
+    this.morphs.setBend?.(this.bendValue);
+    this.root.updateMatrixWorld?.(true);
+    try {
+      return callback();
+    } finally {
+      this.honkVisualRoot.scale.setScalar(scale);
+      this.morphs.setSqueeze?.(visual.squeeze);
+      this.morphs.setBend?.(visual.bend);
+      this.root.updateMatrixWorld?.(true);
+      this.interactionPoseActive = false;
+    }
+  }
+
+  resetPresentation() {
+    this.honkPresentation = null;
+    this.lastHonkPerformanceUpdateMs = undefined;
+    this.processedLivePerformance = undefined;
+    this.hornSqueezeValue = 0;
+    this.bendValue = 0;
+    this.targetBendValue = 0;
+    this.honkVisualRoot?.scale.setScalar(1);
+  }
+
   resetLivePerformance() {
+    this.resetPresentation();
     this.clearLiveInteractions();
     this.setLivePerformance({ squeeze: 0, bend: 0 });
   }
@@ -334,6 +369,7 @@ export class HonkInstrument extends InstrumentEntity {
   }
 
   restore(serialized = {}) {
+    this.resetPresentation();
     this.restoreTransform(serialized.transform);
     this.applyTuning(serialized.tuning || this.tuning);
     this.setLivePerformance(serialized.performanceDefaults || {});
@@ -345,6 +381,7 @@ export class HonkInstrument extends InstrumentEntity {
   }
 
   dispose() {
+    this.resetPresentation();
     if (this.disposed) {
       return;
     }
@@ -354,6 +391,7 @@ export class HonkInstrument extends InstrumentEntity {
     this.noteLabelView?.dispose?.();
     disposeOwnedResources(this.root);
     this.squeezeCollider = null;
+    this.honkPresentation = null;
     this.targetsByRole.clear();
     super.dispose();
   }

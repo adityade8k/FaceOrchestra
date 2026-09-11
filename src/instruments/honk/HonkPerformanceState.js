@@ -37,6 +37,7 @@ export class HonkPerformanceState {
     this.bendSources = new Map();
     this.automationLayers = new Map();
     this.sequence = 0;
+    this.automationRevision = (this.automationRevision || 0) + 1;
   }
 
   setLiveState(values = {}) {
@@ -112,10 +113,11 @@ export class HonkPerformanceState {
 
     const action = copyDefinedAction(actionState);
     if (!hasAnyAction(action)) {
-      this.automationLayers.delete(layerId);
+      this.clearAutomationLayer(layerId);
       return null;
     }
 
+    if (!this.automationLayers.has(layerId)) this.automationRevision += 1;
     const layer = this.automationLayers.get(layerId) || {
       id: layerId,
       action: createHonkActionState(),
@@ -129,14 +131,14 @@ export class HonkPerformanceState {
 
   clearAutomationLayer(layerId) {
     if (layerId) {
-      this.automationLayers.delete(layerId);
+      if (this.automationLayers.delete(layerId)) this.automationRevision += 1;
     }
   }
 
   clearAutomationLayers(predicate = null) {
     for (const [layerId, layer] of this.automationLayers) {
       if (!predicate || predicate(layer)) {
-        this.automationLayers.delete(layerId);
+        if (this.automationLayers.delete(layerId)) this.automationRevision += 1;
       }
     }
   }
@@ -215,6 +217,7 @@ export class HonkPerformanceState {
     this.bendSources.clear();
     this.automationLayers.clear();
     this.sequence = 0;
+    this.automationRevision = (this.automationRevision || 0) + 1;
   }
 }
 

@@ -15,6 +15,7 @@ export class HonkVoiceService {
     this.startingVoices = new Set();
     this.startTokens = new Map();
     this.currentVowel = "A";
+    this.vowelSchedules = new Map();
   }
 
   async startVoice(voiceId = "main", options = {}) {
@@ -34,6 +35,7 @@ export class HonkVoiceService {
         vowel: this.currentVowel,
       });
       this.voices.set(voiceId, voice);
+      this.vowelSchedules.set(voice, { audible: voice.vowel, points: [] });
       voice.start(options.scheduledTime);
       for (const update of startToken.updates) {
         if (update.performance.vowel) {
@@ -60,15 +62,49 @@ export class HonkVoiceService {
   }
 
   scheduleVoiceVowel(voice, vowel, scheduledTime) {
-    const delayMs = Number.isFinite(scheduledTime) && voice?.context
-      ? Math.max((scheduledTime - voice.context.currentTime) * 1000, 0)
-      : 0;
-    if (delayMs <= 1) {
-      voice?.setVowel?.(vowel);
-      return;
+    if (!voice || !vowel) return;
+    let sequence = this.vowelSchedules.get(voice);
+    if (!sequence) this.vowelSchedules.set(voice, sequence = { audible: voice.vowel, points: [] });
+    const now = voice.context?.currentTime ?? 0;
+    const time = voice.context && Number.isFinite(scheduledTime) ? Math.max(scheduledTime, now) : now;
+    // Keep the requested sequence, including redundant points, until their time
+    // passes. An out-of-order insertion may turn a former repeat into a transition.
+    sequence.points = sequence.points.filter((point) => point.time > now || point.timer !== null);
+    sequence.points.push({ time, vowel, timer: null });
+    sequence.points.sort((a, b) => a.time - b.time);
+    let projected = sequence.audible;
+    for (const point of sequence.points) {
+      const transition = point.vowel !== projected;
+      if (!transition && point.timer !== null) {
+        globalThis.clearTimeout?.(point.timer);
+        point.timer = null;
+      }
+      if (transition && point.timer === null) {
+        const delayMs = Math.max((point.time - now) * 1000, 0);
+        if (delayMs <= 1) {
+          voice.setVowel?.(point.vowel);
+          sequence.audible = point.vowel;
+        } else {
+          point.timer = globalThis.setTimeout?.(() => {
+            point.timer = null;
+            sequence.audible = point.vowel;
+            voice.setVowel?.(point.vowel);
+            sequence.points = sequence.points.filter((candidate) => candidate !== point &&
+              (candidate.time > point.time || candidate.timer !== null));
+          }, delayMs);
+          point.timer?.unref?.();
+        }
+      }
+      projected = point.vowel;
     }
-    const timer = globalThis.setTimeout?.(() => voice?.setVowel?.(vowel), delayMs);
-    timer?.unref?.();
+  }
+
+  clearVoiceVowels(voice) {
+    const sequence = this.vowelSchedules.get(voice);
+    for (const point of sequence?.points || []) {
+      if (point.timer !== null) globalThis.clearTimeout?.(point.timer);
+    }
+    this.vowelSchedules.delete(voice);
   }
 
   setVoicePitchBend(voiceId, semitones) {
@@ -120,10 +156,12 @@ export class HonkVoiceService {
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
     const active = this.voices.get(voiceId);
+    this.clearVoiceVowels(active);
     if (active?.cancel) active.cancel(options);
     else active?.disconnect?.();
     this.voices.delete(voiceId);
     for (const voice of this.releasingVoices.get(voiceId) || []) {
+      this.clearVoiceVowels(voice);
       if (voice?.cancel) voice.cancel(options);
       else voice?.disconnect?.();
     }
@@ -150,6 +188,7 @@ export class HonkVoiceService {
     }
     releaseGenerations.add(voice);
     voice.release(fadeSeconds, () => {
+      this.clearVoiceVowels(voice);
       const currentGenerations = this.releasingVoices.get(voiceId);
       if (!currentGenerations) {
         return;

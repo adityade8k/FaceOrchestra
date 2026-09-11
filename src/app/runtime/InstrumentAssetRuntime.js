@@ -254,6 +254,12 @@ export const InstrumentAssetRuntimeMethods = {
 
   applyInstrumentVisualScale(state, pulse = state.hornSqueezeValue ? 1 + state.hornSqueezeValue * 0.035 : 1) {
     if (state?.root) state.root.scale.setScalar(state.baseScale * pulse);
+    // Root pulse remains authoritative for colliders, grips and wire sockets.
+    // Compensate only the authored model so its net pulse follows presentation.
+    if (state?.honkVisualRoot) {
+      const visualPulse = 1 + (state.honkPresentation?.squeeze ?? state.hornSqueezeValue ?? 0) * 0.035;
+      state.honkVisualRoot.scale.setScalar(visualPulse / pulse);
+    }
   },
 
   getRootUniformScale(root) {
@@ -275,6 +281,14 @@ export const InstrumentAssetRuntimeMethods = {
     if (kind === METRONOME_COMPONENT_ID) applyMetronomeSpawnOrientation(root);
     this.scene.add(root);
 
+    let honkVisualRoot = null;
+    if (kind === "honk") {
+      honkVisualRoot = new THREE.Group();
+      honkVisualRoot.name = "HonkPresentation";
+      // Keep the authored subtree (including any bones) intact under one identity transform.
+      honkVisualRoot.add(...root.children.slice());
+      root.add(honkVisualRoot);
+    }
     let hitTargets = collectNamedHitTargets(root);
     let domainTargets = {};
     let handleRig = null;
@@ -318,6 +332,16 @@ export const InstrumentAssetRuntimeMethods = {
       componentId: componentOption.id,
     });
 
+    state.honkVisualRoot = honkVisualRoot;
+    // Body grip uses the authored meshes. Ray intersections must retain the
+    // authoritative pose even while these meshes display an eased release.
+    honkVisualRoot?.traverse((mesh) => {
+      if (!mesh.isMesh || !mesh.raycast) return;
+      const raycast = mesh.raycast;
+      mesh.raycast = function (...args) {
+        return state.withInteractionPose(() => raycast.apply(this, args));
+      };
+    });
     decorateInstrumentEntity(state, {
       componentOption,
       hitTargets,

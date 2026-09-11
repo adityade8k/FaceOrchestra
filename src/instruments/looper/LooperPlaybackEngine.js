@@ -141,12 +141,14 @@ export class LooperPlaybackEngine {
   }
 
   emitDrumHitEventsAt(timeline, timeMs, handlers = {}) {
+    if (!handlers.onDrumHit) return;
     for (const { track, event } of timeline.getDrumHitEventsAt?.(timeMs) || []) {
       handlers.onDrumHit?.(track, event, timeMs);
     }
   }
 
   emitDrumHitEventsBetween(timeline, startMs, endMs, handlers = {}) {
+    if (!handlers.onDrumHit) return;
     for (const { track, event } of timeline.getDrumHitEventsBetween?.(startMs, endMs) || []) {
       handlers.onDrumHit?.(track, event, event.timeMs);
     }

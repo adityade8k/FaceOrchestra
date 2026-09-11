@@ -190,6 +190,8 @@ External systems use semantic methods such as `beginSqueeze`, `updateSqueeze`, `
 - each automation layer can be cleared independently;
 - the most recently updated applicable automation layer wins stepped morph/vowel fields.
 
+Honk squeeze/bend presentation now keeps a transient frame-driven state separate from resolved musical and interaction values. An authored-model child transform compensates the authoritative root pulse for visible easing. Body-mesh raycasts and stick collision queries temporarily restore the authoritative pose; procedural collider bend and socket positions remain authoritative. These caches and visual states are never serialized. See the [repair validation and benchmark](looper-playback-repair.md).
+
 `HonkColliderFactory` owns the Honk collider construction contract. Its squeeze collider provides a world-sphere accessor consumed by `HonkContactSystem`. Collider dimensions, names, morph names, scale limits, and sensitivities live in Honk/formation configuration.
 
 ### Contact formations and lock relationships
@@ -616,9 +618,9 @@ Headset-only behavior remains outside automated verification: XR controller ergo
 
 Local TLS material belongs under ignored `certs/`. `scripts/serve-https.py` reads it at runtime; no certificate or private key is tracked.
 
-## Static optimization audit — hypotheses only, unimplemented
+## Historical static optimization audit
 
-No optimization in this section was implemented. The ranking comes from static inspection, not a representative Quest profile. Each item must be measured in-headset before code or architecture changes are approved; correctness and interaction feel take priority over allocation counts in isolation.
+This table records the earlier static audit. The [looper playback repair](looper-playback-repair.md) subsequently added component caching and per-update sphere snapshots, supported by deterministic measurements. The remaining proposals are unimplemented hypotheses from static inspection, not a representative Quest profile; correctness and interaction feel take priority over allocation counts in isolation.
 
 | Rank | Finding and evidence | Risk of changing it | Measurement required | Priority |
 | ---: | --- | --- | --- | --- |

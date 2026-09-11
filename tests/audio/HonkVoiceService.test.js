@@ -331,3 +331,49 @@ function createControllableVoice() {
     },
   };
 }
+
+test('future vowel repeats coalesce while projected A-E-A changes and cancellation survive', async (t) => {
+  const pending = new Map();
+  let nextId = 0;
+  t.mock.method(globalThis, 'setTimeout', (callback, delay) => {
+    const id = ++nextId;
+    pending.set(id, { callback, delay });
+    return id;
+  });
+  t.mock.method(globalThis, 'clearTimeout', (id) => pending.delete(id));
+  const heard = [];
+  const context = { currentTime: 0 };
+  const voice = { context, vowel: 'A', start() {}, update() {}, cancel() {}, setVowel(v) { heard.push(v); } };
+  const service = new HonkVoiceService({ ensureAudio: async () => context, getDestination() {}, createVoice: () => voice });
+  await service.startVoice('v');
+  for (let i = 0; i < 90; i += 1) service.updateVoice('v', { vowel: 'A' }, { scheduledTime: 1 + i / 90 });
+  assert.equal(pending.size, 0);
+  service.updateVoice('v', { vowel: 'E' }, { scheduledTime: 2 });
+  service.updateVoice('v', { vowel: 'A' }, { scheduledTime: 3 });
+  service.updateVoice('v', { vowel: 'A' }, { scheduledTime: 3.1 });
+  assert.deepEqual([...pending.values()].map(({ delay }) => delay), [2000, 3000]);
+  for (const [id, { callback, delay }] of [...pending]) {
+    context.currentTime = delay / 1000;
+    pending.delete(id);
+    callback();
+  }
+  assert.deepEqual(heard, ['E', 'A']);
+  service.updateVoice('v', { vowel: 'E' }, { scheduledTime: 4 });
+  service.cancelVoice('v');
+  assert.equal(pending.size, 0);
+  assert.equal(service.vowelSchedules.size, 0);
+});
+
+test('out-of-order vowel insertion preserves a formerly redundant future return', (t) => {
+  const pending = new Map();
+  let id = 0;
+  t.mock.method(globalThis, 'setTimeout', (callback, delay) => { pending.set(++id, { callback, delay }); return id; });
+  t.mock.method(globalThis, 'clearTimeout', (key) => pending.delete(key));
+  const service = new HonkVoiceService({ ensureAudio() {}, getDestination() {} });
+  const voice = { context: { currentTime: 0 }, vowel: 'A' };
+  service.scheduleVoiceVowel(voice, 'A', 3);
+  service.scheduleVoiceVowel(voice, 'E', 2);
+  assert.deepEqual([...pending.values()].map(({ delay }) => delay), [2000, 3000]);
+  service.clearVoiceVowels(voice);
+  assert.equal(pending.size, 0);
+});
