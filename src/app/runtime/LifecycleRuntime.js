@@ -54,7 +54,7 @@ export const LifecycleRuntimeMethods = {
         }
   
         if (controllerState?.raySqueezeInstrumentState === instrumentState) {
-          controllerState.raySqueezeInstrumentState = null;
+          this.releaseRaySqueeze(controllerState);
         }
   
         if (controllerState?.hoveredTarget && this.isObjectInInstrument(controllerState.hoveredTarget, instrumentState)) {

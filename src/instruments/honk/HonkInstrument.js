@@ -292,6 +292,11 @@ export class HonkInstrument extends InstrumentEntity {
     return this.voiceService?.startVoice?.(voiceId, options, this.tuning, this);
   }
 
+  hasAudioVoice(voiceId) {
+    return this.activeVoiceIds.has(voiceId) &&
+      (this.voiceService?.hasVoice?.(voiceId) ?? true);
+  }
+
   releaseVoice(sourceId = "main") {
     const isFullVoiceId = typeof sourceId === "string" && (
       this.activeVoiceIds.has(sourceId) || sourceId.startsWith(`${this.id}:source-`)

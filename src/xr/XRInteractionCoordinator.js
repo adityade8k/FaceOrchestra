@@ -128,6 +128,7 @@ function createControllerInteractionState() {
     raySqueezeVoiceId: null,
     raySqueezeActiveVoiceIds: new Set(),
     raySqueezeInstrumentState: null,
+    raySqueezeTarget: null,
     raySqueezeStartQuaternion: new THREE.Quaternion(),
     raySqueezeStartInverseQuaternion: new THREE.Quaternion(),
     radialMenuOpen: false,

@@ -18,6 +18,10 @@ export class HonkVoiceService {
     this.vowelSchedules = new Map();
   }
 
+  hasVoice(voiceId) {
+    return this.voices.has(voiceId) || this.startingVoices.has(voiceId);
+  }
+
   async startVoice(voiceId = "main", options = {}) {
     if (this.voices.has(voiceId) || this.startingVoices.has(voiceId)) {
       return;

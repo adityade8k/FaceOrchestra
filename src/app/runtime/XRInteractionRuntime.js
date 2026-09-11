@@ -6,7 +6,7 @@ import {
   MORPH_TARGET_NAMES,
   NOSE_DRAG_SENSITIVITY,
 } from "../../config/honk.js";
-import { HONK_INTERACTION_PROFILE } from "../../instruments/honk/HonkInteractionProfile.js";
+import { HONK_INTERACTION_PROFILE, isHonkSqueezeTarget } from "../../instruments/honk/HonkInteractionProfile.js";
 import {
   HIT_MARKER_OPACITY,
   RAY_COLOR_DEFAULT,
@@ -60,9 +60,13 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
   
-      this.audioSystem.ensureAudio();
+      Promise.resolve(this.audioSystem.ensureAudio()).catch(() => {
+        // Still attempt activation in the user gesture. Owned voice startup
+        // retries a failed resume from the performance pass while held.
+      });
       const controllerState = this.controllerStates.get(controller);
       this.initializeRaySqueeze(controller);
+      controllerState.activeTriggerInteraction = null;
       const hit = this.getCurrentHit(controller);
   
       if (hit?.object?.userData.isCloseButton) {
@@ -127,10 +131,14 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
   
-      if (lockedInstrumentState?.kind === "honk") {
+      if (this.captureRaySqueezeTarget(controller, controllerState, hit)) {
         controllerState.activeTriggerInteraction = null;
-        controllerState.raySqueezeInstrumentState = lockedInstrumentState;
-        this.activeInstrumentState = lockedInstrumentState;
+        return;
+      }
+      // Keep frozen morph editing disabled, even when a procedural target wins
+      // hit priority without intersecting the locked body's authored mesh.
+      if (lockedInstrumentState?.kind === "honk" || metronomeState?.locked) {
+        controllerState.activeTriggerInteraction = null;
         return;
       }
   
@@ -219,8 +227,22 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
   
+      this.releaseRaySqueeze(controllerState);
       controllerState.raySqueezeVoiceId = this.getControllerVoiceId(controller);
       this.resetRaySqueezeReference(controller, controllerState);
+    },
+    captureRaySqueezeTarget(controller, controllerState, hit) {
+      const instrument = this.instrumentRegistry.getFromObject3D(hit?.object);
+      if (!isHonkSqueezeTarget(instrument, hit?.object) ||
+          this.instrumentRegistry.get(instrument.id) !== instrument) return false;
+      if (controllerState.raySqueezeInstrumentState !== instrument ||
+          controllerState.raySqueezeTarget !== hit.object) {
+        this.resetRaySqueezeReference(controller, controllerState);
+      }
+      controllerState.raySqueezeInstrumentState = instrument;
+      controllerState.raySqueezeTarget = hit.object;
+      this.activeInstrumentState = instrument;
+      return true;
     },
     resetRaySqueezeReference(controller, controllerState) {
       controller.updateMatrixWorld(true);
@@ -233,10 +255,11 @@ export const XRInteractionRuntimeMethods = {
       }
   
       for (const activeVoiceId of controllerState.raySqueezeActiveVoiceIds || []) {
-        releaseControllerHonkVoice(this, activeVoiceId);
+        releaseControllerHonkVoice(this, activeVoiceId, controllerState.raySqueezeInstrumentState);
       }
       controllerState.raySqueezeActiveVoiceIds.clear();
       controllerState.raySqueezeInstrumentState = null;
+      controllerState.raySqueezeTarget = null;
     },
     updateTriggerInteraction() {
       for (const controller of this.controllers) {
@@ -278,6 +301,10 @@ export const XRInteractionRuntimeMethods = {
         }
   
         if (interaction.type !== "verticalDragMorph") {
+          continue;
+        }
+        if (interaction.instrumentState.locked) {
+          controllerState.activeTriggerInteraction = null;
           continue;
         }
   
@@ -416,9 +443,13 @@ export const XRInteractionRuntimeMethods = {
         }
   
         const hit = this.getCurrentHit(controller);
-        const nextTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
+        const rawTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
         const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
-        const hitInstrumentState = this.instrumentRegistry.getFromObject3D(nextTarget);
+        const hitInstrumentState = this.instrumentRegistry.getFromObject3D(rawTarget);
+        const squeezeTarget = isHonkSqueezeTarget(hitInstrumentState, rawTarget) ? rawTarget : null;
+        const nextTarget = hitInstrumentState?.kind === "honk" && hitInstrumentState.locked &&
+          !rawTarget?.userData.isBodyGripTarget && !rawTarget?.userData.isHonkConnectionTarget
+          ? squeezeTarget : rawTarget;
         const unlockedInteractionTarget =
           nextTarget &&
           !nextTarget.userData.isBodyGripTarget &&
@@ -428,7 +459,7 @@ export const XRInteractionRuntimeMethods = {
             : null;
         const lockedGrabTarget =
           lockedInstrumentState?.hitTargets?.[INTERACTION_TARGET_NAMES.body] || null;
-        const hapticContactTarget = lockedGrabTarget || unlockedInteractionTarget;
+        const hapticContactTarget = squeezeTarget || lockedGrabTarget || unlockedInteractionTarget;
   
         if (hapticContactTarget && controllerState.raycastContactTarget !== hapticContactTarget) {
           this.triggerRaycastHitHaptics(controller, controllerState);

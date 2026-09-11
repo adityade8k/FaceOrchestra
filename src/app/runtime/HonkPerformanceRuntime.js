@@ -8,7 +8,7 @@ import {
   SQUEEZE_SENSITIVITY,
 } from "../../config/honk.js";
 import { LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD } from "../../config/looper.js";
-import { HONK_INTERACTION_PROFILE } from "../../instruments/honk/HonkInteractionProfile.js";
+import { isHonkSqueezeTarget } from "../../instruments/honk/HonkInteractionProfile.js";
 import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
 import {
   REFERENCE_FRAME_MS,
@@ -40,20 +40,31 @@ export const HonkPerformanceRuntimeMethods = {
           continue;
         }
   
+        if (!controllerState?.trigger) {
+          this.releaseRaySqueeze(controllerState);
+          continue;
+        }
         const interaction = controllerState?.activeTriggerInteraction;
-        if (
-          interaction?.type === "holdSqueeze" &&
-          interaction.instrumentState?.kind === "honk" &&
-          interaction.instrumentState.root?.visible
-        ) {
-          activeHoldInteractions.push({ interaction, controller });
+        if (interaction?.type === "holdSqueeze") {
+          if (isHonkSqueezeTarget(interaction.instrumentState, interaction.target) &&
+              this.instrumentRegistry.get(interaction.instrumentState.id) === interaction.instrumentState) {
+            activeHoldInteractions.push({ interaction, controller });
+            continue;
+          }
+          for (const voiceId of interaction.activeVoiceIds || []) {
+            releaseControllerHonkVoice(this, voiceId, interaction.instrumentState);
+          }
+          controllerState.activeTriggerInteraction = null;
         }
         const looperInteractionActive =
           interaction?.type === "looperWire" ||
           interaction?.type === "looperControlDrag" ||
           interaction?.type === "metronomeWire";
+        // Share this selection only across the adjacent, read-only routing work.
+        // Hover runs before grip/relationship transforms, so its hit cannot be reused here.
+        const hit = controllerState?.trigger ? this.getCurrentHit(controller) : null;
         const triggerBlockedByLooper =
-          controllerState?.trigger && this.isLooperColliderTarget(this.getCurrentHit(controller)?.object);
+          controllerState?.trigger && this.isLooperColliderTarget(hit?.object);
         if (controllerState?.trigger && (looperInteractionActive || triggerBlockedByLooper)) {
           this.releaseRaySqueeze(controllerState);
         }
@@ -63,7 +74,7 @@ export const HonkPerformanceRuntimeMethods = {
           !looperInteractionActive &&
           !triggerBlockedByLooper
         ) {
-          const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState);
+          const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState, hit);
           if (raySqueezeInteraction) {
             activeHoldInteractions.push({ interaction: raySqueezeInteraction, controller });
           }
@@ -81,7 +92,14 @@ export const HonkPerformanceRuntimeMethods = {
           desiredVoiceIds.add(voiceId);
           chainState.hornHolders.add(voiceId);
           chainState.activeBends.set(voiceId, bendAmount);
-          chainState.startAudioVoice(voiceId);
+          if (!interaction.activeVoiceIds?.has(voiceId) || !chainState.hasAudioVoice(voiceId)) {
+            // The service is authoritative for pending/failed/cancelled starts;
+            // membership alone is insufficient after an asynchronous failure.
+            Promise.resolve(chainState.startAudioVoice(voiceId)).catch(() => {
+              // Startup removed its pending token. Retry while still owned on
+              // the next performance pass, never after this gesture releases.
+            });
+          }
         }
   
         for (const activeVoiceId of interaction.activeVoiceIds || []) {
@@ -273,56 +291,24 @@ export const HonkPerformanceRuntimeMethods = {
       }
       this.updateNoteLabel(honkState);
     },
-    getRaySqueezeInteraction(controller, controllerState) {
-      const gripInstrumentState =
-        controllerState.gripHeld &&
-          controllerState.gripInstrumentState?.kind === "honk" &&
-          controllerState.gripInstrumentState.root?.visible
-          ? controllerState.gripInstrumentState
-          : null;
-  
-      if (gripInstrumentState) {
-        if (controllerState.raySqueezeInstrumentState !== gripInstrumentState) {
-          this.resetRaySqueezeReference(controller, controllerState);
-        }
-        controllerState.raySqueezeInstrumentState = gripInstrumentState;
-        this.activeInstrumentState = gripInstrumentState;
-      }
-  
-      const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
-      if (!gripInstrumentState && lockedInstrumentState?.kind === "honk" && lockedInstrumentState.root?.visible) {
-        if (controllerState.raySqueezeInstrumentState !== lockedInstrumentState) {
-          this.resetRaySqueezeReference(controller, controllerState);
-        }
-        controllerState.raySqueezeInstrumentState = lockedInstrumentState;
-        this.activeInstrumentState = lockedInstrumentState;
-      }
-  
-      const hit = this.getCurrentHit(controller);
-      const targetName = hit?.object?.name;
-      const config = HONK_INTERACTION_PROFILE[targetName];
-      const hitInstrumentState = this.instrumentRegistry.getFromObject3D(hit?.object);
-      if (
-        !gripInstrumentState &&
-        !lockedInstrumentState &&
-        config?.type === "holdSqueeze" &&
-        hitInstrumentState?.kind === "honk" &&
-        hitInstrumentState.root?.visible
-      ) {
-        if (controllerState.raySqueezeInstrumentState !== hitInstrumentState) {
-          this.resetRaySqueezeReference(controller, controllerState);
-        }
-        controllerState.raySqueezeInstrumentState = hitInstrumentState;
-        this.activeInstrumentState = hitInstrumentState;
-      }
-  
-      const instrumentState = controllerState.raySqueezeInstrumentState;
-      if (instrumentState?.kind !== "honk" || !instrumentState.root?.visible) {
+    getRaySqueezeInteraction(controller, controllerState, hit = this.getCurrentHit(controller)) {
+      if (!controllerState?.trigger) {
+        this.releaseRaySqueeze(controllerState);
         return null;
       }
-  
+      const captured = controllerState.raySqueezeInstrumentState;
+      if (captured && (!isHonkSqueezeTarget(captured, controllerState.raySqueezeTarget) ||
+          this.instrumentRegistry.get(captured.id) !== captured)) {
+        this.releaseRaySqueeze(controllerState);
+      }
+      // A fresh sphere hit may acquire/retarget during Trigger hold. Otherwise
+      // retain the validated capture so roll-bending can move away from it.
+      this.captureRaySqueezeTarget(controller, controllerState, hit);
+      const instrumentState = controllerState.raySqueezeInstrumentState;
+      if (!instrumentState) return null;
       return {
         type: "holdSqueeze",
+        target: controllerState.raySqueezeTarget,
         targetName: INTERACTION_TARGET_NAMES.horn,
         instrumentState,
         voiceId: controllerState.raySqueezeVoiceId || this.getControllerVoiceId(controller),

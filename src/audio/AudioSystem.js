@@ -37,6 +37,10 @@ export class AudioSystem {
     return this.honkVoices.startVoice(voiceId, options);
   }
 
+  hasVoice(voiceId) {
+    return this.honkVoices.hasVoice(voiceId);
+  }
+
   updateVoice(
     voiceId,
     performanceState = {},
