@@ -397,8 +397,11 @@ export class RuntimeHost {
         if (honk) honk.releaseAudioVoice(voiceId, options);
         else this.releaseHonkVoice(voiceId, options);
       },
-      cancelActionVoice: (voiceId, honkId) =>
-        this.instrumentRegistry.get(honkId)?.cancelAudioVoice?.(voiceId),
+      cancelActionVoice: (voiceId, honkId, options = {}) => {
+        const honk = this.instrumentRegistry.get(honkId);
+        if (honk) honk.cancelAudioVoice?.(voiceId, options);
+        else this.audioSystem.cancelVoice?.(voiceId, options);
+      },
       updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume, options = {}) =>
         this.updateLooperActionVoice(
           voiceId,

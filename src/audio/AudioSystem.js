@@ -66,8 +66,8 @@ export class AudioSystem {
     this.honkVoices.releaseVoice(voiceId, options);
   }
 
-  cancelVoice(voiceId = "main") {
-    this.honkVoices.cancelVoice(voiceId);
+  cancelVoice(voiceId = "main", options = {}) {
+    this.honkVoices.cancelVoice(voiceId, options);
   }
 
   releaseAll() {

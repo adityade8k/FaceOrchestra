@@ -116,16 +116,16 @@ export class HonkVoiceService {
     }
   }
 
-  cancelVoice(voiceId = "main") {
+  cancelVoice(voiceId = "main", options = {}) {
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
     const active = this.voices.get(voiceId);
-    active?.cancel?.();
-    active?.disconnect?.();
+    if (active?.cancel) active.cancel(options);
+    else active?.disconnect?.();
     this.voices.delete(voiceId);
     for (const voice of this.releasingVoices.get(voiceId) || []) {
-      voice.cancel?.();
-      voice.disconnect?.();
+      if (voice?.cancel) voice.cancel(options);
+      else voice?.disconnect?.();
     }
     this.releasingVoices.delete(voiceId);
   }

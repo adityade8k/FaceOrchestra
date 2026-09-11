@@ -141,6 +141,35 @@ test("duplicate controller release remains idempotent", () => {
   assert.equal(voice.vibrato.stopCalls.length, 1);
 });
 
+test("contact cancellation clears queued automation before a short anti-click stop", () => {
+  const context = createAudioContext({ currentTime: 2 });
+  const voice = new HonkVoice({ context });
+  voice.start(2);
+  voice.update({ hornAmount: 1 }, { scheduledTime: 5 });
+  voice.release(0.12, undefined, { scheduledTime: 6 });
+
+  voice.cancel({ fadeSeconds: 0.035 });
+
+  for (const parameter of [
+    voice.source.frequency,
+    voice.source.detune,
+    voice.vibrato.frequency,
+    voice.master.gain,
+    voice.output.gain,
+  ]) {
+    assert.deepEqual(lastEventOfType(parameter, "cancelAndHoldAtTime"), {
+      type: "cancelAndHoldAtTime",
+      time: 2,
+    });
+  }
+  assert.equal(lastEventOfType(voice.master.gain, "linearRampToValueAtTime").time, 2.035);
+  assert.equal(lastEventOfType(voice.output.gain, "linearRampToValueAtTime").time, 2.035);
+  assert.equal(voice.source.stopCalls.at(-1), 2.043);
+  assert.equal(voice.disconnected, false);
+  voice.source.onended();
+  assert.equal(voice.disconnected, true);
+});
+
 test("scheduled looper note parameters and controller release use audio-context time", () => {
   const context = createAudioContext({ currentTime: 1 });
   const voice = new HonkVoice({ context });

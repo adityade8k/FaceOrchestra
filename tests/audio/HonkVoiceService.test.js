@@ -259,6 +259,39 @@ test("releaseAll safely cancels pending asynchronous voice starts", async () => 
   assert.equal(service.releasingVoices.size, 0);
 });
 
+test("target cancellation invalidates pending starts and fades every releasing generation", async () => {
+  let finishAudioStart;
+  let pendingCreateCount = 0;
+  const pendingService = new HonkVoiceService({
+    ensureAudio: () => new Promise((resolve) => { finishAudioStart = resolve; }),
+    getDestination: () => null,
+    createVoice: () => {
+      pendingCreateCount += 1;
+      return createControllableVoice();
+    },
+  });
+  const pendingStart = pendingService.startVoice("departing");
+  pendingService.updateVoice("departing", { hornAmount: 1 }, { scheduledTime: 5 });
+  pendingService.cancelVoice("departing", { fadeSeconds: 0.035 });
+  finishAudioStart({});
+  await pendingStart;
+  assert.equal(pendingCreateCount, 0);
+  assert.equal(pendingService.startTokens.size, 0);
+
+  const { service, createdVoices } = createServiceWithControllableVoices();
+  await service.startVoice("departing");
+  service.releaseVoice("departing", { scheduledTime: 5 });
+  await service.startVoice("departing");
+  service.cancelVoice("departing", { fadeSeconds: 0.035 });
+
+  assert.deepEqual(createdVoices.map((voice) => voice.cancelCalls), [
+    [{ fadeSeconds: 0.035 }],
+    [{ fadeSeconds: 0.035 }],
+  ]);
+  assert.equal(service.voices.has("departing"), false);
+  assert.equal(service.releasingVoices.has("departing"), false);
+});
+
 function createServiceWithControllableVoices() {
   const createdVoices = [];
   const service = new HonkVoiceService({
@@ -277,6 +310,7 @@ function createControllableVoice() {
   return {
     startCount: 0,
     disconnectCount: 0,
+    cancelCalls: [],
     releaseCalls: [],
     releaseCompletion: null,
     start() {
@@ -288,6 +322,9 @@ function createControllableVoice() {
     },
     finishRelease() {
       this.releaseCompletion?.();
+    },
+    cancel(options) {
+      this.cancelCalls.push(options);
     },
     disconnect() {
       this.disconnectCount += 1;

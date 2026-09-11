@@ -294,10 +294,10 @@ export class HonkInstrument extends InstrumentEntity {
     this.voiceService?.releaseVoice?.(voiceId, options);
   }
 
-  cancelAudioVoice(voiceId) {
+  cancelAudioVoice(voiceId, options = {}) {
     if (!voiceId) return;
     this.activeVoiceIds.delete(voiceId);
-    this.voiceService?.cancelVoice?.(voiceId);
+    this.voiceService?.cancelVoice?.(voiceId, options);
   }
 
   releaseAllAudioVoices() {

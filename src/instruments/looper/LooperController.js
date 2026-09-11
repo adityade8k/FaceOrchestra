@@ -17,6 +17,7 @@ import { LooperPlaybackEngine } from "./LooperPlaybackEngine.js";
 import { LooperTrack } from "./LooperTrack.js";
 import { LooperTransport } from "./LooperTransport.js";
 import { LooperTimeline } from "./timeline/LooperTimeline.js";
+import { LooperActionEventType } from "./timeline/LooperActionEvent.js";
 import { createActionState } from "./timeline/actionState.js";
 
 const LOOPER_SELF_PERCUSSION_TRACK_ID = "looper-self-percussion";
@@ -459,9 +460,11 @@ export class LooperController {
         0,
       ) * recordedBeatIntervalMs;
       data.playbackEngine.updateFromClock(totalElapsedMs, data.timeline, handlers);
+      this.reconcilePlaybackAudioTargets(looperState, now);
       return;
     }
     data.playbackEngine.update(now, data.timeline, 1, handlers);
+    this.reconcilePlaybackAudioTargets(looperState, now);
   }
 
   updateAutomationAudio() {
@@ -562,6 +565,10 @@ export class LooperController {
     scheduling.scheduledThroughSourceMs = scheduling.startSourceMs;
     scheduling.includeStart = true;
     scheduling.lastRate = this.getPlaybackRate(looperState, now);
+    data.timeline.forEachActiveTrack((trackTimeline) => {
+      const track = this.getTrack(looperState, trackTimeline.trackIndex);
+      if (track) this.applier.initializeAudioTargets?.(looperState, track);
+    });
     this.schedulePlaybackAudioForLooper(looperState, now);
     scheduling.timer = globalThis.setInterval?.(() => {
       this.schedulePlaybackAudioForLooper(looperState, performance.now());
@@ -610,6 +617,7 @@ export class LooperController {
     const scheduling = data.audioScheduling;
     const sourceNow = this.getAbsoluteSourcePosition(looperState, now);
     const rate = Math.max(this.getPlaybackRate(looperState, now), 0.0001);
+    this.reconcilePlaybackAudioTargets(looperState, now, { sourceNow, audioNow, rate });
     if (Math.abs(rate - scheduling.lastRate) > 1e-9) {
       this.applier.cancelScheduledAudio?.(looperState);
       scheduling.scheduledThroughSourceMs = sourceNow;
@@ -675,6 +683,13 @@ export class LooperController {
         this.applier.scheduleTrackEvent(looperState, track, trackTimeline, event, snapshot, {
           volume: data.volume,
           scheduledTime,
+          noteKey: this.getNoteKeyForEvent(
+            trackTimeline,
+            event,
+            cycle,
+            durationMs,
+          ),
+          targetHonkIds: clock.targetHonkIds,
         });
       }
       const drumEntries = data.timeline.getDrumHitEventsBetween(localStart, localEnd, {
@@ -720,9 +735,139 @@ export class LooperController {
         trackTimeline,
         { type: "squeezeStart", timeMs: localTimeMs },
         snapshot,
-        { volume: data.volume, scheduledTime: audioNow },
+        {
+          volume: data.volume,
+          scheduledTime: audioNow,
+          noteKey: this.getActiveNoteAtAbsoluteSource(
+            trackTimeline,
+            absoluteSourceMs,
+            durationMs,
+          )?.noteKey,
+        },
       );
     });
+  }
+
+  reconcilePlaybackAudioTargets(
+    looperState,
+    now = performance.now(),
+    resolvedClock = {},
+  ) {
+    const data = looperState?.looperData;
+    if (
+      !data?.transport.playing ||
+      typeof this.adapter.getAudioCurrentTime !== "function"
+    ) {
+      return;
+    }
+    const audioNow = Number.isFinite(resolvedClock.audioNow)
+      ? resolvedClock.audioNow
+      : this.adapter.getAudioCurrentTime();
+    if (!Number.isFinite(audioNow)) return;
+    const sourceNow = Number.isFinite(resolvedClock.sourceNow)
+      ? resolvedClock.sourceNow
+      : this.getAbsoluteSourcePosition(looperState, now);
+    const rate = Number.isFinite(resolvedClock.rate)
+      ? resolvedClock.rate
+      : Math.max(this.getPlaybackRate(looperState, now), 0.0001);
+    const durationMs = Math.max(data.timeline.durationMs, 1);
+    const coveredThrough = Math.max(
+      sourceNow,
+      data.audioScheduling.scheduledThroughSourceMs,
+    );
+
+    data.timeline.forEachActiveTrack((trackTimeline) => {
+      const track = this.getTrack(looperState, trackTimeline.trackIndex);
+      if (!track) return;
+      const { joined } = this.applier.reconcileAudioTargets(looperState, track);
+      for (const honkId of joined) {
+        const activeNote = this.getActiveNoteAtAbsoluteSource(
+          trackTimeline,
+          sourceNow,
+          durationMs,
+        );
+        if (activeNote) {
+          const snapshot = createActionState();
+          data.timeline.sampleTrack(trackTimeline, activeNote.localTimeMs, snapshot);
+          this.applier.scheduleTrackEvent(
+            looperState,
+            track,
+            trackTimeline,
+            { type: LooperActionEventType.SqueezeStart, timeMs: activeNote.localTimeMs },
+            snapshot,
+            {
+              volume: data.volume,
+              scheduledTime: audioNow,
+              noteKey: activeNote.noteKey,
+              targetHonkIds: [honkId],
+            },
+          );
+        }
+        if (coveredThrough > sourceNow) {
+          this.scheduleSourceRange(looperState, sourceNow, coveredThrough, {
+            includeStart: false,
+            sourceNow,
+            rate,
+            audioNow,
+            targetHonkIds: [honkId],
+          });
+        }
+      }
+    });
+  }
+
+  getNoteKeyForEvent(trackTimeline, event, cycle, durationMs) {
+    if (event.type === LooperActionEventType.SqueezeStart) {
+      return this.createNoteKey(trackTimeline, cycle, event);
+    }
+    trackTimeline.sortEvents();
+    const eventIndex = trackTimeline.events.indexOf(event);
+    const absoluteEventMs = cycle * durationMs + event.timeMs;
+    return this.getActiveNoteBeforeAbsoluteTime(
+      trackTimeline,
+      absoluteEventMs,
+      durationMs,
+      (candidate) => candidate !== event && (
+        candidate.timeMs !== event.timeMs ||
+        trackTimeline.events.indexOf(candidate) < eventIndex
+      ),
+    )?.noteKey || null;
+  }
+
+  getActiveNoteAtAbsoluteSource(trackTimeline, absoluteSourceMs, durationMs) {
+    const cycle = Math.floor(absoluteSourceMs / durationMs);
+    const localTimeMs = absoluteSourceMs - cycle * durationMs;
+    const active = this.getActiveNoteBeforeAbsoluteTime(
+      trackTimeline,
+      absoluteSourceMs,
+      durationMs,
+    );
+    return active ? { ...active, cycle, localTimeMs } : null;
+  }
+
+  getActiveNoteBeforeAbsoluteTime(trackTimeline, absoluteTimeMs, durationMs, acceptEvent = null) {
+    trackTimeline.sortEvents();
+    const cycle = Math.floor(absoluteTimeMs / durationMs);
+    let latest = null;
+    for (const candidateCycle of [cycle - 1, cycle]) {
+      for (const gateEvent of trackTimeline.gateEvents) {
+        if (acceptEvent && candidateCycle === cycle && !acceptEvent(gateEvent)) continue;
+        const absoluteGateMs = candidateCycle * durationMs + gateEvent.timeMs;
+        if (absoluteGateMs > absoluteTimeMs) continue;
+        if (!latest || absoluteGateMs >= latest.absoluteGateMs) {
+          latest = { gateEvent, cycle: candidateCycle, absoluteGateMs };
+        }
+      }
+    }
+    if (!latest || latest.gateEvent.type !== LooperActionEventType.SqueezeStart) return null;
+    return {
+      noteKey: this.createNoteKey(trackTimeline, latest.cycle, latest.gateEvent),
+      startEvent: latest.gateEvent,
+    };
+  }
+
+  createNoteKey(trackTimeline, cycle, startEvent) {
+    return `${trackTimeline.trackId}:cycle-${cycle}:start-${startEvent.id}`;
   }
 
   releaseTrackById(looperState, trackId) {

@@ -230,12 +230,45 @@ export class HonkVoice {
     return this.releaseState;
   }
 
-  cancel() {
+  cancel(options = {}) {
     if (this.disconnected) return;
     const now = this.context.currentTime;
-    try { this.source.stop(now); } catch { /* Already stopped. */ }
-    try { this.vibrato.stop(now); } catch { /* Already stopped. */ }
-    this.disconnect();
+    const requestedFade = typeof options === "number" ? options : options?.fadeSeconds;
+    const fadeSeconds = Number.isFinite(requestedFade) ? Math.max(requestedFade, 0) : 0;
+    if (fadeSeconds <= 0) {
+      try { this.source.stop(now); } catch { /* Already stopped. */ }
+      try { this.vibrato.stop(now); } catch { /* Already stopped. */ }
+      this.disconnect();
+      return;
+    }
+
+    for (const parameter of [
+      this.source.frequency,
+      this.source.detune,
+      this.vibrato.frequency,
+      this.master.gain,
+      this.output.gain,
+    ]) {
+      if (typeof parameter?.cancelAndHoldAtTime === "function") {
+        parameter.cancelAndHoldAtTime(now);
+      } else {
+        const currentValue = Number.isFinite(parameter?.value) ? parameter.value : 0;
+        parameter?.cancelScheduledValues?.(now);
+        parameter?.setValueAtTime?.(currentValue, now);
+      }
+    }
+    const silentAt = now + fadeSeconds;
+    this.master.gain.linearRampToValueAtTime(0, silentAt);
+    this.output.gain.linearRampToValueAtTime(0, silentAt);
+    const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
+    this.source.onended = () => this.disconnect();
+    try { this.source.stop(stopAt); } catch { /* Already stopped. */ }
+    try { this.vibrato.stop(stopAt); } catch { /* Already stopped. */ }
+    const timer = globalThis.setTimeout?.(
+      () => this.disconnect(),
+      Math.max(0, Math.ceil((stopAt - this.context.currentTime) * 1000)),
+    );
+    timer?.unref?.();
   }
 
   scheduleControllerRelease(now, silentAt) {

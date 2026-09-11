@@ -46,6 +46,33 @@ test("honk owns stable live and automation audio voice routing", () => {
   assert.equal(honk.activeVoiceIds.size, 0);
 });
 
+test("honk cancellation removes only the exact owned voice and forwards fade options", () => {
+  const calls = [];
+  const honk = new HonkInstrument({
+    id: "honk-audio",
+    root: object3D(),
+    voiceService: {
+      startVoice() {},
+      cancelVoice: (voiceId, options) => calls.push({ voiceId, options }),
+    },
+    morphController: morphController(),
+  });
+  honk.startAudioVoice("looper-one:scheduled-1");
+  honk.startAudioVoice("looper-two:scheduled-1");
+  honk.startAudioVoice("honk-audio:source-manual");
+
+  honk.cancelAudioVoice("looper-one:scheduled-1", { fadeSeconds: 0.035 });
+
+  assert.deepEqual(calls, [{
+    voiceId: "looper-one:scheduled-1",
+    options: { fadeSeconds: 0.035 },
+  }]);
+  assert.deepEqual([...honk.activeVoiceIds], [
+    "looper-two:scheduled-1",
+    "honk-audio:source-manual",
+  ]);
+});
+
 function morphController() {
   return {
     resetAll() {},
