@@ -50,7 +50,7 @@ test("a Metronome-connected onset exactly on a beat repeats on the next phrase b
   );
 });
 
-test("a real late release extends the phrase while a held-at-Stop safety release does not", () => {
+test("a real late release and a note held until Stop preserve their performed durations", () => {
   const tail = recordHonkPhrase({ stopMs: 5000, finalReleaseMs: 2400 });
   assert.equal(tail.timeline.contentEndMs, 2400);
   assert.equal(tail.timeline.recordedDurationMs, 2500);
@@ -62,12 +62,11 @@ test("a real late release extends the phrase while a held-at-Stop safety release
   ));
   assert.equal(releasesAtStop.length, 1);
   assert.equal(releasesAtStop[0].synthetic, true);
-  assert.equal(held.timeline.recordedDurationMs, 2000);
-  assert.equal(held.timeline.durationMs, 2000);
+  assert.equal(releasesAtStop[0].preserveDuration, true);
+  assert.equal(held.timeline.recordedDurationMs, 5000);
+  assert.equal(held.timeline.durationMs, 5000);
   assert.deepEqual(held.timeline.getMusicalOnsetTimes(), [100, 1100, 1600]);
-  assert.deepEqual(getPlaybackAttacks(held.timeline), [
-    100, 1100, 1600, 2100, 3100, 3600, 4100,
-  ]);
+  assert.deepEqual(getPlaybackAttacks(held.timeline), [100, 1100, 1600]);
 });
 
 test("successfully inferred standalone recordings trim Record pre-roll and delayed Stop", () => {
@@ -97,8 +96,8 @@ test("successfully inferred standalone recordings trim Record pre-roll and delay
 
   const held = recordInferredHonkPhrase({ stopMs: 7000, holdFinalNote: true });
   const heldTrack = held.timeline.getTrack("track-0");
-  assert.equal(held.timeline.recordedDurationMs, 2000);
-  assert.equal(held.timeline.durationMs, 2000);
+  assert.equal(held.timeline.recordedDurationMs, 6500);
+  assert.equal(held.timeline.durationMs, 6500);
   assert.deepEqual(held.timeline.getMusicalOnsetTimes(), [0, 500, 1000, 1500]);
   assert.equal(heldTrack.events.filter((event) => (
     event.type === LooperActionEventType.SqueezeEnd && event.timeMs === 6500

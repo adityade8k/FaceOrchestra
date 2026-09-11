@@ -35,7 +35,7 @@ test("clocked recording preserves event timing from the launch beat", () => {
   recorder.updateTrack(timeline, track, 1275, capture);
   recorder.stop(timeline, [track], 1600, 1, capture);
 
-  assert.deepEqual(timeline.getTrack(track.trackId).events.map((event) => event.timeMs), [50, 275]);
+  assert.deepEqual(timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs), [50, 275]);
   assert.equal(timeline.contentEndMs, 275);
   assert.equal(timeline.durationMs, 500);
 });
@@ -61,7 +61,7 @@ test("clocked recording rejects recordings with no musical onset", () => {
   assert.equal(empty.hasRecording(), false);
 });
 
-test("a held final note is safely released without making Stop the phrase boundary", () => {
+test("a held final note is safely released and keeps its performed duration through Stop", () => {
   const recorder = new LooperGestureRecorder({ sampleIntervalMs: 1 });
   const timeline = new LooperTimeline();
   const track = new LooperTrack({ index: 0, connectedHonkId: "honk-1" });
@@ -73,7 +73,7 @@ test("a held final note is safely released without making Stop the phrase bounda
 
   recorder.stop(timeline, [track], 1400, 1, capture);
 
-  assert.deepEqual(timeline.getTrack(track.trackId).events.map((event) => event.timeMs), [0, 400]);
+  assert.deepEqual(timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs), [0, 400]);
   assert.equal(timeline.contentEndMs, 400);
   assert.equal(timeline.recordedDurationMs, 500);
   assert.equal(timeline.durationMs, 500);

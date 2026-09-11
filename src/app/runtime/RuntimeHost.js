@@ -375,6 +375,7 @@ export class RuntimeHost {
   createLooperAdapter() {
     return {
       ensureAudio: () => this.audioSystem.ensureAudio(),
+      getAudioCurrentTime: () => this.audioSystem.getCurrentTime?.(),
       resolveHonk: (honkId) => this.instrumentRegistry.get(honkId),
       isPlayableHonkId: (honkId) => this.instrumentRegistry.get(honkId)?.isPlayable?.() || false,
       captureActionByHonkId: (honkId) => this.captureLooperActionFromHonk(this.instrumentRegistry.get(honkId)),
@@ -389,17 +390,23 @@ export class RuntimeHost {
         this.instrumentRegistry.get(honkId)?.setAutomationLayer(layerId, snapshot),
       clearAutomationLayerByHonkId: (honkId, layerId) =>
         this.instrumentRegistry.get(honkId)?.clearAutomationLayer(layerId),
-      startActionVoice: (voiceId, honkId) =>
-        this.instrumentRegistry.get(honkId)?.startAudioVoice(voiceId),
+      startActionVoice: (voiceId, honkId, options = {}) =>
+        this.instrumentRegistry.get(honkId)?.startAudioVoice(voiceId, options),
       releaseActionVoice: (voiceId, honkId, options = {}) => {
         const honk = this.instrumentRegistry.get(honkId);
-        if (honk?.activeVoiceIds?.has(voiceId)) {
-          honk.releaseAudioVoice(voiceId, options);
-        }
+        if (honk) honk.releaseAudioVoice(voiceId, options);
         else this.releaseHonkVoice(voiceId, options);
       },
-      updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume) =>
-        this.updateLooperActionVoice(voiceId, this.instrumentRegistry.get(honkId), snapshot, volume),
+      cancelActionVoice: (voiceId, honkId) =>
+        this.instrumentRegistry.get(honkId)?.cancelAudioVoice?.(voiceId),
+      updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume, options = {}) =>
+        this.updateLooperActionVoice(
+          voiceId,
+          this.instrumentRegistry.get(honkId),
+          snapshot,
+          volume,
+          options,
+        ),
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
       getTimingForLooper: (looperId, now) =>
         this.metronomeConnectionManager.getTimingForLooper(looperId, now),

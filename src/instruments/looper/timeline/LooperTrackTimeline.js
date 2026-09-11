@@ -11,6 +11,7 @@ import {
   getEventFieldValue,
   getRecordedFieldsForEvent,
   isDrumHitEvent,
+  isHonkGateEvent,
 } from "./LooperActionEvent.js";
 
 const SQUEEZE_ONSET_THRESHOLD = 0.025;
@@ -26,13 +27,16 @@ export class LooperTrackTimeline {
     this.nextEventId = 1;
     this.sorted = true;
     this.recordedFields = new Set();
+    this.fieldEvents = new Map();
+    this.gateEvents = [];
+    this.performanceEvents = [];
   }
 
   setBaseline(actionState) {
     copyActionState(this.baselineActionState, actionState);
   }
 
-  addFieldEvent(field, timeMs, value, interpolation = "linear", synthetic = false) {
+  addFieldEvent(field, timeMs, value, interpolation = "linear", synthetic = false, metadata = {}) {
     const type = {
       squeeze: LooperActionEventType.Squeeze,
       bend: LooperActionEventType.Bend,
@@ -44,13 +48,22 @@ export class LooperTrackTimeline {
     if (!type) {
       return null;
     }
-    return this.addEvent(type, timeMs, { value, interpolation, synthetic });
+    return this.addEvent(type, timeMs, { value, interpolation, synthetic, ...metadata });
   }
 
   addEvent(
     type,
     timeMs,
-    { value = undefined, values = null, interpolation = "step", synthetic = false } = {},
+    {
+      value = undefined,
+      values = null,
+      interpolation = "step",
+      synthetic = false,
+      gateOnly = false,
+      support = false,
+      preserveDuration = false,
+      releaseOrigin = null,
+    } = {},
   ) {
     const event = new LooperActionEvent({
       id: this.nextEventId,
@@ -60,6 +73,10 @@ export class LooperTrackTimeline {
       values,
       interpolation,
       synthetic,
+      gateOnly,
+      support,
+      preserveDuration,
+      releaseOrigin,
     });
     this.nextEventId += 1;
     this.events.push(event);
@@ -100,7 +117,7 @@ export class LooperTrackTimeline {
   getContentEndMs() {
     let endMs = 0;
     for (const event of this.events) {
-      endMs = Math.max(endMs, event.timeMs);
+      if (!event.support) endMs = Math.max(endMs, event.timeMs);
     }
     return endMs;
   }
@@ -108,7 +125,7 @@ export class LooperTrackTimeline {
   getIntentionalContentEndMs() {
     let endMs = 0;
     for (const event of this.events) {
-      if (!event.synthetic) {
+      if ((!event.synthetic || event.preserveDuration) && !event.support) {
         endMs = Math.max(endMs, event.timeMs);
       }
     }
@@ -119,6 +136,7 @@ export class LooperTrackTimeline {
     this.sortEvents();
     const onsets = [];
     let squeezeActive = false;
+    const hasDiscreteGateTrack = this.gateEvents.some((event) => event.gateOnly);
 
     for (const event of this.events) {
       if (isDrumHitEvent(event)) {
@@ -126,7 +144,18 @@ export class LooperTrackTimeline {
         continue;
       }
 
+      if (event.type === LooperActionEventType.SqueezeStart) {
+        onsets.push(event.timeMs);
+        squeezeActive = true;
+        continue;
+      }
+      if (event.type === LooperActionEventType.SqueezeEnd) {
+        squeezeActive = false;
+        continue;
+      }
+
       const squeeze = getEventFieldValue(event, "squeeze");
+      if (hasDiscreteGateTrack) continue;
       if (squeeze === undefined) {
         continue;
       }
@@ -150,12 +179,12 @@ export class LooperTrackTimeline {
     }
     const typeOrder = {
       [LooperActionEventType.SqueezeEnd]: 0,
-      [LooperActionEventType.Squeeze]: 1,
-      [LooperActionEventType.Bend]: 2,
-      [LooperActionEventType.MorphSnapshot]: 3,
-      [LooperActionEventType.GestureSnapshot]: 4,
-      [LooperActionEventType.Vowel]: 5,
-      [LooperActionEventType.SqueezeStart]: 6,
+      [LooperActionEventType.SqueezeStart]: 1,
+      [LooperActionEventType.Squeeze]: 2,
+      [LooperActionEventType.Bend]: 3,
+      [LooperActionEventType.MorphSnapshot]: 4,
+      [LooperActionEventType.GestureSnapshot]: 5,
+      [LooperActionEventType.Vowel]: 6,
       [LooperActionEventType.DrumHit]: 7,
     };
     this.events.sort((first, second) =>
@@ -164,6 +193,48 @@ export class LooperTrackTimeline {
       first.id - second.id,
     );
     this.sorted = true;
+    this.rebuildIndexes();
+  }
+
+  rebuildIndexes() {
+    this.fieldEvents.clear();
+    this.gateEvents = [];
+    this.performanceEvents = [];
+    for (const event of this.events) {
+      if (isHonkGateEvent(event)) this.gateEvents.push(event);
+      if (!isDrumHitEvent(event)) this.performanceEvents.push(event);
+      for (const field of NUMERIC_ACTION_FIELDS) {
+        if (getEventFieldValue(event, field) === undefined) continue;
+        const entries = this.fieldEvents.get(field) || [];
+        entries.push(event);
+        this.fieldEvents.set(field, entries);
+      }
+      if (getEventFieldValue(event, "vowel") !== undefined) {
+        const entries = this.fieldEvents.get("vowel") || [];
+        entries.push(event);
+        this.fieldEvents.set("vowel", entries);
+      }
+    }
+  }
+
+  getGateEventsAt(timeMs, epsilon = 0.001) {
+    this.sortEvents();
+    return this.gateEvents.filter((event) => Math.abs(event.timeMs - timeMs) <= epsilon);
+  }
+
+  getGateEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
+    this.sortEvents();
+    return sliceEventsBetween(this.gateEvents, startMs, endMs, { includeStart, includeEnd });
+  }
+
+  getPerformanceEventsAt(timeMs, epsilon = 0.001) {
+    this.sortEvents();
+    return this.performanceEvents.filter((event) => Math.abs(event.timeMs - timeMs) <= epsilon);
+  }
+
+  getPerformanceEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
+    this.sortEvents();
+    return sliceEventsBetween(this.performanceEvents, startMs, endMs, { includeStart, includeEnd });
   }
 
   normalize(offsetMs) {
@@ -230,7 +301,16 @@ export class LooperTrackTimeline {
       target[field] = this.sampleNumericField(field, timeMs);
     }
     target.vowel = this.sampleStepField("vowel", timeMs);
+    if (this.gateEvents.some((event) => event.gateOnly) && !this.sampleGateActive(timeMs)) {
+      target.squeeze = 0;
+    }
     return target;
+  }
+
+  sampleGateActive(timeMs) {
+    this.sortEvents();
+    const event = this.gateEvents[upperBoundByTime(this.gateEvents, timeMs) - 1];
+    return event?.type === LooperActionEventType.SqueezeStart;
   }
 
   sampleNumericField(field, timeMs) {
@@ -238,24 +318,16 @@ export class LooperTrackTimeline {
       return undefined;
     }
 
-    let previousEvent = null;
-    let previousValue = undefined;
-    let nextEvent = null;
-    let nextValue = undefined;
+    const events = this.fieldEvents.get(field) || [];
+    const nextIndex = upperBoundByTime(events, timeMs);
+    let previousEvent = events[nextIndex - 1] || null;
+    const nextEvent = events[nextIndex] || null;
+    let previousValue = getEventFieldValue(previousEvent, field);
+    const nextValue = getEventFieldValue(nextEvent, field);
 
-    for (const event of this.events) {
-      const value = getEventFieldValue(event, field);
-      if (value === undefined) {
-        continue;
-      }
-      if (event.timeMs <= timeMs) {
-        previousEvent = event;
-        previousValue = value;
-        continue;
-      }
-      nextEvent = event;
-      nextValue = value;
-      break;
+    if (previousValue === undefined && this.baselineActionState[field] !== undefined) {
+      previousValue = this.baselineActionState[field];
+      previousEvent = { timeMs: 0, interpolation: "linear", synthetic: false };
     }
 
     if (previousValue === undefined) {
@@ -283,6 +355,7 @@ export class LooperTrackTimeline {
     if (
       field === "squeeze" &&
       (previousEvent.type === LooperActionEventType.SqueezeEnd ||
+        nextEvent.type === LooperActionEventType.SqueezeEnd ||
         nextEvent.type === LooperActionEventType.SqueezeStart)
     ) {
       return previousValue;
@@ -297,17 +370,9 @@ export class LooperTrackTimeline {
       return undefined;
     }
 
-    let latestValue = undefined;
-    for (const event of this.events) {
-      if (event.timeMs > timeMs) {
-        break;
-      }
-      const value = getEventFieldValue(event, field);
-      if (value !== undefined) {
-        latestValue = value;
-      }
-    }
-    return latestValue;
+    const events = this.fieldEvents.get(field) || [];
+    const previousEvent = events[upperBoundByTime(events, timeMs) - 1];
+    return getEventFieldValue(previousEvent, field) ?? this.baselineActionState[field];
   }
 
   clone() {
@@ -350,4 +415,37 @@ export class LooperTrackTimeline {
     timeline.rebuildRecordedFields();
     return timeline;
   }
+}
+
+function upperBoundByTime(events, timeMs) {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (events[middle].timeMs <= timeMs) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function sliceEventsBetween(events, startMs, endMs, { includeStart, includeEnd }) {
+  if (endMs < startMs) return [];
+  const startIndex = includeStart
+    ? lowerBoundByTime(events, startMs)
+    : upperBoundByTime(events, startMs);
+  const endIndex = includeEnd
+    ? upperBoundByTime(events, endMs)
+    : lowerBoundByTime(events, endMs);
+  return events.slice(startIndex, endIndex);
+}
+
+function lowerBoundByTime(events, timeMs) {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (events[middle].timeMs < timeMs) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }

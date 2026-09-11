@@ -116,7 +116,7 @@ export class LooperPlaybackEngine {
       if (segmentMs <= 0) {
         nextElapsedMs = 0;
         wrapped = true;
-        this.releaseTracks(handlers);
+        this.resetTracksAtLoop(handlers);
         handlers.onLoopBoundary?.();
         this.emitDrumHitEventsAt(timeline, 0, handlers);
         continue;
@@ -128,7 +128,7 @@ export class LooperPlaybackEngine {
       if (segmentEndMs >= durationMs) {
         nextElapsedMs = 0;
         wrapped = true;
-        this.releaseTracks(handlers);
+        this.resetTracksAtLoop(handlers);
         handlers.onLoopBoundary?.();
         this.emitDrumHitEventsAt(timeline, 0, handlers);
       } else {
@@ -185,6 +185,14 @@ export class LooperPlaybackEngine {
   releaseTracks(handlers = {}) {
     for (const trackId of this.trackSnapshots.keys()) {
       handlers.onReleaseTrack?.(trackId);
+    }
+    this.trackSnapshots.clear();
+  }
+
+  resetTracksAtLoop(handlers = {}) {
+    for (const trackId of this.trackSnapshots.keys()) {
+      if (handlers.onLoopTrackReset) handlers.onLoopTrackReset(trackId);
+      else handlers.onReleaseTrack?.(trackId);
     }
     this.trackSnapshots.clear();
   }

@@ -29,6 +29,12 @@ export function getEventFieldValue(event, field) {
   if (!event) {
     return undefined;
   }
+  // Schema-v5 recordings keep the performed note gate separate from the
+  // expressive squeeze curve. Older recordings did not have gateOnly and
+  // therefore continue to use their gate values as squeeze samples.
+  if (event.gateOnly) {
+    return undefined;
+  }
   if (EVENT_FIELD_BY_TYPE[event.type] === field) {
     return event.value;
   }
@@ -46,6 +52,11 @@ export function isDrumHitEvent(event) {
   return event?.type === LooperActionEventType.DrumHit;
 }
 
+export function isHonkGateEvent(event) {
+  return event?.type === LooperActionEventType.SqueezeStart ||
+    event?.type === LooperActionEventType.SqueezeEnd;
+}
+
 export class LooperActionEvent {
   constructor({
     id,
@@ -55,6 +66,10 @@ export class LooperActionEvent {
     values = null,
     interpolation = "step",
     synthetic = false,
+    gateOnly = false,
+    support = false,
+    preserveDuration = false,
+    releaseOrigin = null,
   } = {}) {
     this.id = id;
     this.timeMs = Math.max(Number.isFinite(timeMs) ? timeMs : 0, 0);
@@ -63,6 +78,10 @@ export class LooperActionEvent {
     this.values = values ? actionStateToJSON(values) : null;
     this.interpolation = interpolation;
     this.synthetic = Boolean(synthetic);
+    this.gateOnly = Boolean(gateOnly);
+    this.support = Boolean(support);
+    this.preserveDuration = Boolean(preserveDuration);
+    this.releaseOrigin = releaseOrigin || null;
   }
 
   clone() {
@@ -85,6 +104,10 @@ export class LooperActionEvent {
     if (this.synthetic) {
       serialized.synthetic = true;
     }
+    if (this.gateOnly) serialized.gateOnly = true;
+    if (this.support) serialized.support = true;
+    if (this.preserveDuration) serialized.preserveDuration = true;
+    if (this.releaseOrigin) serialized.releaseOrigin = this.releaseOrigin;
     return serialized;
   }
 
@@ -97,6 +120,10 @@ export class LooperActionEvent {
       values: serialized.values,
       interpolation: serialized.interpolation || "step",
       synthetic: serialized.synthetic,
+      gateOnly: serialized.gateOnly,
+      support: serialized.support,
+      preserveDuration: serialized.preserveDuration,
+      releaseOrigin: serialized.releaseOrigin,
     });
   }
 }
@@ -104,7 +131,7 @@ export class LooperActionEvent {
 export function getRecordedFieldsForEvent(event) {
   const fields = [];
   const eventField = EVENT_FIELD_BY_TYPE[event?.type];
-  if (eventField) {
+  if (eventField && !event?.gateOnly) {
     fields.push(eventField);
   }
   if (

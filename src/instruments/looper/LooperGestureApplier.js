@@ -1,5 +1,7 @@
 import { LOOPER_ACTION_RELEASE_FADE_SECONDS } from "../../config/audio.js";
+import { HONK_RELEASE_ORIGINS } from "../../audio/honk/HonkReleaseProfile.js";
 import { copyActionState, createActionState, resetActionState } from "./timeline/actionState.js";
+import { LooperActionEventType } from "./timeline/LooperActionEvent.js";
 
 const ACTION_SQUEEZE_THRESHOLD = 0.015;
 
@@ -8,6 +10,9 @@ export class LooperGestureApplier {
     this.adapter = adapter;
     this.appliedTracks = new Map();
     this.applyFrame = 0;
+    this.scheduledVoices = new Map();
+    this.scheduledGenerations = new Map();
+    this.scheduledVoiceSequence = 0;
   }
 
   applyTrackSnapshot(looperState, track, snapshot, { volume = 1 } = {}) {
@@ -104,7 +109,58 @@ export class LooperGestureApplier {
     }
 
     this.appliedTracks.delete(layerId);
+    this.cancelScheduledGenerations((scheduled) => scheduled.layerId === layerId);
     track.resetPlaybackState();
+  }
+
+  scheduleTrackEvent(
+    looperState,
+    track,
+    trackTimeline,
+    event,
+    snapshot,
+    { volume = 1, scheduledTime } = {},
+  ) {
+    if (!looperState || !track || !Number.isFinite(scheduledTime)) return;
+    const layerId = this.getLayerId(looperState, track);
+    const isStart = event.type === LooperActionEventType.SqueezeStart;
+    const isEnd = event.type === LooperActionEventType.SqueezeEnd;
+    for (const honkId of this.getPlaybackTargetIds(track, track.connectedHonkId)) {
+      if (!this.isPlayableHonkId(honkId)) continue;
+      const baseVoiceId = this.getActionVoiceId(looperState, track, honkId);
+      let scheduledVoice = this.scheduledVoices.get(baseVoiceId);
+      const scheduledSnapshot = createActionState();
+      if (honkId === track.connectedHonkId) copyActionState(scheduledSnapshot, snapshot);
+      else this.copyChordFollowerAction(scheduledSnapshot, snapshot);
+
+      if (isEnd) {
+        if (scheduledVoice) {
+          this.adapter.releaseActionVoice?.(scheduledVoice.voiceId, honkId, {
+            scheduledTime,
+            origin: event.releaseOrigin || HONK_RELEASE_ORIGINS.controller,
+          });
+          scheduledVoice.expiresAt = scheduledTime + 0.25;
+          this.scheduledVoices.delete(baseVoiceId);
+        }
+        continue;
+      }
+      if (isStart) {
+        const voiceId = `${baseVoiceId}:scheduled-${++this.scheduledVoiceSequence}`;
+        scheduledVoice = { voiceId, layerId, honkId, looperId: looperState.id };
+        this.adapter.startActionVoice?.(voiceId, honkId, { scheduledTime });
+        this.scheduledVoices.set(baseVoiceId, scheduledVoice);
+        this.scheduledGenerations.set(voiceId, scheduledVoice);
+      }
+      if (scheduledVoice) {
+        this.adapter.updateActionVoiceByHonkId?.(
+          scheduledVoice.voiceId,
+          honkId,
+          scheduledSnapshot,
+          volume,
+          { scheduledTime },
+        );
+      }
+    }
   }
 
   clearLooper(looperState) {
@@ -113,6 +169,34 @@ export class LooperGestureApplier {
     }
     for (const track of looperState.looperData.tracks) {
       this.clearTrack(looperState, track);
+    }
+  }
+
+  cancelScheduledAudio(looperState) {
+    if (!looperState) return;
+    this.cancelScheduledGenerations((scheduled) => scheduled.looperId === looperState.id);
+  }
+
+  cancelScheduledGenerations(predicate) {
+    for (const [voiceId, scheduled] of this.scheduledGenerations) {
+      if (!predicate(scheduled)) continue;
+      if (this.adapter.cancelActionVoice) {
+        this.adapter.cancelActionVoice(voiceId, scheduled.honkId);
+      } else {
+        this.adapter.releaseActionVoice?.(voiceId, scheduled.honkId, { fadeSeconds: 0 });
+      }
+      this.scheduledGenerations.delete(voiceId);
+    }
+    for (const [baseVoiceId, scheduled] of this.scheduledVoices) {
+      if (predicate(scheduled)) this.scheduledVoices.delete(baseVoiceId);
+    }
+  }
+
+  pruneScheduledAudio(audioNow) {
+    for (const [voiceId, scheduled] of this.scheduledGenerations) {
+      if (Number.isFinite(scheduled.expiresAt) && scheduled.expiresAt <= audioNow) {
+        this.scheduledGenerations.delete(voiceId);
+      }
     }
   }
 
@@ -128,6 +212,7 @@ export class LooperGestureApplier {
       this.releaseTargetEntry(entry.layerId, targetEntry);
       entry.targetEntries.delete(honkId);
     }
+    this.cancelScheduledGenerations((scheduled) => scheduled.honkId === honkId);
   }
 
   updateAudio() {
@@ -231,7 +316,7 @@ export class LooperGestureApplier {
     if (targetEntry?.honkId !== null && targetEntry?.honkId !== undefined) {
       this.clearAutomationLayer(targetEntry.honkId, layerId);
     }
-    if (targetEntry?.voiceId) {
+    if (targetEntry?.voiceId && targetEntry.voiceActive) {
       this.releaseActionVoice(targetEntry.voiceId, targetEntry.honkId);
     }
     if (targetEntry) {

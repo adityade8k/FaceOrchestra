@@ -1,7 +1,7 @@
 import { resetActionState } from "./actionState.js";
 import { LooperTrackTimeline } from "./LooperTrackTimeline.js";
 
-export const LOOPER_TIMELINE_SCHEMA_VERSION = 4;
+export const LOOPER_TIMELINE_SCHEMA_VERSION = 5;
 export const LooperTimingMode = Object.freeze({
   Ordinary: "ordinary",
   Metronome: "metronome",
@@ -180,6 +180,39 @@ export class LooperTimeline {
     return this.sortDrumHitEntries(events);
   }
 
+  getGateEventsAt(timeMs) {
+    return this.collectTrackEvents((track) => track.getGateEventsAt(timeMs));
+  }
+
+  getGateEventsBetween(startMs, endMs, options = {}) {
+    return this.collectTrackEvents((track) => track.getGateEventsBetween(startMs, endMs, options));
+  }
+
+  getPerformanceEventsAt(timeMs) {
+    return this.collectTrackEvents((track) => track.getPerformanceEventsAt(timeMs));
+  }
+
+  getPerformanceEventsBetween(startMs, endMs, options = {}) {
+    return this.collectTrackEvents(
+      (track) => track.getPerformanceEventsBetween(startMs, endMs, options),
+    );
+  }
+
+  collectTrackEvents(getEvents) {
+    const entries = [];
+    for (const track of this.tracks.values()) {
+      if (!track.active) continue;
+      for (const event of getEvents(track)) entries.push({ track, event });
+    }
+    return entries.sort((first, second) =>
+      first.event.timeMs - second.event.timeMs ||
+      (first.track.trackIndex ?? Number.MAX_SAFE_INTEGER) -
+        (second.track.trackIndex ?? Number.MAX_SAFE_INTEGER) ||
+      String(first.track.trackId).localeCompare(String(second.track.trackId)) ||
+      first.event.id - second.event.id,
+    );
+  }
+
   sortDrumHitEntries(events) {
     return events.sort((first, second) =>
       first.event.timeMs - second.event.timeMs ||
@@ -201,13 +234,26 @@ export class LooperTimeline {
       values,
       interpolation,
       synthetic = false,
+      gateOnly = false,
+      support = false,
+      preserveDuration = false,
+      releaseOrigin = null,
     } = {},
   ) {
     const track = this.ensureTrack(trackId, { nodeId, trackIndex });
     if (!track || !type) {
       return null;
     }
-    return track.addEvent(type, timeMs, { value, values, interpolation, synthetic });
+    return track.addEvent(type, timeMs, {
+      value,
+      values,
+      interpolation,
+      synthetic,
+      gateOnly,
+      support,
+      preserveDuration,
+      releaseOrigin,
+    });
   }
 
   addDrumHitEvent(trackId, { nodeId = null, trackIndex = null, timeMs, drumType } = {}) {
@@ -223,13 +269,19 @@ export class LooperTimeline {
     field,
     timeMs,
     value,
-    { nodeId = null, trackIndex = null, interpolation = "linear", synthetic = false } = {},
+    {
+      nodeId = null,
+      trackIndex = null,
+      interpolation = "linear",
+      synthetic = false,
+      support = false,
+    } = {},
   ) {
     const track = this.ensureTrack(trackId, { nodeId, trackIndex });
     if (!track) {
       return null;
     }
-    return track.addFieldEvent(field, timeMs, value, interpolation, synthetic);
+    return track.addFieldEvent(field, timeMs, value, interpolation, synthetic, { support });
   }
 
   finalizeDuration(minDurationMs = 1) {
@@ -309,7 +361,7 @@ export class LooperTimeline {
     let firstActionMs = Infinity;
     for (const track of this.tracks.values()) {
       for (const event of track.events) {
-        firstActionMs = Math.min(firstActionMs, event.timeMs);
+        if (!event.support) firstActionMs = Math.min(firstActionMs, event.timeMs);
       }
     }
     return firstActionMs;

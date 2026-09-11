@@ -4,19 +4,11 @@ import {
   LOOPER_SQUEEZE_GATE_CLOSE_THRESHOLD,
   LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD,
 } from "../../config/looper.js";
-import {
-  cloneActionState,
-  createActionState,
-  hasActionValue,
-} from "./timeline/actionState.js";
-import {
-  LooperActionEventType,
-  getEventFieldValue,
-} from "./timeline/LooperActionEvent.js";
+import { cloneActionState, createActionState, hasActionValue } from "./timeline/actionState.js";
+import { LooperActionEventType } from "./timeline/LooperActionEvent.js";
 
-const MORPH_FIELDS = ["earLeft", "earRight", "nose", "vowel"];
-const CONTINUOUS_FIELDS = ["squeeze", "bend"];
 const NUMERIC_FIELDS = ["squeeze", "bend", "earLeft", "earRight", "nose"];
+const ALL_FIELDS = [...NUMERIC_FIELDS, "vowel"];
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -24,27 +16,13 @@ function clamp(value, min, max) {
 
 function normalizeActionState(source) {
   const action = createActionState();
-  if (!source) {
-    return action;
-  }
-  if (source.squeeze !== undefined) {
-    action.squeeze = clamp(source.squeeze, 0, 1);
-  }
-  if (source.bend !== undefined) {
-    action.bend = clamp(source.bend, -1, 1);
-  }
-  if (source.earLeft !== undefined) {
-    action.earLeft = clamp(source.earLeft, -1, 1);
-  }
-  if (source.earRight !== undefined) {
-    action.earRight = clamp(source.earRight, -1, 1);
-  }
-  if (source.nose !== undefined) {
-    action.nose = clamp(source.nose, 0, 1);
-  }
-  if (source.vowel !== undefined) {
-    action.vowel = source.vowel || "neutral";
-  }
+  if (!source) return action;
+  if (source.squeeze !== undefined) action.squeeze = clamp(source.squeeze, 0, 1);
+  if (source.bend !== undefined) action.bend = clamp(source.bend, -1, 1);
+  if (source.earLeft !== undefined) action.earLeft = clamp(source.earLeft, -1, 1);
+  if (source.earRight !== undefined) action.earRight = clamp(source.earRight, -1, 1);
+  if (source.nose !== undefined) action.nose = clamp(source.nose, 0, 1);
+  if (source.vowel !== undefined) action.vowel = source.vowel || "neutral";
   return action;
 }
 
@@ -53,6 +31,8 @@ export class LooperGestureRecorder {
     sampleIntervalMs = LOOPER_GESTURE_SAMPLE_INTERVAL_MS,
     epsilons = LOOPER_GESTURE_EVENT_EPSILONS,
   } = {}) {
+    // Retained for API compatibility. Faithful capture records every supplied
+    // input update instead of dropping local turns behind a time throttle.
     this.sampleIntervalMs = sampleIntervalMs;
     this.epsilons = { ...LOOPER_GESTURE_EVENT_EPSILONS, ...epsilons };
   }
@@ -68,28 +48,28 @@ export class LooperGestureRecorder {
       track.resetRecordingState();
       const captured = this.captureTrackAction(track, captureActionByHonkId);
       const baseline = normalizeActionState(captured);
-      track.recorderState = {
-        baseline,
-        hasBaseline: Boolean(captured),
-        lastRecorded: createActionState(),
-        recordedFields: new Set(),
-        lastSampleAtMs: -Infinity,
-        squeezeGateActive: false,
-        observedExtrema: new Map(),
-      };
-      const trackTimeline = timeline.ensureTrack(track.trackId, {
+      track.recorderState = this.createRecorderState(baseline, Boolean(captured));
+      timeline.ensureTrack(track.trackId, {
         nodeId: track.nodeId,
         trackIndex: track.index,
-      });
-      trackTimeline?.setBaseline(baseline);
+      })?.setBaseline(baseline);
     }
   }
 
-  updateTrack(timeline, track, now, captureActionByHonkId, { force = false } = {}) {
-    if (!timeline?.recording || !track) {
-      return;
-    }
+  createRecorderState(baseline, hasBaseline) {
+    return {
+      baseline,
+      hasBaseline,
+      lastObserved: cloneActionState(baseline),
+      lastObservedAtMs: 0,
+      activeFields: new Set(),
+      recordedFields: new Set(),
+      squeezeGateActive: false,
+    };
+  }
 
+  updateTrack(timeline, track, now, captureActionByHonkId) {
+    if (!timeline?.recording || !track) return;
     const elapsedMs = timeline.getElapsedMs(now);
     const captured = this.captureTrackAction(track, captureActionByHonkId);
     if (!captured) {
@@ -97,270 +77,166 @@ export class LooperGestureRecorder {
       return;
     }
 
-    if (!track.recorderState) {
-      track.recorderState = {
-        baseline: normalizeActionState(captured),
-        hasBaseline: true,
-        lastRecorded: createActionState(),
-        recordedFields: new Set(),
-        lastSampleAtMs: -Infinity,
-        squeezeGateActive: false,
-        observedExtrema: new Map(),
-      };
-    }
-
     const action = normalizeActionState(captured);
-    this.observeExtrema(track.recorderState, action, elapsedMs);
-    if (!track.recorderState.hasBaseline) {
-      track.recorderState.baseline = cloneActionState(action);
-      track.recorderState.hasBaseline = true;
-      const trackTimeline = timeline.ensureTrack(track.trackId, {
+    if (!track.recorderState) {
+      track.recorderState = this.createRecorderState(action, true);
+      timeline.ensureTrack(track.trackId, {
         nodeId: track.nodeId,
         trackIndex: track.index,
-      });
-      trackTimeline?.setBaseline(action);
+      })?.setBaseline(action);
+    }
+    const state = track.recorderState;
+    if (!state.hasBaseline) {
+      state.baseline = cloneActionState(action);
+      state.lastObserved = cloneActionState(action);
+      state.hasBaseline = true;
+      timeline.ensureTrack(track.trackId, {
+        nodeId: track.nodeId,
+        trackIndex: track.index,
+      })?.setBaseline(action);
     }
 
-    const forceGate = this.hasSqueezeGateTransition(track.recorderState, action);
-    if (!force && !forceGate && elapsedMs - track.recorderState.lastSampleAtMs < this.sampleIntervalMs) {
-      return;
-    }
-
+    const nextGateActive = this.resolveGateState(state, captured, action);
     let wroteEvent = false;
-    for (const field of CONTINUOUS_FIELDS) {
-      if (this.shouldRecordContinuousField(track.recorderState, field, action[field])) {
-        track.recorderState.lastRecorded[field] = this.addContinuousFieldEvent(
-          timeline,
-          track,
-          field,
-          elapsedMs,
-          action[field],
-        );
-        track.recorderState.recordedFields.add(field);
-        wroteEvent = true;
-      }
-    }
-
-    for (const field of MORPH_FIELDS) {
-      if (this.shouldRecordMorphField(track.recorderState, field, action[field])) {
-        timeline.addFieldEvent(track.trackId, field, elapsedMs, action[field], {
-          nodeId: track.nodeId,
-          trackIndex: track.index,
-          interpolation: field === "vowel" ? "step" : "linear",
-        });
-        track.recorderState.lastRecorded[field] = action[field];
-        track.recorderState.recordedFields.add(field);
-        wroteEvent = true;
-      }
-    }
-
-    if (wroteEvent) {
-      track.recorderState.lastSampleAtMs = elapsedMs;
-      track.isRecording = true;
-      track.active = true;
-    }
-  }
-
-  stop(timeline, tracks, now, minDurationMs, captureActionByHonkId = null, timing = null) {
-    if (!timeline?.recording) {
-      return timeline?.hasRecording?.() || false;
-    }
-
-    if (typeof captureActionByHonkId === "function") {
-      for (const track of tracks) {
-        this.updateTrack(timeline, track, now, captureActionByHonkId, { force: true });
-      }
-    }
-
-    for (const track of tracks) {
-      this.preserveTrackExtrema(timeline, track);
-    }
-
-    const elapsedMs = timeline.getElapsedMs(now);
-    for (const track of tracks) {
-      this.releaseTrackActions(timeline, track, elapsedMs, { synthetic: true });
-      track.isRecording = false;
-    }
-
-    const hasRecording = timeline.stopRecording(now, minDurationMs, timing);
-    for (const track of tracks) {
-      const trackTimeline = timeline.getTrack(track.trackId);
-      track.active = Boolean(trackTimeline?.active);
-    }
-    return hasRecording;
-  }
-
-  releaseTrackActions(timeline, track, elapsedMs, { synthetic = false } = {}) {
-    const state = track?.recorderState;
-    if (!timeline || !track || !state) {
-      return;
-    }
-
-    if (state.squeezeGateActive) {
-      timeline.addActionEvent(track.trackId, {
-        nodeId: track.nodeId,
-        trackIndex: track.index,
-        type: LooperActionEventType.SqueezeEnd,
-        timeMs: elapsedMs,
-        value: 0,
-        interpolation: "linear",
-        synthetic,
-      });
-      state.lastRecorded.squeeze = 0;
-      state.squeezeGateActive = false;
-      state.recordedFields.add("squeeze");
-      track.active = true;
-    }
-
-    if (Math.abs(state.lastRecorded.bend || 0) > this.epsilons.bend) {
-      timeline.addFieldEvent(track.trackId, "bend", elapsedMs, 0, {
-        nodeId: track.nodeId,
-        trackIndex: track.index,
-        interpolation: "linear",
-        synthetic,
-      });
-      state.lastRecorded.bend = 0;
-      state.recordedFields.add("bend");
-      track.active = true;
-    }
-  }
-
-  hasSqueezeGateTransition(state, action) {
-    const next = action.squeeze || 0;
-    return state.squeezeGateActive
-      ? next <= LOOPER_SQUEEZE_GATE_CLOSE_THRESHOLD
-      : next > LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD;
-  }
-
-  shouldRecordContinuousField(state, field, value) {
-    if (value === undefined) {
-      return false;
-    }
-
-    const neutral = 0;
-    const epsilon = field === "squeeze" ? this.epsilons.squeeze : this.epsilons.bend;
-    const previous = state.recordedFields.has(field) ? state.lastRecorded[field] || 0 : neutral;
-    if (
-      field === "squeeze" &&
-      !state.squeezeGateActive &&
-      value <= LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD
-    ) {
-      return false;
-    }
-    if (field === "squeeze" && this.hasSqueezeGateTransition(state, { squeeze: value })) {
-      return true;
-    }
-    if (!state.recordedFields.has(field) && Math.abs(value - neutral) <= epsilon) {
-      return false;
-    }
-    return Math.abs(value - previous) > epsilon;
-  }
-
-  shouldRecordMorphField(state, field, value) {
-    if (value === undefined) {
-      return false;
-    }
-
-    const baseline = state.baseline[field];
-    const hasRecorded = state.recordedFields.has(field);
-    if (field === "vowel") {
-      const normalized = value || "neutral";
-      const baselineValue = baseline || "neutral";
-      const previous = hasRecorded ? state.lastRecorded[field] || "neutral" : baselineValue;
-      return normalized !== previous && (hasRecorded || normalized !== baselineValue);
-    }
-
-    const epsilon = this.epsilons[field] ?? 0.015;
-    const baselineValue = hasActionValue(state.baseline, field) ? baseline : 0;
-    const previous = hasRecorded ? state.lastRecorded[field] : baselineValue;
-    if (!hasRecorded && Math.abs(value - baselineValue) <= epsilon) {
-      return false;
-    }
-    return Math.abs(value - previous) > epsilon;
-  }
-
-  addContinuousFieldEvent(timeline, track, field, elapsedMs, value) {
-    if (field === "squeeze") {
-      const wasActive = track.recorderState.squeezeGateActive;
-      const isActive = wasActive
-        ? value > LOOPER_SQUEEZE_GATE_CLOSE_THRESHOLD
-        : value > LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD;
-      const type = !wasActive && isActive
+    if (nextGateActive !== state.squeezeGateActive) {
+      const type = nextGateActive
         ? LooperActionEventType.SqueezeStart
-        : wasActive && !isActive
-          ? LooperActionEventType.SqueezeEnd
-          : LooperActionEventType.Squeeze;
-      const recordedValue = type === LooperActionEventType.SqueezeEnd ? 0 : value;
+        : LooperActionEventType.SqueezeEnd;
       timeline.addActionEvent(track.trackId, {
         nodeId: track.nodeId,
         trackIndex: track.index,
         type,
         timeMs: elapsedMs,
-        value: recordedValue,
-        interpolation: "linear",
+        value: nextGateActive ? (action.squeeze ?? 1) : 0,
+        interpolation: "step",
+        gateOnly: true,
+        releaseOrigin: nextGateActive ? null : (captured.releaseOrigin || "controller"),
       });
-      if (type === LooperActionEventType.SqueezeStart) {
-        timeline.markMusicalOnset(elapsedMs);
-      }
-      track.recorderState.squeezeGateActive = isActive;
-      return recordedValue;
+      if (nextGateActive) timeline.markMusicalOnset(elapsedMs);
+      state.squeezeGateActive = nextGateActive;
+      this.activateField(state, "squeeze");
+      wroteEvent = true;
     }
 
-    timeline.addFieldEvent(track.trackId, field, elapsedMs, value, {
+    for (const field of ALL_FIELDS) {
+      if (action[field] === undefined) continue;
+      if (
+        !state.activeFields.has(field) &&
+        (field !== "squeeze" || state.squeezeGateActive) &&
+        this.fieldChangedFromBaseline(state, field, action[field])
+      ) {
+        this.activateField(state, field);
+      }
+    }
+
+    const continuousValues = createActionState();
+    let hasContinuousValues = false;
+    let continuousChanged = false;
+    for (const field of NUMERIC_FIELDS) {
+      if (!state.activeFields.has(field) || action[field] === undefined) continue;
+      continuousValues[field] = action[field];
+      hasContinuousValues = true;
+      if (action[field] !== state.lastObserved[field]) continuousChanged = true;
+    }
+    const hasSustainedGesture = NUMERIC_FIELDS.some((field) => (
+      field !== "squeeze" &&
+      state.activeFields.has(field) &&
+      action[field] !== undefined &&
+      action[field] !== state.baseline[field]
+    ));
+    if (hasContinuousValues && (state.squeezeGateActive || continuousChanged || hasSustainedGesture)) {
+      timeline.addActionEvent(track.trackId, {
+        nodeId: track.nodeId,
+        trackIndex: track.index,
+        type: LooperActionEventType.GestureSnapshot,
+        timeMs: elapsedMs,
+        values: continuousValues,
+        interpolation: "linear",
+        support: false,
+      });
+      wroteEvent = true;
+    }
+
+    if (state.activeFields.has("vowel") && action.vowel !== state.lastObserved.vowel) {
+      timeline.addFieldEvent(track.trackId, "vowel", elapsedMs, action.vowel, {
+        nodeId: track.nodeId,
+        trackIndex: track.index,
+        interpolation: "step",
+      });
+      wroteEvent = true;
+    }
+
+    state.lastObserved = cloneActionState(action);
+    state.lastObservedAtMs = elapsedMs;
+    if (wroteEvent) {
+      track.isRecording = true;
+      track.active = true;
+    }
+  }
+
+  activateField(state, field) {
+    if (state.activeFields.has(field)) return;
+    state.activeFields.add(field);
+    state.recordedFields.add(field);
+  }
+
+  fieldChangedFromBaseline(state, field, value) {
+    const baseline = state.baseline[field];
+    if (field === "vowel") return (value || "neutral") !== (baseline || "neutral");
+    const epsilon = this.epsilons[field] ?? 0.015;
+    const baselineValue = hasActionValue(state.baseline, field) ? baseline : 0;
+    return Math.abs(value - baselineValue) > epsilon;
+  }
+
+  resolveGateState(state, captured, action) {
+    if (typeof captured.gateActive === "boolean") return captured.gateActive;
+    const value = action.squeeze || 0;
+    return state.squeezeGateActive
+      ? value > LOOPER_SQUEEZE_GATE_CLOSE_THRESHOLD
+      : value > LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD;
+  }
+
+  stop(timeline, tracks, now, minDurationMs, captureActionByHonkId = null, timing = null) {
+    if (!timeline?.recording) return timeline?.hasRecording?.() || false;
+    if (typeof captureActionByHonkId === "function") {
+      for (const track of tracks) this.updateTrack(timeline, track, now, captureActionByHonkId);
+    }
+    const elapsedMs = timeline.getElapsedMs(now);
+    for (const track of tracks) {
+      this.releaseTrackActions(timeline, track, elapsedMs, {
+        synthetic: true,
+        preserveDuration: true,
+      });
+      track.isRecording = false;
+    }
+    const hasRecording = timeline.stopRecording(now, minDurationMs, timing);
+    for (const track of tracks) track.active = Boolean(timeline.getTrack(track.trackId)?.active);
+    return hasRecording;
+  }
+
+  releaseTrackActions(
+    timeline,
+    track,
+    elapsedMs,
+    { synthetic = false, preserveDuration = false } = {},
+  ) {
+    const state = track?.recorderState;
+    if (!timeline || !track || !state || !state.squeezeGateActive) return;
+    timeline.addActionEvent(track.trackId, {
       nodeId: track.nodeId,
       trackIndex: track.index,
-      interpolation: "linear",
+      type: LooperActionEventType.SqueezeEnd,
+      timeMs: elapsedMs,
+      value: 0,
+      interpolation: "step",
+      synthetic,
+      gateOnly: true,
+      preserveDuration,
+      releaseOrigin: "controller",
     });
-    return value;
-  }
-
-  observeExtrema(state, action, elapsedMs) {
-    for (const field of NUMERIC_FIELDS) {
-      const value = action[field];
-      if (!Number.isFinite(value)) continue;
-      const extrema = state.observedExtrema.get(field) || {
-        min: { value, timeMs: elapsedMs },
-        max: { value, timeMs: elapsedMs },
-      };
-      if (value < extrema.min.value) extrema.min = { value, timeMs: elapsedMs };
-      if (value > extrema.max.value) extrema.max = { value, timeMs: elapsedMs };
-      state.observedExtrema.set(field, extrema);
-    }
-  }
-
-  preserveTrackExtrema(timeline, track) {
-    const state = track?.recorderState;
-    const trackTimeline = timeline?.getTrack(track?.trackId);
-    if (!state || !trackTimeline) return;
-
-    for (const field of NUMERIC_FIELDS) {
-      if (!state.recordedFields.has(field)) continue;
-      const extrema = state.observedExtrema.get(field);
-      if (!extrema) continue;
-      const points = field === "squeeze" ? [extrema.max] : [extrema.min, extrema.max];
-      for (const point of points) {
-        const exists = trackTimeline.events.some((event) => (
-          event.timeMs === point.timeMs && getEventFieldValue(event, field) === point.value
-        ));
-        if (exists) continue;
-        if (field === "squeeze") {
-          timeline.addActionEvent(track.trackId, {
-            nodeId: track.nodeId,
-            trackIndex: track.index,
-            type: LooperActionEventType.Squeeze,
-            timeMs: point.timeMs,
-            value: point.value,
-            interpolation: "linear",
-          });
-        } else {
-          timeline.addFieldEvent(track.trackId, field, point.timeMs, point.value, {
-            nodeId: track.nodeId,
-            trackIndex: track.index,
-            interpolation: "linear",
-          });
-        }
-      }
-    }
+    state.squeezeGateActive = false;
+    state.recordedFields.add("squeeze");
+    track.active = true;
   }
 
   captureTrackAction(track, captureActionByHonkId) {
@@ -368,9 +244,7 @@ export class LooperGestureRecorder {
       track?.connectedHonkId === null ||
       track?.connectedHonkId === undefined ||
       typeof captureActionByHonkId !== "function"
-    ) {
-      return null;
-    }
+    ) return null;
     return captureActionByHonkId(track.connectedHonkId) || null;
   }
 }

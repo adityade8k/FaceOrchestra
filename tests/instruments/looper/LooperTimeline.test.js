@@ -230,6 +230,27 @@ test("LooperTimeline survives a plain-JSON round trip and rebuilds derived state
   assert.equal(LooperTimeline.fromJSON(legacyWithStopTime).durationMs, 90);
 });
 
+test("schema-v4 gate recordings migrate without turning held notes into ramps", () => {
+  const restored = LooperTimeline.fromJSON({
+    schemaVersion: 4,
+    durationMs: 500,
+    recordedDurationMs: 500,
+    tracks: [{
+      trackId: "track-0",
+      trackIndex: 0,
+      baselineActionState: { squeeze: 0 },
+      events: [
+        { id: 1, type: "squeezeStart", timeMs: 0, value: 1, interpolation: "linear" },
+        { id: 2, type: "squeezeEnd", timeMs: 500, value: 0, interpolation: "linear" },
+      ],
+    }],
+  });
+  const snapshot = createActionState();
+
+  assert.equal(restored.sampleTrack(restored.getTrack("track-0"), 250, snapshot).squeeze, 1);
+  assert.equal(restored.toJSON().schemaVersion, 5);
+});
+
 test("a single instantaneous sound gets one beat instead of a near-zero loop", () => {
   const timeline = new LooperTimeline();
   timeline.addDrumHitEvent("track-0", { trackIndex: 0, timeMs: 0, drumType: "boink" });

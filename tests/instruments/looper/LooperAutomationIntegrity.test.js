@@ -83,7 +83,34 @@ test("canonical looper capture excludes presentation smoothing and playback auto
     currentVowelLetter: "O",
   });
 
-  assert.deepEqual(captured, { musicalOnset: true, ...live });
+  assert.deepEqual(captured, { musicalOnset: true, gateActive: true, ...live });
+});
+
+test("canonical capture records the processed live trajectory with a separate raw gate", () => {
+  const captured = captureCanonicalHonkPerformance({
+    kind: "honk",
+    root: { visible: true },
+    getLivePerformanceState: () => ({
+      squeeze: 1,
+      bend: 1,
+      earLeft: 0,
+      earRight: 0,
+      nose: 0,
+      vowel: "A",
+    }),
+    getProcessedLivePerformanceState: () => ({
+      squeeze: 0.18,
+      bend: 0.18,
+      earLeft: 0,
+      earRight: 0,
+      nose: 0,
+      vowel: "A",
+    }),
+  });
+
+  assert.equal(captured.gateActive, true);
+  assert.equal(captured.squeeze, 0.18);
+  assert.equal(captured.bend, 0.18);
 });
 
 test("playback automation is applied directly instead of being filtered a second time", () => {
@@ -130,10 +157,12 @@ function recordFullRangeGesture(renderHz) {
 }
 
 function fieldValues(track, field, { includeSynthetic = true } = {}) {
-  return track.events
+  const values = track.events
     .filter((event) => includeSynthetic || !event.synthetic)
     .map((event) => getEventFieldValue(event, field))
     .filter((value) => value !== undefined);
+  if (track.baselineActionState[field] !== undefined) values.unshift(track.baselineActionState[field]);
+  return values;
 }
 
 function assertClose(actual, expected, epsilon = 1e-9) {

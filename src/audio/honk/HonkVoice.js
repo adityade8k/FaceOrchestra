@@ -21,6 +21,7 @@ export class HonkVoice {
     this.pitchBendSemitones = 0;
     this.disconnected = false;
     this.releaseState = null;
+    this.scheduledPerformanceStarted = false;
 
     this.createNodes();
     this.rebuildFormants(vowel);
@@ -55,8 +56,8 @@ export class HonkVoice {
     this.output.connect(this.destination);
   }
 
-  start() {
-    const now = this.context.currentTime;
+  start(scheduledTime = this.context.currentTime) {
+    const now = Math.max(scheduledTime, this.context.currentTime);
     this.source.start(now);
     this.vibrato.start(now);
   }
@@ -106,6 +107,7 @@ export class HonkVoice {
   }
 
   setVowel(vowel) {
+    if (this.disconnected) return;
     if (this.vowel !== vowel) {
       this.rebuildFormants(vowel);
     }
@@ -124,8 +126,11 @@ export class HonkVoice {
     pitchBendSemitones = null,
     pitchSnap = null,
     activeVoiceCount = 1,
-  }) {
-    const now = this.context.currentTime;
+  }, { scheduledTime = undefined } = {}) {
+    const isScheduled = Number.isFinite(scheduledTime);
+    const now = isScheduled
+      ? Math.max(scheduledTime, this.context.currentTime)
+      : this.context.currentTime;
     const frequency = getHonkFrequency({ leftEar, rightEar, pitchSnap });
     if (pitchBendSemitones !== null) {
       this.pitchBendSemitones = pitchBendSemitones;
@@ -141,6 +146,19 @@ export class HonkVoice {
         polyphonyScale,
     );
 
+    if (isScheduled) {
+      this.source.frequency.setValueAtTime(frequency, now);
+      this.source.detune.setValueAtTime(detune, now);
+      this.vibrato.frequency.setValueAtTime(5.2, now);
+      if (!this.scheduledPerformanceStarted) {
+        this.master.gain.setValueAtTime(0.0001, now);
+        this.master.gain.linearRampToValueAtTime(gain, now + 0.004);
+        this.scheduledPerformanceStarted = true;
+      } else {
+        this.master.gain.linearRampToValueAtTime(gain, now);
+      }
+      return;
+    }
     this.source.frequency.setTargetAtTime(frequency, now, 0.035);
     this.source.detune.setTargetAtTime(detune, now, 0.045);
     this.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);
@@ -152,7 +170,7 @@ export class HonkVoice {
       return this.releaseState;
     }
 
-    const now = this.context.currentTime;
+    const now = Math.max(options?.scheduledTime ?? this.context.currentTime, this.context.currentTime);
     const requestedFade = Number.isFinite(fadeSeconds)
       ? fadeSeconds
       : HONK_RELEASE_SETTINGS.liveFadeSeconds;
@@ -210,6 +228,14 @@ export class HonkVoice {
     }
 
     return this.releaseState;
+  }
+
+  cancel() {
+    if (this.disconnected) return;
+    const now = this.context.currentTime;
+    try { this.source.stop(now); } catch { /* Already stopped. */ }
+    try { this.vibrato.stop(now); } catch { /* Already stopped. */ }
+    this.disconnect();
   }
 
   scheduleControllerRelease(now, silentAt) {

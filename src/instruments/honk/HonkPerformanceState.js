@@ -150,8 +150,12 @@ export class HonkPerformanceState {
   }
 
   resolve() {
+    return this.resolveWithLiveState(this.live);
+  }
+
+  resolveWithLiveState(liveState = this.live) {
     const resolved = this.resolved;
-    copyLiveState(resolved, this.live);
+    copyLiveState(resolved, liveState);
 
     const bestMorphLayers = {
       earLeft: null,

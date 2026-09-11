@@ -2,10 +2,12 @@ const REFERENCE_FRAME_MS = 1000 / 60;
 
 export function captureCanonicalHonkPerformance(honkState, squeezeGateThreshold = 0.025) {
   if (honkState?.kind !== "honk" || !honkState.root?.visible) return null;
-  const live = honkState.getLivePerformanceState?.();
-  if (!live) return null;
+  const rawLive = honkState.getLivePerformanceState?.();
+  if (!rawLive) return null;
+  const live = honkState.getProcessedLivePerformanceState?.() || rawLive;
   return {
-    musicalOnset: Number(live.squeeze || 0) > squeezeGateThreshold,
+    musicalOnset: Number(rawLive.squeeze || 0) > squeezeGateThreshold,
+    gateActive: Number(rawLive.squeeze || 0) > squeezeGateThreshold,
     squeeze: live.squeeze ?? 0,
     bend: live.bend ?? 0,
     earLeft: live.earLeft ?? 0,

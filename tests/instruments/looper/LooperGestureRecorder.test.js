@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 
 import { LooperGestureRecorder } from "../../../src/instruments/looper/LooperGestureRecorder.js";
 import { LooperTrack } from "../../../src/instruments/looper/LooperTrack.js";
-import { LooperActionEventType } from "../../../src/instruments/looper/timeline/LooperActionEvent.js";
+import {
+  LooperActionEventType,
+  getEventFieldValue,
+} from "../../../src/instruments/looper/timeline/LooperActionEvent.js";
 import { LooperTimeline } from "../../../src/instruments/looper/timeline/LooperTimeline.js";
 
 test("finalizing an active recording preserves its last sample and neutral releases", () => {
@@ -29,15 +32,12 @@ test("finalizing an active recording preserves its last sample and neutral relea
   assert.equal(events.some(({ type, timeMs, value }) => (
     type === LooperActionEventType.SqueezeEnd && timeMs === 100 && value === 0
   )), true);
-  assert.equal(events.some(({ type, timeMs, value }) => (
-    type === LooperActionEventType.Bend && timeMs === 100 && value === 0
-  )), true);
-  assert.equal(events.some(({ type, timeMs, value }) => (
-    type === LooperActionEventType.EarLeft && timeMs === 100 && value === 0.75
-  )), true);
-  assert.equal(events.some(({ type, timeMs, value }) => (
-    type === LooperActionEventType.Nose && timeMs === 100 && value === 0.4
-  )), true);
+  const finalGesture = events.find(({ type, timeMs }) => (
+    type === LooperActionEventType.GestureSnapshot && timeMs === 100
+  ));
+  assert.equal(getEventFieldValue(finalGesture, "bend"), 0.5);
+  assert.equal(getEventFieldValue(finalGesture, "earLeft"), 0.75);
+  assert.equal(getEventFieldValue(finalGesture, "nose"), 0.4);
   assert.equal(events.some(({ type, timeMs, value }) => (
     type === LooperActionEventType.Vowel && timeMs === 100 && value === "E"
   )), true);
@@ -176,6 +176,8 @@ function recordRepresentativeSmoothGesture(noiseAmplitude) {
   }
 
   const events = timeline.getTrack(track.trackId).events;
-  assert.equal(events.every(({ interpolation }) => interpolation === "linear"), true);
+  assert.equal(events.every(({ interpolation, gateOnly }) => (
+    gateOnly ? interpolation === "step" : interpolation === "linear"
+  )), true);
   return events.length;
 }

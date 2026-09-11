@@ -29,11 +29,20 @@ export class AudioSystem {
     await this.ensureContext();
   }
 
-  startVoice(voiceId = "main") {
-    return this.honkVoices.startVoice(voiceId);
+  getCurrentTime() {
+    return this.audioContextService.context?.currentTime ?? null;
   }
 
-  updateVoice(voiceId, performanceState = {}, tuning = {}, { gain = HONK_MASTER_GAIN } = {}) {
+  startVoice(voiceId = "main", options = {}) {
+    return this.honkVoices.startVoice(voiceId, options);
+  }
+
+  updateVoice(
+    voiceId,
+    performanceState = {},
+    tuning = {},
+    { gain = HONK_MASTER_GAIN, scheduledTime = undefined } = {},
+  ) {
     this.honkVoices.updateVoice(voiceId, {
       hornAmount: performanceState.squeeze ?? 0,
       masterGain: gain,
@@ -45,7 +54,7 @@ export class AudioSystem {
         : "A",
       pitchBendSemitones: (performanceState.bend ?? 0) * MAX_PITCH_BEND_SEMITONES,
       pitchSnap: tuning.pitchSnap || null,
-    });
+    }, { scheduledTime });
   }
 
   setVoiceVowel(voiceId, vowel) {
@@ -55,6 +64,10 @@ export class AudioSystem {
   releaseVoice(voiceId = "main", options = {}) {
     this.honkVoices.setVoicePitchBend(voiceId, 0);
     this.honkVoices.releaseVoice(voiceId, options);
+  }
+
+  cancelVoice(voiceId = "main") {
+    this.honkVoices.cancelVoice(voiceId);
   }
 
   releaseAll() {

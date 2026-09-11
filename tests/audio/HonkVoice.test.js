@@ -141,6 +141,22 @@ test("duplicate controller release remains idempotent", () => {
   assert.equal(voice.vibrato.stopCalls.length, 1);
 });
 
+test("scheduled looper note parameters and controller release use audio-context time", () => {
+  const context = createAudioContext({ currentTime: 1 });
+  const voice = new HonkVoice({ context });
+  voice.start(5);
+  voice.update({ hornAmount: 0.8 }, { scheduledTime: 5 });
+  const release = voice.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, undefined, {
+    scheduledTime: 5.02,
+    origin: HONK_RELEASE_ORIGINS.controller,
+  });
+
+  assert.deepEqual(voice.source.startCalls, [5]);
+  assert.equal(lastEventOfType(voice.master.gain, "setTargetAtTime").time, 5.02);
+  assert.equal(release.releaseStart, 5.02);
+  assert.equal(release.silentAt, 5.02 + HONK_RELEASE_SETTINGS.liveFadeSeconds);
+});
+
 test("release ramps the held master gain to exact zero before stopping oscillators", () => {
   const context = createAudioContext({ currentTime: 4 });
   const voice = new HonkVoice({ context });

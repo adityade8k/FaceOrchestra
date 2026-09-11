@@ -5,7 +5,6 @@ import {
   BEND_SENSITIVITY,
   BEND_SMOOTHING,
   INTERACTION_TARGET_NAMES,
-  MORPH_TARGET_NAMES,
   SQUEEZE_SENSITIVITY,
 } from "../../config/honk.js";
 import { LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD } from "../../config/looper.js";
@@ -124,13 +123,15 @@ export const HonkPerformanceRuntimeMethods = {
       for (const { interaction } of activeHoldInteractions) {
         for (const synthState of interaction.activeChain || []) {
           const voiceId = this.getInstrumentVoiceId(interaction.voiceId, synthState);
+          const livePerformance = synthState.getProcessedLivePerformanceState?.() ||
+            synthState.getLivePerformanceState?.() || {};
           synthState.updateAudioVoice(voiceId, {
-            squeeze: synthState.hornSqueezeValue,
-            bend: synthState.bendValue,
-            earLeft: synthState.getEarAmount("left"),
-            earRight: synthState.getEarAmount("right"),
-            nose: synthState.getMorphValue(MORPH_TARGET_NAMES.nose),
-            vowel: synthState.currentVowelLetter,
+            squeeze: livePerformance.squeeze,
+            bend: livePerformance.bend,
+            earLeft: livePerformance.earLeft,
+            earRight: livePerformance.earRight,
+            nose: livePerformance.nose,
+            vowel: livePerformance.vowel,
           }, { gain: HONK_MASTER_GAIN });
         }
       }
@@ -157,30 +158,34 @@ export const HonkPerformanceRuntimeMethods = {
           continue;
         }
   
-        const resolved = state.getResolvedPerformanceState?.();
-        const targetSqueeze = resolved?.squeeze ?? (state.hornHolders.size > 0 ? 1 : 0);
-        const targetBend = resolved?.bend ?? 0;
+        const rawLive = state.getLivePerformanceState?.() || {};
         const deltaMs = Number.isFinite(state.lastHonkPerformanceUpdateMs)
           ? Math.max(now - state.lastHonkPerformanceUpdateMs, 0)
           : REFERENCE_FRAME_MS;
         state.lastHonkPerformanceUpdateMs = now;
-        const hasAutomation = state.hasAutomation?.() ?? state.performance?.hasAutomation?.() ?? false;
-
-        state.hornSqueezeValue = resolvePresentationValue(
-          state.hornSqueezeValue,
-          targetSqueeze,
-          SQUEEZE_SENSITIVITY,
-          deltaMs,
-          hasAutomation,
-        );
-        state.targetBendValue = targetBend;
-        state.bendValue = resolvePresentationValue(
-          state.bendValue,
-          state.targetBendValue,
-          BEND_SMOOTHING,
-          deltaMs,
-          hasAutomation,
-        );
+        const processedLive = {
+          ...rawLive,
+          squeeze: resolvePresentationValue(
+            state.processedLivePerformance?.squeeze ?? state.hornSqueezeValue ?? 0,
+            rawLive.squeeze ?? 0,
+            SQUEEZE_SENSITIVITY,
+            deltaMs,
+            false,
+          ),
+          bend: resolvePresentationValue(
+            state.processedLivePerformance?.bend ?? state.bendValue ?? 0,
+            rawLive.bend ?? 0,
+            BEND_SMOOTHING,
+            deltaMs,
+            false,
+          ),
+        };
+        state.processedLivePerformance = processedLive;
+        const resolved = state.performance?.resolveWithLiveState?.(processedLive) ||
+          state.getResolvedPerformanceState?.();
+        state.hornSqueezeValue = resolved?.squeeze ?? processedLive.squeeze;
+        state.targetBendValue = resolved?.bend ?? processedLive.bend;
+        state.bendValue = state.targetBendValue;
         if (resolved) {
           state.applyMorphPerformanceState({
             ...resolved,
@@ -224,20 +229,24 @@ export const HonkPerformanceRuntimeMethods = {
     getLooperActionVoiceId(looperState, track, honkState) {
       return `${this.getLooperAutomationLayerId(looperState, track)}:instrument-${honkState.id}:action`;
     },
-    updateLooperActionVoice(voiceId, honkState, snapshot, volume) {
+    updateLooperActionVoice(voiceId, honkState, snapshot, volume, options = {}) {
       if (honkState?.kind !== "honk" || !honkState.root?.visible) {
         this.releaseHonkVoice(voiceId);
         return;
       }
-  
+      const livePerformance = honkState.getProcessedLivePerformanceState?.() ||
+        honkState.getLivePerformanceState?.() || {};
       honkState.updateAudioVoice(voiceId, {
         squeeze: THREE.MathUtils.clamp(snapshot.squeeze || 0, 0, 1),
-        bend: honkState.bendValue,
-        earLeft: honkState.getEarAmount("left"),
-        earRight: honkState.getEarAmount("right"),
-        nose: honkState.getMorphValue(MORPH_TARGET_NAMES.nose),
-        vowel: honkState.currentVowelLetter,
-      }, { gain: HONK_MASTER_GAIN * volume });
+        bend: snapshot.bend ?? 0,
+        earLeft: snapshot.earLeft ?? livePerformance.earLeft,
+        earRight: snapshot.earRight ?? livePerformance.earRight,
+        nose: snapshot.nose ?? livePerformance.nose,
+        vowel: snapshot.vowel ?? livePerformance.vowel,
+      }, {
+        gain: HONK_MASTER_GAIN * volume,
+        scheduledTime: options.scheduledTime,
+      });
     },
     applyResolvedHonkMorphState(honkState, resolved) {
       this.applyVowelLetterToState(resolved.vowel, honkState, { updateLiveState: false, updateAudio: false });

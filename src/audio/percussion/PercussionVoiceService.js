@@ -7,18 +7,21 @@ export class PercussionVoiceService {
     this.getDestination = getDestination;
   }
 
-  async trigger(type, { volume = 1 } = {}) {
+  async trigger(type, { volume = 1, scheduledTime = undefined } = {}) {
     const context = await this.ensureAudio();
+    const startTime = Number.isFinite(scheduledTime)
+      ? Math.max(scheduledTime, context.currentTime)
+      : context.currentTime;
     if (type === PERCUSSION_TYPES.hihat) {
-      this.triggerHihat(context, volume);
+      this.triggerHihat(context, volume, startTime);
       return;
     }
     if (type === PERCUSSION_TYPES.metronomeWood) {
-      this.triggerMetronomeWood(context, volume);
+      this.triggerMetronomeWood(context, volume, startTime);
       return;
     }
 
-    this.triggerBoink(context, volume);
+    this.triggerBoink(context, volume, startTime);
   }
 
   createSoftClipCurve(amount = 1.4) {
@@ -35,13 +38,13 @@ export class PercussionVoiceService {
     return curve;
   }
 
-  triggerBoink(context, volume = 1) {
+  triggerBoink(context, volume = 1, startTime = context?.currentTime) {
     if (!context) {
       return;
     }
 
     const settings = PERCUSSION_PROFILES.boink;
-    const now = context.currentTime;
+    const now = Math.max(startTime, context.currentTime);
     const output = context.createGain();
     const bodyBus = context.createGain();
     const bodyDrive = context.createWaveShaper();
@@ -188,13 +191,13 @@ export class PercussionVoiceService {
     };
   }
 
-  triggerHihat(context, volume = 1) {
+  triggerHihat(context, volume = 1, startTime = context?.currentTime) {
     if (!context) {
       return;
     }
 
     const settings = PERCUSSION_PROFILES.hihat;
-    const now = context.currentTime;
+    const now = Math.max(startTime, context.currentTime);
     const sampleCount = Math.max(Math.floor(context.sampleRate * settings.noiseSeconds), 1);
     const noiseBuffer = context.createBuffer(1, sampleCount, context.sampleRate);
     const samples = noiseBuffer.getChannelData(0);
@@ -320,13 +323,13 @@ export class PercussionVoiceService {
     cleanupSource.onended = cleanup;
   }
 
-  triggerMetronomeWood(context, volume = 1) {
+  triggerMetronomeWood(context, volume = 1, startTime = context?.currentTime) {
     if (!context) {
       return;
     }
 
     const settings = PERCUSSION_PROFILES.metronomeWood;
-    const now = context.currentTime;
+    const now = Math.max(startTime, context.currentTime);
     const output = context.createGain();
     const bodyBus = context.createGain();
     const bodyFilter = context.createBiquadFilter();

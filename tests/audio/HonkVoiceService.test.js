@@ -107,6 +107,42 @@ test("controller release safely cancels a pending asynchronous voice start", asy
   assert.equal(service.voices.size, 0);
 });
 
+test("scheduled short notes retain their initial state while audio is starting", async () => {
+  let finishAudioStart;
+  const calls = [];
+  const service = new HonkVoiceService({
+    ensureAudio: () => new Promise((resolve) => { finishAudioStart = resolve; }),
+    getDestination: () => null,
+    createVoice: () => ({
+      start: (time) => calls.push(["start", time]),
+      setVowel: (vowel) => calls.push(["vowel", vowel]),
+      update: (state, options) => calls.push(["update", state.hornAmount, options.scheduledTime]),
+      release: (fadeSeconds, _onEnded, options) => calls.push([
+        "release",
+        fadeSeconds,
+        options.scheduledTime,
+        options.origin,
+      ]),
+    }),
+  });
+
+  const starting = service.startVoice("short", { scheduledTime: 5 });
+  service.updateVoice("short", { vowel: "E", hornAmount: 0.7 }, { scheduledTime: 5 });
+  service.releaseVoice("short", {
+    scheduledTime: 5.02,
+    origin: HONK_RELEASE_ORIGINS.controller,
+  });
+  finishAudioStart({});
+  await starting;
+
+  assert.deepEqual(calls, [
+    ["start", 5],
+    ["vowel", "E"],
+    ["update", 0.7, 5],
+    ["release", HONK_RELEASE_SETTINGS.liveFadeSeconds, 5.02, HONK_RELEASE_ORIGINS.controller],
+  ]);
+});
+
 test("retrigger leaves the prior release generation connected while a new voice becomes active", async () => {
   const { service, createdVoices } = createServiceWithControllableVoices();
 

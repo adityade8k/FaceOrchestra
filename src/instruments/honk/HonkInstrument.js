@@ -137,6 +137,12 @@ export class HonkInstrument extends InstrumentEntity {
     return this.performance.getResolvedSnapshot();
   }
 
+  getProcessedLivePerformanceState() {
+    return this.processedLivePerformance
+      ? { ...this.processedLivePerformance }
+      : this.getLivePerformanceState();
+  }
+
   clearLiveInteractions() {
     this.performance.clearLiveInteractions();
   }
@@ -246,9 +252,9 @@ export class HonkInstrument extends InstrumentEntity {
     return this.startAudioVoice(voiceId);
   }
 
-  startAudioVoice(voiceId) {
+  startAudioVoice(voiceId, options = {}) {
     this.activeVoiceIds.add(voiceId);
-    return this.voiceService?.startVoice?.(voiceId, this.tuning, this);
+    return this.voiceService?.startVoice?.(voiceId, options, this.tuning, this);
   }
 
   releaseVoice(sourceId = "main") {
@@ -261,19 +267,37 @@ export class HonkInstrument extends InstrumentEntity {
     this.releaseAudioVoice(voiceId);
   }
 
-  updateAudioVoice(voiceId, performanceState, { gain = HONK_MASTER_GAIN } = {}) {
+  updateAudioVoice(
+    voiceId,
+    performanceState,
+    { gain = HONK_MASTER_GAIN, scheduledTime = undefined } = {},
+  ) {
     if (!voiceId || !this.activeVoiceIds.has(voiceId)) return;
     const tuning = {
       ...this.tuning,
       pitchSnap: this.pitchSnap || this.tuning.pitchSnap || null,
     };
-    this.voiceService?.updateVoice?.(voiceId, performanceState, tuning, { gain }, this);
+    const updateOptions = { gain };
+    if (Number.isFinite(scheduledTime)) updateOptions.scheduledTime = scheduledTime;
+    this.voiceService?.updateVoice?.(
+      voiceId,
+      performanceState,
+      tuning,
+      updateOptions,
+      this,
+    );
   }
 
   releaseAudioVoice(voiceId, options = {}) {
     if (!voiceId) return;
     this.activeVoiceIds.delete(voiceId);
     this.voiceService?.releaseVoice?.(voiceId, options);
+  }
+
+  cancelAudioVoice(voiceId) {
+    if (!voiceId) return;
+    this.activeVoiceIds.delete(voiceId);
+    this.voiceService?.cancelVoice?.(voiceId);
   }
 
   releaseAllAudioVoices() {
