@@ -1,14 +1,22 @@
 {
+  "validatedAt": "2026-09-13T17:59:11.012Z",
+  "sourceTree": {
+    "branch": "Tutorial",
+    "baseCommit": "88eab5a733355602b025434450efccba577dba67",
+    "changes": "uncommitted"
+  },
   "simulation": {
     "composition": "virag-2-jog-study",
-    "version": 1,
+    "version": 2,
     "mode": "simulation",
     "complete": true,
     "checkpoints": [
       "intro",
       "metronome",
-      "looper",
-      "clock-wire",
+      "chordLooper",
+      "percussionLooper",
+      "clock-chordLooper",
+      "clock-percussionLooper",
       "tempo",
       "spawn-group-1",
       "wire-group-1",
@@ -18,20 +26,23 @@
       "wire-group-3",
       "spawn-group-4",
       "wire-group-4",
-      "percussion",
-      "percussion-wire",
       "audition-E",
       "audition-O",
       "timbre",
       "chord",
+      "record-chords",
+      "finalize-chords",
+      "playback-chords",
+      "percussion",
+      "percussion-wire",
       "stick",
       "tap-percussion",
       "tap-metronome",
-      "tap-looper",
-      "combined",
-      "record",
-      "finalize",
-      "playback",
+      "tap-percussionLooper",
+      "record-percussion",
+      "finalize-percussion",
+      "playback-percussion",
+      "start-all",
       "unequip",
       "melody",
       "performance"
@@ -44,7 +55,74 @@
       "B",
       "D"
     ],
-    "durationSeconds": 131.4115,
+    "durationSeconds": 176.77630000000002,
+    "takes": {
+      "chordLooper": {
+        "durationMs": 12000,
+        "gapBeats": 0,
+        "timingMode": "metronome",
+        "sourceBeatIntervalMs": 750,
+        "pitchedOnsets": 4,
+        "percussionHits": 0
+      },
+      "percussionLooper": {
+        "durationMs": 12000,
+        "gapBeats": 0,
+        "timingMode": "metronome",
+        "sourceBeatIntervalMs": 750,
+        "pitchedOnsets": 0,
+        "percussionHits": 12
+      }
+    },
+    "launches": {
+      "chordLooper": [
+        {
+          "beat": 36,
+          "requestedAtMs": 32542.2,
+          "observedAtMs": 33145.69999998808,
+          "audioPreparedAtMs": 33047.19999998808,
+          "audioOriginTime": 31.628764399092965,
+          "lateMs": 2.3999999880834366
+        },
+        {
+          "beat": 102,
+          "requestedAtMs": 82240.3,
+          "observedAtMs": 82657,
+          "audioPreparedAtMs": 82543.60000002384,
+          "audioOriginTime": 81.12717233560092,
+          "lateMs": 13.69999999999709
+        }
+      ],
+      "percussionLooper": [
+        {
+          "beat": 85,
+          "requestedAtMs": 69290.8,
+          "observedAtMs": 69894.69999998808,
+          "audioPreparedAtMs": 69794.30000001192,
+          "audioOriginTime": 68.37574263038547,
+          "lateMs": 1.3999999880761607
+        },
+        {
+          "beat": 102,
+          "requestedAtMs": 82240.3,
+          "observedAtMs": 82657,
+          "audioPreparedAtMs": 82544.10000002384,
+          "audioOriginTime": 81.12717233560092,
+          "lateMs": 13.69999999999709
+        }
+      ]
+    },
+    "startAll": {
+      "ok": true,
+      "message": "Starting both on the next beat",
+      "targetBeat": 102,
+      "requestedAtMs": 82240.3
+    },
+    "alignment": {
+      "atMs": 177886.5,
+      "loopers": 102,
+      "phaseDifference": 0
+    },
     "audioState": "running",
     "counts": {
       "honk": 4,
@@ -52,6 +130,32 @@
       "metronome": 4
     }
   },
+  "recordingDemonstrations": {
+    "chordLooper": {
+      "complete": true,
+      "learnerCredit": false,
+      "takesRestored": true,
+      "realEvents": 4
+    },
+    "percussionLooper": {
+      "complete": true,
+      "learnerCredit": false,
+      "takesRestored": true,
+      "realEvents": 12
+    }
+  },
+  "clockAndShake": {
+    "singleton": true,
+    "selectiveRealGripShake": true,
+    "formationSource": true,
+    "cooldown": true,
+    "recordingsRetained": true,
+    "silentClickPeak": 0,
+    "mutedClockLoopPeak": 0.33904697987339893,
+    "mutedClockPercussionPeak": 0.7181993312050649,
+    "sharedAudioOrigin": true
+  },
+  "allChordMembersRelease": true,
   "launchChoices": true,
   "wrongActionRejected": true,
   "evidenceOriginsIsolated": true,
@@ -60,24 +164,88 @@
   "xrPlaneCapture": true,
   "sound": "Web Audio state verified; sound not monitored",
   "headset": "unverified",
-  "additionalBrowserChecks": {
-    "allChordMembersRelease": true,
-    "freePlayControllerCount": 2,
-    "lessonObjectsAfterCleanup": 0,
-    "manualHonkRegression": {
-      "sphereComparisons": 49,
-      "sphereHits": 9,
-      "lockedSphereVoices": 3,
-      "groupMovement": true,
-      "sameFrameTransforms": true,
-      "holdRollUnlockDelete": true
+  "manualHonkRegression": {
+    "comparisons": 49,
+    "hits": 9,
+    "visualScale": 1.0287,
+    "lockedSphereVoices": 3,
+    "groupMovement": true,
+    "sameFrameTransforms": true,
+    "holdRollUnlockDelete": true
+  },
+  "presentationRegression": {
+    "three": "164",
+    "squeeze": 0.8200000000000004,
+    "rendered": 0.8200000000000004,
+    "authoritative": 0,
+    "bend": 0,
+    "scale": 2.5,
+    "visualScale": 1.0287,
+    "sphereVisual": {
+      "center": [
+        0,
+        0.07807477252918912,
+        -0.009365372583398038
+      ],
+      "radius": 0.0928673382255893
+    },
+    "sphereInteraction": {
+      "center": [
+        0,
+        0.07807477252918912,
+        -0.009365372583398038
+      ],
+      "radius": 0.0928673382255893
+    },
+    "socketVisual": [
+      -0.08041265236409037,
+      0.17403768869563144,
+      -0.00901567198630638
+    ],
+    "socketInteraction": [
+      -0.08041265236409037,
+      0.17403768869563144,
+      -0.00901567198630638
+    ],
+    "rays": {
+      "compared": 81,
+      "hits": 55
+    },
+    "renderInfo": {
+      "geometries": 10,
+      "calls": 10
+    }
+  },
+  "screenshots": [
+    "/tmp/face-orchestra-two-loopers.png"
+  ],
+  "baseline": {
+    "workingTree": "clean",
+    "passed": 406,
+    "failed": 1,
+    "importCheck": "passed",
+    "failure": {
+      "test": "tests/instruments/metronome/MetronomeHandleRig.test.js:43",
+      "actualDegrees": -80,
+      "expectedDegrees": -90
     }
   },
   "unitTests": {
-    "passed": 406,
+    "total": 435,
+    "passed": 434,
     "failed": 1,
-    "newTutorialTestsPassed": 20,
-    "baselineFailure": "MetronomeHandleRig: -80 actual versus -90 expected"
+    "baselineFailureUnchanged": {
+      "test": "tests/instruments/metronome/MetronomeHandleRig.test.js:43",
+      "actualDegrees": -80,
+      "expectedDegrees": -90
+    }
   },
-  "importCheck": "152 source files passed"
+  "importCheck": "155 source files: syntax, relative imports and architecture guards passed",
+  "browserScriptsSyntax": "passed",
+  "verificationLimits": [
+    "No physical headset or tracked-hardware evaluation was performed.",
+    "No acoustic listening test was performed; audio checks measure the digital Web Audio signal.",
+    "Shake checks drive virtual controller poses through the actual grip and transform systems.",
+    "Recording demonstrations use isolated practice-step fixtures with genuine recorded takes and no supplied learner checkpoints."
+  ]
 }

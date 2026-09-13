@@ -54,12 +54,12 @@ test("new transitive followers join a held note at the current phase exactly onc
   assert.equal(harness.startsFor("honk-a").length, 1);
   assert.equal(harness.startsFor("honk-b").length, 1);
   assert.equal(harness.startsFor("honk-c").length, 1);
-  assert.equal(harness.startsFor("honk-b")[0].scheduledTime, 10.2);
-  assert.equal(harness.startsFor("honk-c")[0].scheduledTime, 10.2);
+  assert.ok(Math.abs(harness.startsFor("honk-b")[0].scheduledTime - 10.2) < 1e-10);
+  assert.ok(Math.abs(harness.startsFor("honk-c")[0].scheduledTime - 10.2) < 1e-10);
   const joinedUpdate = harness.calls.find(
     (call) => call.kind === "update" &&
       call.voiceId === harness.startsFor("honk-b")[0].voiceId &&
-      call.scheduledTime === 10.2,
+      Math.abs(call.scheduledTime - 10.2) < 1e-10,
   );
   assert.equal(joinedUpdate.snapshot.squeeze, 1);
   assert.equal(joinedUpdate.snapshot.bend, 0.25);
@@ -143,7 +143,7 @@ test("rapid leave and rejoin creates a fresh generation immune to the old queued
   assert.notEqual(starts[0].voiceId, starts[1].voiceId);
   assert.ok(harness.calls.some((call) => call.kind === "cancel" && call.voiceId === oldVoiceId));
   assert.ok(harness.releasesFor("honk-b").some(
-    (call) => call.voiceId === starts[1].voiceId && call.scheduledTime === 10.08,
+    (call) => call.voiceId === starts[1].voiceId && Math.abs(call.scheduledTime - 10.08) < 1e-10,
   ));
 });
 
@@ -310,7 +310,11 @@ test("controller cancellation reaches the Honk voice service and invalidates asy
   looper.looperData.timeline.finalizeDuration();
   looper.looperData.timeline.durationMs = 1000;
   looper.looperData.hasRecording = true;
-  controller.startPlayback(looper, wallNow);
+  audioNow -= 0.2;
+      controller.startPlayback(looper, wallNow - 200);
+      audioNow += 0.2;
+      controller.updateClockedTransports([looper], wallNow);
+      controller.schedulePlaybackAudioForLooper(looper, wallNow);
   controller.stopAudioScheduler(looper, { release: false });
   assert.equal(followerService.startingVoices.size, 1);
 
@@ -358,7 +362,7 @@ test("mid-note join reconstructs remaining work at the changed playback rate", (
   });
 
   assert.equal(harness.startsFor("honk-b").length, 1);
-  assert.equal(harness.startsFor("honk-b")[0].scheduledTime, 10.2);
+  assert.ok(Math.abs(harness.startsFor("honk-b")[0].scheduledTime - 10.2) < 1e-10);
   assert.equal(harness.releasesFor("honk-b").length, 1);
   assert.equal(harness.releasesFor("honk-b")[0].scheduledTime, 10.35);
   assert.equal(harness.startsFor("honk-a").length, 1);
@@ -450,7 +454,11 @@ function createHarness({
     looper,
     calls,
     start() {
-      controller.startPlayback(looper, wallNow);
+      audioNow -= 0.2;
+      controller.startPlayback(looper, wallNow - 200);
+      audioNow += 0.2;
+      controller.updateClockedTransports([looper], wallNow);
+      controller.schedulePlaybackAudioForLooper(looper, wallNow);
       controller.stopAudioScheduler(looper, { release: false });
     },
     advance(nextWallMs) {

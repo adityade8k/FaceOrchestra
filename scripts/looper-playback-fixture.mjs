@@ -54,7 +54,7 @@ export function createPlaybackFixture(Controller, Graph, {
     controller, graph, looper, counts, calls,
     setTime(ms) { audioNow = 10 + ms / 1000; },
     resetCounts() { for (const key of Object.keys(counts)) counts[key] = 0; calls.length = 0; },
-    start() { controller.startPlayback(looper, 0); controller.stopAudioScheduler(looper, { release: false }); },
+    start() { audioNow=9.8; controller.startPlayback(looper, -200); audioNow=10; controller.updateClockedTransports([looper], 0); controller.schedulePlaybackAudioForLooper(looper, 0); controller.stopAudioScheduler(looper, { release: false }); },
     join(count = 8, sourceIndex = null) {
       for (let i = 0; i < count; i += 1) {
         for (let track = 0; track < tracks; track += 1) {

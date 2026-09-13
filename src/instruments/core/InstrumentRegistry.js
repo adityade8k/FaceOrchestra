@@ -1,5 +1,6 @@
 import { INSTRUMENT_CAPABILITIES } from "./capabilities.js";
 import { INSTRUMENT_LIFECYCLE } from "./InstrumentEntity.js";
+import { InstrumentAdmissionPolicy } from './InstrumentAdmissionPolicy.js';
 
 export class InstrumentRegistry {
   constructor() {
@@ -7,6 +8,7 @@ export class InstrumentRegistry {
     this.idsByKind = new Map();
     this.idByRoot = new WeakMap();
     this.listeners = new Set();
+    this.admission = new InstrumentAdmissionPolicy(this);
   }
 
   add(instrument, { initialize = true } = {}) {
@@ -19,6 +21,10 @@ export class InstrumentRegistry {
     const rootOwner = this.idByRoot.get(instrument.root);
     if (rootOwner) {
       throw new Error(`Instrument root is already registered to: ${rootOwner}`);
+    }
+    if (!this.admission.admit(instrument)) {
+      instrument.dispose?.();
+      return null;
     }
 
     this.instruments.set(instrument.id, instrument);

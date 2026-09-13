@@ -39,6 +39,23 @@ export const HonkPresentationRuntimeMethods = {
       state.handleRig?.setValue("bpm", state.bpm);
       state.handleRig?.setValue("volume", state.volume);
     },
+    updateLooperTempoLabel(state, now = performance.now()) {
+      if (!state?.looperController || typeof document === 'undefined') return;
+      if (!state.tempoLabel) {
+        const canvas=document.createElement('canvas');canvas.width=640;canvas.height=80;
+        const texture=new THREE.CanvasTexture(canvas);
+        const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false}));
+        sprite.userData.isNoteLabel=true;sprite.scale.set(0.5,0.0625,1);sprite.position.set(0,0.34,0);
+        sprite.material.userData.disposeOnInstrumentDelete=true;
+        state.root.add(sprite);state.tempoLabel={canvas,texture,sprite,text:null};
+      }
+      const timing=state.looperController.getTimingForLooper(state,now);
+      const text=timing.connected ? `${timing.bpm} BPM${timing.active?'':' · Paused'}` : `${timing.bpm} BPM · Internal`;
+      if(state.tempoLabel.text===text)return;
+      const {canvas,texture}=state.tempoLabel,ctx=canvas.getContext('2d');
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff4dd';ctx.font='bold 40px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,320,40);
+      texture.needsUpdate=true;state.tempoLabel.text=text;
+    },
     createMetronomeLabel(state) {
       if (state?.kind !== "metronome") return;
       const settings = METRONOME_LABEL_SETTINGS;

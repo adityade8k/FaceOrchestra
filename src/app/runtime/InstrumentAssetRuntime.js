@@ -273,110 +273,121 @@ export const InstrumentAssetRuntimeMethods = {
       console.warn(`Cannot spawn component "${componentId}": its template is not loaded.`);
       return null;
     }
-    const root = cloneSkeletonAware(componentOption.template);
     const kind = componentOption.kind;
-    root.name = options.name || `${componentOption.label || kind}_${this.instrumentRegistry.size + 1}`;
-    root.visible = true;
-    root.userData.componentId = componentOption.id;
-    if (kind === METRONOME_COMPONENT_ID) applyMetronomeSpawnOrientation(root);
-    this.scene.add(root);
+    const reservation = this.instrumentRegistry.admission?.reserve(kind);
+    if (this.instrumentRegistry.admission && !reservation) return null;
+    let root;
+    try {
+      root = cloneSkeletonAware(componentOption.template);
+      root.name = options.name || `${componentOption.label || kind}_${this.instrumentRegistry.size + 1}`;
+      root.visible = true;
+      root.userData.componentId = componentOption.id;
+      if (kind === METRONOME_COMPONENT_ID) applyMetronomeSpawnOrientation(root);
+      this.scene.add(root);
 
-    let honkVisualRoot = null;
-    if (kind === "honk") {
-      honkVisualRoot = new THREE.Group();
-      honkVisualRoot.name = "HonkPresentation";
-      // Keep the authored subtree (including any bones) intact under one identity transform.
-      honkVisualRoot.add(...root.children.slice());
-      root.add(honkVisualRoot);
-    }
-    let hitTargets = collectNamedHitTargets(root);
-    let domainTargets = {};
-    let handleRig = null;
-    let buttonRig = null;
-    let pendulumRig = null;
-    if (kind === "honk") {
-      const created = this.honkColliderFactory.create(root);
-      domainTargets = created.targets;
-      hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
-      hitTargets[INTERACTION_TARGET_NAMES.body] = domainTargets[HONK_INTERACTION_ROLES.body];
-    } else if (kind === "metronome") {
-      const created = this.metronomeColliderFactory.create(root);
-      domainTargets = created.targets;
-      handleRig = created.handleRig;
-      buttonRig = created.buttonRig;
-      pendulumRig = new MetronomePendulumRig({ THREE, root });
-      hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
-      hitTargets[INTERACTION_TARGET_NAMES.body] = domainTargets[METRONOME_INTERACTION_ROLES.body];
-    } else {
-      this.createLooperColliders(root, hitTargets);
-      this.createBodyGripTarget(root, hitTargets);
-    }
-
-    const morphMeshes = findMorphMeshes(root);
-    const state = this.instrumentFactory.create({
-      kind,
-      register: false,
-      id: options.id,
-      root,
-      targets: domainTargets,
-      hitTargets,
-      morphController: new MorphTargetController(root, {
-        warnMissingExpectedMorphs: kind === "honk" && this.hasExpectedHonkMorphs(morphMeshes),
-      }),
-      tuning: options.tuning || {},
-      bpm: options.bpm,
-      volume: options.volume,
-      handleRig,
-      buttonRig,
-      pendulumRig,
-      componentId: componentOption.id,
-    });
-
-    state.honkVisualRoot = honkVisualRoot;
-    // Body grip uses the authored meshes. Ray intersections must retain the
-    // authoritative pose even while these meshes display an eased release.
-    honkVisualRoot?.traverse((mesh) => {
-      if (!mesh.isMesh || !mesh.raycast) return;
-      const raycast = mesh.raycast;
-      mesh.raycast = function (...args) {
-        return state.withInteractionPose(() => raycast.apply(this, args));
-      };
-    });
-    decorateInstrumentEntity(state, {
-      componentOption,
-      hitTargets,
-      morphMeshes,
-      baseScale: this.getRootUniformScale(root),
-    });
-
-    if (kind === "looper") {
-      for (const target of Object.values(hitTargets)) {
-        state.registerInteractionTarget(getInteractionRole(kind, target), target);
+      let honkVisualRoot = null;
+      if (kind === "honk") {
+        honkVisualRoot = new THREE.Group();
+        honkVisualRoot.name = "HonkPresentation";
+        // Keep the authored subtree (including any bones) intact under one identity transform.
+        honkVisualRoot.add(...root.children.slice());
+        root.add(honkVisualRoot);
       }
-    } else {
-      for (const [role, target] of Object.entries(domainTargets)) {
-        applyTargetPresentationFlags(role, target);
+      let hitTargets = collectNamedHitTargets(root);
+      let domainTargets = {};
+      let handleRig = null;
+      let buttonRig = null;
+      let pendulumRig = null;
+      if (kind === "honk") {
+        const created = this.honkColliderFactory.create(root);
+        domainTargets = created.targets;
+        hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
+        hitTargets[INTERACTION_TARGET_NAMES.body] = domainTargets[HONK_INTERACTION_ROLES.body];
+      } else if (kind === "metronome") {
+        const created = this.metronomeColliderFactory.create(root);
+        domainTargets = created.targets;
+        handleRig = created.handleRig;
+        buttonRig = created.buttonRig;
+        pendulumRig = new MetronomePendulumRig({ THREE, root });
+        hitTargets = Object.fromEntries(Object.values(domainTargets).map((target) => [target.name, target]));
+        hitTargets[INTERACTION_TARGET_NAMES.body] = domainTargets[METRONOME_INTERACTION_ROLES.body];
+      } else {
+        this.createLooperColliders(root, hitTargets);
+        this.createBodyGripTarget(root, hitTargets);
       }
-    }
 
-    this.instrumentRegistry.add(state);
-    state.attachTo(this.scene);
-    if (kind === "honk") {
-      this.initializeInstrumentState(state);
-      this.createNoteLabel(state);
-    } else if (kind === "looper") {
-      this.initializeLooperState(state);
-    } else if (kind === "metronome") {
-      state.handleRig?.setValue("bpm", state.bpm);
-      state.handleRig?.setValue("volume", state.volume);
-      this.createMetronomeLabel(state);
+      const morphMeshes = findMorphMeshes(root);
+      const state = this.instrumentFactory.create({
+        kind,
+        register: false,
+        creationReservation: reservation,
+        id: options.id,
+        root,
+        targets: domainTargets,
+        hitTargets,
+        morphController: new MorphTargetController(root, {
+          warnMissingExpectedMorphs: kind === "honk" && this.hasExpectedHonkMorphs(morphMeshes),
+        }),
+        tuning: options.tuning || {},
+        bpm: options.bpm,
+        volume: options.volume,
+        handleRig,
+        buttonRig,
+        pendulumRig,
+        componentId: componentOption.id,
+      });
+
+      state.honkVisualRoot = honkVisualRoot;
+      // Body grip uses the authored meshes. Ray intersections must retain the
+      // authoritative pose even while these meshes display an eased release.
+      honkVisualRoot?.traverse((mesh) => {
+        if (!mesh.isMesh || !mesh.raycast) return;
+        const raycast = mesh.raycast;
+        mesh.raycast = function (...args) {
+          return state.withInteractionPose(() => raycast.apply(this, args));
+        };
+      });
+      decorateInstrumentEntity(state, {
+        componentOption,
+        hitTargets,
+        morphMeshes,
+        baseScale: this.getRootUniformScale(root),
+      });
+
+      if (kind === "looper") {
+        for (const target of Object.values(hitTargets)) {
+          state.registerInteractionTarget(getInteractionRole(kind, target), target);
+        }
+      } else {
+        for (const [role, target] of Object.entries(domainTargets)) {
+          applyTargetPresentationFlags(role, target);
+        }
+      }
+
+      if (!state || !this.instrumentRegistry.add(state)) { root.removeFromParent(); return null; }
+      state.attachTo(this.scene);
+      if (kind === "honk") {
+        this.initializeInstrumentState(state);
+        this.createNoteLabel(state);
+      } else if (kind === "looper") {
+        this.initializeLooperState(state);
+      } else if (kind === "metronome") {
+        state.handleRig?.setValue("bpm", state.bpm);
+        state.handleRig?.setValue("volume", state.volume);
+        this.createMetronomeLabel(state);
+      }
+      this.activeInstrumentState = state;
+      this.setInstrumentBaseScale(
+        state,
+        options.baseScale ?? (kind === "metronome" ? METRONOME_SETTINGS.baseScale : INSTRUMENT_BASE_SCALE),
+      );
+      return root;
+    } catch (error) {
+      root?.removeFromParent();
+      throw error;
+    } finally {
+      this.instrumentRegistry.admission?.release(reservation);
     }
-    this.activeInstrumentState = state;
-    this.setInstrumentBaseScale(
-      state,
-      options.baseScale ?? (kind === "metronome" ? METRONOME_SETTINGS.baseScale : INSTRUMENT_BASE_SCALE),
-    );
-    return root;
   },
 };
 

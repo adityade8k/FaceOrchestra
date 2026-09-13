@@ -3,7 +3,7 @@ import { TutorialAdapter } from './TutorialAdapter.js';
 import { TutorialSession } from './TutorialSession.js';
 import { TutorialPanel } from './TutorialPanel.js';
 import { CompositionConductor } from './CompositionConductor.js';
-import { COMPOSITION as C, describeNote } from './composition.js';
+import { COMPOSITION as C, describeNote, TUTORIAL_LOOPERS } from './composition.js';
 import { expectedForStep } from './validation.js';
 
 export class TutorialRuntime {
@@ -65,9 +65,11 @@ export class TutorialRuntime {
     else if(id==='place')this.adapter.place();
     else if(id==='cancel')this.r.deletePendingSpawnPlacement();
     else if(id==='count-in') {
-      if(step.type==='record'&&!this.adapter.get('looper')?.transport.recordArmed){this.uiFeedback='Press Record first to arm the take.';return;}
+      if(step.type==='record'&&!this.adapter.get(step.looperRole)?.transport.recordArmed){this.uiFeedback='Press Record first to arm the take.';return;}
       const phrase=['phrase','performance'].includes(step.type);
-      const anchor=this.adapter.nextBoundary(now,phrase?16:1,4);
+      if(phrase && !this.adapter.snapshot(now).aligned) {this.uiFeedback='Use Start All to align both recorded parts, then Count in.';return;}
+      const accompany=step.type==='record' && step.looperRole==='percussionLooper' && this.adapter.get('chordLooper')?.transport.playing;
+      const anchor=this.adapter.nextBoundary(now,phrase || accompany?16:1,4);
       if(anchor!==null)this.session.startCountIn(anchor,this.adapter.get('metronome').getBeatTiming(now).beatIntervalMs);else this.uiFeedback='Start the Metronome before counting in.';
     } else this.adapter.command(id,now,'learner');
     this.lastDraw=-Infinity;
@@ -98,7 +100,11 @@ export class TutorialRuntime {
       if(this.freePlayScene) {
         this.adapter.clear();
         const restored=await this.r.sceneRestorer.restore(this.freePlayScene);
-        if(restored.skipped.length) throw new Error(`Could not restore ${restored.skipped.length} free-play instruments.`);
+        if(restored.skipped.length) {
+          this.recoveryScene=structuredClone(this.freePlayScene);
+          this.r.scenePersistence.restoreReport=restored;
+          this.r.showRuntimeFeedback(`Scene recovery: ${restored.skipped.length} skipped objects, ${restored.skippedConnections?.length || 0} affected clock connections. Original preserved.`);
+        }
         this.freePlayScene=null;
       }
       if(firstPlay&&this.r.xrSessionActive)this.r.spawnDefaultInstrumentPreview();
@@ -112,7 +118,7 @@ export class TutorialRuntime {
     const step=this.session?.step;
     if(!step)return;
     const recording=['record','finalize'].includes(step.type);
-    if(recording)this.adapter.get('looper')?.clearRecording();
+    if(recording)this.adapter.get(step.looperRole)?.clearRecording();
     this.session.retry(now,{recording});
     if(['performance','phrase'].includes(step.type) && !this.adapter.get('metronome')?.playing) this.adapter.command('tempo',now,this.session.origin);
     if(this.conductor){this.conductor.stepId=null;this.conductor.lastNow=now;this.conductor.paused=false;}
@@ -122,19 +128,26 @@ export class TutorialRuntime {
     if(!this.session||this.session.mode!=='practice'||this.session.complete)return;
     this.stopDemo();this.adapter.releaseAll();
     const step=this.session.step;
-    if(!['note','strike','chords','drums','phrase','performance'].includes(step.type)) {
-      this.adapter.focus(step.role || (step.type==='clock-wire'?'metronome':'looper'));
+    if(!['note','strike','chords','drums','phrase','performance','record'].includes(step.type)) {
+      this.adapter.focus(step.role || (step.type==='clock-wire'?'metronome':step.looperRole || 'chordLooper'));
       this.uiFeedback=`Watch the outlined target. ${step.instruction}`;this.render(now);return;
     }
     this.session.retry(now);
-    const session=new TutorialSession({mode:'demonstration',origin:'demonstration',now,steps:[step]});
+    const recordDemo=step.type==='record';
+    const demoSteps=recordDemo ? this.session.steps.filter(s=>s.looperRole===step.looperRole&&['record','finalize','playback'].includes(s.type)) : [step];
+    const savedTakes=recordDemo ? Object.fromEntries(TUTORIAL_LOOPERS.map(l=>[l.role,this.adapter.get(l.role).looperController.serializeState(this.adapter.get(l.role))])) : null;
+    const session=new TutorialSession({mode:'demonstration',origin:'demonstration',now,steps:demoSteps});
     this.adapter.setVirtualsActive(true,'demonstration');
-    this.demo={session,conductor:new CompositionConductor(this.adapter,session,{origin:'demonstration',demonstration:true})};
+    this.demo={session,savedTakes,conductor:new CompositionConductor(this.adapter,session,{origin:'demonstration',demonstration:true})};
     this.uiFeedback='Watch the virtual hands. Demonstrations do not earn practice credit.';
   }
   stopDemo() {
     if(!this.demo)return;
-    this.demo.conductor.stop();this.demo=null;
+    this.demo.conductor.stop();
+    if(this.demo.savedTakes) for(const [role,saved] of Object.entries(this.demo.savedTakes)) {
+      const looper=this.adapter.get(role);looper?.looperController.restoreState(looper,saved,{preserveConnections:true});
+    }
+    this.demo=null;
     this.adapter.setVirtualsActive(this.session?.mode==='simulation',this.session?.origin||'simulation');
     if(this.session?.mode==='practice'){this.session.retry(performance.now());this.uiFeedback='Your turn. Repeat the demonstrated action.';}
   }
@@ -152,6 +165,7 @@ export class TutorialRuntime {
     if(!this.ready||this.busy||this.disposed)return;
     if(this.session) {
       this.adapter.observe(now);const snapshot=this.adapter.snapshot(now);
+      if(snapshot.aligned) this.alignmentEvidence={atMs:now,loopers:snapshot.loopers.chordLooper.startBeat,phaseDifference:Math.abs(snapshot.loopers.chordLooper.phase-snapshot.loopers.percussionLooper.phase)};
       if(this.demo) {
         this.demo.session.update(snapshot,now);
         if(this.demo.session.complete||this.demo.session.failed||this.demo.conductor.paused)this.stopDemo();
@@ -165,7 +179,9 @@ export class TutorialRuntime {
         if(this.session.complete&&!this.report) {
           this.conductor?.stop();this.adapter.releaseAll();this.adapter.stopSound();
           this.report={...this.session.exportProgress(),durationSeconds:this.conductor?this.conductor.elapsedMs/1000:null,
-            take:this.adapter.finalTimeline,liveTake:this.session.takeEvidence,audioState:this.r.audioSystem.audioContextService.context?.state};
+            takes:this.adapter.takes,liveTakes:this.session.takeEvidence,
+            launches:Object.fromEntries(TUTORIAL_LOOPERS.map(l=>[l.role,[...(this.adapter.get(l.role)?.looperData.launchHistory || [])]])),
+            startAll:this.adapter.startAllRequest,alignment:this.alignmentEvidence,audioState:this.r.audioSystem.audioContextService.context?.state};
           if(this.session.mode==='practice')this.practiceProgress=this.session.exportProgress();else this.simulationProgress=this.session.exportProgress();
         }
       }
@@ -212,7 +228,7 @@ export class TutorialRuntime {
     const b=(id,label,disabled=false)=>({id,label,disabled});
     let model;
     if(this.screen==='launch') model={title:'Honk Orchestra',instruction:'Play freely, or learn to build and perform an original composition with guided practice.',actions:[b('play','Play'),b('tutorial','Tutorial')]};
-    else if(this.screen==='tutorial') model={title:C.title,instruction:'An original Jog-inspired study. Build a 16-beat accompaniment, then learn the melody and descending glides. Simulation uses visible virtual hands and the same instruments.',feedback:'Enable sound with the button below. Simulation performs the whole piece in about two minutes. Practice includes individual drills.',actions:[b('practice','Start Practice'),b('simulate','Simulate Composition'),b('back','Back')]};
+    else if(this.screen==='tutorial') model={title:C.title,instruction:'An original Jog-inspired study. Build a 16-beat accompaniment, then learn the melody and descending glides. Simulation uses visible virtual hands and the same instruments.',feedback:'Enable sound with the button below. Simulation records two separate takes and performs the whole piece; allow several minutes. Practice includes individual drills.',actions:[b('practice','Start Practice'),b('simulate','Simulate Composition'),b('back','Back')]};
     else if(this.screen==='play') model={title:'Free play',instruction:'In XR: hold A to choose an instrument; roll and pull to choose an item. Release A to preview; Trigger places. Aim at the yellow sphere and squeeze. Grip in empty space equips a stick.',actions:[b('tutorial','Tutorial'),b('free-honk','Spawn Honk'),...(this.r.pendingSpawnPlacement?[b('place','Place')]:[])]};
     else if(this.session?.complete) model={title:'Study complete',instruction:'You built the backing and performed A, B, A, C, B, D.',feedback:this.report?.durationSeconds?`Simulation: ${this.report.durationSeconds.toFixed(1)} seconds, including setup and recording.`:'All actions validated.',actions:[b('retry-composition','Retry Composition'),b('return-play','Return to Play')]};
     else if(this.session) {
@@ -239,12 +255,16 @@ export class TutorialRuntime {
         if(['stick','strike','drums','record','chords'].includes(step.type))actions.push(b('swap','Swap hands'));
         actions.push(b('demo','Demonstrate',Boolean(this.demo)),b('retry','Retry'));
       }
+      if(!simulation && step.id!=='start-all') actions.push(b('start-all','Start All'));
       actions.push(b('recenter','Recenter'),b('exit','Exit'));
       model={title:step.title,instruction:step.instruction,target,
         progress:`${simulation?'Simulation':'Practice'} · ${s.index+1}/${s.steps.length} · Attempt ${s.attempt}`,
-        feedback:this.uiFeedback||s.feedback,actions};
+        feedback:TUTORIAL_LOOPERS.every(l=>this.adapter.get(l.role)?.looperData.playArmed) ? 'Starting both on the next beat' : this.uiFeedback||s.feedback,actions};
     }
-    if(model)this.panel.render({visible:true,...model});
+    if(model) {
+      if(this.uiFeedback && !this.session) model.feedback=this.uiFeedback;
+      this.panel.render({visible:true,...model});
+    }
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.conductor?.stop();this.stopDemo();

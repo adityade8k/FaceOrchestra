@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { ShakeDetector } from "../../xr/ShakeDetector.js";
+import { resolveShakeTarget, disconnectShakenTarget } from '../../xr/shakeDisconnect.js';
 import { DEBUG_MODE } from "../../config/debug.js";
 import {
   HONK_CONNECTION_TARGET_NAME,
@@ -24,9 +26,7 @@ const tempLooperCurrentQuaternion = new THREE.Quaternion();
 const tempLooperDeltaQuaternion = new THREE.Quaternion();
 const tempLooperPreviousPosition = new THREE.Vector3();
 const tempLooperPreviousQuaternion = new THREE.Quaternion();
-const tempShakeBounds = new THREE.Box3();
 const tempShakePosition = new THREE.Vector3();
-const tempShakeRange = new THREE.Vector3();
 const tempWireEnd = new THREE.Vector3();
 const tempWireEndTangent = new THREE.Vector3();
 const tempWireStart = new THREE.Vector3();
@@ -106,59 +106,39 @@ export const LooperConnectionRuntimeMethods = {
     },
     updateShakeDisconnect(now = performance.now()) {
       const settings = LOOPER_SHAKE_DISCONNECT_SETTINGS;
-      if (!settings?.enabled) {
-        return;
-      }
-  
       for (const controller of this.controllers) {
-        const controllerState = this.controllerStates.get(controller);
-        const honkState = this.getShakeDisconnectHonkState(controllerState);
-        if (!honkState) {
-          this.resetShakeDisconnectTracking(controllerState);
+        const state = this.controllerStates.get(controller);
+        if (!state) continue;
+        const target = this.getShakeDisconnectTarget(state);
+        if (!settings.enabled || !target || this.pendingSpawnPlacement || state.shakeSessionMode !== this.sessionMode) {
+          this.resetShakeDisconnectTracking(state);
+          state.shakeSessionMode = this.sessionMode;
           continue;
         }
-  
-        const connections = this.getLooperConnectionsForHonk(honkState);
-        if (connections.length === 0) {
-          this.resetShakeDisconnectTracking(controllerState);
-          continue;
+        if (now < (state.shakeDisconnectCooldownUntilMs || 0)) continue;
+        const clock = target.kind === 'looper' && this.metronomeConnectionManager.getConnectionForTarget('looper', target.id);
+        const honkConnections = target.kind === 'honk' ? this.getLooperConnectionsForHonk(target) : [];
+        if (!clock && !honkConnections.length) { this.resetShakeDisconnectTracking(state); continue; }
+        if (state.shakeDisconnectTargetState !== target) {
+          this.resetShakeDisconnectTracking(state);
+          state.shakeDisconnectTargetState = target;
         }
-  
-        if (now < (controllerState.shakeDisconnectCooldownUntilMs || 0)) {
-          continue;
-        }
-  
-        this.recordShakeDisconnectSample(controllerState, honkState, now);
-        if (!this.isShakeDisconnectTriggered(controllerState, settings, now)) {
-          continue;
-        }
-  
-        for (const { looperState, track } of connections) {
-          this.disconnectLooperTrack(looperState, track.index);
-        }
-        controllerState.shakeDisconnectCooldownUntilMs = now + Math.max(settings.cooldownMs || 0, 0);
-        this.resetShakeDisconnectTracking(controllerState);
+        state.shakeDetector ||= new ShakeDetector(settings);
+        target.root.updateMatrixWorld(true);
+        target.root.getWorldPosition(tempShakePosition);
+        if (!state.shakeDetector.sample(tempShakePosition, now)) continue;
+        if (!disconnectShakenTarget(this, target)) continue;
+        this.showRuntimeFeedback?.(clock ? 'Clock disconnected. Recording retained · 70 BPM · Internal' : 'Honk disconnected from its looper tracks. Recordings retained.');
+        state.shakeDisconnectCooldownUntilMs = now + settings.cooldownMs;
+        this.resetShakeDisconnectTracking(state);
       }
     },
-    getShakeDisconnectHonkState(controllerState) {
-      if (!controllerState?.gripHeld) {
-        return null;
-      }
-  
-      const sourceState = controllerState.gripSourceInstrumentState;
-      if (this.isShakeDisconnectHonkState(sourceState)) {
-        return sourceState;
-      }
-  
-      const gripState = controllerState.gripInstrumentState;
-      if (this.isShakeDisconnectHonkState(gripState)) {
-        return gripState;
-      }
-  
-      return null;
+    getShakeDisconnectTarget(state) {
+      return resolveShakeTarget(state);
     },
-    isShakeDisconnectHonkState(state) {
-      return Boolean(this.isLooperConnectableHonk(state) && !state.pendingPlacement);
+    getShakeDisconnectHonkState(state) {
+      const target = this.getShakeDisconnectTarget(state);
+      return target?.kind === 'honk' ? target : null;
     },
     isLooperConnectableHonk(honkState) {
       return Boolean(
@@ -189,89 +169,10 @@ export const LooperConnectionRuntimeMethods = {
       }
       return connections;
     },
-    recordShakeDisconnectSample(controllerState, honkState, now) {
-      if (controllerState.shakeDisconnectTargetState !== honkState) {
-        this.resetShakeDisconnectTracking(controllerState);
-        controllerState.shakeDisconnectTargetState = honkState;
-      }
-  
-      if (!controllerState.shakeDisconnectSamples) {
-        controllerState.shakeDisconnectSamples = [];
-      }
-      if (!controllerState.shakeDisconnectLastPosition) {
-        controllerState.shakeDisconnectLastPosition = new THREE.Vector3();
-      }
-  
-      honkState.root.updateMatrixWorld(true);
-      honkState.root.getWorldPosition(tempShakePosition);
-  
-      const samples = controllerState.shakeDisconnectSamples;
-      if (!controllerState.shakeDisconnectHasLastPosition) {
-        controllerState.shakeDisconnectLastPosition.copy(tempShakePosition);
-        controllerState.shakeDisconnectLastSampleTime = now;
-        controllerState.shakeDisconnectHasLastPosition = true;
-        samples.push({ time: now, position: tempShakePosition.clone(), velocity: 0 });
-        return;
-      }
-  
-      const elapsedSeconds = Math.max((now - controllerState.shakeDisconnectLastSampleTime) / 1000, 0.0001);
-      const velocity = tempShakePosition.distanceTo(controllerState.shakeDisconnectLastPosition) / elapsedSeconds;
-      samples.push({ time: now, position: tempShakePosition.clone(), velocity });
-      controllerState.shakeDisconnectLastPosition.copy(tempShakePosition);
-      controllerState.shakeDisconnectLastSampleTime = now;
-  
-      const durationMs = Math.max(LOOPER_SHAKE_DISCONNECT_SETTINGS.durationMs || 0, 0);
-      if (durationMs > 0) {
-        const oldestAllowedTime = now - durationMs;
-        while (samples.length > 0 && samples[0].time < oldestAllowedTime) {
-          samples.shift();
-        }
-      } else {
-        while (samples.length > 2) {
-          samples.shift();
-        }
-      }
-    },
-    isShakeDisconnectTriggered(controllerState, settings, now) {
-      const samples = controllerState.shakeDisconnectSamples || [];
-      if (samples.length < 2) {
-        return false;
-      }
-  
-      const durationMs = Math.max(settings.durationMs || 0, 0);
-      const elapsedMs = samples[samples.length - 1].time - samples[0].time;
-      if (elapsedMs < durationMs) {
-        return false;
-      }
-  
-      let velocitySum = 0;
-      for (const sample of samples) {
-        velocitySum += sample.velocity || 0;
-      }
-      const averageVelocity = velocitySum / Math.max(samples.length - 1, 1);
-      if (averageVelocity < Math.max(settings.intensity || 0, 0)) {
-        return false;
-      }
-  
-      tempShakeBounds.makeEmpty();
-      for (const sample of samples) {
-        tempShakeBounds.expandByPoint(sample.position);
-      }
-      tempShakeBounds.getSize(tempShakeRange);
-      const range = tempShakeRange.length();
-      return range >= Math.max(settings.range || 0, 0);
-    },
-    resetShakeDisconnectTracking(controllerState) {
-      if (!controllerState) {
-        return;
-      }
-  
-      controllerState.shakeDisconnectTargetState = null;
-      controllerState.shakeDisconnectHasLastPosition = false;
-      controllerState.shakeDisconnectLastSampleTime = 0;
-      if (controllerState.shakeDisconnectSamples) {
-        controllerState.shakeDisconnectSamples.length = 0;
-      }
+    resetShakeDisconnectTracking(state) {
+      if (!state) return;
+      state.shakeDisconnectTargetState = null;
+      state.shakeDetector?.reset();
     },
     updateLooperFollowerTransforms() {
       for (const looperState of this.instrumentStates) {

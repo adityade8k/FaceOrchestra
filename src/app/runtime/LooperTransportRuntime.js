@@ -87,7 +87,7 @@ export const LooperTransportRuntimeMethods = {
         looperState.hitTargets[getLooperButtonName("play")]?.userData.looperMorphName,
       );
     },
-    pressLooperButton(looperState, action, morphName = null) {
+    pressLooperButton(looperState, action, morphName = null, now = performance.now()) {
       if (!this.isLooperRuntimeState(looperState)) {
         return;
       }
@@ -95,7 +95,7 @@ export const LooperTransportRuntimeMethods = {
       if (action === "record") {
         this.setLooperButtonMorph(looperState, "record", 1, morphName);
         this.setLooperButtonMorph(looperState, "play", 0);
-        this.startRecording(looperState);
+        this.startRecording(looperState, now);
         this.updateLooperVisuals(looperState);
         return;
       }
@@ -112,7 +112,7 @@ export const LooperTransportRuntimeMethods = {
         if (wasIdle) {
           this.clearRecording(looperState);
         } else {
-          this.stopRecording(looperState);
+          this.stopRecording(looperState, now);
           this.stopPlayback(looperState);
         }
         this.updateLooperVisuals(looperState);
@@ -121,7 +121,7 @@ export const LooperTransportRuntimeMethods = {
   
       if (action === "play") {
         this.setLooperButtonMorph(looperState, "record", 0);
-        const accepted = this.startPlayback(looperState);
+        const accepted = this.startPlayback(looperState, now);
         this.updateLooperVisuals(looperState);
         // A rejected Play (for example, before anything is recorded) still
         // needs to show the physical button press instead of being reset in
@@ -136,7 +136,7 @@ export const LooperTransportRuntimeMethods = {
       if (action === "pause") {
         this.triggerLooperButtonMorph(looperState, "pause", performance.now(), morphName);
         this.setLooperButtonMorph(looperState, "play", 0);
-        this.pausePlayback(looperState);
+        this.pausePlayback(looperState, now);
         this.updateLooperVisuals(looperState);
       }
     },
@@ -444,6 +444,7 @@ export const LooperTransportRuntimeMethods = {
     updateClockedLooperTransports(now = performance.now()) {
       for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
         controller.updateClockedTransports([looperState], now);
+        this.updateLooperTempoLabel?.(looperState, now);
       }
     },
     updateLooperPlayback(now = performance.now()) {

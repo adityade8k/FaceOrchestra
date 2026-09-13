@@ -24,25 +24,37 @@ export class InstrumentFactory {
     return this.creators.has(kind);
   }
 
-  create({ kind, register = true, ...options } = {}) {
+  create({ kind, register = true, creationReservation = null, ...options } = {}) {
     assertInstrumentKind(kind);
     const creator = this.creators.get(kind);
     if (!creator) {
       throw new Error(`No instrument creator registered for kind: ${kind}`);
     }
 
-    const instrument = creator({
-      ...options,
-      kind,
-      interactionTargetRegistry: options.interactionTargetRegistry || this.interactionTargetRegistry,
-    });
-    if (!instrument || instrument.kind !== kind) {
-      throw new Error(`Creator for ${kind} did not return a matching instrument.`);
+    const policy = this.registry?.admission;
+    const reservation = policy?.reserve(kind, creationReservation);
+    if (policy && !reservation) return null;
+    let instrument;
+    try {
+      instrument = creator({
+        ...options,
+        kind,
+        interactionTargetRegistry: options.interactionTargetRegistry || this.interactionTargetRegistry,
+      });
+      if (!instrument || instrument.kind !== kind) {
+        throw new Error(`Creator for ${kind} did not return a matching instrument.`);
+      }
+      instrument.creationReservation = reservation;
+      instrument.addDisposeHandler?.(() => policy?.release(reservation));
+      if (register && this.registry) {
+        if (!this.registry.add(instrument)) return null;
+      }
+      return instrument;
+    } catch (error) {
+      policy?.release(reservation);
+      instrument?.dispose?.();
+      throw error;
     }
-    if (register && this.registry) {
-      this.registry.add(instrument);
-    }
-    return instrument;
   }
 
   createFromSerialized(serialized, options = {}) {
@@ -55,7 +67,7 @@ export class InstrumentFactory {
       id: serialized.id,
       serialized,
     });
-    instrument.restoreTransform?.(serialized.transform);
+    instrument?.restoreTransform?.(serialized.transform);
     return instrument;
   }
 }

@@ -156,20 +156,29 @@ export class HonkVoiceService {
     }
   }
 
-  cancelVoice(voiceId = "main", options = {}) {
+  cancelVoice(voiceId = 'main', options = {}) {
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
     const active = this.voices.get(voiceId);
-    this.clearVoiceVowels(active);
-    if (active?.cancel) active.cancel(options);
-    else active?.disconnect?.();
+    const voices = new Set(this.releasingVoices.get(voiceId) || []);
+    if (active) voices.add(active);
     this.voices.delete(voiceId);
-    for (const voice of this.releasingVoices.get(voiceId) || []) {
-      this.clearVoiceVowels(voice);
-      if (voice?.cancel) voice.cancel(options);
-      else voice?.disconnect?.();
-    }
     this.releasingVoices.delete(voiceId);
+    for (const voice of voices) {
+      this.clearVoiceVowels(voice);
+      if (voice?.cancel) voice.cancel(options); else voice?.disconnect?.();
+      // Keep future releases reachable by Stop/disconnect until they finish.
+      if (Number.isFinite(options.scheduledTime) && options.scheduledTime > voice.context?.currentTime) {
+        let retiring = this.releasingVoices.get(voiceId);
+        if (!retiring) this.releasingVoices.set(voiceId, retiring = new Set());
+        retiring.add(voice);
+        const timer = globalThis.setTimeout?.(() => {
+          retiring.delete(voice);
+          if (!retiring.size && this.releasingVoices.get(voiceId) === retiring) this.releasingVoices.delete(voiceId);
+        }, (options.scheduledTime-voice.context.currentTime+0.3)*1000);
+        timer?.unref?.();
+      }
+    }
   }
 
   stopVoice(voiceId, options = {}) {

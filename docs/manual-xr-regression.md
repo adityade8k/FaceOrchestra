@@ -51,7 +51,7 @@ The expected Quest-style map is:
 | Input | Expected intent |
 | --- | --- |
 | Right A press/release | Open/confirm spawn menu |
-| Grip held + Right A press | Duplicate the actively gripped Honk, Looper, or Metronome; never open the menu |
+| Grip held + Right A press | Duplicate the actively gripped Honk or Looper; reject Metronome duplication with the singleton message; never open the menu |
 | Right B press | Contextual Honk formation, Looper, or Metronome lock toggle |
 | Left X press | Delete pointed instrument |
 | Trigger press/release | Place preview or interact with the current ray target |
@@ -98,7 +98,7 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Melody duplicate and two-Honk preview** — Inspect Melody's last four positions and Still Believe's complete preview. Expected: Melody keeps `E4 F4 E6 E4`, including the intentional repeated E4, and Still Believe renders correctly as a two-Honk glass preview.
 
-- [ ] **Metronome 93 preset** — Select Metronome 93 from Presets, inspect its glass preview, place it, and inspect its BPM label and controls. Expected: one ordinary independently registered metronome is created at 93 BPM, remains paused until Play is pressed, and can be moved, scaled, connected, duplicated, deleted, and persisted like the Instruments-menu metronome.
+- [ ] **Metronome 93 preset** — Select Metronome 93 from Presets, inspect its glass preview, place it, and inspect its BPM label and controls. Expected: one independently registered metronome is created at 93 BPM, remains paused until Play is pressed, and can be moved, scaled, connected, deleted, and persisted. If a Metronome or its preview already exists, this preset and duplication show the singleton rejection message.
 
 - [ ] **Preview scale and distance controls** — For Honk, Looper, Metronome, and every scale, chord, and Presets leaf, press the right thumbstick left/right to scale the complete preview down/up, then press down/up to move it closer to/farther from the controller. Expected: each fresh axis deflection applies one step, holding a direction does not repeat, returning through the dead zone rearms that axis, diagonal input can change both properties, scale and distance clamp at their configured limits, and every preview member preserves its relative layout. Place with Trigger, then repeat and cancel with Grip; world-transform preservation, independent registration, and all-entity cancellation remain unchanged.
 
@@ -116,7 +116,7 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Repeated Metronome lock texture regression** — Before locking, photograph or inspect the authored Metronome base texture from multiple angles. Press Right B to lock/unlock the same Metronome at least ten times, including while it is running. Expected: its material and authored texture never switch to either Honk atlas, never flash a replacement map, and look identical before, during, and after every toggle.
 
-- [ ] **Metronome lock behavior freeze** — Across the repeated lock/unlock sequence, exercise Play, Pause, BPM, Volume, pendulum motion, all four ports, an existing Looper wire, an existing Honk pulse wire, Grip movement/scale, Grip+Right A duplication, radial preview placement, and deletion of the duplicate. Expected: every behavior remains unchanged; connections and wires remain attached, the original clock phase is not restarted by lock state, and the duplicate keeps its own authored Metronome texture.
+- [ ] **Metronome lock behavior** — Across repeated lock/unlock changes, exercise Play, Pause, BPM, Volume, pendulum motion, all four ports, an existing Looper wire, an existing Honk pulse wire and Grip movement/scale. Expected: connections and wires remain attached, clock phase does not restart on lock changes, and the authored texture remains intact. Duplicate and second-preview requests show the singleton rejection message without disturbing the existing clock.
 
 - [ ] **Equip stick** — Point away from instrument transform targets and hold Grip. Expected: the Stick attaches to that controller using the configured local transform, the ray hides, its strike collider activates, and it disappears/clears contacts on Grip release.
 
@@ -134,11 +134,11 @@ Use a fresh scene or leave enough space to distinguish each result. Right A open
 
 - [ ] **Duplicate Looper** — Grip an unlocked Looper, then press Right A. Expected: exactly one new Looper copies the timeline, Volume, and Gap, with its right Gap handle at the copied position. It starts stopped, unlocked, unarmed, and without copied Honk or Metronome connections, wires, automation, or voices.
 
-- [ ] **Duplicate Metronome** — Grip an unlocked Metronome, then press Right A. Expected: the duplicate copies BPM, Volume, transform, and scale but starts stopped with no connection relationships, wires, beat origin/ordinal, or pulse voices.
+- [ ] **Reject Metronome duplication** — Grip an unlocked Metronome, then press Right A. Expected: “Only one metronome can be placed. Use the existing metronome.” The original retains its transform, controls, grip and connections; no duplicate, preview or extra registry entry appears.
 
 - [ ] Hold Grip with no duplicable transform target and press Right A. Expected: the radial menu remains disabled and no instrument or preview is created. Grip release followed by Right A opens the menu normally.
 
-- [ ] **Unrelated control/audio regression** — After the hierarchy pass, verify Left X deletion, Right B lock toggles, ordinary ray interactions, Honk audio, Looper recording/playback, and Metronome timing/controls still behave as documented. Expected: no unrelated input remapping, audio change, ray regression, or instrument-specific behavior change. Repeat Grip+A duplication for Honk, Looper, and Metronome.
+- [ ] **Unrelated control/audio regression** — After the hierarchy pass, verify Left X deletion, Right B lock toggles, ordinary ray interactions, Honk audio, Looper recording/playback, and Metronome timing/controls still behave as documented. Repeat Grip+A duplication for Honk and Looper; attempting to duplicate the Metronome must show the singleton rejection message and leave the original intact.
 
 ## 3. Transform targets
 
@@ -226,7 +226,7 @@ Use a scene containing at least one Honk and one Looper. Hold Grip away from tra
 
 ## 7. Looper connections, transport, and recording
 
-Use two Metronomes, several Loopers, and at least two Honks. Keep one Looper track visually identifiable throughout replacement and restoration.
+Use one Metronome, several Loopers, and at least two Honks. Keep one Looper track visually identifiable throughout replacement and restoration.
 
 - [ ] **Connect honk to looper** — Pull Trigger on an open track node, hold it while aiming the temporary wire at a Honk connector, then release. Expected: the track stores that Honk’s stable ID, a persistent wire appears with the track color, and both endpoints follow transforms.
 
@@ -238,7 +238,7 @@ Use two Metronomes, several Loopers, and at least two Honks. Keep one Looper tra
 
 - [ ] **Draw both Metronome connection types** — Pull Trigger on each of the four Metronome ports and move the ray before releasing. Connect one port to any Looper track node and another to a Honk connector. Expected: a temporary adaptive wire follows every frame, release creates a purple clock/pulse wire, cancellation or an invalid release removes the preview, and the Looper node’s existing track recording/`connectedHonkId` is unchanged.
 
-- [ ] **Reconnect and enforce one incoming clock** — Reconnect one source port to a new target, then connect a second Metronome to the first target. Expected: the old relationship and wire disappear exactly once, the new one replaces it, repeating the identical connection is visually idempotent, and each target has only one incoming Metronome.
+- [ ] **Reconnect and enforce one incoming clock** — Reconnect one source port to a new target, then connect a different port of the same Metronome to the first target. Expected: the old relationship and wire disappear exactly once, the new one replaces it, repeating the identical connection is visually idempotent, and each target has only one incoming Metronome.
 
 - [ ] **Move, rotate, and scale clock endpoints** — Transform both the Metronome and its target Looper/Honk through several scales and orientations. Expected: both wire endpoints and socket directions remain attached with no stale or duplicate geometry.
 
@@ -246,11 +246,11 @@ Use two Metronomes, several Loopers, and at least two Honks. Keep one Looper tra
 
 - [ ] **First-sound recording origin** — With the Metronome running, press Record just after a beat, wait several beats without performing, then squeeze a connected Honk halfway between two beats and stop later. Expected: Record remains armed until the squeeze, the recorded timeline starts at the beat immediately before that squeeze, the first note retains its within-beat offset, and none of the pre-performance wait is included. Repeat with a Stick/percussion onset and press Stop before any sound to confirm clean cancellation.
 
-- [ ] **Independent beat-quantized Looper transport** — While a linked Looper is playing, pause the Metronome between beats. Expected: clicks, pendulum motion, and direct Honk pulses stop immediately, but the Looper continues on the silent clock grid. Press the Looper’s Pause between beats; expected: it keeps playing until the next beat, then silences. Press Looper Play while the Metronome remains off; expected: it waits for the next grid beat and restarts at playhead zero. Restarting the Metronome resumes clicks on the same phase without starting, stopping, or restarting the Looper.
+- [ ] **Pause versus mute** — While both recorded Loopers play, set Metronome Volume to zero. Expected: automatic clicks stop while clock, loops and phase continue; recorded wooden taps remain audible. Pause the Metronome; expected: both connected Loopers stop safely with recordings intact. Play while the clock is paused is rejected. Start the clock and use Start All to restart both.
 
 - [ ] **Long-running drift and live BPM** — Let several linked Loopers repeat for at least ten minutes while comparing loop boundaries to clicks. Change BPM several times during playback. Expected: boundaries remain beat-aligned with no accumulating drift, phase stays continuous through BPM changes, and no Looper restarts solely because BPM changed.
 
-- [ ] **Independent Metronomes** — Run both Metronomes at distinct BPM values with different linked Loopers. Expected: each Looper follows only its wired clock; starting/stopping either Metronome has no effect on the other group.
+- [ ] **Singleton admission** — With one Metronome placed or previewed, attempt menu, preset and Grip+A creation. Expected: exact one-Metronome message, no new object/wire/geometry. Cancel/delete the original and spawn again. Restore a legacy scene containing two clocks; expected: first saved clock only, reported skipped objects/connections, untouched original save.
 
 - [ ] **Pulse a touching Honk chord per beat** — Wire a Metronome port to an isolated Honk. Expected: it visibly squeezes and sounds once per beat in addition to the normal click. While the Metronome runs, bring a second Honk into contact with the wired Honk; expected: both Honks visibly squeeze and sound on the pulse, and bending the wired Honk bends both voices while each member retains its own pitch, octave, vowel, and nose note volume. Separate them again and confirm the next pulse returns to the wired Honk alone. Low/high BPM stays discrete and a tracking/frame hitch does not produce a catch-up burst.
 
@@ -264,23 +264,23 @@ Use two Metronomes, several Loopers, and at least two Honks. Keep one Looper tra
 
 - [ ] **Delayed-Stop phrase boundary at 120 BPM** — Set a connected Metronome to 120 BPM (`B = 500 ms`) and Gap 0. Record attacks approximately 100, 1100, and 1600 ms after the launch beat, releasing normally. First press Stop around 2200 ms; repeat the same performance but wait until about 5000 ms, then repeat with a much longer wait. Expected: all takes have the same 2000 ms base/total loop, the same onset list and first-onset phase, and repeated attacks at about 2100, 3100, 3600, 4100 ms onward. Stop remains available throughout the wait and recording never ends merely because the performer is idle.
 
-- [ ] **Release tail and held-note Stop** — Repeat the phrase with a normal/smoothed release after the 2000 ms boundary, then with the final Honk still held when Stop is pressed several beats later. Expected: both base durations remain 2000 ms; the held take receives one safe release, no voice crosses the wrap, and no duplicate release, missing attack, empty track, stuck voice, or catch-up burst occurs.
+- [ ] **Release tail and held-note Stop** — Keep a final note held beyond the onset-derived boundary, then Stop. Expected: held duration is preserved with one safe release; a normal late release also extends the boundary to a whole beat. No stuck or duplicate voices.
 
 - [ ] **Exact-beat, single-note, and cross-track boundaries** — At Gap 0, record (a) one attack exactly on a beat, (b) one off-beat attack, (c) simultaneous Honk attacks on multiple tracks, (d) percussion only, and (e) mixed Honk/percussion with the final onset on a different track. Expected: the boundary is always the first beat strictly after the latest onset, never shorter than one beat, and simultaneous attacks do not add another boundary.
 
 - [ ] **Connected first-onset phase and Gap 0–4** — With a Metronome connected, record a phrase whose first onset is visibly/audibly off the launch beat. Play it at Gap 0 through Gap 4. Expected: every repetition keeps that same clock-relative within-beat first-onset offset; the base phrase never changes; Gap 0 adds no silent beat and each higher Gap step adds exactly one whole beat.
 
-- [ ] **Inferred and fallback standalone recordings** — Disconnect the clock and record a clear multi-onset 120 BPM phrase after a short Record-button pre-roll, then wait before Stop. Expected: successful inference trims the first action to time zero, removes Stop-time padding, and at Gap 0 repeats the first note on the beat immediately after the preceding phrase. Record a one-onset/non-inferable phrase separately; expected: the same ordinary pre-roll trim/content-duration fallback remains and no tempo is invented.
+- [ ] **Internal 70 BPM** — Disconnect a Looper and record a phrase after waiting. Expected: known 70 BPM source reference, genuine event offsets preserved, no Metronome spawned or click produced. Play a 16-beat take originally recorded at 80 BPM; expected: about 13.714 seconds per cycle at 70. Legacy ordinary takes with unknown source tempo retain native milliseconds.
 
 - [ ] **Delayed-Stop persistence repair** — Exit XR after making a delayed-Stop phrase, reload, and compare onset phase, base duration, Gap, playback schedule, tracks, and releases. Also load a backed-up older JSON fixture whose beat-aware `recordedDurationMs`/`durationMs` includes Stop-time padding. Expected: round-trip data remains musical-onset-derived and the older padding is repaired without moving real events.
 
-- [ ] **Standalone Play** — Disconnect the Looper clock and press Play from stopped state. Expected: recorded tracks enter playing state immediately, the head animates, and standalone behavior remains independent of any globally playing Metronome.
+- [ ] **Standalone Play** — With no clock cable, press Play just before, exactly on and just after an internal beat. Expected: restart on the strictly following beat, with the first recorded onset offset preserved. Repeated Play uses the same stable local grid.
 
 - [ ] **Stress the mix** — Play several recorded tracks, sustain multiple live Honks, and strike both percussion sounds concurrently. Expected: the shared low-pass retains useful brightness, peak limiting prevents digital crackle/clipping, and the mix remains responsive without pumping or a large loudness jump.
 
 - [ ] **Pause** — Press Pause during playback. Expected: an unconnected Looper pauses immediately. A connected Looper remains audible until the next beat-grid boundary, then its playhead stops, applied automation/action voices release, tracks stop presenting playback, and the transport reports paused.
 
-- [ ] **Standalone resume** — With no Metronome connection, resume through the intended play/resume path. Expected: playback continues from the paused position. With a clock connected, pressing Play after Pause instead arms a restart at playhead zero on the next beat.
+- [ ] **Play versus Resume** — Pause, then press Play: expected restart from recording origin on the next beat. Test the separate programmatic Resume method: expected retained source position on the next beat.
 
 - [ ] **Stop** — Press Stop while playing, paused, and recording in separate trials. Expected: transport becomes stopped, voices/layers clear, recording finalizes safely, and invalid/repeated stop does not corrupt timeline state.
 
@@ -310,7 +310,7 @@ Use disposable fixtures; do not destroy the scene intended for persistence tests
 
 ## 9. Persistence and restoration
 
-Create a deliberate fixture: two tuned Honks in a locked group, one separate unlocked touching pair, several Loopers with recorded gesture/percussion, two Metronomes, both Metronome target kinds, non-default Looper controls, and a Stick preference.
+Create a deliberate fixture: two tuned Honks in a locked group, one separate unlocked touching pair, several Loopers with recorded gesture/percussion, one Metronome, both Metronome target kinds, non-default Looper controls, and a Stick preference.
 
 - [ ] **Exit-only save** — Note the current `face-orchestra:scene:v3` value, then change instruments and relationships. Expected: storage does not change during those actions. Exit XR once; exactly one write produces plain JSON with `schemaVersion: 3`, stable instrument IDs, canonical transforms/scales, Honk state, complete Looper timelines/Volume/Gap, Metronome BPM/Volume, lock/Looper/Metronome connection IDs, and equipment preference.
 
@@ -375,3 +375,12 @@ Notes on tracking, network, audio, or certificate state:
 ```
 
 Never attach private keys, local certificate contents, authentication tokens, or unrelated local-storage data to a failure report.
+
+## Two-looper tutorial follow-up (headset checks not yet performed)
+
+- [ ] Record and listen to Chord Looper alone, then record/listen to Percussion Looper alone. Require all twelve stick collisions and no cross-part contamination.
+- [ ] Press Start All near a beat and while one part plays. Both origins must restart together on the next beat; no doubled or stuck voices.
+- [ ] Grip/shake Percussion Looper: only its clock cable detaches, transport stops, its Honk assignment and both takes survive. Reconnect and confirm repair preserves unrelated progress.
+- [ ] Grip/shake one source in a frozen chord: only that source’s direct Looper assignment detaches. Both clock cables and other assignments survive.
+- [ ] Try one-way relocation, jitter, release/regrip, tracking loss and repeated shaking during cooldown. No false disconnect or repeated feedback.
+- [ ] Confirm comfortable two-Looper labels/layout, readable 70 BPM/Internal status, audible click at lesson volume, and percussion/chord acoustic balance on the actual headset.

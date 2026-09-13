@@ -49,40 +49,14 @@ test("connected Play remains armed until the next clock beat", () => {
   assert.equal(playback.data.playbackEngine.elapsedMs, 0);
 });
 
-test("a stopped Metronome keeps starts armed and Stop cancels them cleanly", () => {
-  const clock = timing({ active: false, beatPosition: null, ordinal: null, lastBeatMs: null });
-  const playback = createLooper("waiting-play", clock, { recording: true });
-  playback.controller.startPlayback(playback.looper, 1000);
-  playback.controller.updateClockedTransports([playback.looper], 2000);
-  assert.equal(playback.data.playArmed, true);
-  assert.equal(playback.data.playing, false);
-  playback.controller.stopPlayback(playback.looper);
-  assert.equal(playback.data.armed, false);
-  assert.equal(playback.data.transport.stopped, true);
-
-  const recording = createLooper("waiting-record", clock);
-  recording.controller.startRecording(recording.looper, 1000);
-  assert.equal(recording.data.recordArmed, true);
-  recording.controller.stopRecording(recording.looper, 1200);
-  assert.equal(recording.data.armed, false);
-  assert.equal(recording.data.timeline.hasRecording(), false);
-});
-
-test("the first beat after a stopped Metronome starts launches every armed Looper at zero", () => {
-  const clock = timing({ active: false, beatPosition: null, ordinal: null, lastBeatMs: null });
-  const first = createLooper("first", clock, { recording: true });
-  const second = createLooper("second", clock, { recording: true });
-  first.controller.startPlayback(first.looper, 1000);
-  second.controller.startPlayback(second.looper, 1400);
-
-  Object.assign(clock, timing({ beatPosition: 0, ordinal: 0, lastBeatMs: 3000 }));
-  first.controller.updateClockedTransports([first.looper], 3000);
-  second.controller.updateClockedTransports([second.looper], 3000);
-
-  assert.equal(first.data.playbackEngine.elapsedMs, 0);
-  assert.equal(second.data.playbackEngine.elapsedMs, 0);
-  assert.equal(first.data.clockPlaybackStartBeatPosition, 0);
-  assert.equal(second.data.clockPlaybackStartBeatPosition, 0);
+test('a paused connected clock rejects Play and Record instead of becoming internal', () => {
+  const clock=timing({active:false,beatPosition:null,ordinal:null,lastBeatMs:null});
+  const context=createLooper('paused',clock,{recording:true});
+  assert.equal(context.controller.startPlayback(context.looper,1000),false);
+  assert.equal(context.controller.startRecording(context.looper,1000),false);
+  assert.equal(context.data.armed,false);
+  assert.equal(context.data.playing,false);
+  assert.equal(context.data.timeline.hasRecording(),true);
 });
 
 test("clocked Stop pads recording duration to a whole beat without moving its events", () => {
@@ -214,33 +188,18 @@ test("clocked playback has no accumulated drift after many loop boundaries", () 
   assert.equal(engine.elapsedMs, 375);
 });
 
-test("Metronome pause leaves linked Looper playback running on its silent clock grid", () => {
-  const clock = timing({ beatPosition: 0.2, ordinal: 0, lastBeatMs: 1000 });
-  const context = createLooper("pause", clock, { recording: true });
-  context.controller.startPlayback(context.looper, 1100);
-  Object.assign(clock, timing({ beatPosition: 1, ordinal: 1, lastBeatMs: 1500 }));
-  context.controller.updateClockedTransports([context.looper], 1500);
-  assert.equal(context.data.playing, true);
-
-  Object.assign(clock, timing({
-    active: false,
-    beatOriginMs: 1000,
-    beatPosition: 1.2,
-    ordinal: null,
-    lastBeatMs: 1500,
-  }));
-  context.controller.updateClockedTransports([context.looper], 1600);
-  context.controller.updatePlaybackForLooper(context.looper, 1600);
-  assert.equal(context.data.playing, true);
-  assert.equal(context.data.playArmed, false);
-  assert.equal(context.data.playbackEngine.playing, true);
-  assert.equal(context.data.playbackEngine.elapsedMs, 100);
-
-  Object.assign(clock, timing({ beatPosition: 2, ordinal: 2, lastBeatMs: 2000 }));
-  context.controller.updateClockedTransports([context.looper], 2000);
-  context.controller.updatePlaybackForLooper(context.looper, 2000);
-  assert.equal(context.data.playing, true);
-  assert.equal(context.data.playbackEngine.elapsedMs, 0);
+test('Metronome pause safely stops linked playback without changing its recording', () => {
+  const clock=timing({beatPosition:0.2,ordinal:0,lastBeatMs:1000});
+  const c=createLooper('pause',clock,{recording:true});
+  const before=c.data.timeline.toJSON();
+  c.controller.startPlayback(c.looper,1100);
+  Object.assign(clock,timing({beatPosition:1,ordinal:1,lastBeatMs:1500}));
+  c.controller.updateClockedTransports([c.looper],1500);
+  assert.equal(c.data.playing,true);
+  clock.active=false;
+  c.controller.updateClockedTransports([c.looper],1600);
+  assert.equal(c.data.playing,false);
+  assert.deepEqual(c.data.timeline.toJSON(),before);
 });
 
 test("connected Play and Pause are independent and both take effect on beats", () => {
@@ -252,7 +211,7 @@ test("connected Play and Pause are independent and both take effect on beats", (
   assert.equal(context.data.playing, true);
 
   Object.assign(clock, timing({
-    active: false,
+    active: true,
     beatOriginMs: 1000,
     beatPosition: 1.2,
     ordinal: null,
@@ -265,7 +224,7 @@ test("connected Play and Pause are independent and both take effect on beats", (
   assert.equal(context.data.playing, true);
 
   Object.assign(clock, timing({
-    active: false,
+    active: true,
     beatOriginMs: 1000,
     beatPosition: 2,
     ordinal: null,
@@ -277,7 +236,7 @@ test("connected Play and Pause are independent and both take effect on beats", (
   assert.equal(context.data.playing, false);
 
   Object.assign(clock, timing({
-    active: false,
+    active: true,
     beatOriginMs: 1000,
     beatPosition: 2.2,
     ordinal: null,
@@ -286,7 +245,7 @@ test("connected Play and Pause are independent and both take effect on beats", (
   context.controller.startPlayback(context.looper, 2100);
   assert.equal(context.data.playArmed, true);
   Object.assign(clock, timing({
-    active: false,
+    active: true,
     beatOriginMs: 1000,
     beatPosition: 3,
     ordinal: null,
@@ -297,16 +256,18 @@ test("connected Play and Pause are independent and both take effect on beats", (
   assert.equal(context.data.playbackEngine.elapsedMs, 0);
 });
 
-test("an unconnected Looper keeps ordinary immediate recording and playback", () => {
-  const context = createLooper("standalone", { active: false, connected: false });
-  context.controller.startRecording(context.looper, 1000);
-  assert.equal(context.data.recording, true);
-  assert.equal(context.data.armed, false);
-  context.controller.recordSelfDrumHit(context.looper, "boink", 1050);
-  context.controller.stopRecording(context.looper, 1200);
-  context.controller.startPlayback(context.looper, 1300);
-  assert.equal(context.data.playing, true);
-  assert.equal(context.data.armed, false);
+test('an unconnected Looper records at 70 BPM and launches on its next internal beat', () => {
+  const c=createLooper('standalone',{active:false,connected:false});
+  c.controller.startRecording(c.looper,1000);
+  assert.equal(c.data.recordArmed,true);
+  c.controller.recordSelfDrumHit(c.looper,'boink',1050);
+  c.controller.stopRecording(c.looper,1200);
+  assert.equal(c.data.timeline.sourceBeatIntervalMs,60000/70);
+  c.controller.startPlayback(c.looper,1300);
+  assert.equal(c.data.playArmed,true);
+  c.controller.updateClockedTransports([c.looper],2*60000/70);
+  assert.equal(c.data.playing,true);
+  assert.equal(c.data.clockPlaybackStartBeatPosition,2);
 });
 
 function createLooper(id, clock, { recording = false, captureAction = null } = {}) {

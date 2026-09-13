@@ -6,12 +6,15 @@ export class ScenePersistence {
   }
 
   save() {
+    // A partial restore must never overwrite the recovery source, including autosaves.
+    if (this.restoreReport?.skipped?.length) return false;
     return this.store.save(this.serializer.serialize());
   }
 
   async restore() {
     const data = this.store.load();
     if (!data) return { instruments: [], skipped: [] };
-    return this.restorer.restore(data);
+    this.restoreReport = await this.restorer.restore(data);
+    return this.restoreReport;
   }
 }

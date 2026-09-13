@@ -39,6 +39,24 @@ const tempSpawnTarget = new THREE.Vector3();
 const tempVector = new THREE.Vector3();
 
 export const SpawnRuntimeMethods = {
+    showRuntimeFeedback(message) {
+      if (this.tutorial) { this.tutorial.uiFeedback = message; this.tutorial.lastDraw = -Infinity; }
+      if (!this.runtimeFeedbackElement && typeof document !== 'undefined') {
+        this.runtimeFeedbackElement = document.createElement('div');
+        this.runtimeFeedbackElement.setAttribute('role', 'status');
+        this.runtimeFeedbackElement.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#102321;color:#fff4dd;padding:12px 18px;border-radius:8px;z-index:100;pointer-events:none';
+        document.body.appendChild(this.runtimeFeedbackElement);
+      }
+      if (this.runtimeFeedbackElement) {
+        this.runtimeFeedbackElement.hidden = false;
+        this.runtimeFeedbackElement.textContent = message;
+        clearTimeout(this.runtimeFeedbackTimer);
+        this.runtimeFeedbackTimer = setTimeout(() => {
+          this.runtimeFeedbackElement.hidden = true;
+          if (this.tutorial?.uiFeedback === message) { this.tutorial.uiFeedback = ''; this.tutorial.lastDraw = -Infinity; }
+        }, 5000);
+      }
+    },
     pulseRadialMenuStateChange(controller, change, profiles) {
       const profile = profiles?.[change?.type];
       if (!profile) return;
@@ -106,6 +124,13 @@ export const SpawnRuntimeMethods = {
         return;
       }
   
+      const requested = this.spawnCatalog.get(componentId);
+      const kind = resolveCatalogInstrumentSpawn(requested, componentId).componentId;
+      if (kind === 'metronome' && this.instrumentRegistry.admission) {
+        const token = this.instrumentRegistry.admission.reserve(kind);
+        if (!token) return;
+        this.instrumentRegistry.admission.release(token);
+      }
       this.deletePendingSpawnPlacement();
       const entry = this.spawnCatalog.get(componentId);
       if (!entry) {

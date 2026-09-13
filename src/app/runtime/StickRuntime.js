@@ -134,11 +134,12 @@ export const StickRuntimeMethods = {
     return this.hapticsService.pulse(gamepad, { intensity, durationMs });
   },
 
-  playStickPercussion(percussionType, { volume = 1, scheduledTime = undefined } = {}) {
+  playStickPercussion(percussionType, { volume = 1, scheduledTime = undefined, looperState = null } = {}) {
     if (!percussionType) return;
     const playing = this.audioSystem.triggerStickPercussion?.(percussionType, {
       volume,
       scheduledTime,
+      ownerId: looperState?.id || null,
     });
     playing?.catch?.((error) => console.warn("Could not play stick percussion:", error));
   },

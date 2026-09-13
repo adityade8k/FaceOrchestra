@@ -12,6 +12,7 @@ export class LooperGestureApplier {
     this.applyFrame = 0;
     this.scheduledVoices = new Map();
     this.scheduledGenerations = new Map();
+    this.retiringGenerations = new Set();
     this.audioTargetsByLayer = new Map();
     this.generationsByLayer = new Map();
     this.generationsByNote = new Map();
@@ -114,6 +115,7 @@ export class LooperGestureApplier {
     }
 
     this.appliedTracks.delete(layerId);
+    this.cancelRetiringGenerations(s => s.layerId === layerId);
     this.cancelScheduledGenerations(() => true, {}, this.generationsByLayer.get(layerId) || []);
     this.audioTargetsByLayer.delete(layerId);
     this.targetCache.delete(track);
@@ -199,9 +201,30 @@ export class LooperGestureApplier {
     }
   }
 
-  cancelScheduledAudio(looperState) {
+  clearVisuals(looperState) {
+    for (const track of looperState.looperData.tracks) {
+      const layerId = this.getLayerId(looperState, track);
+      for (const entry of this.appliedTracks.get(layerId)?.targetEntries.values() || []) this.clearAutomationLayer(entry.honkId, layerId);
+      this.appliedTracks.delete(layerId);
+      track.resetPlaybackState();
+    }
+  }
+
+  cancelScheduledAudio(looperState, options = {}) {
     if (!looperState) return;
-    this.cancelScheduledGenerations((scheduled) => scheduled.looperId === looperState.id);
+    this.cancelRetiringGenerations(s => s.looperId === looperState.id, options);
+    this.cancelScheduledGenerations(scheduled => scheduled.looperId === looperState.id, options);
+  }
+
+  cancelRetiringGenerations(predicate, options = {}) {
+    for (const retired of [...this.retiringGenerations]) {
+      if (!predicate(retired)) continue;
+      this.adapter.cancelActionVoice?.(retired.voiceId, retired.honkId, {
+        fadeSeconds: LOOPER_ACTION_RELEASE_FADE_SECONDS, ...options,
+      });
+      if (Number.isFinite(options.scheduledTime)) retired.expiresAt = options.scheduledTime + 0.25;
+      else this.retiringGenerations.delete(retired);
+    }
   }
 
   cancelScheduledGenerations(predicate, options = {}, candidates = this.scheduledGenerations.values()) {
@@ -219,11 +242,13 @@ export class LooperGestureApplier {
           ...options,
         });
       }
+      if (Number.isFinite(options.scheduledTime)) this.retiringGenerations.add({...scheduled, expiresAt:options.scheduledTime + 0.25});
       this.removeGeneration(scheduled);
     }
   }
 
   pruneScheduledAudio(audioNow) {
+    for (const retired of this.retiringGenerations) if (retired.expiresAt <= audioNow) this.retiringGenerations.delete(retired);
     for (const scheduled of this.scheduledGenerations.values()) {
       if (Number.isFinite(scheduled.expiresAt) && scheduled.expiresAt <= audioNow) {
         this.removeGeneration(scheduled);
@@ -270,6 +295,7 @@ export class LooperGestureApplier {
       this.releaseTargetEntry(entry.layerId, targetEntry);
       entry.targetEntries.delete(honkId);
     }
+    this.cancelRetiringGenerations(s => s.honkId === honkId);
     this.cancelScheduledGenerations((scheduled) => scheduled.honkId === honkId);
     for (const targets of this.audioTargetsByLayer.values()) targets.delete(honkId);
   }
@@ -444,6 +470,7 @@ export class LooperGestureApplier {
   }
 
   cancelScheduledTarget(layerId, honkId) {
+    this.cancelRetiringGenerations(s => s.layerId === layerId && s.honkId === honkId);
     this.cancelScheduledGenerations(() => true, {}, this.generationsByTarget.get(layerId)?.get(honkId) || []);
   }
 

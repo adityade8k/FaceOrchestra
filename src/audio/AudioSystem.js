@@ -89,6 +89,7 @@ export class AudioSystem {
   }
 
   async triggerMetronomeClick({ volume = 1 } = {}) {
+    if (!(volume > 0)) return;
     const context = await this.ensureContext();
     const oscillator = context.createOscillator();
     const gain = context.createGain();

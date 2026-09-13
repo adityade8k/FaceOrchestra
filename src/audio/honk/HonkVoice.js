@@ -232,7 +232,7 @@ export class HonkVoice {
 
   cancel(options = {}) {
     if (this.disconnected) return;
-    const now = this.context.currentTime;
+    const now = Math.max(options?.scheduledTime ?? this.context.currentTime, this.context.currentTime);
     const requestedFade = typeof options === "number" ? options : options?.fadeSeconds;
     const fadeSeconds = Number.isFinite(requestedFade) ? Math.max(requestedFade, 0) : 0;
     if (fadeSeconds <= 0) {

@@ -1,10 +1,11 @@
 import { resetActionState } from "./actionState.js";
 import { LooperTrackTimeline } from "./LooperTrackTimeline.js";
 
-export const LOOPER_TIMELINE_SCHEMA_VERSION = 5;
+export const LOOPER_TIMELINE_SCHEMA_VERSION = 6;
 export const LooperTimingMode = Object.freeze({
   Ordinary: "ordinary",
   Metronome: "metronome",
+  Internal: "internal",
 });
 const DEFAULT_BEAT_INTERVAL_MS = 500;
 
@@ -14,6 +15,7 @@ export class LooperTimeline {
     this.contentEndMs = 0;
     this.recordedDurationMs = 0;
     this.beatIntervalMs = 0;
+    this.sourceBeatIntervalMs = 0;
     this.timingMode = LooperTimingMode.Ordinary;
     this.beatAnalysis = null;
     this.gapBeats = 0;
@@ -29,7 +31,8 @@ export class LooperTimeline {
     this.recording = true;
     this.startedAtMs = now;
     if (timing?.beatIntervalMs > 0 && Number.isFinite(timing.beatOriginMs)) {
-      this.timingMode = LooperTimingMode.Metronome;
+      this.timingMode = timing.internal ? LooperTimingMode.Internal : LooperTimingMode.Metronome;
+      this.sourceBeatIntervalMs = timing.beatIntervalMs;
       this.beatIntervalMs = timing.beatIntervalMs;
       this.recordingBeatOriginMs = timing.beatOriginMs;
     }
@@ -50,7 +53,7 @@ export class LooperTimeline {
 
     this.recording = false;
     if (
-      this.timingMode === LooperTimingMode.Metronome &&
+      this.timingMode !== LooperTimingMode.Ordinary &&
       !Number.isFinite(this.firstOnsetElapsedMs)
     ) {
       this.tracks.clear();
@@ -61,7 +64,7 @@ export class LooperTimeline {
     }
     this.pruneInactiveTracks();
     if (
-      this.timingMode !== LooperTimingMode.Metronome &&
+      this.timingMode === LooperTimingMode.Ordinary &&
       !timing?.preserveRecordingOrigin
     ) {
       this.normalizeToFirstAction();
@@ -76,6 +79,7 @@ export class LooperTimeline {
     this.contentEndMs = 0;
     this.recordedDurationMs = 0;
     this.beatIntervalMs = 0;
+    this.sourceBeatIntervalMs = 0;
     this.timingMode = LooperTimingMode.Ordinary;
     this.beatAnalysis = null;
     this.gapBeats = 0;
@@ -411,6 +415,7 @@ export class LooperTimeline {
       contentEndMs: this.contentEndMs,
       recordedDurationMs: this.recordedDurationMs,
       beatIntervalMs: this.beatIntervalMs,
+      sourceBeatIntervalMs: this.sourceBeatIntervalMs,
       timingMode: this.timingMode,
       beatAnalysis: this.beatAnalysis ? { ...this.beatAnalysis } : null,
       gapBeats: this.gapBeats,
@@ -439,9 +444,11 @@ export class LooperTimeline {
       Number.isFinite(serialized.beatIntervalMs) ? serialized.beatIntervalMs : 0,
       0,
     );
-    timeline.timingMode = serialized.timingMode === LooperTimingMode.Metronome
-      ? LooperTimingMode.Metronome
-      : LooperTimingMode.Ordinary;
+    timeline.timingMode = [LooperTimingMode.Metronome, LooperTimingMode.Internal].includes(serialized.timingMode)
+      ? serialized.timingMode : LooperTimingMode.Ordinary;
+    // Only explicit metadata or a legacy external-clock take is a reliable source tempo.
+    timeline.sourceBeatIntervalMs = serialized.sourceBeatIntervalMs > 0 ? serialized.sourceBeatIntervalMs
+      : serialized.timingMode === LooperTimingMode.Metronome ? timeline.beatIntervalMs : 0;
     timeline.beatAnalysis = serialized.beatAnalysis && typeof serialized.beatAnalysis === "object"
       ? { ...serialized.beatAnalysis }
       : null;

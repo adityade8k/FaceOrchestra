@@ -9,7 +9,7 @@ export class TutorialSession {
     this.steps = steps || (mode === 'simulation' ? SIMULATION_STEPS : LESSON_STEPS); this.index = 0; this.enteredAt = now; this.attempt = 1;
     this.evidence = []; this.seen = new Set(); this.checkpoints = new Map();
     this.feedback = ''; this.failed = false; this.anchorMs = null; this.beatMs = C.beatMs; this.complete = false;
-    this.takeEvidence = []; this.phrasesPassed = []; this.revision = 0; this.playbackSince = null;
+    this.takeEvidence = {}; this.validatedTakes = {}; this.repairReturnIndex = null; this.phrasesPassed = []; this.revision = 0; this.playbackSince = null;
   }
   get step() { return this.steps[this.index] || null; }
   accept(event) {
@@ -33,15 +33,22 @@ export class TutorialSession {
   }
   advance(now) {
     this.checkpoints.set(this.step.id, {at:now,attempt:this.attempt});
-    if (this.step.type === 'record') this.takeEvidence = this.evidence.map(e=>({...e}));
-    this.index++; this.enteredAt = now; this.attempt = 1; this.evidence = [];
+    if (this.step.type === 'record') this.takeEvidence[this.step.looperRole] = this.evidence.map(e=>({...e}));
+    if (this.repairReturnIndex !== null) {
+      this.index = this.repairReturnIndex; this.repairReturnIndex = null;
+    } else this.index++;
+    this.enteredAt = now; this.attempt = 1; this.evidence = [];
     this.anchorMs = null; this.feedback = 'Well done. Next action.'; this.revision++;
     this.playbackSince = null;
     this.complete = this.index >= this.steps.length;
   }
   reject(message) { this.feedback = message; this.failed = true; this.revision++; return false; }
   retry(now, { recording = false } = {}) {
-    if (recording || this.step?.type === 'finalize') this.index = this.steps.findIndex(s=>s.type==='record');
+    if (recording || this.step?.type === 'finalize') {
+      const role=this.step?.looperRole;
+      const index=this.steps.findIndex(s=>s.type==='record' && s.looperRole===role);
+      if(index>=0)this.index=index;
+    }
     this.failed = false; this.evidence = []; this.enteredAt = now; this.anchorMs = null;
     this.phrasesPassed = []; this.playbackSince = null; this.attempt++; this.feedback = 'Try again when ready.'; this.revision++;
   }
@@ -55,8 +62,9 @@ export class TutorialSession {
       if (old.type === 'tempo' && this.step.type === 'performance' && this.anchorMs !== null && now >= this.anchorMs + 95*this.beatMs) continue;
       const result = validateSetup(old,snapshot,this.origin);
       if (result && !result.ok) {
+        this.repairReturnIndex ??= this.index;
         this.index = i;
-        for (const s of this.steps.slice(i)) this.checkpoints.delete(s.id);
+        this.checkpoints.delete(old.id);
         this.retry(now); this.feedback = `Repair: ${result.message}`; return;
       }
     }
@@ -81,13 +89,26 @@ export class TutorialSession {
     else if (step.type === 'unequip') result.ok = !snapshot.anyStickActive;
     else if (step.type === 'strike') result.ok = this.evidence.some(e=>e.kind==='strike' && e.role===step.role && e.withdrawn);
     else if (step.type === 'finalize') {
-      if (!snapshot.recording && !snapshot.recordArmed && snapshot.timeline) {
-        result = validateTake(snapshot.timeline,this.takeEvidence);
+      const owner=snapshot.loopers?.[step.looperRole];
+      if (owner && !owner.recording && !owner.recordArmed && owner.timeline) {
+        result = validateTake(owner.timeline,this.takeEvidence[step.looperRole] || [],step.looperRole);
+        if (result.ok && step.looperRole==='percussionLooper' && this.validatedTakes.chordLooper &&
+          JSON.stringify(snapshot.loopers.chordLooper.timeline)!==this.validatedTakes.chordLooper) {
+          result={ok:false,message:'The successful chord take changed. Restore or re-record Chords before continuing.'};
+        }
         if (!result.ok) this.reject(result.message);
+        else this.validatedTakes[step.looperRole]=JSON.stringify(owner.timeline);
       }
-    } else if (step.type === 'playback') {
+    } else if (step.type === 'playback' || step.type === 'start-all') {
       const quiet = snapshot.liveGestures === 0 && !snapshot.anyStickContact;
-      if (!quiet || !snapshot.playing || !snapshot.audioRunning || !snapshot.playbackVoicesObserved) this.playbackSince = null;
+      const owner=snapshot.loopers?.[step.looperRole];
+      const other=snapshot.loopers?.[step.looperRole==='chordLooper'?'percussionLooper':'chordLooper'];
+      const command=this.evidence.some(e=>e.kind==='command'&&e.action===step.action);
+      const valid=step.type==='start-all' ? command && snapshot.startAllRequest?.ok && snapshot.aligned &&
+        snapshot.loopers.chordLooper.startBeat===snapshot.startAllRequest.targetBeat &&
+        snapshot.loopers.chordLooper.playbackObserved && snapshot.loopers.percussionLooper.playbackObserved
+        : owner?.playing && !owner.playArmed && !other?.playing && owner.playbackObserved;
+      if (!quiet || !valid || !snapshot.audioRunning) this.playbackSince = null;
       else this.playbackSince ??= now;
       result.ok = this.playbackSince !== null && now - this.playbackSince >= 16*C.beatMs;
     } else if (step.timed && this.anchorMs !== null && now >= this.anchorMs) {
@@ -105,13 +126,12 @@ export class TutorialSession {
         }
       }
       if (beat >= step.beats - (step.type === 'record' ? 0.25 : 0)) {
-        if (step.type === 'drums') result = validateSequence(C.percussion,musical,{kind:'strike'});
+        if (step.type === 'drums' || (step.type==='record' && step.looperRole==='percussionLooper')) result = validateSequence(C.percussion,musical,{kind:'strike'});
         else {
           result = validateSequence(notes,musical);
-          if (result.ok && step.type === 'record') result = validateSequence(C.percussion,musical,{kind:'strike'});
         }
         if (result.ok && snapshot.liveGestures) result = {ok:false,message:'Release the final held voice before continuing.'};
-        if (result.ok && step.type === 'record' && !snapshot.recording) result = {ok:false,message:'Arm Record before the take. Re-record this attempt.'};
+        if (result.ok && step.type === 'record' && !snapshot.loopers?.[step.looperRole]?.recording) result = {ok:false,message:'Arm Record before the take. Re-record this attempt.'};
         if (!result.ok) this.reject(result.message);
       }
     }

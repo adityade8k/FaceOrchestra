@@ -6,6 +6,7 @@ import {
   LOOPER_CONTROL_DEFAULT_VALUES,
   LOOPER_MIN_ACTION_DURATION_MS,
   LOOPER_TRACK_COUNT,
+  LOOPER_STANDALONE_BPM,
 } from "../../config/looper.js";
 import { LooperConnectionManager } from "./LooperConnectionManager.js";
 import { LooperBeatDetector } from "./LooperBeatDetector.js";
@@ -24,6 +25,9 @@ const LOOPER_SELF_PERCUSSION_TRACK_ID = "looper-self-percussion";
 const AUDIO_SCHEDULER_INTERVAL_MS = 25;
 const AUDIO_LOOKAHEAD_MS = 120;
 const AUDIO_MAX_LATE_MS = 80;
+// Beat equality tolerance only (less than one nanosecond at lesson tempo).
+export const BEAT_EQUALITY_EPSILON = 1e-9;
+export const nextBeatAfter = position => Math.floor(position + BEAT_EQUALITY_EPSILON) + 1;
 
 function exposeTransportState(data) {
   Object.defineProperties(data, {
@@ -41,7 +45,7 @@ function exposeTransportState(data) {
     },
     armed: {
       enumerable: true,
-      get: () => data.transport.armed || data.armedAction === "pause",
+      get: () => data.transport.armed || Boolean(data.armedAction),
     },
     recordArmed: {
       enumerable: true,
@@ -49,7 +53,7 @@ function exposeTransportState(data) {
     },
     playArmed: {
       enumerable: true,
-      get: () => data.transport.playArmed,
+      get: () => data.transport.playArmed || data.armedAction === "play",
     },
     pauseArmed: {
       enumerable: true,
@@ -109,6 +113,10 @@ export class LooperController {
         lastRate: 1,
       },
       recordingBeatIntervalMs: 0,
+      localClockOriginMs: 0,
+      pendingLaunch: null,
+      playbackGeneration: 0,
+      launchHistory: [],
       armedAction: null,
       armedAfterBeatOrdinal: null,
       armedAtMs: 0,
@@ -146,8 +154,8 @@ export class LooperController {
     }
 
     const timing = this.getTimingForLooper(looperState, now);
-    if (timing.connected) return this.armRecording(looperState, now, timing);
-    return this.beginRecording(looperState, now, null);
+    if (!timing.active) return false;
+    return this.armRecording(looperState, now, timing);
   }
 
   armRecording(looperState, now, timing) {
@@ -205,7 +213,7 @@ export class LooperController {
       (honkId) => this.captureActionByHonkId(honkId),
       null,
     );
-    if (data.timeline.timingMode !== "metronome") {
+    if (data.timeline.timingMode === "ordinary") {
       const beatAnalysis = this.beatDetector.analyze(data.timeline, {
         fallbackBeatIntervalMs: data.recordingBeatIntervalMs,
       });
@@ -250,50 +258,55 @@ export class LooperController {
 
   startPlayback(looperState, now = performance.now(), { resume = false } = {}) {
     const data = looperState?.looperData;
-    if (!data?.timeline?.hasRecording() || data.transport.recording) {
-      return false;
-    }
-
+    if (!data?.timeline?.hasRecording() || data.transport.recording || data.transport.recordArmed) return false;
     const timing = this.getTimingForLooper(looperState, now);
-    if (timing.connected) return this.armPlayback(looperState, now, timing);
+    if (!timing.active || !hasBeatGrid(timing)) return false;
+    return this.armPlayback(looperState, now, timing, {resume});
+  }
 
-    const shouldResume = resume && data.transport.paused;
-    const transition = data.transport.play({ restart: !shouldResume });
-    if (!transition.accepted) {
-      return false;
-    }
-
+  armPlayback(looperState, now, timing, { targetBeat = nextBeatAfter(timing.beatPosition), resume = false, audioAnchor = null } = {}) {
+    const data = looperState.looperData;
     this.adapter.ensureAudio?.();
-    this.applier.clearLooper(looperState);
-    if (!shouldResume) {
-      data.playbackEngine.stop({
-        onReleaseTrack: (trackId) => this.releaseTrackById(looperState, trackId),
-      });
+    // Restart requests leave the old take sounding until the shared boundary.
+    if (data.pendingLaunch && this.isArmedBeatDue(data, timing)) this.launchArmedStart(looperState, timing, now);
+    if (data.pendingLaunch?.prepared && data.pendingLaunch.targetBeat === targetBeat) {
+      data.armedAtMs = now; data.pendingLaunch.requestedAtMs = now;
+      if (audioAnchor && data.pendingLaunch.audioAnchor !== audioAnchor) {
+        data.pendingLaunch.audioAnchor = audioAnchor;
+        data.pendingLaunch.prepared = false;
+        this.prepareArmedAudio(looperState, timing, now);
+        this.schedulePlaybackAudioForLooper(looperState, now);
+      }
+      return true;
     }
-
-    data.lastPlaybackUpdateMs = now;
-    data.clockPlaybackStartBeatPosition = null;
-    data.playbackReferenceBeatIntervalMs = 0;
-    data.playbackEngine.start(now, { resume: shouldResume });
-    this.startAudioScheduler(looperState, now, { resume: shouldResume });
-    this.updatePlaybackForLooper(looperState, now);
+    data.armedAction = 'play';
+    data.armedAtMs = now;
+    data.armedAfterBeatOrdinal = targetBeat - 1;
+    data.clockMetronomeId = timing.metronomeId;
+    data.pendingLaunch = {targetBeat, requestedAtMs:now, prepared:false,
+      audioAnchor:audioAnchor || {wallMs:now,audioSeconds:this.adapter.getAudioCurrentTime?.()},
+      resumeSourceMs:resume && data.transport.paused ? data.playbackEngine.elapsedMs : 0};
+    if (!data.transport.playing) data.transport.armPlay();
+    this.startAudioScheduler(looperState, now);
     this.adapter.updateVisuals?.(looperState);
     return true;
   }
 
-  armPlayback(looperState, now, timing) {
-    const data = looperState.looperData;
-    this.adapter.ensureAudio?.();
-    this.stopPlayback(looperState);
-    data.armedAction = "play";
-    data.armedAtMs = now;
-    data.armedAfterBeatOrdinal = hasBeatGrid(timing)
-      ? Math.floor(timing.beatPosition + 1e-9)
-      : null;
-    data.clockMetronomeId = timing.metronomeId;
-    data.transport.armPlay();
-    this.adapter.updateVisuals?.(looperState);
-    return true;
+  static startAll(loopers, now = performance.now()) {
+    if (loopers.length !== 2 || new Set(loopers).size !== 2) return {ok:false,message:'Place both tutorial loopers.'};
+    const timings = [];
+    for (const looper of loopers) {
+      if (!looper?.timeline?.hasRecording() && !looper?.looperData?.timeline?.hasRecording()) return {ok:false,message:'Record both parts before Start All.'};
+      if (looper.looperData.transport.recording || looper.looperData.transport.recordArmed) return {ok:false,message:'Stop recording before Start All.'};
+      const timing = looper.looperController.getTimingForLooper(looper, now);
+      if (!timing.connected || !timing.active || !hasBeatGrid(timing)) return {ok:false,message:'Connect both loopers to the running Metronome.'};
+      timings.push(timing);
+    }
+    if (timings[0].metronomeId !== timings[1].metronomeId) return {ok:false,message:'Both loopers need the same Metronome.'};
+    const targetBeat = nextBeatAfter(timings[0].beatPosition);
+    const audioAnchor = {wallMs:now,audioSeconds:loopers[0].looperController.adapter.getAudioCurrentTime?.()};
+    loopers.forEach((looper,i) => looper.looperController.armPlayback(looper, now, timings[i], {targetBeat,audioAnchor}));
+    return {ok:true,message:'Starting both on the next beat',targetBeat,requestedAtMs:now};
   }
 
   resumePlayback(looperState, now = performance.now()) {
@@ -376,6 +389,7 @@ export class LooperController {
         if (!this.beginArmedRecordingFromOnset(looperState, now)) continue;
       }
       if (!data.transport.recording) continue;
+      if (!this.getTimingForLooper(looperState, now).active) { this.stopRecording(looperState, now); continue; }
 
       if (data.timeline.getElapsedMs(now) >= LOOPER_MAX_RECORDING_DURATION_MS) {
         this.stopRecording(looperState, now);
@@ -406,7 +420,7 @@ export class LooperController {
     const data = looperState?.looperData;
     if (!data?.transport.recordArmed) return false;
     const timing = this.getTimingForLooper(looperState, now);
-    if (!timing.connected || !hasBeatGrid(timing)) return false;
+    if (!timing.active || !hasBeatGrid(timing)) return false;
     const beatOrdinal = Math.floor(timing.beatPosition + 1e-9);
     const beatStartMs = timing.beatOriginMs + beatOrdinal * timing.beatIntervalMs;
     return this.beginRecording(looperState, beatStartMs, timing);
@@ -451,14 +465,12 @@ export class LooperController {
       onLoopBoundary: () => this.handleLoopBoundary(looperState),
     };
     const timing = this.getTimingForLooper(looperState, now);
-    if (timing.connected) {
-      if (!hasBeatGrid(timing) || !Number.isFinite(data.clockPlaybackStartBeatPosition)) return;
-      const recordedBeatIntervalMs = data.playbackReferenceBeatIntervalMs ||
-        data.timeline.beatIntervalMs || timing.beatIntervalMs;
-      const totalElapsedMs = Math.max(
-        timing.beatPosition - data.clockPlaybackStartBeatPosition,
-        0,
-      ) * recordedBeatIntervalMs;
+    if (hasBeatGrid(timing)) {
+      if (!timing.active || !hasBeatGrid(timing) || !Number.isFinite(data.clockPlaybackStartBeatPosition)) return;
+      const interval = this.getSourceBeatInterval(data.timeline);
+      const totalElapsedMs = interval > 0
+        ? Math.max(timing.beatPosition-data.clockPlaybackStartBeatPosition,0)*interval + (data.playbackSourceOffsetMs || 0)
+        : Math.max(now-data.audioScheduling.startWallMs,0);
       data.playbackEngine.updateFromClock(totalElapsedMs, data.timeline, handlers);
       this.reconcilePlaybackAudioTargets(looperState, now);
       return;
@@ -474,62 +486,92 @@ export class LooperController {
   }
 
   getTimingForLooper(looperState, now = performance.now()) {
-    return this.adapter.getTimingForLooper?.(looperState?.id, now) || {
-      active: false,
-      connected: false,
-    };
+    const external = this.adapter.getTimingForLooper?.(looperState?.id, now);
+    if (external?.connected) return external;
+    const beatIntervalMs = 60000 / LOOPER_STANDALONE_BPM;
+    const beatOriginMs = looperState?.looperData?.localClockOriginMs ?? 0;
+    return {active:true,connected:false,internal:true,bpm:LOOPER_STANDALONE_BPM,
+      beatIntervalMs,beatOriginMs,beatPosition:(now-beatOriginMs)/beatIntervalMs,metronomeId:null};
   }
 
   updateClockedTransports(looperStates, now = performance.now()) {
-    for (const looperState of looperStates) {
-      const data = looperState?.looperData;
-      if (!data || looperState.root?.visible === false) continue;
-      const timing = this.getTimingForLooper(looperState, now);
-      if (!timing.connected) {
+    for (const looper of looperStates) {
+      const data = looper?.looperData;
+      if (!data || looper.root?.visible === false) continue;
+      const timing = this.getTimingForLooper(looper, now);
+      if (!timing.active) {
+        if (data.playing || data.playArmed) this.stopPlayback(looper);
         continue;
       }
-      data.clockMetronomeId = timing.metronomeId;
-      if (!hasBeatGrid(timing)) continue;
-      if (data.armedAction !== "record" && data.armed && this.isArmedBeatDue(data, timing)) {
-        this.launchArmedStart(looperState, timing, now);
+      if (data.armedAction === 'pause' && this.isArmedBeatDue(data, timing)) this.launchArmedStart(looper, timing, now);
+      else if (data.pendingLaunch && this.isArmedBeatDue(data, timing)) {
+        this.prepareArmedAudio(looper, timing, now);
+        this.launchArmedStart(looper, timing, now);
       }
     }
   }
 
   isArmedBeatDue(data, timing) {
-    const dueOrdinal = Math.floor(timing.beatPosition + 1e-9);
-    return data.armedAfterBeatOrdinal === null || dueOrdinal > data.armedAfterBeatOrdinal;
+    return hasBeatGrid(timing) && timing.beatPosition + BEAT_EQUALITY_EPSILON >= (data.armedAfterBeatOrdinal ?? -1) + 1;
   }
 
-  launchArmedStart(looperState, timing, now) {
-    const data = looperState.looperData;
-    const action = data.armedAction;
-    const beatOrdinal = Math.floor(timing.beatPosition + 1e-9);
-    const beatStartMs = timing.beatOriginMs + beatOrdinal * timing.beatIntervalMs;
-    this.clearArmedState(data);
-    if (action === "pause") {
-      this.pausePlaybackImmediately(looperState);
-      return;
+  prepareArmedAudio(looper, timing, now) {
+    const data = looper.looperData, pending = data.pendingLaunch;
+    if (!pending || pending.prepared) return;
+    const boundaryMs = now + (pending.targetBeat - timing.beatPosition)*timing.beatIntervalMs;
+    data.audioScheduling.audioAnchor = pending.audioAnchor;
+    const audioNow = this.getSchedulingAudioTime(looper, now);
+    const scheduledTime = Number.isFinite(audioNow) ? audioNow + Math.max(boundaryMs-now,0)/1000 : undefined;
+    this.applier.cancelScheduledAudio(looper, {scheduledTime});
+    this.adapter.cancelLooperPercussion?.(looper.id, {scheduledTime});
+    data.playbackGeneration++;
+    pending.prepared = true;
+    pending.audioPreparedAtMs = now;
+    pending.audioOriginTime = Number.isFinite(audioNow) ? audioNow+(boundaryMs-now)/1000 : null;
+    data.audioScheduling.originBeat = pending.targetBeat;
+    data.audioScheduling.startWallMs = boundaryMs;
+    data.audioScheduling.startSourceMs = pending.resumeSourceMs;
+    data.audioScheduling.scheduledThroughSourceMs = pending.resumeSourceMs;
+    data.audioScheduling.includeStart = true;
+    data.audioScheduling.percussionTimes = [];
+    data.playbackReferenceBeatIntervalMs = this.getSourceBeatInterval(data.timeline);
+    data.audioScheduling.lastRate = this.getPlaybackRate(looper, now);
+    const lateSource = this.getAbsoluteSourcePosition(looper, now);
+    if (lateSource > pending.resumeSourceMs + 1e-6) {
+      data.audioScheduling.scheduledThroughSourceMs = lateSource;
+      data.audioScheduling.includeStart = false;
+      if (Number.isFinite(audioNow)) this.reconcileScheduledAudioAtSource(looper, lateSource, audioNow);
+    } else if (pending.resumeSourceMs > 0 && Number.isFinite(scheduledTime)) {
+      this.reconcileScheduledAudioAtSource(looper, pending.resumeSourceMs, scheduledTime);
     }
-    if (action === "play") {
-      data.transport.play({ restart: true });
-      data.playbackEngine.start(beatStartMs);
-      data.clockPlaybackStartBeatPosition = beatOrdinal;
-      data.playbackReferenceBeatIntervalMs = data.timeline.beatIntervalMs || timing.beatIntervalMs;
-      data.lastPlaybackUpdateMs = now;
-      this.startAudioScheduler(looperState, beatStartMs);
-      this.updatePlaybackForLooper(looperState, now);
-      this.adapter.updateVisuals?.(looperState);
-    }
+    data.timeline.forEachActiveTrack(t => {
+      const track = this.getTrack(looper, t.trackIndex);
+      if (track) this.applier.initializeAudioTargets(looper, track);
+    });
   }
 
-  cancelArmedStart(looperState) {
-    const data = looperState?.looperData;
-    if (!data?.armed) return false;
-    const pauseWasArmed = data.pauseArmed;
+  launchArmedStart(looper, timing, now) {
+    const data = looper.looperData, pending = data.pendingLaunch;
+    if (data.armedAction === 'pause') {
+      this.clearArmedState(data); this.pausePlaybackImmediately(looper); return;
+    }
+    if (!pending) return;
+    this.prepareArmedAudio(looper, timing, now);
+    data.transport.play({restart:true});
+    this.applier.clearVisuals(looper);
+    data.playbackEngine.start(data.audioScheduling.startWallMs);
+    data.clockPlaybackStartBeatPosition = pending.targetBeat;
+    data.playbackSourceOffsetMs = pending.resumeSourceMs;
+    data.launchHistory.push({beat:pending.targetBeat,requestedAtMs:pending.requestedAtMs,observedAtMs:now,audioPreparedAtMs:pending.audioPreparedAtMs,audioOriginTime:pending.audioOriginTime,lateMs:Math.max(now-data.audioScheduling.startWallMs,0)});
+    if (data.launchHistory.length > 32) data.launchHistory.shift();
     this.clearArmedState(data);
-    if (!pauseWasArmed) data.transport.stop();
-    this.adapter.updateVisuals?.(looperState);
+    this.updatePlaybackForLooper(looper, now);
+    this.adapter.updateVisuals?.(looper);
+  }
+
+  cancelArmedStart(looper) {
+    if (!looper?.looperData?.armed) return false;
+    this.stopPlayback(looper);
     return true;
   }
 
@@ -537,6 +579,7 @@ export class LooperController {
     data.armedAction = null;
     data.armedAfterBeatOrdinal = null;
     data.armedAtMs = 0;
+    data.pendingLaunch = null;
   }
 
   handleClockDisconnected(looperState) {
@@ -555,25 +598,14 @@ export class LooperController {
     this.adapter.updateVisuals?.(looperState);
   }
 
-  startAudioScheduler(looperState, now, { resume = false } = {}) {
-    const data = looperState?.looperData;
-    if (!data || typeof this.adapter.getAudioCurrentTime !== "function") return;
-    this.stopAudioScheduler(looperState, { release: false });
-    const scheduling = data.audioScheduling;
-    scheduling.startWallMs = now;
-    scheduling.startSourceMs = resume ? data.playbackEngine.elapsedMs : 0;
-    scheduling.scheduledThroughSourceMs = scheduling.startSourceMs;
-    scheduling.includeStart = true;
-    scheduling.lastRate = this.getPlaybackRate(looperState, now);
-    data.timeline.forEachActiveTrack((trackTimeline) => {
-      const track = this.getTrack(looperState, trackTimeline.trackIndex);
-      if (track) this.applier.initializeAudioTargets?.(looperState, track);
-    });
-    this.schedulePlaybackAudioForLooper(looperState, now);
-    scheduling.timer = globalThis.setInterval?.(() => {
-      this.schedulePlaybackAudioForLooper(looperState, performance.now());
-    }, AUDIO_SCHEDULER_INTERVAL_MS) || null;
-    scheduling.timer?.unref?.();
+  startAudioScheduler(looper, now) {
+    const scheduling = looper.looperData.audioScheduling;
+    if (typeof this.adapter.getAudioCurrentTime !== 'function') return;
+    if (scheduling.timer === null) {
+      scheduling.timer = globalThis.setInterval?.(() => this.schedulePlaybackAudioForLooper(looper, performance.now()), AUDIO_SCHEDULER_INTERVAL_MS) || null;
+      scheduling.timer?.unref?.();
+    }
+    this.schedulePlaybackAudioForLooper(looper, now);
   }
 
   stopAudioScheduler(looperState, { release = true } = {}) {
@@ -581,59 +613,80 @@ export class LooperController {
     if (!scheduling) return;
     if (scheduling.timer !== null) globalThis.clearInterval?.(scheduling.timer);
     scheduling.timer = null;
-    if (release) this.applier.cancelScheduledAudio?.(looperState);
-  }
-
-  getPlaybackRate(looperState, now) {
-    const data = looperState.looperData;
-    const timing = this.getTimingForLooper(looperState, now);
-    if (!timing.connected || !(timing.beatIntervalMs > 0)) return 1;
-    const referenceIntervalMs = data.playbackReferenceBeatIntervalMs ||
-      data.timeline.beatIntervalMs || timing.beatIntervalMs;
-    return referenceIntervalMs / timing.beatIntervalMs;
-  }
-
-  getAbsoluteSourcePosition(looperState, now) {
-    const data = looperState.looperData;
-    const timing = this.getTimingForLooper(looperState, now);
-    if (
-      timing.connected &&
-      Number.isFinite(timing.beatPosition) &&
-      Number.isFinite(data.clockPlaybackStartBeatPosition)
-    ) {
-      return Math.max(timing.beatPosition - data.clockPlaybackStartBeatPosition, 0) *
-        (data.playbackReferenceBeatIntervalMs || data.timeline.beatIntervalMs || timing.beatIntervalMs);
+    if (release) {
+      this.applier.cancelScheduledAudio?.(looperState);
+      this.adapter.cancelLooperPercussion?.(looperState.id);
     }
-    const scheduling = data.audioScheduling;
-    return scheduling.startSourceMs + Math.max(now - scheduling.startWallMs, 0);
+  }
+
+  getSchedulingAudioTime(looper, now) {
+    const anchor = looper.looperData.audioScheduling.audioAnchor;
+    return Number.isFinite(anchor?.audioSeconds)
+      ? anchor.audioSeconds + (now-anchor.wallMs)/1000
+      : this.adapter.getAudioCurrentTime?.();
+  }
+
+  getSourceBeatInterval(timeline) {
+    return timeline.sourceBeatIntervalMs || (timeline.timingMode === 'metronome' ? timeline.beatIntervalMs : 0);
+  }
+
+  getPlaybackRate(looper, now) {
+    const interval = this.getSourceBeatInterval(looper.looperData.timeline);
+    const timing = this.getTimingForLooper(looper, now);
+    return interval > 0 && timing.beatIntervalMs > 0 ? interval/timing.beatIntervalMs : 1;
+  }
+
+  getAbsoluteSourcePosition(looper, now) {
+    const data = looper.looperData, timing = this.getTimingForLooper(looper, now), scheduling = data.audioScheduling;
+    const interval = this.getSourceBeatInterval(data.timeline);
+    if (interval > 0 && hasBeatGrid(timing) && Number.isFinite(scheduling.originBeat)) {
+      return (timing.beatPosition-scheduling.originBeat)*interval + scheduling.startSourceMs;
+    }
+    // Legacy takes without trustworthy source tempo retain their millisecond timing.
+    return scheduling.startSourceMs + now-scheduling.startWallMs;
   }
 
   schedulePlaybackAudioForLooper(looperState, now = performance.now()) {
     const data = looperState?.looperData;
-    if (!data?.transport.playing || !data.timeline?.hasRecording()) return;
-    const audioNow = this.adapter.getAudioCurrentTime?.();
+    if ((!data?.transport.playing && !data?.pendingLaunch) || !data.timeline?.hasRecording()) return;
+    const timing = this.getTimingForLooper(looperState, now);
+    if (!timing.active) { this.stopPlayback(looperState); return; }
+    const pending = data.pendingLaunch;
+    if (pending && (pending.targetBeat-timing.beatPosition)*timing.beatIntervalMs <= AUDIO_LOOKAHEAD_MS) {
+      this.prepareArmedAudio(looperState, timing, now);
+      if (this.isArmedBeatDue(data, timing)) this.launchArmedStart(looperState, timing, now);
+    }
+    if (!data.transport.playing && !pending?.prepared) return;
+    const audioNow = this.getSchedulingAudioTime(looperState, now);
     if (!Number.isFinite(audioNow)) return;
     this.applier.pruneScheduledAudio?.(audioNow);
     const scheduling = data.audioScheduling;
     const sourceNow = this.getAbsoluteSourcePosition(looperState, now);
     const rate = Math.max(this.getPlaybackRate(looperState, now), 0.0001);
-    this.reconcilePlaybackAudioTargets(looperState, now, { sourceNow, audioNow, rate });
+    if (sourceNow >= 0 && !data.pendingLaunch) this.reconcilePlaybackAudioTargets(looperState, now, { sourceNow, audioNow, rate });
     if (Math.abs(rate - scheduling.lastRate) > 1e-9) {
       this.applier.cancelScheduledAudio?.(looperState);
-      scheduling.scheduledThroughSourceMs = sourceNow;
+      this.adapter.cancelLooperPercussion?.(looperState.id);
+      scheduling.scheduledThroughSourceMs = Math.max(sourceNow, 0);
       scheduling.includeStart = true;
       scheduling.lastRate = rate;
-      this.reconcileScheduledAudioAtSource(looperState, sourceNow, audioNow);
+      if (sourceNow >= 0) this.reconcileScheduledAudioAtSource(looperState, sourceNow, audioNow);
     }
     if (sourceNow - scheduling.scheduledThroughSourceMs > AUDIO_MAX_LATE_MS * rate) {
       // Work older than the scheduling horizon cannot be repaired in Web Audio.
       // Drop that bounded interval and reconcile from the current phase.
       this.applier.cancelScheduledAudio?.(looperState);
-      scheduling.scheduledThroughSourceMs = sourceNow;
+      this.adapter.cancelLooperPercussion?.(looperState.id);
+      scheduling.scheduledThroughSourceMs = Math.max(sourceNow, 0);
       scheduling.includeStart = true;
-      this.reconcileScheduledAudioAtSource(looperState, sourceNow, audioNow);
+      if (sourceNow >= 0) this.reconcileScheduledAudioAtSource(looperState, sourceNow, audioNow);
     }
-    const sourceEnd = sourceNow + AUDIO_LOOKAHEAD_MS * rate;
+    let sourceEnd = sourceNow + AUDIO_LOOKAHEAD_MS * rate;
+    if (data.pendingLaunch && !data.pendingLaunch.prepared) {
+      const untilBoundary = (data.pendingLaunch.targetBeat-timing.beatPosition)*timing.beatIntervalMs;
+      sourceEnd = Math.min(sourceEnd, sourceNow+untilBoundary*rate-1e-6);
+    }
+    if (sourceEnd < scheduling.scheduledThroughSourceMs) return;
     this.scheduleSourceRange(
       looperState,
       scheduling.scheduledThroughSourceMs,
@@ -685,7 +738,7 @@ export class LooperController {
         this.applier.scheduleTrackEvent(looperState, track, trackTimeline, event, snapshot, {
           volume: data.volume,
           scheduledTime,
-          noteKey: this.getNoteKeyForEvent(
+          noteKey: `${data.playbackGeneration}:` + this.getNoteKeyForEvent(
             trackTimeline,
             event,
             cycle,
@@ -709,6 +762,8 @@ export class LooperController {
           looperState,
           scheduledTime,
         });
+        (data.audioScheduling.percussionTimes ||= []).push(scheduledTime);
+        if (data.audioScheduling.percussionTimes.length > 32) data.audioScheduling.percussionTimes.shift();
       }
       if (localEnd < durationMs || cycleStart + durationMs > absoluteEndMs) break;
       cursor = cycleStart + durationMs;
@@ -740,7 +795,7 @@ export class LooperController {
         {
           volume: data.volume,
           scheduledTime: audioNow,
-          noteKey: this.getActiveNoteAtAbsoluteSource(
+          noteKey: `${data.playbackGeneration}:` + this.getActiveNoteAtAbsoluteSource(
             trackTimeline,
             absoluteSourceMs,
             durationMs,
@@ -757,14 +812,14 @@ export class LooperController {
   ) {
     const data = looperState?.looperData;
     if (
-      !data?.transport.playing ||
+      !data?.transport.playing || data.pendingLaunch ||
       typeof this.adapter.getAudioCurrentTime !== "function"
     ) {
       return;
     }
     const audioNow = Number.isFinite(resolvedClock.audioNow)
       ? resolvedClock.audioNow
-      : this.adapter.getAudioCurrentTime();
+      : this.getSchedulingAudioTime(looperState, now);
     if (!Number.isFinite(audioNow)) return;
     const sourceNow = Number.isFinite(resolvedClock.sourceNow)
       ? resolvedClock.sourceNow
@@ -800,7 +855,7 @@ export class LooperController {
             {
               volume: data.volume,
               scheduledTime: audioNow,
-              noteKey: activeNote.noteKey,
+              noteKey: `${data.playbackGeneration}:` + activeNote.noteKey,
               targetHonkIds: joined,
             },
           );
@@ -1083,7 +1138,7 @@ export class LooperController {
 
 function hasBeatGrid(timing) {
   return Boolean(
-    timing?.connected &&
+    (timing?.connected || timing?.internal) &&
     timing.beatIntervalMs > 0 &&
     Number.isFinite(timing.beatOriginMs) &&
     Number.isFinite(timing.beatPosition)

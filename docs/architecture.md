@@ -68,7 +68,7 @@ flowchart TD
 - `endXRSession()` requests session termination when one exists.
 - `dispose()` tears down runtime and renderer resources.
 
-`main.js` installs the AR/VR entry button, constructs the app, calls `initialize()`, then starts the render loop. `RuntimeHost.initialize()` registers two controllers, creates the optional instruction view, loads Honk/Metronome/Looper templates plus Stick/font assets, restores persistence, and handles any already-active XR session. The committed `SHOW_INSTRUCTION_PANEL = false` path hides the panel and ensures one default Metronome exists on XR entry only when restoration supplied none. The catalog can still create any number of additional Metronomes.
+`main.js` installs the AR/VR entry button, constructs the app, calls `initialize()`, then starts the render loop. `RuntimeHost.initialize()` registers two controllers, creates the optional instruction view, loads Honk/Metronome/Looper templates plus Stick/font assets, restores persistence, and handles any already-active XR session. The committed `SHOW_INSTRUCTION_PANEL = false` path hides the panel and ensures one default Metronome exists on XR entry only when restoration supplied none. The central admission policy rejects additional Metronomes, including catalog previews.
 
 Session end first suspends frame computation, then defers teardown one task so the browser and Three.js can finish dismantling the XR compositor. Runtime teardown cancels pending placement, finalizes every active Looper through its normal controller path, stops transports, writes one snapshot, releases interaction/audio state, resets transient subsystems, suspends audio, and restores the desktop environment. Persisted entities remain in the registry until explicit deletion or full application disposal.
 
@@ -274,7 +274,7 @@ The Stick is not a world-persisted entity. Persistence stores only `preferredSti
 - `LooperConnectionManager`;
 - controls, transient wire references, serialization, and cleanup.
 
-The transport state machine has `stopped`, `armed-recording`, `recording`, `armed-playback`, `playing`, and `paused` states, with a pending clocked-Pause action layered over active playback until its boundary arrives. Ordinary unclocked play keeps its explicit resume path. Connected Play always arms a restart at playhead zero on the next clock-grid beat, and connected Pause lets the current loop continue until the next grid beat before silencing it. Connected Record stays armed until the first squeeze onset or percussion hit, then starts the timeline at the beat immediately preceding that sound. Stop cancels any pending action.
+The transport state machine has `stopped`, `armed-recording`, `recording`, `armed-playback`, `playing`, and `paused` states, with pending restart and clocked-Pause actions layered over active playback until their boundary arrives. Play always arms a restart at playhead zero on the next external or internal 70 BPM beat. Programmatic Resume retains the paused source position separately. Connected Pause lets the current loop continue until the next grid beat before silencing it. Record stays armed until the first squeeze onset or percussion hit, then starts the timeline at the beat immediately preceding that sound. Stop cancels any pending action.
 
 Each track has a stable `trackId` and nullable `connectedHonkId`. Connecting validates the ID through an injected registry adapter. Replacing a connection first clears that track’s automation. Disconnecting clears automation/playback state and disposes its wire. Deleting a Honk explicitly disconnects matching tracks before the registry removes the Honk, so the target can still be resolved while automation and action voices are released.
 
@@ -300,19 +300,20 @@ The timeline records sampled Honk action snapshots and deterministic percussion 
 
 #### Recording finalization and phrase boundaries
 
-Stop is a declaration that capture is finished. Stop time is not musical content and is never a phrase-boundary input.
+Stop declares capture finished. Trailing idle time is excluded, while a note genuinely held through Stop retains its performed duration.
 
 For a beat-aware timeline, define:
 
 - `B` as the recorded beat interval;
 - `t_first` as the first musical-onset time relative to the launch beat;
 - `t_last` as the latest musical-onset time across every active track;
+- `t_end` as the last intentional content end, including normal releases and notes held through Stop;
 - `G` as the integer Gap value from 0 through 4.
 
 Finalization uses:
 
 ```text
-baseDuration = max((floor(t_last / B) + 1) * B, B)
+baseDuration = max((floor(t_last / B) + 1) * B, ceil(t_end / B) * B, B)
 duration = baseDuration + G * B
 next repeated first onset = duration + t_first
 ```
@@ -326,7 +327,7 @@ Musical onset extraction is semantic and shared by beat analysis and finalizatio
 - simultaneous attacks remain simultaneous entries;
 - the maximum onset over all Honk and percussion tracks is `t_last`.
 
-Releases, smoothing points, neutral samples, bend/morph cleanup, audio tails, the forced final recorder sample, and the safety `SqueezeEnd` written for a held note are retained as real events but do not contribute onsets. `contentEndMs` may therefore be later than `baseDuration`; that is valid. Playback releases active tracks at every wrap before applying the new repetition, so an event tail beyond the phrase boundary cannot leave a voice sounding into the next iteration.
+Releases do not contribute onsets, but intentional releases extend the phrase as needed to preserve held notes. Smoothing, neutral cleanup, audio tails and idle samples do not add beats. The implementation uses `1e-9` beat tolerance when rounding an intentional end. Playback releases the previous repetition before applying the next, preventing stuck voices across wraps.
 
 The end-to-end Stop path is:
 
@@ -339,30 +340,31 @@ XR Trigger on Looper Stop collider
 → force one final capture sample
 → write required neutral squeeze/bend safety releases
 → LooperTimeline.stopRecording(...)
-→ normalize every ordinary recording to its first action
-→ analyze/apply inferred beat when appropriate
-→ recompute onset-derived baseDuration
+→ retain the known source grid and within-beat onset offsets
+→ recompute baseDuration from musical onsets and intentional note ends
 → apply Gap
 → finish transport and update presentation
 ```
 
 For a Metronome-connected recording, Record remains armed until the first Honk/percussion onset. The controller uses the beat immediately preceding that onset as the timeline launch, so `t_first` retains its played phase. The known Metronome `B` is already present when timeline finalization runs.
 
-For an ordinary unconnected recording, timeline finalization normalizes the first performance action to time zero before the existing `LooperBeatDetector` attempts analysis. Record-button pre-roll is not a musical phase reference. If analysis succeeds, gate correction is applied relative to that normalized inferred grid and final duration is recomputed from corrected onsets. If no reliable beat is returned, the same normalization feeds the ordinary content-derived fallback without inventing a tempo. In both cases, post-performance idle time before Stop is excluded from the phrase boundary.
-
-The recorder prunes inactive timeline tracks at finalization. Delaying Stop therefore cannot manufacture extra active/serialized tracks, duplicate releases, move or omit attacks, or create a playback catch-up burst. A held final Honk gets one safety release at Stop; that event may sit after the phrase boundary, but `baseDuration` remains onset-derived.
-
-`LooperBeatDetector.apply()` may snap only existing rhythmic gate events within its established limit. Pitch, bend, morph, vowel, and other expressive timestamps are not quantized. Because corrected gates can move an onset, `apply()` calls `finalizeDuration()` again. `LooperController` then applies Gap and copies the resulting timeline duration to runtime state; no XR/controller layer overwrites it afterward.
+New disconnected recordings use the stable internal 70 BPM grid and explicit source-tempo metadata. Both connected and internal Record arm until a musical onset, preserving its offset from the preceding beat. Recorded gates and expression are never quantized. Normal releases and genuinely held-at-Stop durations are retained; trailing idle time is excluded. Legacy ordinary takes without reliable source metadata keep native millisecond timing.
 
 Session exit calls `LooperInstrument.finishRecording(now)` for each active recording before the single save, so exit uses this same path. `LooperTimeline.fromJSON()` reconstructs musical onsets and recomputes beat-aware duration, repairing older snapshots whose `recordedDurationMs`/`durationMs` contain Stop-time padding. It preserves ordinary non-beat fallback data where no beat exists.
 
-Playback is event-time preserving. Standalone playback derives position from elapsed time without accumulating boundary drift. Connected playback derives authoritative total elapsed time from the connected Metronome’s continuous beat position and the timeline’s recorded `B`; BPM changes retain phase. At every wrap, active Honk tracks are released before time zero is sampled again. Delayed Stop can therefore never create hidden empty beats between repetitions, and Gap `0` adds no complete silent beats.
+Playback preserves source event times. Both internal and connected playback derive authoritative position from their continuous beat clock and the known recorded `B`; BPM changes retain phase. Legacy takes without reliable source tempo retain native millisecond timing. At every wrap, the previous repetition releases before time zero is sampled again. Trailing idle time does not add hidden beats, and Gap `0` adds no complete silent beats.
 
 ### Metronome connections and clock ownership
 
 `MetronomeConnectionManager` owns stable relationships shaped as `{ metronomeId, portId, targetKind, targetId, targetPortId }`. Each of the four procedural source ports remains visibly rendered even when general collider debugging is disabled, owns at most one relationship, and each target Looper or Honk accepts only one incoming Metronome. Replacing either side removes the old relationship before creating the new one; an identical reconnect is idempotent. Missing, hidden, disposed, pending-placement, unsupported, and invalid-port endpoints are rejected.
 
-A Looper’s `getTimingForLooper(looperId, now)` lookup starts from this manager. There is no scan for a globally playing Metronome. Consequently several Metronomes can run independently, while all Loopers connected to one Metronome share its origin and continuous BPM phase. Pausing the Metronome silences its clicks and direct Honk pulses but retains a silent phase-continuous clock grid. Linked Loopers therefore keep playing, recording, and accepting beat-quantized Play/Pause commands independently. Restarting the Metronome resumes clicks on that existing grid rather than resetting Looper transport.
+A Looper’s timing lookup starts from this manager. An active-scene admission policy permits only one Metronome, including pending previews; the factory and runtime reserve before creation and the registry checks direct admissions. Inactive serialized snapshots do not reserve a slot. Legacy restores retain the first saved clock, report skipped objects/connections, preserve the original save and block autosave after partial restoration.
+
+Unconnected Loopers use `LOOPER_STANDALONE_BPM = 70` and a stable internal grid. Linked Loopers use only their connected Metronome. Metronome Pause stops connected transports and queued audio; volume zero only suppresses automatic click synthesis. Recorded wooden taps remain separate.
+
+Play restarts the recording origin at the strictly next beat (`1e-9` beat equality tolerance). Start All validates the tutorial pair atomically and shares one request time, beat and Web Audio anchor. The existing audio scheduler handles advance scheduling and releases the old generation at the boundary. Renderer stalls retain the intended beat, omit obsolete attacks and reconcile current held notes. Timeline schema 6 separates `sourceBeatIntervalMs` from current tempo; canonical events and bends never change on clock-source changes.
+
+Shake uses actual grip-source ownership and a bounded window with a boundary sample, reversals and travel/speed thresholds. Looper shake removes only its incoming clock with a safe stop; Honk shake removes only the grabbed source’s assignments, including formation wrappers. Other relationships and recorded events survive.
 
 The same adaptive spline/material/disposal helpers serve Looper/Honk and Metronome connection presentation, but the two relationship types remain independent. A Metronome clock wire may end on a Looper track node without changing that track’s `connectedHonkId` or recording. Clock wires use their own centralized color treatment and are recreated only from stable relationships.
 
@@ -433,11 +435,11 @@ On open, the radial view transforms local menu normal `(0, 0, 1)` by the control
 | Exit XR | Session event → discard pending previews → take one final Looper recording sample → finalize recordings and stop transports → write one scene snapshot → release controller/live interaction state and voices → subsystem resets → `SceneRuntime.resetAfterXR`. Persisted instruments remain for the next session. |
 | Dismiss instructions | Trigger raycast resolves the close button → instruction view hides → spawn flow becomes available. |
 | Open/select spawn menu | Right A with Grip released → `spawn.menu.open` → `SpawnMenuController` opens the parent category phase. The radial view preserves the existing wrist-roll mapping. Pulling at least 0.05 m toward the viewer along the signed opening-frame menu normal latches the parent, captures a child roll baseline, hides the parent ring, and shows the child ring at its 0.055 m depth layer. Pushing back to 0.035 m hides the child and returns to a cleanly rebased parent. A release confirms only a child leaf; release on the parent closes with no command. Any active Grip suppresses this route. |
-| Duplicate gripped instrument | Grip transform owns a single unlocked Honk/Looper/Metronome → Right A press → resolve canonical `gripSourceInstrumentState` behind the transform-profile wrapper → create a fresh-ID copy → copy durable instrument state only → retarget Grip to the duplicate. Metronome connections/beat state and Looper connections/transport state are not copied. |
+| Duplicate gripped instrument | Grip transform owns an unlocked Honk/Looper → Right A press → resolve canonical `gripSourceInstrumentState` behind the transform-profile wrapper → create a fresh-ID copy → copy durable instrument state only → retarget Grip to the duplicate. Looper connections/transport state are not copied. A Metronome duplication request is rejected by the admission policy before allocation. |
 | Preview/place/cancel | Catalog action creates one entity or several recipe Honks → preview attaches roots to a controller-local group → thumbstick scales → Trigger preserves world transforms and places; Grip/lifecycle cancellation removes preview entities. |
 | Spawn formation recipe | `SpawnCatalog` resolves a scale, chord, or preset recipe ID → each `FormationSpawner`/runtime recipe member creates an ordinary Honk with its own stable ID and tuning. |
 | Raycast Honk interactions | Ray target descriptor → owning Honk → semantic squeeze/vowel/ear/nose method → performance state; presentation applies morph/audio later in the frame. |
-| Raycast Metronome interactions | Eye target → owning Metronome → left Play latch or momentary right Pause action; playback drives its click and model-local-Z pendulum from one continuous beat phase. Pausing releases direct pulse voices and stops clicks/pendulum while the silent clock grid and linked Looper transports continue. |
+| Raycast Metronome interactions | Eye target → owning Metronome → left Play latch or momentary right Pause action; playback drives its click and model-local-Z pendulum from one continuous beat phase. Pausing releases direct pulse voices and stops clicks/pendulum and safely stops linked Looper transports. Volume zero keeps the clock and transports running. |
 | Connect/replace Metronome target | Trigger one of four procedural source ports → adaptive preview wire → release on a Looper node or Honk connector → stable-ID validation → `MetronomeConnectionManager.connect`; source-port and incoming-target replacement both dispose the previous wire/voice state. |
 | Grip move/rotate/scale | Ray/grip hit → registry owner → `TransformTargetResolver` → entity or lock proxy → `GripTransformSystem`; relationship phase updates group followers. |
 | Contact formation | Collision phase measures squeeze spheres → debounced graph edge changes → `ChordFormationService` derives connected components. |
@@ -447,10 +449,10 @@ On open, the radial view transforms local menu normal `(0, 0, 1)` by the control
 | Disconnect Looper track | Connection manager explicit disconnect, connected-Honk deletion, or configured grip-shake gesture → clear layer/voice → disconnect ID → dispose wire. |
 | Record Honk gestures | Record button → armed onset detection → first sound selects its preceding clock-grid beat → recording phase samples live snapshots by connected Honk ID into the track timeline. |
 | Record Stick percussion | Strike subscriber finds recording self/connected track → adds a deterministic percussion event through Looper public methods. |
-| Play/pause/resume/stop | Looper button → controller → validated transport transition. Unclocked transport remains immediate; connected Play and Pause are independently quantized to the next grid beat, while connected Record waits for its first sound. Clocked Play always restarts at playhead zero. |
+| Play/pause/resume/stop | Looper button → controller → validated transport transition. Play restarts on the next external or internal 70 BPM beat. Record waits for its first sound. Looper Pause is immediate internally and quantized when connected; programmatic Resume retains source position separately. |
 | Live interaction during playback | XR updates live state while Looper updates its own automation layer; Honk resolution combines both before presentation. |
 | Delete instrument | Delete intent → controller references detached → `InstrumentLifecycleService` relationship/audio cleanup → registry removal → entity-owned resource disposal. The in-memory scene is saved at XR exit. |
-| Restore scene | Store parses/migrates plain JSON → create every stable-ID entity → restore lock groups → Looper/Honk assignments and timelines → Metronome connections/wires → equipment preference. All restored transports remain stopped and unarmed. |
+| Restore scene | Store parses/migrates plain JSON → admit stable-ID entities (first saved Metronome only) → restore lock groups → Looper/Honk assignments and timelines → Metronome connections/wires → equipment preference. All restored transports remain stopped and unarmed. |
 
 ## Deterministic frame phases
 
@@ -638,7 +640,7 @@ This table records the earlier static audit. The [looper playback repair](looper
 | 10 | **Large cohesive runtime modules increase change risk.** Current sizes include `LooperController` about 760 lines, `SpawnRuntime` about 568, `LooperConnectionRuntime` about 517, `XRInteractionRuntime` about 503, `LooperTransportRuntime` about 500, and `RuntimeHost` about 486. | Splitting solely by line count can introduce adapters, cycles, and ordering bugs with no runtime benefit. | Change-frequency/coupling review, import graph, coverage gaps, and profiling to identify a real independently testable owner. | P3 maintainability |
 | 11 | **Dead/unreachable files and stale configuration need periodic proof, not assumption.** Static import verification found no confirmed unreachable source file. Low-confidence candidates are the unused `TextGeometry` re-export from `InstrumentAssetRuntime` and optional instruction-panel code currently gated by `SHOW_INSTRUCTION_PANEL = false`; both may be intentional development surfaces. Active-looking configuration such as the 120-second maximum recording duration, component IDs, and default distance is referenced and is not dead. | Removing reflective/test/development entry points can break browser-only or future configuration paths; leaving stale exports adds review noise but negligible runtime cost. | Generate an ESM import graph including dynamic imports and browser entry points, run coverage in desktop/XR, and search downstream consumers before removal. | P4 housekeeping |
 
-Potential work should begin with one representative Quest trace containing multiple Honk rows, several active Loopers, two Metronomes, and many stationary wires. The trace should separate CPU frame time, JS allocation/GC, GPU memory, network/decode startup, and audio scheduling. Until then every proposal remains a hypothesis.
+Potential work should begin with one representative Quest trace containing multiple Honk rows, several active Loopers, one Metronome, and many stationary wires. The trace should separate CPU frame time, JS allocation/GC, GPU memory, network/decode startup, and audio scheduling. Until then every proposal remains a hypothesis.
 
 ## Assumptions and intentional follow-up boundaries
 

@@ -248,7 +248,7 @@ test("schema-v4 gate recordings migrate without turning held notes into ramps", 
   const snapshot = createActionState();
 
   assert.equal(restored.sampleTrack(restored.getTrack("track-0"), 250, snapshot).squeeze, 1);
-  assert.equal(restored.toJSON().schemaVersion, 5);
+  assert.equal(restored.toJSON().schemaVersion, 6);
 });
 
 test("a single instantaneous sound gets one beat instead of a near-zero loop", () => {

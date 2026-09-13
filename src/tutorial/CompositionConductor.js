@@ -24,7 +24,7 @@ export class CompositionConductor {
     if(step.type==='spawn') {
       if(elapsed>=150) this.once('select',()=>this.adapter.select(step,this.adapter.virtuals[0],this.origin));
       if(elapsed>=900) this.once('place',()=>this.adapter.place());
-    } else if(['ack','clock-wire','wire','tempo','timbre','finalize','playback'].includes(step.type)) {
+    } else if(['ack','clock-wire','wire','tempo','timbre','finalize','playback','start-all'].includes(step.type)) {
       if(elapsed>=(step.type==='finalize'?0:300)) this.once('action',()=>this.adapter.command(step.action,now,this.origin));
       if(step.type==='playback') this.adapter.releaseVirtuals();
     } else if(step.type==='note') {
@@ -40,19 +40,20 @@ export class CompositionConductor {
       this.once('equip',()=>this.adapter.equip(true,this.origin));
       this.strike([{role:step.role,beat:1}],elapsed/C.beatMs);
     } else if(step.timed) {
-      if(step.type==='record' && elapsed>=100) this.once('arm',()=>this.adapter.command('record',now,this.origin));
+      if(step.type==='record' && elapsed>=100) this.once('arm',()=>this.adapter.command(step.action,now,this.origin));
       if(this.session.anchorMs===null && elapsed>=300) {
         const phrase=step.type==='phrase' || step.type==='performance';
-        const looper=this.adapter.get('looper');
-        if(phrase && !looper?.transport.playing) {
-          this.once('backing',()=>this.adapter.command('play',now,this.origin));return;
+        const looper=this.adapter.get('chordLooper');
+        if(phrase && !this.adapter.snapshot(now).aligned) {
+          this.once('backing',()=>this.adapter.command('start-all',now,this.origin));return;
         }
-        const anchor=this.adapter.nextBoundary(now,phrase ? 16 : 1,4);
+        const accompany=step.type==='record' && step.looperRole==='percussionLooper' && looper?.transport.playing;
+        const anchor=this.adapter.nextBoundary(now,phrase || accompany ? 16 : 1,4);
         if(anchor!==null) this.session.startCountIn(anchor,this.adapter.get('metronome').getBeatTiming(now).beatIntervalMs);
       }
       if(this.session.anchorMs===null) return;
       const beat=(now-this.session.anchorMs)/this.session.beatMs;
-      const needsStick=step.type==='record' || step.type==='drums';
+      const needsStick=(step.type==='record' && step.looperRole==='percussionLooper') || step.type==='drums';
       if(needsStick) this.once('equip',()=>this.adapter.equip(true,this.origin));
       const events=expectedForStep(step);
       const note=events.find(e=>beat>=e.beat && beat<e.beat+e.beats-0.07);
@@ -77,8 +78,8 @@ export class CompositionConductor {
   pause(message='Paused. Resume restarts this action with a count-in.') {
     if(this.paused || !this.running)return;
     this.paused=true;this.adapter.releaseVirtuals();
-    const looper=this.adapter.get('looper');this.recordInterrupted=Boolean(looper?.transport.recording||looper?.transport.recordArmed||this.session.step?.type==='finalize');
-    if(this.recordInterrupted) looper.clearRecording();else looper?.stop();
+    const looper=this.adapter.get(this.session.step?.looperRole || 'chordLooper');this.recordInterrupted=Boolean(looper?.transport.recording||looper?.transport.recordArmed||this.session.step?.type==='finalize');
+    if(this.recordInterrupted) looper.clearRecording();else { this.adapter.get('chordLooper')?.stop(); this.adapter.get('percussionLooper')?.stop(); }
     this.session.feedback=message;
   }
   resume(now) {

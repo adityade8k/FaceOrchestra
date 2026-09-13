@@ -20,3 +20,12 @@ test("AudioSystem preserves explicit release options", () => {
     ["release", "controller-voice", options],
   ]);
 });
+
+test('volume zero skips automatic click synthesis while recorded wood taps use their independent sound path', async () => {
+  const audio=new AudioSystem();let contexts=0,taps=0;
+  audio.ensureContext=async()=>{contexts++;throw new Error('A silent click must not allocate audio nodes');};
+  audio.percussionVoices={trigger(type,{volume}){assert.equal(type,'metronomeWood');assert.equal(volume,1);taps++;}};
+  await audio.triggerMetronomeClick({volume:0});
+  audio.triggerStickPercussion('metronomeWood',{volume:1});
+  assert.equal(contexts,0);assert.equal(taps,1);
+});

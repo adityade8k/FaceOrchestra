@@ -5,23 +5,49 @@ export class PercussionVoiceService {
   constructor({ ensureAudio, getDestination }) {
     this.ensureAudio = ensureAudio;
     this.getDestination = getDestination;
+    this.ownedOutputs = new Map();
+    this.ownerEpochs = new Map();
   }
 
-  async trigger(type, { volume = 1, scheduledTime = undefined } = {}) {
+  async trigger(type, { volume = 1, scheduledTime = undefined, ownerId = null } = {}) {
+    const epoch = this.ownerEpochs.get(ownerId) || 0;
     const context = await this.ensureAudio();
+    if (ownerId && epoch !== (this.ownerEpochs.get(ownerId) || 0)) return;
     const startTime = Number.isFinite(scheduledTime)
       ? Math.max(scheduledTime, context.currentTime)
       : context.currentTime;
     if (type === PERCUSSION_TYPES.hihat) {
-      this.triggerHihat(context, volume, startTime);
+      this.triggerHihat(context, volume, startTime, ownerId);
       return;
     }
     if (type === PERCUSSION_TYPES.metronomeWood) {
-      this.triggerMetronomeWood(context, volume, startTime);
+      this.triggerMetronomeWood(context, volume, startTime, ownerId);
       return;
     }
 
-    this.triggerBoink(context, volume, startTime);
+    this.triggerBoink(context, volume, startTime, ownerId);
+  }
+
+  ownOutput(ownerId, output, context) {
+    if (!ownerId) return;
+    let outputs = this.ownedOutputs.get(ownerId);
+    if (!outputs) this.ownedOutputs.set(ownerId, outputs = new Set());
+    const entry = {output, context}; outputs.add(entry);
+    const originalDisconnect = output.disconnect.bind(output);
+    output.disconnect = (...args) => {
+      outputs.delete(entry);
+      if (!outputs.size && this.ownedOutputs.get(ownerId) === outputs) this.ownedOutputs.delete(ownerId);
+      return originalDisconnect(...args);
+    };
+  }
+
+  cancelOwner(ownerId, {scheduledTime} = {}) {
+    this.ownerEpochs.set(ownerId, (this.ownerEpochs.get(ownerId) || 0)+1);
+    for (const {output, context} of this.ownedOutputs.get(ownerId) || []) {
+      const when = Math.max(scheduledTime ?? context.currentTime, context.currentTime);
+      output.gain.cancelScheduledValues(when);
+      output.gain.setValueAtTime(0, when);
+    }
   }
 
   createSoftClipCurve(amount = 1.4) {
@@ -38,7 +64,7 @@ export class PercussionVoiceService {
     return curve;
   }
 
-  triggerBoink(context, volume = 1, startTime = context?.currentTime) {
+  triggerBoink(context, volume = 1, startTime = context?.currentTime, ownerId = null) {
     if (!context) {
       return;
     }
@@ -46,6 +72,7 @@ export class PercussionVoiceService {
     const settings = PERCUSSION_PROFILES.boink;
     const now = Math.max(startTime, context.currentTime);
     const output = context.createGain();
+    this.ownOutput(ownerId, output, context);
     const bodyBus = context.createGain();
     const bodyDrive = context.createWaveShaper();
     const bodyTone = context.createBiquadFilter();
@@ -191,7 +218,7 @@ export class PercussionVoiceService {
     };
   }
 
-  triggerHihat(context, volume = 1, startTime = context?.currentTime) {
+  triggerHihat(context, volume = 1, startTime = context?.currentTime, ownerId = null) {
     if (!context) {
       return;
     }
@@ -206,6 +233,7 @@ export class PercussionVoiceService {
     }
 
     const output = context.createGain();
+    this.ownOutput(ownerId, output, context);
     const source = context.createBufferSource();
     const highpass = context.createBiquadFilter();
     const bandpass = context.createBiquadFilter();
@@ -323,7 +351,7 @@ export class PercussionVoiceService {
     cleanupSource.onended = cleanup;
   }
 
-  triggerMetronomeWood(context, volume = 1, startTime = context?.currentTime) {
+  triggerMetronomeWood(context, volume = 1, startTime = context?.currentTime, ownerId = null) {
     if (!context) {
       return;
     }
@@ -331,6 +359,7 @@ export class PercussionVoiceService {
     const settings = PERCUSSION_PROFILES.metronomeWood;
     const now = Math.max(startTime, context.currentTime);
     const output = context.createGain();
+    this.ownOutput(ownerId, output, context);
     const bodyBus = context.createGain();
     const bodyFilter = context.createBiquadFilter();
     const noiseSource = context.createBufferSource();

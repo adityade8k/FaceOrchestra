@@ -2,6 +2,7 @@ export const LOOPER_COMPONENT_ID = "looper";
 export const HONK_CONNECTION_TARGET_NAME = "HIT_honkConnection";
 
 export const LOOPER_TRACK_COUNT = 8;
+export const LOOPER_STANDALONE_BPM = 70;
 export const LOOPER_COLLIDER_OPACITY = 0.34;
 export const HONK_CONNECTION_COLLIDER_OPACITY = 0.32;
 export const LOOPER_WIRE_SETTINGS = {
@@ -50,6 +51,12 @@ export const LOOPER_SHAKE_DISCONNECT_SETTINGS = {
   intensity: 0.85,
   range: 0.16,
   cooldownMs: 700,
+  minReversals: 2,
+  reversalTravel: 0.055,
+  minTravel: 0.38,
+  maxFrameGapMs: 100,
+  maxStepMeters: 0.3,
+  maxSpeed: 8,
 };
 export const LOOPER_BUTTON_ACTIONS = ["play", "pause", "record", "stop"];
 export const LOOPER_WIRE_COLORS = [0x2f80ff, 0xff4f5e];

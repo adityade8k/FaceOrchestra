@@ -90,6 +90,7 @@ export class RuntimeHost {
     this.assetRepository = assetRepository || new AssetRepository();
 
     this.instrumentRegistry = new InstrumentRegistry();
+    this.instrumentRegistry.admission.onRejected = message => this.showRuntimeFeedback(message);
     this.interactionTargetRegistry = new InteractionTargetRegistry();
     this.instrumentFactory = new InstrumentFactory({
       registry: this.instrumentRegistry,
@@ -239,9 +240,15 @@ export class RuntimeHost {
       .register("metronome", (options) => new MetronomeInstrument({
         ...options,
         audioSystem: this.audioSystem,
-        onTransportChange: ({ metronome, playing }) => {
+        onTransportChange: ({ metronome, playing, now }) => {
           if (playing) return;
           this.releaseMetronomePulsesForMetronome(metronome.id);
+          for (const connection of this.metronomeConnectionManager.getConnectionsForMetronome(metronome.id)) {
+            if (connection.targetKind !== 'looper') continue;
+            const looper=this.instrumentRegistry.get(connection.targetId);
+            looper?.looperController.stopRecording(looper,now);
+            looper?.looperController.stopPlayback(looper);
+          }
         },
       }));
   }
@@ -317,14 +324,14 @@ export class RuntimeHost {
           ? saved.kind
           : saved.componentId || "honk";
         const baseScale = getSerializedUniformScale(saved.transform?.scale);
-        this.createSpawnedComponent(componentId, {
+        const root = this.createSpawnedComponent(componentId, {
           id: saved.id,
           tuning: saved.tuning,
           bpm: saved.bpm,
           volume: saved.volume,
           ...(baseScale === null ? {} : { baseScale }),
         });
-        return this.activeInstrumentState;
+        return root ? this.instrumentRegistry.get(saved.id) : null;
       },
       onEquipment: (equipment) => this.stickEquipmentSystem.restoreEquipmentPreference(equipment),
       onInstrumentRestored: (instrument, saved) => {
@@ -418,6 +425,7 @@ export class RuntimeHost {
           options,
         ),
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
+      cancelLooperPercussion: (id, options) => this.audioSystem.percussionVoices.cancelOwner(id, options),
       getTimingForLooper: (looperId, now) =>
         this.metronomeConnectionManager.getTimingForLooper(looperId, now),
       updateWireForTrack: (looper, track) => this.updateLooperWireForTrack(looper, track),
@@ -500,6 +508,8 @@ export class RuntimeHost {
   }
 
   dispose() {
+    clearTimeout(this.runtimeFeedbackTimer);
+    this.runtimeFeedbackElement?.remove();
     this.tutorial?.dispose();
     this.resetSubsystemsAfterSession();
     this.honkContactSystem.reset();

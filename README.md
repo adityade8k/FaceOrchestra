@@ -1,6 +1,6 @@
 # Face Orchestra XR
 
-Face Orchestra is a browser-based WebXR instrument for building music in space. Place expressive horn faces (“Honks”), arrange them into chords, record performances with Loopers, drive the room from one or more Metronomes, and play percussion with a handheld Stick.
+Face Orchestra is a browser-based WebXR instrument for building music in space. Place expressive horn faces (“Honks”), arrange them into chords, record performances with Loopers, drive the room from one Metronome, and play percussion with a handheld Stick.
 
 This page is the user manual. Developers should use [the architecture document](docs/architecture.md) and [the manual XR regression checklist](docs/manual-xr-regression.md).
 
@@ -45,7 +45,7 @@ npm run dev:https
 
 Open `https://YOUR_LAN_IP:8443` in the headset browser. The headset and computer must share a network, the firewall must allow port `8443`, and the headset must trust the certificate authority. Never commit the certificate or private key.
 
-When XR begins, Face Orchestra restores the last saved scene. If that scene has no Metronome, one Metronome is placed automatically in front of you. More Metronomes can be spawned from the menu.
+When XR begins, Face Orchestra restores the last saved scene. If that scene has no Metronome, one Metronome is placed automatically in front of you. At most one Metronome can be active, including a pending preview. Delete or cancel it before placing another.
 
 The optional in-headset instruction panel is currently disabled because `SHOW_INSTRUCTION_PANEL` is `false`. If a developer enables it, close it with Trigger before the automatic Metronome appears and the spawn menu becomes available.
 
@@ -63,7 +63,7 @@ Trigger and Grip work on either hand. Menu, lock, and delete actions have fixed 
 | Right thumbstick down/up during preview | Move the entire preview closer to/farther from the controller in steps. |
 | Hold **Grip** on an instrument | Move and rotate it with that controller. |
 | Thumbstick left/right on the gripping hand | Scale the current instrument or locked Honk group down/up in steps. |
-| **Grip + Right A** | Duplicate the unlocked Honk, Looper, or Metronome being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated. |
+| **Grip + Right A** | Duplicate the unlocked Honk or Looper being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated. |
 | **Right B** | Lock or unlock the pointed Honk formation, Looper, or Metronome. |
 | **Left X** | Delete the pointed instrument and clean up its audio and connections. |
 | Hold **Grip** where no transform target is pointed at | Equip the Stick; release Grip to put it away. |
@@ -105,7 +105,7 @@ Each Looper has eight track nodes, four transport buttons, and two controls:
 
 - **Record** starts or arms capture.
 - **Stop** finishes recording or stops playback. Pressing Stop again while fully idle clears the recording.
-- **Play** starts immediately when unconnected, or arms playback for the next beat when clocked.
+- **Play** restarts the recording origin on the strictly next beat, using the connected Metronome or the silent internal 70 BPM clock. Pressing exactly on a beat selects the following beat. Recorded offsets and expression remain intact.
 - **Pause** pauses immediately when unconnected, or on the next clock beat when clocked.
 - **Volume** controls Looper playback level.
 - **Gap** chooses 0, 1, 2, 3, or 4 extra whole beats between repetitions. A new Looper starts at Gap 0 with the right-hand Gap handle at its bottom endpoint.
@@ -114,24 +114,24 @@ Each Looper has eight track nodes, four transport buttons, and two controls:
 
 Pull Trigger on a track node, aim the temporary wire at a Honk connector, and release Trigger. Reconnecting the same node replaces its previous Honk. The wire follows both endpoints while they move and scale.
 
-To disconnect a Honk from Loopers, Grip the connected Honk and shake it through the configured gesture. Matching track assignments and wires are removed cleanly. Duplicated Loopers copy their controls, scale, and timeline into independent runtime state; track connections are intentionally left disconnected on the copy.
+To disconnect a Honk from Loopers, Grip the connected Honk and shake it through the configured gesture. Only that grabbed Honk’s direct track assignments are removed, including when its formation moves through a group wrapper. Metronome cables and recorded data remain. Gripping and deliberately shaking a Looper removes only its incoming Metronome cable, safely stops its scheduled audio, and retains all Honk assignments and recordings. Shaking the Metronome does neither. Ordinary relocation and jitter are ignored. Duplicated Loopers copy their controls, scale, and timeline into independent runtime state; track connections are intentionally left disconnected on the copy.
 
 ### Record and finish a phrase
 
-A Metronome-connected Looper waits for the first Honk attack or Stick strike, then launches the recording timeline at the beat immediately before that onset. This removes the wait before the performance while preserving the first note’s real position inside its beat. An unconnected Looper starts recording immediately; at Stop it trims the idle time before the first performance action, uses the existing beat detector when a reliable beat can be inferred, and otherwise keeps the ordinary non-tempo fallback.
+Record arms until the first Honk attack or Stick strike, then uses the beat immediately before that onset as the recording origin. An unconnected Looper records against a known 70 BPM internal grid; a connected Looper uses its running Metronome. The first note keeps its actual offset within the beat. A paused connected Metronome must be started before recording or playback.
 
 Stop always remains under the musician’s control. Recording does not automatically stop after the final note, so you may wait and play another note whenever you choose.
 
 When you do press Stop:
 
 - Stop ends capture but does not add trailing silence.
-- The base loop boundary is the beat immediately after the final played onset—Honk attack or percussion strike—not the time Stop was pressed.
-- A Metronome-connected first note keeps its clock-relative position within the beat on every repetition; an ordinary recording begins at its first performance action.
+- The base loop boundary follows the final played onset and extends as needed to preserve intentional note releases.
+- The first note keeps its clock-relative position within the beat on every repetition.
 - Gap 0 adds no extra beat. Gap 1–4 adds exactly that many whole beats.
-- Waiting one second or twenty seconds before Stop does not change the finished rhythm.
-- A held final Honk is safely released at Stop, but that safety release does not lengthen the phrase.
+- Waiting silently one second or twenty seconds before Stop does not change the finished rhythm.
+- A held final Honk is safely released at Stop; its held duration is preserved. Normal releases can also extend the phrase beyond the final onset.
 
-Recorded attacks, releases, bends, vowels, nose/ear motion, and percussion keep their captured timing apart from the existing small rhythmic-gate correction used by beat analysis.
+Recorded attacks, releases, bends, vowels, nose/ear motion, and percussion keep their captured source timestamps. Playback scales them together with tempo. For example, a 16-beat take recorded at 80 BPM lasts 12 seconds at 80 and about 13.714 seconds at internal 70 BPM. The label shows `70 BPM · Internal` when disconnected. No extra Metronome or click is created. Legacy recordings without a reliable source tempo retain their native millisecond timing; see [compatibility policy](docs/tutorial.md#clocks-and-compatibility).
 
 ### Record Stick hits
 
@@ -152,11 +152,11 @@ Every Metronome has:
 
 Pull Trigger on a port, aim at any Looper track node or Honk connector, and release Trigger. Each port owns at most one connection, and each target accepts at most one incoming Metronome; making a replacement removes the prior wire.
 
-A Looper follows only its wired Metronome. Multiple Metronomes can run at different tempos without becoming a global clock. A Honk connection pulses that Honk once per beat; any Honks touching it at that moment join the pulse. Frame hitches do not create a catch-up burst.
+Only one Metronome is admitted across the active free-play, tutorial or simulation scene. A pending preview reserves its slot. A second creation or duplication shows “Only one metronome can be placed. Use the existing metronome.” A Looper follows its wired Metronome; free play allows any number of Loopers. A Honk connection pulses that Honk once per beat; any Honks touching it at that moment join the pulse. Frame hitches do not create a catch-up burst.
 
-Pausing a Metronome silences its clicks, stops its pendulum, and releases direct Honk pulses immediately. Its clock phase remains available, so connected Loopers continue on the same silent grid. Changing BPM preserves phase rather than restarting linked playback. Play resumes audible clicks on that phase.
+Volume zero silences only automatic clicks: the beat clock, pendulum and synchronized Loopers continue. Recorded Metronome-body stick taps keep their own playback volume. Pause stops the clock’s performance and safely stops connected Loopers; retained recordings can be restarted once the clock runs again. Changing BPM during playback preserves musical phase.
 
-Right B can lock or unlock a Metronome. Lock changes must leave its authored material and texture untouched. Play, Pause, BPM, Volume, ports, wires, duplication, placement, and pendulum behavior remain the same.
+Right B can lock or unlock a Metronome. Lock changes must leave its authored material and texture untouched. Play, Pause, BPM, Volume, ports, wires, placement, and pendulum controls remain available. Metronome duplication is rejected by the singleton policy.
 
 ## Use the Stick
 
@@ -164,6 +164,7 @@ Hold Grip while pointing away from an instrument transform target. The Stick att
 
 - Strike a Honk for a `boink`.
 - Strike a Looper for a `hihat`.
+- Strike the Metronome body for a wooden tap; every connected, actively recording Looper receives it on its clock-cable target track.
 
 One continuous contact creates one strike and one haptic pulse. Separate the Stick and target before striking again. Stick hits can be recorded by an active Looper as described above.
 
@@ -179,6 +180,8 @@ Face Orchestra saves once when you exit immersive XR. If a Looper is still recor
 - the preferred Stick type.
 
 Loopers restore stopped and unarmed. Metronomes restore paused and unlocked. Live Trigger holds, audio nodes, temporary contact formations, menu/placement previews, controller state, pendulum phase, and other transient XR state are not saved.
+
+Legacy scenes with several Metronomes restore the first in saved order and report skipped objects and affected connections. The original storage value stays untouched and autosave is blocked after a partial restore. Recovery data and details are available in `runtime.sceneRestorer.lastReport` / `runtime.scenePersistence.restoreReport`; export the original before deliberately replacing it.
 
 To clear only the current saved scene during development:
 
@@ -196,7 +199,7 @@ localStorage.removeItem("face-orchestra:scene:v3");
 - **A preview will not place:** use Trigger; Grip cancels it. The right thumbstick changes preview scale.
 - **Cannot transform an object:** aim at its body transform target and hold Grip. If no target is selected, Grip intentionally equips the Stick.
 - **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Stop-time waiting should never become a loop gap; use the XR regression checklist if it does.
-- **Looper has no tempo when unconnected:** beat inference needs a usable rhythmic pattern. If it cannot infer one, the Looper deliberately keeps its ordinary fallback instead of inventing a BPM.
+- **Looper is disconnected:** it uses the stable internal 70 BPM grid. Reconnect its Metronome cable to follow the lesson’s 80 BPM clock.
 - **Saved scene did not update:** saving occurs on immersive XR exit, not on each edit. Exit XR cleanly and inspect browser storage for `face-orchestra:scene:v3`.
 - **Metronome appearance changes after Right B:** that is a regression. Its map identity should remain authored through repeated lock/unlock; follow the Metronome section of the XR checklist.
 

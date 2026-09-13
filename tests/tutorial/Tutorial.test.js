@@ -80,7 +80,7 @@ test('percussion matching rejects missing, extra, mistimed and wrong-route hits 
   for(const wrong of [actual.slice(1),[...actual,actual[0]],actual.map((e,i)=>i?e:{...e,beat:0.6}),actual.map((e,i)=>i?e:{...e,lane:'track-0'}),actual.map((e,i)=>i?e:{...e,role:'looper'}),actual.map((e,i)=>i?e:{...e,withdrawn:false})])
     assert.equal(validateSequence(C.percussion,wrong,{kind:'strike'}).ok,false);
 });
-function takeFixture() {
+function takeFixture(role) {
   const evidence=C.backing.map((g,i)=>note({id:`c${i}`,role:g.role,midis:g.midis,beat:g.beat,startMs:g.beat*750,endMs:(g.beat+g.beats)*750,durationBeats:g.beats}));
   evidence.push(...C.percussion.map((p,i)=>({id:`d${i}`,kind:'strike',...p,percussionType:p.type,withdrawn:true,recordedCount:1})));
   const tracks=C.backing.map(g=>({trackId:`track-${g.trackIndex}`,trackIndex:g.trackIndex,events:[{type:'squeezeStart',timeMs:g.beat*750},{type:'squeezeEnd',timeMs:(g.beat+g.beats)*750}]}));
@@ -88,19 +88,32 @@ function takeFixture() {
     let track=tracks.find(t=>t.trackId===p.lane);if(!track){track={trackId:p.lane,events:[]};tracks.push(track);}
     track.events.push({type:'drumHit',timeMs:p.beat*750,value:p.type});
   }
-  return {evidence,timeline:{timingMode:'metronome',durationMs:12000,beatIntervalMs:750,gapBeats:0,tracks}};
+  const chords=role==='chordLooper';
+  const ownedEvidence=evidence.filter(e=>chords?e.kind==='note':e.kind==='strike');
+  const ownedTracks=tracks.filter(t=>chords?t.trackIndex<4:t.trackIndex===undefined);
+  return {evidence:ownedEvidence,timeline:{timingMode:'metronome',durationMs:12000,beatIntervalMs:750,gapBeats:0,tracks:ownedTracks}};
 }
-test('take validation requires both real voice evidence and the finalized timeline lanes',()=>{
-  const {timeline,evidence}=takeFixture();assert.equal(validateTake(timeline,evidence).ok,true);
-  assert.equal(validateTake({...timeline,durationMs:12750},evidence).ok,false);
-  assert.equal(validateTake({...timeline,gapBeats:1},evidence).ok,false);
-  assert.equal(validateTake(timeline,evidence.map(e=>e.kind==='strike'?{...e,recordedCount:0}:e)).ok,false);
-  assert.equal(validateTake(timeline,evidence.map(e=>e.kind==='note'?{...e,invalidMembers:true}:e)).ok,false);
-  timeline.tracks.find(t=>t.trackId==='track-4').events.pop();assert.equal(validateTake(timeline,evidence).ok,false);
+test('independent take validation rejects wrong ownership and incomplete real evidence',()=>{
+  for(const role of ['chordLooper','percussionLooper']) {
+    const {timeline,evidence}=takeFixture(role);
+    assert.equal(validateTake(timeline,evidence,role).ok,true);
+    assert.equal(validateTake({...timeline,durationMs:12750},evidence,role).ok,false);
+    assert.equal(validateTake({...timeline,gapBeats:1},evidence,role).ok,false);
+    assert.equal(validateTake(timeline,evidence.slice(1),role).ok,false);
+    const extra=role==='chordLooper'?{type:'drumHit',timeMs:0,value:'hihat'}:{type:'squeezeStart',timeMs:0,value:1};
+    timeline.tracks[0].events.push(extra);
+    assert.equal(validateTake(timeline,evidence,role).ok,false);
+  }
 });
-test('failed recording retries a new take; never fabricates timeline success',()=>{
-  const s=new TutorialSession({steps:[{id:'record',type:'record',timed:true},{id:'final',type:'finalize'}]});s.index=1;s.takeEvidence=[];
-  s.update({timeline:{},recording:false},10);assert.equal(s.failed,true);s.retry(20);assert.equal(s.step.id,'record');assert.equal(s.failed,false);
+test('failed percussion retries only percussion while preserving chord evidence',()=>{
+  const steps=[{id:'record-chords',type:'record',looperRole:'chordLooper'},
+    {id:'record-percussion',type:'record',looperRole:'percussionLooper'},
+    {id:'final',type:'finalize',looperRole:'percussionLooper'}];
+  const s=new TutorialSession({steps});s.index=2;s.takeEvidence.chordLooper=[note()];
+  s.validatedTakes.chordLooper='retained';
+  s.update({loopers:{percussionLooper:{timeline:{},recording:false}}},10);
+  assert.equal(s.failed,true);s.retry(20);assert.equal(s.step.id,'record-percussion');
+  assert.equal(s.takeEvidence.chordLooper.length,1);assert.equal(s.validatedTakes.chordLooper,'retained');
 });
 test('mode policy blocks restore/save for practice, simulation and transitions',async()=>{
   for(const sessionMode of ['practice','simulation','transition']) {
@@ -132,7 +145,7 @@ test('simulation route uses shared predicates without awarding omitted beginner 
   const {SIMULATION_STEPS}=await import('../../src/tutorial/lessonSteps.js');
   const sim=new TutorialSession({mode:'simulation'}),practice=new TutorialSession();
   assert.equal(sim.steps,SIMULATION_STEPS);assert.equal(practice.steps,LESSON_STEPS);
-  assert.ok(sim.steps.some(s=>s.id==='record'));assert.ok(sim.steps.some(s=>s.id==='performance'));
+  assert.ok(sim.steps.some(s=>s.id==='record-chords'));assert.ok(sim.steps.some(s=>s.id==='performance'));
   assert.ok(!sim.steps.some(s=>s.id==='learn-C4'));assert.ok(practice.steps.some(s=>s.id==='learn-C4'));
   for(const s of sim.steps)assert.equal(s.type,LESSON_STEPS.find(p=>p.id===s.id).type);
   assert.equal(practice.checkpoints.size,0);
@@ -160,4 +173,23 @@ test('XR entry and late initialization cannot spawn free-play defaults in Tutori
   SessionRuntimeMethods.onRuntimeInitialized.call(runtime);
   assert.equal(placedPanel,1);assert.equal(spawned,0);
   runtime.sessionMode='practice';SessionRuntimeMethods.onRuntimeInitialized.call(runtime);assert.equal(spawned,0);
+});
+
+test('repairing one clock cable retains unrelated checkpoints and returns to the interrupted lesson',()=>{
+  const clockA={id:'clock-a',type:'clock-wire',looperRole:'chordLooper'},clockB={id:'clock-b',type:'clock-wire',looperRole:'percussionLooper'};
+  const s=new TutorialSession({steps:[clockA,clockB,step]});
+  const snapshot={loopers:{chordLooper:{clockWired:true},percussionLooper:{clockWired:true}}};
+  s.update(snapshot,10);s.update(snapshot,20);s.validatedTakes.chordLooper='original chord';s.takeEvidence.chordLooper=[note()];
+  snapshot.loopers.percussionLooper.clockWired=false;s.update(snapshot,30);
+  assert.equal(s.index,1);assert.ok(s.checkpoints.has('clock-a'));assert.equal(s.checkpoints.has('clock-b'),false);
+  snapshot.loopers.percussionLooper.clockWired=true;s.update(snapshot,40);
+  assert.equal(s.index,2);assert.equal(s.validatedTakes.chordLooper,'original chord');assert.equal(s.takeEvidence.chordLooper.length,1);
+});
+test('Start All teaching requires shared phase and launch, not merely two playing transports',()=>{
+  const s=new TutorialSession({steps:[{id:'start-all',type:'start-all',action:'start-all'}]});
+  s.accept({id:'command',kind:'command',origin:'learner',action:'start-all',startMs:1});
+  const snapshot={liveGestures:0,anyStickContact:false,audioRunning:true,startAllRequest:{ok:true,targetBeat:10},aligned:false,
+    loopers:{chordLooper:{playing:true,playbackObserved:true,startBeat:10},percussionLooper:{playing:true,playbackObserved:true,startBeat:11}}};
+  s.update(snapshot,100);s.update(snapshot,20000);assert.equal(s.complete,false);
+  snapshot.aligned=true;snapshot.loopers.percussionLooper.startBeat=10;s.update(snapshot,21000);s.update(snapshot,34000);assert.equal(s.complete,true);
 });

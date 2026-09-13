@@ -8,7 +8,7 @@ const pages=await fetch(`${endpoint}/json/list`).then(r=>r.json());
 const page=pages.find(p=>p.type==='page'&&p.url.startsWith(appUrl));
 if(!page)throw new Error(`Open ${appUrl} in the dedicated Chrome test profile first.`);
 const ws=new WebSocket(page.webSocketDebuggerUrl);
-const requests=new Map();let nextId=0;
+const requests=new Map();let nextId=0;const captures=[];
 const send=(method,params={})=>new Promise((resolve,reject)=>{
   const id=++nextId;requests.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}));
 });
@@ -20,6 +20,11 @@ ws.onmessage=({data})=>{
   } else if(message.method==='Runtime.bindingCalled'&&message.params.name==='tutorialTestProgress') {
     const progress=JSON.parse(message.params.payload);
     console.log(`${progress.seconds}s ${progress.step || 'performance complete'}`);
+    if(progress.step==='performance') captures.push((async()=>{
+      await new Promise(resolve=>setTimeout(resolve,600));
+      const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+      const path='/tmp/face-orchestra-two-loopers.png';writeFileSync(path,Buffer.from(shot.data,'base64'));return path;
+    })());
   }
 };
 await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject;});
@@ -32,10 +37,14 @@ try {
     expression:`(async()=>{
       const {app}=await import('/src/main.js');
       const {validate}=await import('/scripts/validate-tutorial-browser.mjs');
-      return validate(app,{onProgress:p=>tutorialTestProgress(JSON.stringify(p))});
+      const report=await validate(app,{onProgress:p=>tutorialTestProgress(JSON.stringify(p))});
+      report.manualHonkRegression=await (await import('/scripts/validate-manual-honks-browser.mjs')).validate();
+      report.presentationRegression=await (await import('/scripts/validate-honk-presentation-browser.mjs')).validate();
+      return report;
     })()`,awaitPromise:true,returnByValue:true,userGesture:true,timeout:480000,
   });
   if(result.exceptionDetails)throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
-  writeFileSync(output,`${JSON.stringify(result.result.value,null,2)}\n`);
+  const report=result.result.value;report.screenshots=await Promise.all(captures);
+  writeFileSync(output,`${JSON.stringify(report,null,2)}\n`);
   console.log(`Passed. Evidence: ${output}`);
 } finally {ws.close();}

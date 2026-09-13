@@ -30,7 +30,7 @@ test("a genuine squeeze release does not turn a held note into a fade", () => {
   assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 500, snapshot).squeeze, 0);
 });
 
-test("standalone beat inference preserves off-grid attacks and releases exactly", () => {
+test("standalone 70 BPM reference preserves off-grid attacks and releases exactly", () => {
   const { controller, looper, input } = createRecordingHarness();
   controller.startRecording(looper, 0);
   for (const [timeMs, squeeze] of [[0, 1], [80, 0], [510, 1], [590, 0], [1000, 1], [1080, 0]]) {
@@ -42,7 +42,8 @@ test("standalone beat inference preserves off-grid attacks and releases exactly"
 
   const gates = looper.looperData.timeline.getTrack("track-0").gateEvents;
   assert.deepEqual(gates.map(({ timeMs }) => timeMs), [0, 80, 510, 590, 1000, 1080]);
-  assert.equal(looper.looperData.timeline.beatAnalysis?.beatIntervalMs, 500);
+  assert.equal(looper.looperData.timeline.sourceBeatIntervalMs, 60000/70);
+  assert.equal(looper.looperData.timeline.beatAnalysis, null);
 });
 
 test("frame capture retains repeated local bend turns and exact plateaus", () => {
@@ -86,9 +87,10 @@ test("a baseline never defines standalone pre-roll and held-at-Stop preserves du
 
 test("audio lookahead schedules a complete short note between visual frames", () => {
   const calls = [];
+  let audioNow = 9.8;
   const adapter = {
     ensureAudio() {},
-    getAudioCurrentTime: () => 10,
+    getAudioCurrentTime: () => audioNow,
     getTimingForLooper: () => ({ connected: false }),
     isPlayableHonkId: () => true,
     getPlaybackTargetIds: (_track, honkId) => [honkId],
@@ -135,7 +137,11 @@ test("audio lookahead schedules a complete short note between visual frames", ()
   looper.looperData.timeline = timeline;
   looper.looperData.hasRecording = true;
 
-  controller.startPlayback(looper, 1000);
+  looper.looperData.localClockOriginMs = 1000;
+  controller.startPlayback(looper, 800);
+  audioNow = 10;
+  controller.updateClockedTransports([looper], 1000);
+  controller.schedulePlaybackAudioForLooper(looper, 1000);
   controller.stopAudioScheduler(looper, { release: false });
 
   assert.deepEqual(calls.map(([kind, _voiceId, time]) => [kind, time]), [

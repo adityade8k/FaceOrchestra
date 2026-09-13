@@ -62,21 +62,25 @@ export function validateSequence(expected, actual, { kind = 'note', partial = fa
   }
   return {ok:true, matched:used.size};
 }
-export function validateTake(timeline, evidence) {
+export function validateTake(timeline, evidence, role) {
+  const chords = role === "chordLooper";
+  if (!["chordLooper", "percussionLooper"].includes(role)) return fail("Specify the recording owner.");
   if (!timeline || timeline.timingMode !== 'metronome') return fail('Record with the connected Metronome running.');
   if (timeline.gapBeats !== 0 || Math.abs(timeline.durationMs / timeline.beatIntervalMs - 16) > 0.01)
     return fail('The captured loop must be 16 beats with zero added Gap. Re-record the take.');
-  const liveChords = validateSequence(C.backing.map(g=>({...g,midis:g.midis})), evidence);
-  if (!liveChords.ok) return liveChords;
-  const liveDrums = validateSequence(C.percussion, evidence, {kind:'strike'});
-  if (!liveDrums.ok) return liveDrums;
-  if (evidence.filter(e=>e.kind==='strike').some(e=>e.recordedCount !== 1)) return fail('A sounding tap was not recorded exactly once. Check its cable route.');
+  if (chords && evidence.some(e=>e.kind==='strike')) return fail('Keep percussion out of the chord take.');
+  if (!chords && evidence.some(e=>e.kind==='note')) return fail('Record only stick taps in Percussion Looper.');
+  const live = chords ? validateSequence(C.backing, evidence) : validateSequence(C.percussion, evidence, {kind:'strike'});
+  if (!live.ok) return live;
+  if (!chords && evidence.filter(e=>e.kind==='strike').some(e=>e.recordedCount !== 1)) return fail('Each tap must enter only Percussion Looper through its real cable route.');
   const gates = [], drums = [];
   for (const track of timeline.tracks || []) {
     let open = null;
     for (const e of track.events || []) {
       if (e.type === 'drumHit') drums.push({kind:'strike',role:C.percussion.find(p=>p.type===e.value)?.role || 'unknown',
         beat:e.timeMs / timeline.beatIntervalMs, lane:track.trackId, percussionType:e.value,withdrawn:true});
+      if (!chords && ['squeezeStart','squeezeEnd'].includes(e.type)) return fail('Percussion take contains a pitched squeeze.');
+      if (chords && e.type === 'drumHit') return fail('Chord take contains percussion.');
       if (e.type === 'squeezeStart') {
         if (open) return fail('The timeline contains overlapping chord gates.');
         open = e;
@@ -94,8 +98,7 @@ export function validateTake(timeline, evidence) {
     }
     if (open) return fail('A recorded chord has no release.');
   }
-  const captured = validateSequence(C.backing.map(g=>({...g,midis:g.midis})),gates);
-  return captured.ok ? validateSequence(C.percussion,drums,{kind:'strike'}) : captured;
+  return chords ? validateSequence(C.backing,gates) : validateSequence(C.percussion,drums,{kind:'strike'});
 }
 export function validateSetup(step, snapshot, origin) {
   const role = snapshot.roles?.[step.role];
@@ -104,19 +107,19 @@ export function validateSetup(step, snapshot, origin) {
     if (!role.correctPitch) return fail('The bound instrument was retuned. Restore its requested pitches.');
     if (!role.contactExact || role.stableMs < T.contactStableMs) return fail('Keep each chord touching internally and separate from all other groups.');
   } else if (step.type === 'clock-wire') {
-    if (!snapshot.clockWired) return fail('Connect the Metronome to Looper node 6.');
+    if (!snapshot.loopers?.[step.looperRole]?.clockWired) return fail(`Connect the Metronome to ${step.looperRole} node 6.`);
   } else if (step.type === 'wire') {
     if (!snapshot.wires?.[step.role]) return fail(`Connect ${step.role} to its assigned Looper node.`);
   } else if (step.type === 'tempo') {
-    if (!snapshot.clockPlaying || Math.abs(snapshot.bpm - C.bpm) > T.bpm || snapshot.tempoStableMs < T.setupStableMs || snapshot.gapBeats !== 0)
-      return fail('Start the clock at 80 BPM and leave Looper Gap at zero.');
+    if (!snapshot.clockPlaying || Math.abs(snapshot.bpm - C.bpm) > T.bpm || snapshot.tempoStableMs < T.setupStableMs || ['chordLooper','percussionLooper'].some(role=>snapshot.loopers?.[role]?.gapBeats !== 0))
+      return fail('Start the clock at 80 BPM and leave both Looper Gaps at zero.');
   } else if (step.type === 'timbre') {
     if (!snapshot.timbreReady) return fail('Use O and soften all backing Honks with their nose controls; lower Looper volume.');
   } else return null;
   return pass();
 }
 export function expectedForStep(step) {
-  if (step.type === 'chords' || step.type === 'record') return C.backing.map(g=>({...g,midis:g.midis}));
+  if (step.type === 'chords' || (step.type === 'record' && step.looperRole === 'chordLooper')) return C.backing.map(g=>({...g,midis:g.midis}));
   if (step.type === 'phrase') return C.phrases[step.phrase].filter(e=>e.pitch);
   if (step.type === 'performance') return performanceEvents().filter(e=>e.pitch);
   return [];

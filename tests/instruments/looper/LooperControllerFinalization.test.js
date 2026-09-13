@@ -69,48 +69,20 @@ test("a real late release and a note held until Stop preserve their performed du
   assert.deepEqual(getPlaybackAttacks(held.timeline), [100, 1100, 1600]);
 });
 
-test("successfully inferred standalone recordings trim Record pre-roll and delayed Stop", () => {
-  const immediate = recordInferredHonkPhrase({ stopMs: 2200 });
-  const delayed = recordInferredHonkPhrase({ stopMs: 7000 });
-
-  for (const recording of [immediate, delayed]) {
-    assert.equal(recording.timeline.beatAnalysis?.inferred, true);
-    assert.equal(recording.timeline.beatIntervalMs, BEAT_INTERVAL_MS);
-    assert.deepEqual(recording.timeline.getMusicalOnsetTimes(), [0, 500, 1000, 1500]);
-    assert.equal(recording.timeline.recordedDurationMs, 2000);
-    assert.equal(recording.timeline.durationMs, 2000);
-    assert.equal(
-      recording.timeline.durationMs + recording.timeline.getMusicalOnsetTimes()[0],
-      2000,
-    );
-    assert.deepEqual(
-      getPlaybackAttacks(
-        recording.timeline,
-        Array.from({ length: 37 }, (_value, index) => index * 100),
-      ),
-      [0, 500, 1000, 1500, 2000, 2500, 3000, 3500],
-    );
+test('standalone recordings retain off-grid events against a known 70 BPM reference', () => {
+  const immediate=recordInferredHonkPhrase({stopMs:2200});
+  const delayed=recordInferredHonkPhrase({stopMs:7000});
+  for(const recording of [immediate,delayed]) {
+    assert.equal(recording.timeline.timingMode,'internal');
+    assert.equal(recording.timeline.sourceBeatIntervalMs,60000/70);
+    assert.equal(recording.timeline.beatAnalysis,null);
+    assert.deepEqual(recording.timeline.getMusicalOnsetTimes(),[500,1000,1500,2000]);
+    assert.equal(recording.timeline.durationMs,3*60000/70);
   }
-
-  assert.deepEqual(immediate.timeline.toJSON(), delayed.timeline.toJSON());
-
-  const held = recordInferredHonkPhrase({ stopMs: 7000, holdFinalNote: true });
-  const heldTrack = held.timeline.getTrack("track-0");
-  assert.equal(held.timeline.recordedDurationMs, 6500);
-  assert.equal(held.timeline.durationMs, 6500);
-  assert.deepEqual(held.timeline.getMusicalOnsetTimes(), [0, 500, 1000, 1500]);
-  assert.equal(heldTrack.events.filter((event) => (
-    event.type === LooperActionEventType.SqueezeEnd && event.timeMs === 6500
-  )).length, 1);
-
-  const fallback = createHarness({ connected: false });
-  fallback.controller.startRecording(fallback.looper, 0);
-  setHonk(fallback, 0, 100, 1);
-  setHonk(fallback, 0, 250, 0);
-  fallback.controller.stopRecording(fallback.looper, 5000);
-  assert.equal(fallback.timeline.beatIntervalMs, 0);
-  assert.deepEqual(fallback.timeline.getMusicalOnsetTimes(), [0]);
-  assert.equal(fallback.timeline.recordedDurationMs, 150);
+  assert.deepEqual(immediate.timeline.toJSON(),delayed.timeline.toJSON());
+  const held=recordInferredHonkPhrase({stopMs:7000,holdFinalNote:true});
+  assert.ok(held.timeline.recordedDurationMs>=7000);
+  assert.equal(held.timeline.getTrack('track-0').gateEvents.at(-1).timeMs,7000);
 });
 
 test("latest simultaneous and cross-track Honk onsets control one boundary", () => {
