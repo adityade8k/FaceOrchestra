@@ -3,12 +3,14 @@ import { SHOW_INSTRUCTION_PANEL } from "../../config/ui.js";
 
 export const SessionRuntimeMethods = {
     onRuntimeInitialized() {
+      if (this.tutorial && this.sessionMode !== "play") return;
       if (this.xrSessionActive && this.instructionPanelClosed) {
         this.spawnDefaultInstrumentPreview();
       }
     },
     onXRSessionStart() {
       this.xrSessionActive = true;
+      if (this.tutorial) { this.tutorial.onXRStart(); return; }
       this.instructionPanelClosed = !SHOW_INSTRUCTION_PANEL;
   
       if (SHOW_INSTRUCTION_PANEL) {
@@ -35,6 +37,7 @@ export const SessionRuntimeMethods = {
         didSave = this.debugMode ? false : this.savePersistedSceneOnXRExit();
       } finally {
         this.resetSubsystemsAfterSession();
+        this.tutorial?.onXREnd();
         this.audioSystem?.suspend?.()?.catch?.((error) => {
           console.warn("Could not suspend audio after XR exit:", error);
         });

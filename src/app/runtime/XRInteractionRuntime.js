@@ -51,6 +51,7 @@ export const XRInteractionRuntimeMethods = {
       );
     },
     handleTriggerBeginIntent(controller) {
+      if (this.tutorial?.capturePanelTrigger(controller)) return;
       if (this.pendingSpawnPlacement) {
         this.placePendingSpawnPlacement(controller);
         return;
@@ -181,6 +182,7 @@ export const XRInteractionRuntimeMethods = {
       }
     },
     handleTriggerEndIntent(controller) {
+      if (this.tutorial?.releasePanelTrigger(controller)) return;
       if (this.pendingSpawnPlacement) {
         return;
       }
@@ -530,7 +532,8 @@ export const XRInteractionRuntimeMethods = {
         return null;
       }
   
-      return this.raycastSystem.getCurrentHit(controller);
+      const hit = this.raycastSystem.getCurrentHit(controller);
+      return this.tutorial?.nearestPanelHit(controller, hit) || hit;
     },
     setRaycasterFromController(controller) {
       this.raycastSystem.setFromController(controller);

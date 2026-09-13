@@ -8,6 +8,7 @@
     "dev:https": "python3 scripts/serve-https.py",
     "test": "node --test",
     "check": "node scripts/verify-imports.mjs",
-    "verify": "npm run check && npm test"
+    "verify": "npm run check && npm test",
+    "test:tutorial:browser": "node scripts/run-tutorial-browser.mjs"
   }
 }

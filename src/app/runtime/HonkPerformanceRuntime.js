@@ -30,6 +30,10 @@ export const HonkPerformanceRuntimeMethods = {
       const activeHoldInteractions = [];
       for (const controller of this.controllers) {
         const controllerState = this.controllerStates.get(controller);
+        if (controllerState?.tutorialPanelCapture || this.tutorial?.blocksController(controller)) {
+          this.releaseRaySqueeze(controllerState);
+          continue;
+        }
         if (controllerState?.stickActive) {
           this.clearControllerTriggerInteraction(controllerState);
           continue;

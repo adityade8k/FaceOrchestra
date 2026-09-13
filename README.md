@@ -207,3 +207,5 @@ npm run check
 npm test
 npm run verify
 ```
+
+The opening **Tutorial** panel teaches and simulates the original **VIRAG 2 — JOG STUDY** composition. See [desktop simulation, headset controls, architecture and verification](docs/tutorial.md).

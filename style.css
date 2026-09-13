@@ -42,3 +42,15 @@ canvas {
   color: rgba(244, 239, 232, 0.78);
   font-size: 13px;
 }
+
+.tutorial-panel { position: fixed; z-index: 20; left: 24px; top: 90px; width: min(330px, calc(100vw - 48px)); max-height: calc(100vh - 130px); overflow: auto; box-sizing: border-box; padding: 24px; color: #edf4eb; background: rgba(12,32,29,.96); border: 1px solid #42685b; border-radius: 20px; box-shadow: 0 16px 60px #0006; font: 15px/1.5 system-ui,sans-serif; }
+.tutorial-panel[hidden] { display: none; }
+.tutorial-panel h1 { font: 650 25px/1.15 system-ui,sans-serif; color: #fff3d9; margin: 8px 0 20px; }
+.tutorial-eyebrow { font-size: 11px; color: #86d9bb; letter-spacing: .12em; text-transform: uppercase; }
+.tutorial-target { color: #ffd18b; white-space: pre-line; }
+.tutorial-feedback { color: #8de5c7; min-height: 24px; }
+.tutorial-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tutorial-actions button { color: #fff6e3; background: #30574b; border: 1px solid #558474; padding: 10px 14px; min-height: 44px; border-radius: 10px; font: 600 13px/1.25 system-ui,sans-serif; cursor: pointer; }
+.tutorial-actions button:hover, .tutorial-actions button:focus-visible { background: #497b66; outline: 2px solid #b4ecd3; }
+.tutorial-actions button:disabled { opacity: .4; cursor: default; }
+@media(max-width: 650px) { .tutorial-panel { left: 12px; top: 76px; width: min(300px, calc(100vw - 24px)); padding: 16px; max-height: calc(100vh - 160px); } }

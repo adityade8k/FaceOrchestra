@@ -123,6 +123,7 @@ export const SpawnRuntimeMethods = {
       }
 
       this.pendingSpawnPlacement = preview;
+      this.tutorial?.onPreview(preview, entry, controller);
       this.interactionCoordinator.setMode(controller, ControllerMode.SPAWN_PREVIEW);
     },
     createPendingSpawnComponents(componentId) {
@@ -228,6 +229,7 @@ export const SpawnRuntimeMethods = {
         this.syncLooperTransformReference(state);
       }
 
+      this.tutorial?.onPlaced(placed, pending);
       this.activeInstrumentState = placed.at(-1) || this.activeInstrumentState;
     },
     deletePendingSpawnPlacement() {

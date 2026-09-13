@@ -1,3 +1,4 @@
+import { TUTORIAL_PRESETS, tuningForMidi } from '../../tutorial/composition.js';
 import { FORMATION_SPAWN_SETTINGS } from "../../config/formations.js";
 
 export const HONK_TUNING_SETS = Object.freeze({
@@ -57,7 +58,7 @@ for (const recipe of FORMATION_RECIPES) {
 }
 
 export function getFormationRecipe(idOrTuningSet) {
-  return FORMATION_RECIPE_BY_ID.get(idOrTuningSet) || null;
+  return FORMATION_RECIPE_BY_ID.get(idOrTuningSet) || TUTORIAL_FORMATIONS.get(idOrTuningSet) || null;
 }
 
 export function createFormationRecipe({
@@ -93,3 +94,9 @@ function note(label, semitonesFromF, octaveOffset = 0) {
     octaveOffset,
   });
 }
+
+const TUTORIAL_FORMATIONS = new Map(TUTORIAL_PRESETS.map(preset => [preset.id, {
+  id: preset.id, kind: 'formation-recipe', label: preset.label, namePrefix: preset.id,
+  members: preset.midis.map((midi, index) => ({ tuning: tuningForMidi(midi),
+    position: [(index - (preset.midis.length - 1) / 2) * preset.spacing, 0, 0] })),
+}]));

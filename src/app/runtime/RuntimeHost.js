@@ -1,3 +1,4 @@
+import { TutorialRuntime } from '../../tutorial/TutorialRuntime.js';
 import * as THREE from "three";
 import { INSTRUMENT_MAX_SCALE, INSTRUMENT_MIN_SCALE, INSTRUMENT_SCALE_STEP } from "../../config/honk.js";
 import { AssetRepository } from "../../scene/AssetRepository.js";
@@ -84,6 +85,7 @@ export class RuntimeHost {
     this.renderer = renderer;
     this.audioSystem = audioSystem;
     this.debugMode = Boolean(debugMode);
+    this.sessionMode = "launch";
 
     this.assetRepository = assetRepository || new AssetRepository();
 
@@ -205,6 +207,7 @@ export class RuntimeHost {
     this.configurePersistence(storage);
     this.configureStickEvents();
     this.configureRelationshipEvents();
+    this.tutorial = new TutorialRuntime(this);
   }
 
   get instrumentStates() {
@@ -352,13 +355,14 @@ export class RuntimeHost {
       this.stickHaptics.handleStrike(event)?.catch?.((error) => console.warn("Stick haptics failed:", error));
       this.playStickPercussion(event.percussionType, { volume: 1 });
       const target = context.target;
-      routeStickStrikeToLooperRecordings({
+      const recordedCount = routeStickStrikeToLooperRecordings({
         event,
         target,
         loopers: this.instrumentRegistry.getByKind("looper"),
         metronomeConnectionManager: this.metronomeConnectionManager,
         resolveInstrument: (instrumentId) => this.instrumentRegistry.get(instrumentId),
       });
+      this.tutorial?.observeStrike(event, context, recordedCount);
     });
   }
 
@@ -453,6 +457,7 @@ export class RuntimeHost {
     await this.loadNoteFont();
     await this.restorePersistedScene();
     this.onRuntimeInitialized();
+    this.tutorial.initialize();
     return this;
   }
 
@@ -495,6 +500,7 @@ export class RuntimeHost {
   }
 
   dispose() {
+    this.tutorial?.dispose();
     this.resetSubsystemsAfterSession();
     this.honkContactSystem.reset();
     this.honkLockService.dispose();

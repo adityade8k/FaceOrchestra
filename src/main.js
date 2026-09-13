@@ -6,7 +6,7 @@ import { XR_OPTIONAL_FEATURES } from "./config/xr.js";
 
 const container = document.querySelector("#app");
 const status = document.querySelector("#status span");
-const app = createFaceOrchestraApp({ container });
+export const app = createFaceOrchestraApp({ container });
 const { renderer } = app.sceneRuntime;
 
 renderer.xr.addEventListener("sessionstart", () => {

@@ -1,0 +1,83 @@
+{
+  "simulation": {
+    "composition": "virag-2-jog-study",
+    "version": 1,
+    "mode": "simulation",
+    "complete": true,
+    "checkpoints": [
+      "intro",
+      "metronome",
+      "looper",
+      "clock-wire",
+      "tempo",
+      "spawn-group-1",
+      "wire-group-1",
+      "spawn-group-2",
+      "wire-group-2",
+      "spawn-group-3",
+      "wire-group-3",
+      "spawn-group-4",
+      "wire-group-4",
+      "percussion",
+      "percussion-wire",
+      "audition-E",
+      "audition-O",
+      "timbre",
+      "chord",
+      "stick",
+      "tap-percussion",
+      "tap-metronome",
+      "tap-looper",
+      "combined",
+      "record",
+      "finalize",
+      "playback",
+      "unequip",
+      "melody",
+      "performance"
+    ],
+    "phrasesPassed": [
+      "A",
+      "B",
+      "A",
+      "C",
+      "B",
+      "D"
+    ],
+    "durationSeconds": 131.4115,
+    "audioState": "running",
+    "counts": {
+      "honk": 4,
+      "looper": 4,
+      "metronome": 4
+    }
+  },
+  "launchChoices": true,
+  "wrongActionRejected": true,
+  "evidenceOriginsIsolated": true,
+  "persistenceUnchanged": true,
+  "repeatedCleanup": true,
+  "xrPlaneCapture": true,
+  "sound": "Web Audio state verified; sound not monitored",
+  "headset": "unverified",
+  "additionalBrowserChecks": {
+    "allChordMembersRelease": true,
+    "freePlayControllerCount": 2,
+    "lessonObjectsAfterCleanup": 0,
+    "manualHonkRegression": {
+      "sphereComparisons": 49,
+      "sphereHits": 9,
+      "lockedSphereVoices": 3,
+      "groupMovement": true,
+      "sameFrameTransforms": true,
+      "holdRollUnlockDelete": true
+    }
+  },
+  "unitTests": {
+    "passed": 406,
+    "failed": 1,
+    "newTutorialTestsPassed": 20,
+    "baselineFailure": "MetronomeHandleRig: -80 actual versus -90 expected"
+  },
+  "importCheck": "152 source files passed"
+}

@@ -76,6 +76,10 @@ export class FaceOrchestraApp {
         console.warn("XR session cleanup failed:", error);
       } finally {
         this.sceneRuntime.resetAfterXR();
+        if (this.runtime.tutorial?.ready && this.initialized) {
+          this.computeSuspended = false;
+          this.start();
+        }
       }
     }, 0);
     return true;
@@ -101,6 +105,7 @@ export class FaceOrchestraApp {
     this.frameScheduler.add("INPUT", (frame) => {
       frame.hadPendingSpawn = Boolean(runtime.pendingSpawnPlacement);
       runtime.pollControllers(frame.now);
+      runtime.tutorial?.beforeFrame(frame.now);
     }, { label: "poll XR hardware" });
 
     this.frameScheduler.add("INTENT", () => {
@@ -112,11 +117,13 @@ export class FaceOrchestraApp {
       if (runtime.pendingSpawnPlacement) {
         runtime.updatePendingSpawnPreview();
         runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
+        runtime.tutorial?.afterFrame(frame.now);
         frame.skipRemaining = true;
         return;
       }
       if (frame.hadPendingSpawn) {
         runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
+        runtime.tutorial?.afterFrame(frame.now);
         frame.skipRemaining = true;
         return;
       }
@@ -151,6 +158,7 @@ export class FaceOrchestraApp {
       runtime.updateLooperMorphAnimations(frame.now);
       runtime.updateLooperWires();
       runtime.updateMetronomeConnectionWires();
+      runtime.tutorial?.afterFrame(frame.now);
     }, { label: "morphs, audio, wires, and UI" });
   }
 }
