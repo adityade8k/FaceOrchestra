@@ -23,6 +23,7 @@ export class CompositionConductor {
     const elapsed=now-this.stepAt;
     if(step.type==='spawn') {
       if(elapsed>=150) this.once('select',()=>this.adapter.select(step,this.adapter.virtuals[0],this.origin));
+      if(this.demonstration&&elapsed>=600) this.once('space',()=>this.adapter.makePlacementSpace?.());
       if(elapsed>=900) this.once('place',()=>this.adapter.place());
     } else if(['ack','clock-wire','wire','tempo','timbre','finalize','playback','start-all'].includes(step.type)) {
       if(elapsed>=(step.type==='finalize'?0:300)) this.once('action',()=>this.adapter.command(step.action,now,this.origin));
@@ -37,6 +38,7 @@ export class CompositionConductor {
     } else if(step.type==='unequip') {
       if(elapsed>=200) this.once('unequip',()=>this.adapter.equip(false,this.origin));
     } else if(step.type==='strike') {
+      this.session.cueAnchorMs=this.stepAt;
       this.once('equip',()=>this.adapter.equip(true,this.origin));
       this.strike([{role:step.role,beat:1}],elapsed/C.beatMs);
     } else if(step.timed) {
@@ -67,6 +69,7 @@ export class CompositionConductor {
       if(needsStick) this.strike(C.percussion,beat);
       if(step.type==='performance' && beat>=95) this.once('final-rest',()=>{this.adapter.releaseVirtuals();this.adapter.stopSound();});
     }
+    if(this.demonstration&&['spawn','clock-wire','wire','tempo','timbre','finalize','playback','start-all'].includes(step.type))this.adapter.showSetup?.(step,elapsed);
   }
   strike(pattern,beat) {
     const hit=pattern.find(e=>beat>=e.beat-0.3 && beat<e.beat+0.32);

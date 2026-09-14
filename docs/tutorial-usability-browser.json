@@ -1,0 +1,228 @@
+{
+  "simulation": {
+    "composition": "virag-2-jog-study",
+    "version": 3,
+    "mode": "simulation",
+    "complete": true,
+    "checkpoints": [
+      "intro",
+      "metronome",
+      "chordLooper",
+      "percussionLooper",
+      "clock-chordLooper",
+      "clock-percussionLooper",
+      "tempo",
+      "spawn-group-1",
+      "wire-group-1",
+      "spawn-group-2",
+      "wire-group-2",
+      "spawn-group-3",
+      "wire-group-3",
+      "spawn-group-4",
+      "wire-group-4",
+      "audition-E",
+      "audition-O",
+      "timbre",
+      "chord",
+      "record-chords",
+      "finalize-chords",
+      "playback-chords",
+      "percussion",
+      "percussion-wire",
+      "stick",
+      "tap-percussion",
+      "tap-metronome",
+      "tap-percussionLooper",
+      "record-percussion",
+      "finalize-percussion",
+      "playback-percussion",
+      "start-all",
+      "unequip",
+      "melody",
+      "performance"
+    ],
+    "outcomes": {},
+    "demonstrated": [],
+    "phrasesPassed": [
+      "A",
+      "B",
+      "A",
+      "C",
+      "B",
+      "D"
+    ],
+    "durationSeconds": 176.67630000000003,
+    "takes": {
+      "chordLooper": {
+        "durationMs": 12000,
+        "gapBeats": 0,
+        "timingMode": "metronome",
+        "sourceBeatIntervalMs": 750,
+        "pitchedOnsets": 4,
+        "percussionHits": 0
+      },
+      "percussionLooper": {
+        "durationMs": 12000,
+        "gapBeats": 0,
+        "timingMode": "metronome",
+        "sourceBeatIntervalMs": 750,
+        "pitchedOnsets": 0,
+        "percussionHits": 12
+      }
+    },
+    "launches": {
+      "chordLooper": [
+        {
+          "beat": 36,
+          "requestedAtMs": 32601.8,
+          "observedAtMs": 33004.59999996424,
+          "audioPreparedAtMs": 32904.89999997616,
+          "audioOriginTime": 31.475204308390026,
+          "lateMs": 1.699999964235758
+        },
+        {
+          "beat": 102,
+          "requestedAtMs": 82099.9,
+          "observedAtMs": 82503.5,
+          "audioPreparedAtMs": 82404.5,
+          "audioOriginTime": 80.97043764172336,
+          "lateMs": 0.6000000000058208
+        }
+      ],
+      "percussionLooper": [
+        {
+          "beat": 85,
+          "requestedAtMs": 69350.3,
+          "observedAtMs": 69754,
+          "audioPreparedAtMs": 69654.39999997616,
+          "audioOriginTime": 68.22228253968254,
+          "lateMs": 1.1000000000058208
+        },
+        {
+          "beat": 102,
+          "requestedAtMs": 82099.9,
+          "observedAtMs": 82503.89999997616,
+          "audioPreparedAtMs": 82405.59999996424,
+          "audioOriginTime": 80.97043764172336,
+          "lateMs": 0.9999999761639629
+        }
+      ]
+    },
+    "startAll": {
+      "ok": true,
+      "message": "Starting both on the next beat",
+      "targetBeat": 102,
+      "requestedAtMs": 82099.9
+    },
+    "alignment": {
+      "atMs": 177746,
+      "loopers": 102,
+      "phaseDifference": 0
+    },
+    "audioState": "running",
+    "counts": {
+      "honk": 4,
+      "looper": 4,
+      "metronome": 4
+    }
+  },
+  "recordingDemonstrations": {
+    "chordLooper": {
+      "complete": true,
+      "learnerCredit": false,
+      "takesRestored": true,
+      "realEvents": 4
+    },
+    "percussionLooper": {
+      "complete": true,
+      "learnerCredit": false,
+      "takesRestored": true,
+      "realEvents": 12
+    }
+  },
+  "clockAndShake": {
+    "singleton": true,
+    "selectiveRealGripShake": true,
+    "formationSource": true,
+    "cooldown": true,
+    "recordingsRetained": true,
+    "silentClickPeak": 0,
+    "mutedClockLoopPeak": 0.3458188365310013,
+    "mutedClockPercussionPeak": 0.7055744489576995,
+    "sharedAudioOrigin": true
+  },
+  "allChordMembersRelease": true,
+  "learnerFlow": {
+    "allStepNavigation": true,
+    "demonstratePracticeResults": true,
+    "explicitRecordingPreparation": true,
+    "arbitraryRealTracks": true,
+    "lateRelease": true,
+    "bend": true,
+    "recordingPreservation": true
+  },
+  "launchChoices": true,
+  "wrongActionRejected": true,
+  "evidenceOriginsIsolated": true,
+  "persistenceUnchanged": true,
+  "repeatedCleanup": true,
+  "xrPlaneCapture": true,
+  "sound": "Web Audio state verified; sound not monitored",
+  "headset": "unverified",
+  "manualHonkRegression": {
+    "comparisons": 49,
+    "hits": 9,
+    "visualScale": 1.0287,
+    "lockedSphereVoices": 3,
+    "groupMovement": true,
+    "sameFrameTransforms": true,
+    "holdRollUnlockDelete": true
+  },
+  "presentationRegression": {
+    "three": "164",
+    "squeeze": 0.8200000000000004,
+    "rendered": 0.8200000000000004,
+    "authoritative": 0,
+    "bend": 0,
+    "scale": 2.5,
+    "visualScale": 1.0287,
+    "sphereVisual": {
+      "center": [
+        0,
+        0.07807477252918912,
+        -0.009365372583398038
+      ],
+      "radius": 0.0928673382255893
+    },
+    "sphereInteraction": {
+      "center": [
+        0,
+        0.07807477252918912,
+        -0.009365372583398038
+      ],
+      "radius": 0.0928673382255893
+    },
+    "socketVisual": [
+      -0.08041265236409037,
+      0.17403768869563144,
+      -0.00901567198630638
+    ],
+    "socketInteraction": [
+      -0.08041265236409037,
+      0.17403768869563144,
+      -0.00901567198630638
+    ],
+    "rays": {
+      "compared": 81,
+      "hits": 55
+    },
+    "renderInfo": {
+      "geometries": 10,
+      "calls": 10
+    }
+  },
+  "screenshots": [
+    "tutorial-scene.png",
+    "tutorial-result-panel.png"
+  ]
+}

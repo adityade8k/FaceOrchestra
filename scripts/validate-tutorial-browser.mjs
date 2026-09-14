@@ -72,49 +72,7 @@ export async function validate(app, { timeoutMs = 480000, onProgress = () => {} 
     check(JSON.stringify(r.sceneSerializer.serialize().instruments)===freeScene,'Returning to Play restored the exact free-play instruments');
     check(r.instrumentRegistry.size===1,'Lesson objects removed');
     check(!t.adapter.virtuals.some(c=>r.controllerStates.get(c).trigger||r.isControllerStickActive(c)),'No held virtual input');
-    await click('tutorial');await click('practice');await click('begin');
-    await wait(()=>t.session.step.id==='metronome','first practice action');
-    const index=t.session.index;
-    // A real unrelated Honk and a real held gesture must not place a Metronome.
-    r.createSpawnedComponent('honk');const unrelated=r.activeInstrumentState;
-    unrelated.root.position.set(0,1.1,0.4);const controller=r.controllers[0];controller.matrixAutoUpdate=true;
-    controller.position.copy(unrelated.getSqueezeColliderSphere().center);controller.position.z+=0.4;controller.quaternion.identity();controller.updateMatrixWorld(true);
-    t.adapter.input(controller,'trigger',true);await new Promise(resolve=>setTimeout(resolve,600));t.adapter.input(controller,'trigger',false);
-    await click('demo');await new Promise(resolve=>setTimeout(resolve,700));
-    check(t.session.index===index,'Wrong action and demonstration did not advance practice');
-    r.deleteInstrument(unrelated);
-    // Perform setup through the same panel commands and preview placement lifecycle.
-    const placementController=r.getRightController();placementController.matrixAutoUpdate=true;
-    while(t.session.step.id!=='audition-E') {
-      const step=t.session.step, oldIndex=t.session.index;
-      if(step.type==='spawn') {
-        placementController.position.copy(t.adapter.positionFor(step.role));placementController.position.z+=1.5;
-        placementController.quaternion.identity();placementController.updateMatrixWorld(true);
-        await click('select');await click('place');
-      } else await click(step.action);
-      await wait(()=>t.session.index!==oldIndex,`practice setup ${step.id}`,10000);
-    }
-    const auditionIndex=t.session.index;
-    const looper=t.adapter.get('chordLooper');
-    // Restore ONLY the actual recorded take via the app's normal persistence API.
-    // No insertion, quantization, editing or fabrication of any timeline event.
-    looper.restoreTimeline({timeline:realTake,controls:{gap:-1,volume:-0.55}}, {preserveConnections:true});
-    looper.play(performance.now());
-    await wait(()=>looper.transport.playing,'actual recorded backing playback',3000);
-    await new Promise(resolve=>setTimeout(resolve,2000));
-    check(t.session.index===auditionIndex&&t.session.evidence.every(e=>e.kind!=='note'),'Real Looper playback earns no live-note credit');
-    await click('demo');await wait(()=>!t.demo,'note demonstration',5000);
-    check(t.session.index===auditionIndex,'Real demonstrated squeeze earns no learner credit');
-    // Wrong and correct targets use real sphere rays and semantic Trigger transitions.
-    const squeeze=async(role)=>{
-      const h=t.adapter.get(role);controller.position.copy(h.getSqueezeColliderSphere().center);controller.position.z+=0.38;
-      controller.quaternion.identity();controller.updateMatrixWorld(true);
-      check(r.getCurrentHit(controller)?.object===h.squeezeCollider,`Real sphere selection: ${role}`);
-      t.adapter.input(controller,'trigger',true);await new Promise(resolve=>setTimeout(resolve,650));t.adapter.input(controller,'trigger',false);
-      await new Promise(resolve=>setTimeout(resolve,150));
-    };
-    await squeeze('group-2');check(t.session.index===auditionIndex,'Wrong chord does not advance note practice');
-    await squeeze('group-1');check(t.session.index===auditionIndex+1,'Correct live chord hold and release advances once');
+    const {controller,checks:learnerFlow}=await (await import('./validate-tutorial-usability-browser.mjs')).validateLearnerFlow(app,{click,wait,check,onProgress,realTake});
     // Real Three.js panel planes capture Trigger through release, including crossing to a Honk.
     const THREE=await import('three');
     t.panel.setXR(true,r.camera);t.panel.recenter(r.camera,true);
@@ -143,7 +101,7 @@ export async function validate(app, { timeoutMs = 480000, onProgress = () => {} 
     check(r.instrumentRegistry.listeners.size===listenerCount,'Mode transitions did not leak registry listeners');
     check(r.instrumentRegistry.size===1,'Repeated transitions leave only free-play objects');
     const allChordMembersRelease=await validateChordRelease(app);
-    return {simulation:simulationReport,recordingDemonstrations,clockAndShake,allChordMembersRelease,launchChoices:true,wrongActionRejected:true,evidenceOriginsIsolated:true,
+    return {simulation:simulationReport,recordingDemonstrations,clockAndShake,allChordMembersRelease,learnerFlow,launchChoices:true,wrongActionRejected:true,evidenceOriginsIsolated:true,
       persistenceUnchanged:true,repeatedCleanup:true,xrPlaneCapture:true,sound:'Web Audio state verified; sound not monitored',headset:'unverified'};
   } finally {
     unsubscribe?.();
@@ -170,10 +128,11 @@ async function validateRecordingDemonstrations(app) {
       t.session=new TutorialSession({mode:'practice',now:performance.now(),
         steps:LESSON_STEPS.filter(step=>step.looperRole===role&&['record','finalize','playback'].includes(step.type))});
       t.render(performance.now());
-      t.panel.dom.querySelector('button[data-action="demo"]').click();
-      await new Promise(resolve=>setTimeout(resolve,150));
+      t.panel.dom.querySelector('button[data-action="step-demo"]').click();
+      const prepareEnd=performance.now()+10000;
+      while(!t.demo&&performance.now()<prepareEnd)await new Promise(resolve=>setTimeout(resolve,100));
       const demo=t.demo;
-      if(!demo)throw new Error(`Recording demonstration did not start for ${role}`);
+      if(!demo)throw new Error(`Recording demonstration did not start for ${role}: ${t.uiFeedback}`);
       const end=performance.now()+60000;
       while(t.demo&&performance.now()<end)await new Promise(resolve=>setTimeout(resolve,100));
       if(t.demo||!demo.session.complete)throw new Error(`Recording demonstration failed for ${role}: ${demo.session.feedback}`);
@@ -197,6 +156,7 @@ export async function validateChordRelease(app) {
   const r=app.runtime,t=r.tutorial;
   await t.enter('practice');await r.audioSystem.ensureAudio();
   try {
+    const observations=[];const originalEmit=t.adapter.emit;t.adapter.emit=e=>{observations.push(e);originalEmit(e);};
     const members=[];
     for(let i=0;i<3;i++) {
       r.createSpawnedComponent('honk');const h=r.activeInstrumentState;
@@ -210,12 +170,12 @@ export async function validateChordRelease(app) {
     }
     await new Promise(resolve=>setTimeout(resolve,600));
     t.adapter.input(controllers[0],'trigger',false);await new Promise(resolve=>setTimeout(resolve,100));
-    if(t.session.evidence.filter(e=>e.kind==='note').at(-1)?.allReleased!==false)
+    if(observations.filter(e=>e.kind==='note').at(-1)?.allReleased!==false)
       throw new Error('The other hand still owns the chord; it is not fully released.');
     t.adapter.input(controllers[1],'trigger',false);await new Promise(resolve=>setTimeout(resolve,100));
-    if(t.session.evidence.filter(e=>e.kind==='note').at(-1)?.allReleased!==true)
+    if(observations.filter(e=>e.kind==='note').at(-1)?.allReleased!==true)
       throw new Error('Both hands released must release every chord member.');
-    return true;
+    t.adapter.emit=originalEmit;return true;
   } finally { await t.enterPlay(); }
 }
 
@@ -282,7 +242,7 @@ async function validateClockAndShake(app) {
       percussion.play(performance.now());await move(base,650);
       check(!r.metronomeConnectionManager.getConnectionForTarget('looper',percussion.id),'Shaking Looper removes its own incoming clock');
       check(r.metronomeConnectionManager.getConnectionForTarget('looper',chords.id),'Other clock cable survives');
-      check(percussion.tracks[4].connectedHonkId===a.get('percussion').id,'Looper shake retains its Honk assignment');
+      check(percussion.tracks.some(track=>track.connectedHonkId===a.get('percussion').id),'Looper shake retains its Honk assignment');
       check(!percussion.transport.playing&&!percussion.looperData.armed&&percussion.looperData.audioScheduling.timer===null,'Disconnect cancels transport and scheduler');
       check(percussion.looperController.getTimingForLooper(percussion,performance.now()).bpm===70,'Disconnected looper uses 70 BPM');
       check(notices===1,'One feedback indication for Looper disconnect');
@@ -293,7 +253,7 @@ async function validateClockAndShake(app) {
       const group=r.honkLockService.lockFormation(a.get('group-1').id);check(group,'Real chord formation can be frozen');
       base=grip('group-1');check(r.controllerStates.get(controller).gripInstrumentState!==a.get('group-1'),'Formation moves through its transform wrapper');
       await move(base,650);a.input(controller,'grip',false);
-      check(chords.tracks[0].connectedHonkId===null&&chords.tracks[1].connectedHonkId===a.get('group-2').id,'Formation shake disconnects only grabbed source assignment');
+      check(!chords.tracks.some(track=>a.ids('group-1').includes(track.connectedHonkId))&&chords.tracks.some(track=>a.ids('group-2').includes(track.connectedHonkId)),'Formation shake disconnects only grabbed source assignment');
       check(r.metronomeConnectionManager.connectionsByPort.size===2,'Honk shake preserves both metronome cables');
       check(notices===2,'One feedback indication per successful gesture');
       a.command('wire-group-1',performance.now(),'simulation');

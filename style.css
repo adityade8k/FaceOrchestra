@@ -49,7 +49,16 @@ canvas {
 .tutorial-eyebrow { font-size: 11px; color: #86d9bb; letter-spacing: .12em; text-transform: uppercase; }
 .tutorial-target { color: #ffd18b; white-space: pre-line; }
 .tutorial-feedback { color: #8de5c7; min-height: 24px; }
-.tutorial-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tutorial-navigation { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 20px; }
+.tutorial-navigation[hidden] { display: none; }
+.tutorial-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid #42685b; }
+.tutorial-navigation button { color: #fff6e3; background: #30574b; border: 1px solid #558474; min-height: 46px; border-radius: 10px; font: 600 13px/1.25 system-ui,sans-serif; cursor: pointer; }
+.tutorial-navigation button:disabled { opacity: .45; cursor: default; }
+.tutorial-panel button[data-primary="true"] { background: #57784a; border-color: #cad796; }
+.tutorial-panel[data-result="passed"] .tutorial-feedback { color: #b4f2c6; }
+.tutorial-panel .tutorial-feedback { white-space: pre-line; }
+.tutorial-complete { animation: tutorial-completion 850ms ease-out; }
+@keyframes tutorial-completion { 40% { box-shadow: 0 0 0 4px #83dfbd88, 0 16px 60px #0006; } }
 .tutorial-actions button { color: #fff6e3; background: #30574b; border: 1px solid #558474; padding: 10px 14px; min-height: 44px; border-radius: 10px; font: 600 13px/1.25 system-ui,sans-serif; cursor: pointer; }
 .tutorial-actions button:hover, .tutorial-actions button:focus-visible { background: #497b66; outline: 2px solid #b4ecd3; }
 .tutorial-actions button:disabled { opacity: .4; cursor: default; }

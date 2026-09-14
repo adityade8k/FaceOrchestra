@@ -4,17 +4,20 @@ import { COMPOSITION as C, PITCHES, TUTORIAL_PRESETS, TUTORIAL_LOOPERS } from '.
 import { pitchesMatch, sameMembers } from './validation.js';
 import { getHonkFrequency } from '../audio/honk/pitch.js';
 import { MAX_PITCH_BEND_SEMITONES, BEND_SENSITIVITY } from '../config/honk.js';
-import { isStickPercussionMesh } from '../instruments/stick/StickCollisionSystem.js';
+import { resolveTutorialRoutes, connectTutorialClock, connectTutorialHonk } from './TutorialRoutes.js';
+import { TutorialStrikeTargets } from './TutorialStrikeTargets.js';
 
 export class TutorialAdapter {
   constructor(runtime, emit) {
     this.r = runtime; this.emit = emit; this.roles = new Map(); this.bindings = new Map();
     this.membershipSince = new Map(); this.gestures = new Map(); this.pendingStrikes = [];
-    this.sequence = 0; this.tempoSince = null; this.snapshotCache = null; this.snapshotAt = -Infinity;
-    this.takes = {}; this.takeState = {}; this.startAllRequest = null;
+    this.sequence = 0; this.tempoSince = null; this.snapshotCache = null; this.snapshotAt = -Infinity;this.lastStrikes=new Map();
+    this.takes = {}; this.takeState = {}; this.takeRoutes={};this.takeEvidence={}; this.startAllRequest = null;
     this.virtuals = []; this.stickHand = 1; this.origin = 'learner'; this.playbackVoicesObserved = false;
     this.anchor = new THREE.Vector3(); this.scratch = new THREE.Vector3(); this.ray = new THREE.Raycaster();
+    this.layoutRotation=new THREE.Quaternion();this.forward=new THREE.Vector3(0,0,-1);
     this.labels = new Map(); this.strikeTargets = new Map(); this.initialized = false;
+    this.bodyTargets=new TutorialStrikeTargets(this);this.stickBounds=new WeakMap();this.stickBox=new THREE.Box3();this.stickOffset=new THREE.Vector3();
     this.focusRole = null;
     this.focusRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.09, 48),
       new THREE.MeshBasicMaterial({color:0xffd18b,transparent:true,opacity:0.9,depthTest:false,side:THREE.DoubleSide}));
@@ -47,7 +50,10 @@ export class TutorialAdapter {
   }
   begin(origin) {
     this.origin = origin;this.setVirtualsActive(origin==='simulation',origin); this.r.getUserCamera().getWorldPosition(this.anchor);
-    this.anchor.x += 0.25; this.anchor.y -= 0.3; this.anchor.z -= 1.45;
+    this.r.getUserCamera().getWorldQuaternion(this.layoutRotation);
+    this.forward.set(0,0,-1).applyQuaternion(this.layoutRotation);this.forward.y=0;this.forward.normalize();
+    this.layoutRotation.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.atan2(-this.forward.x,-this.forward.z));
+    this.anchor.add(new THREE.Vector3(.25,-.3,-1.45).applyQuaternion(this.layoutRotation));
     for (const v of this.virtuals) { this.park(v); v.visible = origin === 'simulation'; v.userData.tutorialOrigin = origin; }
   }
   get(role) { const id = this.roles.get(role)?.[0]; return this.r.instrumentRegistry.get(id); }
@@ -85,6 +91,7 @@ export class TutorialAdapter {
     return null;
   }
   addLabel(h,role) {
+    if(h.kind==='honk')return;
     if (this.labels.has(h.id) || (role.startsWith('group-') && this.ids(role)[0] !== h.id)) return;
     const canvas = document.createElement('canvas'); canvas.width=512;canvas.height=80;
     const ctx=canvas.getContext('2d');ctx.fillStyle='#0c201f';ctx.fillRect(0,0,512,80);
@@ -101,21 +108,24 @@ export class TutorialAdapter {
     this.r.scene.add(label);this.labels.set(h.id,label);
   }
   positionFor(role) {
-    const p=this.anchor.clone();
+    const p=new THREE.Vector3();
     if (role.startsWith('group-')) {
-      const i=Number(role.slice(-1))-1; return p.add(new THREE.Vector3(i%2 ? 0.50 : -0.50, i<2 ? 0.07 : -0.40, -0.22));
+      const i=Number(role.slice(-1))-1;p.set(i%2 ? 0.50 : -0.50, i<2 ? 0.07 : -0.40, -0.22);
     }
-    if (role==='metronome') return p.add(new THREE.Vector3(-0.62,-0.10,0.36));
-    if (role==='chordLooper') return p.add(new THREE.Vector3(-0.28,-0.13,0.40));
-    if (role==='percussionLooper') return p.add(new THREE.Vector3(0.30,-0.13,0.40));
-    if (role==='percussion') return p.add(new THREE.Vector3(0.65,-0.18,0.40));
-    if (role==='melody') return p.add(new THREE.Vector3(0,0.37,-0.10));
-    return p;
+    if (role==='metronome')p.set(-0.62,-0.10,0.36);
+    if (role==='chordLooper')p.set(-0.28,-0.13,0.40);
+    if (role==='percussionLooper')p.set(0.30,-0.13,0.40);
+    if (role==='percussion')p.set(0.65,-0.18,0.40);
+    if (role==='melody')p.set(0,0.37,-0.10);
+    return p.applyQuaternion(this.layoutRotation).add(this.anchor);
   }
   select(step, controller, origin) {
     this.releaseVirtuals();
+    const present=this.members(step.role);
+    if(present.length&&present.every(h=>!h.pendingPlacement)){this.focus(step.role);return;}
     if(step.kind==='metronome' && this.r.instrumentRegistry.getByKind('metronome').length) {
-      this.r.beginPendingSpawnPlacement(controller,step.catalogId);return;
+      const existing=this.r.instrumentRegistry.getByKind('metronome')[0];
+      this.roles.set('metronome',[existing.id]);this.bindings.set('metronome',{source:origin,entryId:'metronome'});this.snapshotAt=-Infinity;return;
     }
     // Replacing an invalid role is explicit, confined to this lesson.
     for (const id of this.ids(step.role)) { const h=this.r.instrumentRegistry.get(id); if (h) this.r.deleteInstrument(h); }
@@ -125,7 +135,7 @@ export class TutorialAdapter {
     if (pending) {
       this.bindPreview(pending,{id:step.catalogId},controller);
       if (controller.userData.virtualTutorial) {
-        controller.quaternion.identity(); controller.position.copy(this.positionFor(step.role)); controller.position.z += pending.distance;
+        controller.quaternion.copy(this.layoutRotation);controller.position.copy(this.positionFor(step.role));controller.position.add(this.scratch.set(0,0,pending.distance).applyQuaternion(this.layoutRotation));
         controller.updateMatrixWorld(true);
       }
     }
@@ -136,18 +146,38 @@ export class TutorialAdapter {
     if (!p) return;
     this.input(p.controller,'trigger',true); this.input(p.controller,'trigger',false);
   }
+  makePlacementSpace(){
+    const preview=this.r.pendingSpawnPlacement;if(!preview||!this.placementShift)return;
+    preview.controller.position.add(this.placementShift(preview));preview.controller.updateMatrixWorld(true);
+  }
+  showSetup(step,elapsed){
+    if(this.r.pendingSpawnPlacement)return;
+    const controller=this.virtuals[0],routes=this.snapshot(performance.now()).routes;
+    let from,to;
+    if(step.type==='clock-wire'){
+      const binding=routes.clocks[step.looperRole],looper=this.get(step.looperRole);
+      from=this.get('metronome')?.getConnectionPortTarget(binding?.portId);to=looper?.tracks.find(t=>t.trackId===binding?.targetPortId)?.nodeTarget;
+    }else if(step.type==='wire'){
+      const binding=routes.chords[step.role]||routes.percussion[step.role];
+      from=this.r.instrumentRegistry.get(binding?.honkId)?.root;
+      to=this.r.instrumentRegistry.get(binding?.looperId)?.tracks.find(t=>t.trackId===binding?.trackId)?.nodeTarget;
+    }else if(step.type==='tempo')to=this.get('metronome')?.handleRig?.controls.get('bpm')?.node||this.get('metronome')?.root;
+    else if(step.type==='timbre')to=this.members(C.backing[Math.min(3,Math.floor(elapsed/275))].role)[0]?.targetsByRole?.get('nose')||this.get('group-1')?.root;
+    else to=this.get(step.role||step.looperRole||'chordLooper')?.root;
+    if(!to)return;
+    to.getWorldPosition(this.scratch);controller.position.copy(this.scratch);
+    if(from){from.getWorldPosition(this.scratch);controller.position.lerp(this.scratch,1-Math.min(1,Math.max(0,(elapsed-300)/650)));}
+    controller.position.z+=.12;controller.quaternion.identity();controller.updateMatrixWorld(true);
+  }
   command(action, now, origin = this.origin) {
     const chords=this.get('chordLooper'), percussion=this.get('percussionLooper'), metro=this.get('metronome');
     if (action.startsWith('clock-')) {
-      const binding=TUTORIAL_LOOPERS.find(l=>l.role===action.slice(6)), looper=this.get(binding?.role);
-      if (metro && looper) this.r.metronomeConnectionManager.connect({metronomeId:metro.id,portId:binding.portId,targetKind:'looper',targetId:looper.id,targetPortId:looper.tracks[5].trackId});
+      connectTutorialClock(this,action.slice(6));
     } else if (action==='tempo' && metro && chords && percussion) {
-      metro.setBpm(C.bpm,now);metro.pressButton('play',now);this.r.updateMetronomeLabel(metro);
+      metro.setBpm(C.bpm,now);metro.setVolume(1);metro.pressButton('play',now);this.r.updateMetronomeLabel(metro);
       for(const l of [chords,percussion]) this.r.setLooperControlValue(l,'gap',-1);
     } else if (action.startsWith('wire-')) {
-      const role=action.slice(5), group=C.backing.find(g=>g.role===role), h=this.get(role);
-      const looper=role==='percussion'?percussion:chords;
-      if(h && looper) this.r.connectLooperTrackToHonk(looper,group?.trackIndex ?? 4,h.id);
+      connectTutorialHonk(this,action.slice(5));
     } else if (action.startsWith('vowel-')) {
       for (const group of C.backing) for (const h of this.members(group.role)) h.setVowel(action.slice(6));
     } else if (action==='timbre') {
@@ -164,8 +194,9 @@ export class TutorialAdapter {
           // Metronome stick routing stays global; only the intended recorder is armed.
           const other=match[2]==='chordLooper'?percussion:chords;
           if(other?.transport.recording || other?.transport.recordArmed) other.stop();
+          this.takeRoutes[match[2]]=resolveTutorialRoutes(this);
           this.r.pressLooperButton(looper,'record',null,now);
-        } else if(looper && match[1]==='stop-record') this.r.pressLooperButton(looper,'stop',null,now);
+        } else if(looper && match[1]==='stop-record'&&(looper.transport.recording||looper.transport.recordArmed)) this.r.pressLooperButton(looper,'stop',null,now);
         else if(looper && match[1]==='play') {
           (match[2]==='chordLooper'?percussion:chords)?.stop();
           this.r.pressLooperButton(looper,'play',null,now);
@@ -208,21 +239,7 @@ export class TutorialAdapter {
   }
   // Find a real body-triangle surface with a ray, then approach it with the actual stick collider.
   cacheStrikeTarget(role) {
-    const h=this.get(role);if (!h) return null;
-    h.root.updateMatrixWorld(true);
-    const meshes=[];h.root.traverse(o=>{if(isStickPercussionMesh(o))meshes.push(o);});
-    const box=new THREE.Box3().setFromObject(h.root), size=box.getSize(new THREE.Vector3());
-    const center=box.getCenter(new THREE.Vector3());
-    this.ray.set(new THREE.Vector3(center.x,center.y,box.max.z+0.6),new THREE.Vector3(0,0,-1));
-    let hits=this.ray.intersectObjects(meshes,false);
-    if (!hits.length) {
-      for(let i=0;i<5 && !hits.length;i++) {
-        this.ray.ray.origin.y=box.min.y+size.y*(i+0.5)/5;
-        hits=this.ray.intersectObjects(meshes,false);
-      }
-    }
-    if (!hits.length) throw new Error(`No visible stick surface found for ${role}.`);
-    return hits[0].point.clone();
+    return this.bodyTargets.get(role);
   }
   moveStick(role, approach) {
     const controller=this.virtuals[1];
@@ -230,18 +247,22 @@ export class TutorialAdapter {
     if (!stick) return;
     const h=this.get(role);if (!h) return;
     const point=this.cacheStrikeTarget(role);
-    controller.quaternion.identity();controller.position.set(0,0,0);controller.updateMatrixWorld(true);
-    const bounds=new THREE.Box3().setFromObject(stick.collider);
-    const offset=bounds.getCenter(new THREE.Vector3());
+    let bounds=this.stickBounds.get(stick);
+    if(!bounds||bounds.scale!==stick.root.scale.x) {
+      controller.quaternion.identity();controller.position.set(0,0,0);controller.updateMatrixWorld(true);
+      this.stickBox.setFromObject(stick.collider);
+      bounds={offset:this.stickBox.getCenter(new THREE.Vector3()),halfZ:(this.stickBox.max.z-this.stickBox.min.z)/2,scale:stick.root.scale.x};
+      this.stickBounds.set(stick,bounds);
+    }
     // Contact at the front surface; the box tip reaches the actual mesh at approach=1.
-    const halfZ=(bounds.max.z-bounds.min.z)/2;
-    controller.position.copy(point).sub(offset);controller.position.z+=halfZ + (1-approach)*0.32 - 0.035;
+    controller.quaternion.identity();controller.position.copy(point).sub(bounds.offset);controller.position.z+=bounds.halfZ + (1-approach)*0.32 - 0.035;
     controller.updateMatrixWorld(true);
   }
   observeStrike(event, {stick,target}, recordedCount) {
     const controller=this.r.controllers.find(c=>c.userData.controllerId===stick.controllerId);
     const origin=controller?.userData.tutorialOrigin || 'learner';
     const role=this.roleForId(target.id)||'unrelated';
+    this.lastStrikes.set(role,event.timestamp);
     let lane=null;
     if(target.kind==='looper') lane='looper-self-percussion';
     else if(target.kind==='honk') lane=this.get('percussionLooper')?.tracks.find(t=>t.connectedHonkId===target.id)?.trackId;
@@ -274,14 +295,18 @@ export class TutorialAdapter {
       if (!active) continue;
       let gesture=this.gestures.get(controller);
       const members=this.r.getTouchingInstrumentChain(h);
-      const midis=members.map(m=>this.midi(m));
       if (!gesture) {
+        const midis=members.map(m=>this.midi(m));
+        const role=this.roleForId(h.id)||'unrelated',route=resolveTutorialRoutes(this).chords[role];
         gesture={id:`note-${++this.sequence}`,kind:'note',origin:controller.userData.tutorialOrigin||'learner',
-          role:this.roleForId(h.id)||'unrelated',targetId:h.id,startMs:now,midis,memberIds:members.map(m=>m.id),
+          role,targetId:h.id,startMs:now,midis,memberIds:members.map(m=>m.id),lane:route?.trackId,
           vowel:h.getLivePerformanceState().vowel,articulated:!previous,bendSamples:[],maxAbsBend:0,voiced:false};
         this.gestures.set(controller,gesture);
       }
-      if (!sameMembers(gesture.memberIds,members.map(m=>m.id)) || !pitchesMatch(midis,gesture.midis)) gesture.invalidMembers=true;
+      if(members.length!==gesture.memberIds.length||members.some(m=>!gesture.memberIds.includes(m.id)))gesture.invalidMembers=true;
+      if(!gesture.pitchCheckedAt||now-gesture.pitchCheckedAt>=100){
+        if(!pitchesMatch(members.map(m=>this.midi(m)),gesture.midis))gesture.invalidMembers=true;gesture.pitchCheckedAt=now;
+      }
       const semitones=(h.getProcessedLivePerformanceState().bend||0)*MAX_PITCH_BEND_SEMITONES;
       gesture.maxAbsBend=Math.max(gesture.maxAbsBend,Math.abs(semitones));
       const last=gesture.bendSamples.at(-1);
@@ -308,6 +333,7 @@ export class TutorialAdapter {
   snapshot(now) {
     const looper=this.get('chordLooper'),metro=this.get('metronome');
     if(!this.snapshotCache || now-this.snapshotAt>=100) {
+      const routes=resolveTutorialRoutes(this);
       const roles={};
       for(const [role,ids] of this.roles) {
         const hs=ids.map(id=>this.r.instrumentRegistry.get(id));
@@ -324,21 +350,17 @@ export class TutorialAdapter {
           stableMs:now-(this.membershipSince.get(role) ?? now),source:this.bindings.get(role)?.source};
       }
       if(!metro?.playing || Math.abs(metro.bpm-C.bpm)>1) this.tempoSince=null; else this.tempoSince??=now;
-      const wires={};
-      for(const g of [...C.backing,{role:'percussion',trackIndex:4}]) {
-        const owner=g.role==='percussion'?this.get('percussionLooper'):looper;
-        wires[g.role]=Boolean(owner && owner.tracks[g.trackIndex]?.connectedHonkId===this.get(g.role)?.id);
-      }
       const timbreReady=C.backing.every(g=>this.members(g.role).length===3 && this.members(g.role).every(h=>{
         const s=h.getLivePerformanceState();return s.vowel===C.backingVowel&&s.nose>=0.25&&Math.abs(s.bend)<0.125;
       })) && looper?.looperData.volume<=0.45;
-      this.snapshotCache={roles,wires,timbreReady};this.snapshotAt=now;
+      this.snapshotCache={roles,timbreReady,routes};this.snapshotAt=now;
     }
+    const routes=this.snapshotCache.routes;
     const sticks=this.r.instrumentRegistry.getByKind('stick');
     const stickController=this.r.controllers.find(c=>!c.userData.virtualTutorial && this.r.isControllerStickActive(c));
     const simActive=this.virtuals.some(c=>this.r.isControllerStickActive(c));
     const loopers={};
-    for(const {role,portId} of TUTORIAL_LOOPERS) {
+    for(const {role} of TUTORIAL_LOOPERS) {
       const h=this.get(role), recording=Boolean(h?.transport.recording);
       const previous=this.takeState[role] || {};
       if(h?.timeline && !recording && (previous.recording || previous.timeline!==h.timeline || previous.duration!==h.timeline.durationMs)) {
@@ -355,14 +377,14 @@ export class TutorialAdapter {
       const source=h?.looperController.getAbsoluteSourcePosition(h,now);
       loopers[role]={id:h?.id,recording,recordArmed:Boolean(h?.transport.recordArmed),playing:Boolean(h?.transport.playing),
         playArmed:Boolean(h?.looperData.playArmed),gapBeats:h?.looperData.gapBeats,timeline:this.takes[role],
-        clockWired:Boolean(connection && connection.metronomeId===metro?.id && connection.portId===portId && connection.targetPortId===h.tracks[5].trackId),
+        clockWired:Boolean(routes.clocks[role]&&(role!=='percussionLooper'||routes.percussion.metronome)),
         startBeat,phase:Number.isFinite(source)&&h?.timeline.durationMs ? ((source%h.timeline.durationMs)+h.timeline.durationMs)%h.timeline.durationMs/h.timeline.durationMs : null,
         playbackObserved:role==='chordLooper'?this.playbackVoicesObserved:Boolean(h?.looperData.audioScheduling.percussionTimes?.some(time=>time<=this.r.audioSystem.audioContextService.context?.currentTime)),
         tempoLabel:timing?.connected ? `${timing.bpm} BPM` : '70 BPM · Internal'};
     }
     const [a,b]=TUTORIAL_LOOPERS.map(l=>loopers[l.role]);
     const aligned=Boolean(a.playing && b.playing && Number.isFinite(a.startBeat) && a.startBeat===b.startBeat && Math.abs(a.phase-b.phase)<1e-7);
-    return {...this.snapshotCache,loopers,aligned,startAllRequest:this.startAllRequest,bpm:metro?.bpm,clockPlaying:Boolean(metro?.playing),tempoStableMs:this.tempoSince===null?0:now-this.tempoSince,
+    return {...this.snapshotCache,wires:routes.wires,routes,takeRoutes:this.takeRoutes,takeEvidence:this.takeEvidence,loopers,aligned,startAllRequest:this.startAllRequest,bpm:metro?.bpm,clockPlaying:Boolean(metro?.playing),tempoStableMs:this.tempoSince===null?0:now-this.tempoSince,
       liveGestures:this.gestures.size,anyStickContact:sticks.some(s=>s.contactTargetIds.size>0),
       anyStickActive:sticks.some(s=>s.equipped),stickActive:simActive || Boolean(stickController),stickOrigin:simActive ? this.virtuals[1].userData.tutorialOrigin : 'learner',
       audioRunning:this.r.audioSystem.audioContextService.context?.state==='running'};
@@ -376,6 +398,14 @@ export class TutorialAdapter {
     const interval=timing.beatIntervalMs;
     return base+Math.ceil((now+countIn*interval-base)/(beats*interval))*beats*interval;
   }
+  finishCapture(session,now){
+    const step=session?.step,looper=this.get(step?.looperRole);
+    if(step?.type!=='record'||session.anchorMs===null||!looper?.transport.recording)return;
+    // Stop during the written final breath once real gestures have released.
+    // Assessment remains at the endpoint (with grace); no recorded event is moved.
+    if(now>=session.anchorMs+(step.beats-.25)*session.beatMs&&this.gestures.size===0&&
+      !this.r.instrumentRegistry.getByKind('stick').some(s=>s.contactTargetIds.size))this.command(`stop-record-${step.looperRole}`,now,session.origin);
+  }
   releaseVirtuals() {
     for(const v of this.virtuals) { this.input(v,'trigger',false);this.input(v,'grip',false);this.park(v); }
   }
@@ -387,7 +417,7 @@ export class TutorialAdapter {
       if(state) {state.tutorialPanelCapture=false;state.suppressTriggerUntilRelease=Boolean(heldPhysicalTrigger);}
       this.r.gripTransformSystem.release(controller);this.r.closeRadialMenu(controller);
     }
-    this.gestures.clear();this.pendingStrikes.length=0;
+    this.gestures.clear();this.pendingStrikes.length=0;this.lastStrikes.clear();
     this.r.clearLiveHornInteractionState();
   }
   stopSound() { for(const {role} of TUTORIAL_LOOPERS)this.get(role)?.stop();this.get('metronome')?.pause();this.r.audioSystem.releaseAll(); }
@@ -398,7 +428,8 @@ export class TutorialAdapter {
     this.r.honkContactSystem.reset();this.r.stickCollisionSystem.motionByStickId.clear();
     for(const label of this.labels.values()) {label.removeFromParent();label.material.map.dispose();label.material.dispose();}
     this.labels.clear();this.roles.clear();this.bindings.clear();this.membershipSince.clear();this.strikeTargets.clear();
-    this.tempoSince=null;this.snapshotCache=null;this.takes={};this.takeState={};this.startAllRequest=null;
+    this.bodyTargets.clear();this.stickBounds=new WeakMap();
+    this.tempoSince=null;this.snapshotCache=null;this.takes={};this.takeState={};this.takeRoutes={};this.takeEvidence={};this.startAllRequest=null;
     for(const v of this.virtuals) this.park(v);
     this.setVirtualsActive(false);
   }

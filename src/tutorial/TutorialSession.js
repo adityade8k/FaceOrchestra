@@ -1,6 +1,7 @@
 import { COMPOSITION as C, TOLERANCES as T } from './composition.js';
 import { LESSON_STEPS, SIMULATION_STEPS } from './lessonSteps.js';
 import { expectedForStep, validateNote, validateSequence, validateSetup, validateTake } from './validation.js';
+import { scoreAttempt, scoreForStep, PRACTICE_TOLERANCES as P } from './scoring.js';
 
 // Pure state machine: no Three.js, DOM, audio or wall-clock dependencies.
 export class TutorialSession {
@@ -10,10 +11,12 @@ export class TutorialSession {
     this.evidence = []; this.seen = new Set(); this.checkpoints = new Map();
     this.feedback = ''; this.failed = false; this.anchorMs = null; this.beatMs = C.beatMs; this.complete = false;
     this.takeEvidence = {}; this.validatedTakes = {}; this.repairReturnIndex = null; this.phrasesPassed = []; this.revision = 0; this.playbackSince = null;
+    this.phase=mode==='practice'?'ready':'automatic';this.result=null;this.outcomes=new Map();this.demonstrated=new Set();this.assisted=new Set();
+    if(mode==='practice')this.attempt=0;
   }
   get step() { return this.steps[this.index] || null; }
   accept(event) {
-    if (this.complete || this.failed || !event || event.origin !== this.origin ||
+    if (this.complete || this.failed || (this.mode==='practice'&&this.phase!=='practicing') || !event || event.origin !== this.origin ||
         event.startMs < this.enteredAt || this.seen.has(event.id)) return false;
     this.seen.add(event.id);
     if (this.seen.size > 1024) this.seen.delete(this.seen.values().next().value);
@@ -32,6 +35,7 @@ export class TutorialSession {
     return true;
   }
   advance(now) {
+    if(this.mode==='practice'){this.finishResult({ok:true,message:'Setup ready.',assisted:this.assisted.has(this.step.id)},now);return;}
     this.checkpoints.set(this.step.id, {at:now,attempt:this.attempt});
     if (this.step.type === 'record') this.takeEvidence[this.step.looperRole] = this.evidence.map(e=>({...e}));
     if (this.repairReturnIndex !== null) {
@@ -42,8 +46,45 @@ export class TutorialSession {
     this.playbackSince = null;
     this.complete = this.index >= this.steps.length;
   }
-  reject(message) { this.feedback = message; this.failed = true; this.revision++; return false; }
+  reject(message) {
+    if(this.mode==='practice'){this.finishResult({ok:false,message},this.enteredAt);return false;}
+    this.feedback = message; this.failed = true; this.revision++; return false;
+  }
+  navigate(index,now) {
+    if(this.mode!=='practice')return false;
+    if(this.step&&!this.outcomes.has(this.step.id))this.outcomes.set(this.step.id,{status:this.assisted.has(this.step.id)?'assisted':'skipped'});
+    this.index=Math.max(0,Math.min(index,this.steps.length));this.complete=this.index>=this.steps.length;
+    this.discardAttempt(now);this.phase='ready';this.result=null;this.attempt=0;this.revision++;return true;
+  }
+  discardAttempt(now) {
+    this.evidence=[];this.seen.clear();this.anchorMs=null;this.enteredAt=now;this.failed=false;this.playbackSince=null;this.phrasesPassed=[];this.feedback='';this.finalRestApplied=false;
+  }
+  startAttempt(now,{assisted=false}={}) {
+    this.discardAttempt(now);this.phase='practicing';this.result=null;this.attempt++;this.attemptAssisted=assisted;this.revision++;
+  }
+  finishResult(result,now) {
+    if(this.phase==='results')return;
+    this.result=result;this.phase='results';this.feedback=result.message;this.revision++;
+    const assisted=Boolean(result.assisted||this.attemptAssisted);
+    this.outcomes.set(this.step.id,{status:assisted?'assisted':result.ok?'passed':'practiced',at:now,score:result.score,components:result.components});
+    if(result.ok&&!assisted)this.checkpoints.set(this.step.id,{at:now,attempt:this.attempt});
+    if(this.step.type==='record')this.takeEvidence[this.step.looperRole]=this.evidence.map(e=>({...e}));
+  }
+  finishAttempt(snapshot,now,reason='') {
+    const step=this.step;
+    if(scoreForStep(step).length){
+      let result=scoreAttempt(step,this.evidence,{reason});
+      if(step.type==='record'&&result.ok){
+        const take=validateTake(snapshot.loopers?.[step.looperRole]?.timeline,this.evidence,step.looperRole,snapshot.takeRoutes?.[step.looperRole]||snapshot.routes,{onsetBeats:P.onsetBeats,durationBeats:P.holdBeats});
+        if(!take.ok)result={...result,ok:false,message:take.message};
+      }
+      this.finishResult(result,now);return;
+    }
+    const result=validateSetup(step,snapshot,null)||{ok:false,message:reason||'The action is incomplete. Prepare the step, then Practice again.'};
+    this.finishResult({...result,assisted:this.attemptAssisted},now);
+  }
   retry(now, { recording = false } = {}) {
+    if(this.mode==='practice'){this.startAttempt(now);return;}
     if (recording || this.step?.type === 'finalize') {
       const role=this.step?.looperRole;
       const index=this.steps.findIndex(s=>s.type==='record' && s.looperRole===role);
@@ -54,6 +95,7 @@ export class TutorialSession {
   }
   update(snapshot, now) {
     if (this.complete) return;
+    if(this.mode==='practice'){this.updatePractice(snapshot,now);return;}
     // Setup is checked from cached actual state, including after deletion/retuning/disconnection.
     for (let i = 0; i < this.index; i++) {
       const old = this.steps[i];
@@ -73,7 +115,7 @@ export class TutorialSession {
     const setup = validateSetup(step,snapshot,this.origin);
     if (setup) {
       this.feedback = setup.message;
-      if (setup.ok) this.advance(now);
+      if (setup.ok&&(this.mode!=='demonstration'||now-this.enteredAt>=1100)) this.advance(now);
       return;
     }
     let result = {ok:false};
@@ -91,7 +133,7 @@ export class TutorialSession {
     else if (step.type === 'finalize') {
       const owner=snapshot.loopers?.[step.looperRole];
       if (owner && !owner.recording && !owner.recordArmed && owner.timeline) {
-        result = validateTake(owner.timeline,this.takeEvidence[step.looperRole] || [],step.looperRole);
+        result = validateTake(owner.timeline,this.takeEvidence[step.looperRole] || [],step.looperRole,snapshot.takeRoutes?.[step.looperRole]||snapshot.routes);
         if (result.ok && step.looperRole==='percussionLooper' && this.validatedTakes.chordLooper &&
           JSON.stringify(snapshot.loopers.chordLooper.timeline)!==this.validatedTakes.chordLooper) {
           result={ok:false,message:'The successful chord take changed. Restore or re-record Chords before continuing.'};
@@ -125,18 +167,66 @@ export class TutorialSession {
           this.phrasesPassed.push(C.order[i]); this.revision++;
         }
       }
-      if (beat >= step.beats - (step.type === 'record' ? 0.25 : 0)) {
+      if (beat >= step.beats && (!(snapshot.liveGestures||snapshot.anyStickContact)||beat>=step.beats+P.releaseGraceBeats)) {
         if (step.type === 'drums' || (step.type==='record' && step.looperRole==='percussionLooper')) result = validateSequence(C.percussion,musical,{kind:'strike'});
         else {
           result = validateSequence(notes,musical);
         }
         if (result.ok && snapshot.liveGestures) result = {ok:false,message:'Release the final held voice before continuing.'};
-        if (result.ok && step.type === 'record' && !snapshot.loopers?.[step.looperRole]?.recording) result = {ok:false,message:'Arm Record before the take. Re-record this attempt.'};
+        if (result.ok && step.type === 'record' && !snapshot.loopers?.[step.looperRole]?.recording&&!snapshot.loopers?.[step.looperRole]?.timeline) result = {ok:false,message:'Arm Record before the take. Re-record this attempt.'};
         if (!result.ok) this.reject(result.message);
       }
     }
     if (result.ok) this.advance(now);
   }
+  updatePractice(snapshot,now) {
+    if(this.phase!=='practicing')return;
+    const step=this.step,elapsed=now-this.enteredAt;
+    if(step.timed&&snapshot.roles&&scoreForStep(step).some(event=>!snapshot.roles[event.role]?.ready)){
+      this.finishAttempt(snapshot,now,'A required target is missing. Choose Prepare, then Practice again.');return;
+    }
+    const writtenRest=step.type==='performance'&&this.anchorMs!==null&&now>=this.anchorMs+95*this.beatMs;
+    if(step.timed&&!writtenRest&&snapshot.clockPlaying!==undefined&&(!snapshot.clockPlaying||Math.abs(snapshot.bpm-C.bpm)>T.bpm)){
+      this.finishAttempt(snapshot,now,'The 80 BPM clock changed or paused. Choose Prepare, then Practice again.');return;
+    }
+    if(step.looperRole&&snapshot.loopers?.[step.looperRole]?.clockWired===false&&['record','playback'].includes(step.type)){
+      this.finishResult({ok:false,message:'The Looper clock cable is disconnected. Choose Prepare, then Practice again.'},now);return;
+    }
+    const setup=validateSetup(step,snapshot,null);
+    if(setup){
+      if(setup.ok)this.finishResult({...setup,assisted:this.attemptAssisted},now);
+      else if(elapsed>30000)this.finishResult(setup,now);
+      else this.feedback=setup.message;
+      return;
+    }
+    if(step.timed){
+      if(this.anchorMs===null){if(elapsed>10000)this.finishResult({ok:false,message:'The count-in could not start. Choose Prepare, then Practice again.'},now);return;}
+      const beat=(now-this.anchorMs)/this.beatMs;
+      if(beat<step.beats)return;
+      if((snapshot.liveGestures||snapshot.anyStickContact)&&beat<step.beats+P.releaseGraceBeats)return;
+      this.finishAttempt(snapshot,now,beat>=step.beats+P.releaseGraceBeats&&(snapshot.liveGestures||snapshot.anyStickContact)?'Release the held target before trying again.':'');return;
+    }
+    if(['note','strike'].includes(step.type)){
+      if(this.evidence.some(e=>e.kind==='note'||e.kind==='strike')||elapsed>P.untimedTimeoutMs)this.finishAttempt(snapshot,now,elapsed>P.untimedTimeoutMs?'No completed note or strike was received. Follow the highlighted target, then release.':'');return;
+    }
+    let result;
+    if(step.type==='ack')result={ok:true,message:'Ready for the composition.'};
+    if(step.type==='stick'&&snapshot.stickActive&&snapshot.stickOrigin==='learner')result={ok:true,message:'Stick ready.'};
+    if(step.type==='unequip'&&!snapshot.anyStickActive)result={ok:true,message:'Hands ready for melody.'};
+    if(step.type==='finalize'){
+      const owner=snapshot.loopers?.[step.looperRole];
+      if(!owner?.recording&&!owner?.recordArmed)result=validateTake(owner?.timeline,snapshot.takeEvidence?.[step.looperRole]||this.takeEvidence[step.looperRole]||[],step.looperRole,snapshot.takeRoutes?.[step.looperRole]||snapshot.routes,{onsetBeats:P.onsetBeats,durationBeats:P.holdBeats});
+    }
+    if(['playback','start-all'].includes(step.type)){
+      const owner=snapshot.loopers?.[step.looperRole];
+      const other=snapshot.loopers?.[step.looperRole==='chordLooper'?'percussionLooper':'chordLooper'];
+      const playing=step.type==='start-all'?snapshot.aligned&&snapshot.startAllRequest?.ok&&snapshot.loopers.chordLooper.playbackObserved&&snapshot.loopers.percussionLooper.playbackObserved:owner?.playing&&!owner.playArmed&&!other?.playing&&owner.playbackObserved;
+      if(playing&&snapshot.audioRunning&&!snapshot.liveGestures&&!snapshot.anyStickContact){this.playbackSince??=now;if(now-this.playbackSince>=C.loopBeats*C.beatMs)result={ok:true,message:step.type==='start-all'?'Both parts share the same phrase origin.':'One complete backing cycle heard.'};}
+      else this.playbackSince=null;
+    }
+    if(result)this.finishResult(result,now);
+    else if(elapsed>30000)this.finishResult({ok:false,message:'This action did not complete. Choose Prepare or Practice again.'},now);
+  }
   exportProgress() { return { composition:C.id,version:C.version,mode:this.mode,complete:this.complete,
-    checkpoints:[...this.checkpoints.keys()],phrasesPassed:[...this.phrasesPassed] }; }
+    checkpoints:[...this.checkpoints.keys()],outcomes:Object.fromEntries(this.outcomes),demonstrated:[...this.demonstrated],phrasesPassed:[...this.phrasesPassed] }; }
 }

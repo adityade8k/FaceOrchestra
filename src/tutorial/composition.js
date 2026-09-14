@@ -51,14 +51,14 @@ const phrases = Object.freeze({
 const backing = [[48,55,60],[48,53,55],[46,48,55],[43,48,60]].map((midis, i) =>
   Object.freeze({ role: `group-${i + 1}`, label: `Group ${i + 1}`, midis: Object.freeze(midis),
     notes: ['C3 · G3 · C4','C3 · F3 · G3','Bb2 · C3 · G3','G2 · C3 · C4'][i],
-    catalogId: `jog-group-${i + 1}`, trackIndex: i, beat: i * 4, beats: 3.7 }));
+    catalogId: `jog-group-${i + 1}`, beat: i * 4, beats: 3.7 }));
 const percussion = [0,4,8,12].flatMap(beat => [
-  { beat, role: 'percussion', type: 'boink', lane: 'track-4' },
-  { beat: beat + 2, role: 'metronome', type: 'metronomeWood', lane: 'track-5' },
+  { beat, role: 'percussion', type: 'boink' },
+  { beat: beat + 2, role: 'metronome', type: 'metronomeWood' },
   { beat: beat + 3, role: 'percussionLooper', type: 'hihat', lane: 'looper-self-percussion' },
 ]);
 export const COMPOSITION = Object.freeze({
-  id: 'virag-2-jog-study', version: 2, title: 'VIRAG 2 — JOG STUDY', bpm: 80,
+  id: 'virag-2-jog-study', version: 3, title: 'VIRAG 2 — JOG STUDY', bpm: 80,
   beatMs: 750, loopBeats: 16, gapBeats: 0, phrases, backing: Object.freeze(backing),
   percussion: Object.freeze(percussion), pitches: PITCHES,
   order: Object.freeze(['A','B','A','C','B','D']), backingVowel: 'O', backingNose: 0.35,
@@ -81,6 +81,6 @@ export const TUTORIAL_PRESETS = Object.freeze([
 ]);
 
 export const TUTORIAL_LOOPERS = Object.freeze([
-  {role:'chordLooper', label:'Chord Looper', catalogId:'jog-chord-looper', portId:'port-0'},
-  {role:'percussionLooper', label:'Percussion Looper', catalogId:'jog-percussion-looper', portId:'port-1'},
+  {role:'chordLooper', label:'Chord Looper', catalogId:'jog-chord-looper'},
+  {role:'percussionLooper', label:'Percussion Looper', catalogId:'jog-percussion-looper'},
 ]);

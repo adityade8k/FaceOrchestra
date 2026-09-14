@@ -34,14 +34,14 @@ try {
   await send('Page.reload',{ignoreCache:true});
   await new Promise(resolve=>setTimeout(resolve,1500));
   const result=await send('Runtime.evaluate',{
-    expression:`(async()=>{
+    expression:process.env.TUTORIAL_TEST==='usability'?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-tutorial-usability-browser.mjs')).validateStandalone(app);})()`:`(async()=>{
       const {app}=await import('/src/main.js');
       const {validate}=await import('/scripts/validate-tutorial-browser.mjs');
       const report=await validate(app,{onProgress:p=>tutorialTestProgress(JSON.stringify(p))});
       report.manualHonkRegression=await (await import('/scripts/validate-manual-honks-browser.mjs')).validate();
       report.presentationRegression=await (await import('/scripts/validate-honk-presentation-browser.mjs')).validate();
       return report;
-    })()`,awaitPromise:true,returnByValue:true,userGesture:true,timeout:480000,
+    })()`,awaitPromise:true,returnByValue:true,userGesture:true,timeout:900000,
   });
   if(result.exceptionDetails)throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
   const report=result.result.value;report.screenshots=await Promise.all(captures);
