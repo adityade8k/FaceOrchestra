@@ -145,10 +145,10 @@ test("audio lookahead schedules a complete short note between visual frames", ()
   controller.stopAudioScheduler(looper, { release: false });
 
   assert.deepEqual(calls.map(([kind, _voiceId, time]) => [kind, time]), [
-    ["start", 10.03],
+    ["start", 10],
+    ["end", 10.02],
+    ["start", 10.04],
     ["end", 10.05],
-    ["start", 10.07],
-    ["end", 10.08],
   ]);
   assert.equal(calls[0][1], calls[1][1]);
   assert.equal(calls[2][1], calls[3][1]);
@@ -180,7 +180,8 @@ test("60 to 200 BPM maps one shared 1000 ms source event to 300 ms", () => {
     timeMs: 1000,
     value: 1,
   });
-  looper.looperData.timeline.finalizeDuration();
+  // Isolate rate mapping from capture normalization.
+  looper.looperData.timeline.sortTracks();
   looper.looperData.timeline.durationMs = 2000;
 
   controller.scheduleSourceRange(looper, 0, 1000, {

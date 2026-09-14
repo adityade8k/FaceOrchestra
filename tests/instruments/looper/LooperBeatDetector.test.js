@@ -23,10 +23,10 @@ test("beat detector infers tempo, clusters chords, and stabilizes the loop bound
     timeline.getTrack("track-0").events[0].timeMs,
     timeline.getTrack("track-1").events[0].timeMs,
   ];
-  assert.deepEqual(firstChordTimes, [analysis.originMs, analysis.originMs]);
-  assert.equal(timeline.durationMs, analysis.beatIntervalMs * 4);
-  assert.ok(timeline.contentEndMs < timeline.durationMs);
-  assert.ok(Math.abs(timeline.durationMs / analysis.beatIntervalMs - 4) < 1e-9);
+  assert.deepEqual(firstChordTimes, [0, 0]);
+  assert.equal(timeline.durationMs, analysis.beatIntervalMs * 2.75);
+  assert.equal(timeline.contentEndMs, timeline.durationMs);
+  assert.ok(Math.abs(timeline.durationMs / analysis.beatIntervalMs - 2.75) < 1e-9);
 });
 
 test("beat correction leaves pitch actions continuous while snapping note gates", () => {
@@ -42,11 +42,11 @@ test("beat correction leaves pitch actions continuous while snapping note gates"
   const events = timeline.getTrack("track-0").events;
   const pitch = events.find((event) => event.type === LooperActionEventType.EarLeft);
   const secondAttack = events.filter((event) => event.type === LooperActionEventType.SqueezeStart)[1];
-  assert.equal(pitch.timeMs, 333);
-  assert.equal(secondAttack.timeMs, analysis.originMs + analysis.beatIntervalMs);
+  assert.equal(pitch.timeMs, 233);
+  assert.equal(secondAttack.timeMs, analysis.beatIntervalMs);
 });
 
-test("beat correction drops the record-to-Stop rest and ends on the next phrase beat", () => {
+test("beat correction drops the record-to-Stop rest and retains the complete corrected final note", () => {
   const timeline = new LooperTimeline();
   timeline.startRecording(1000);
   addNote(timeline, "track-0", 0, 300, 500);
@@ -61,10 +61,10 @@ test("beat correction drops the record-to-Stop rest and ends on the next phrase 
   const attacks = timeline.getTrack("track-0").events
     .filter((event) => event.type === LooperActionEventType.SqueezeStart)
     .map((event) => event.timeMs);
-  assert.equal(attacks[0], 300);
+  assert.equal(attacks[0], 0);
   assert.equal(attacks[2] - attacks[1], 625);
-  assert.equal(timeline.durationMs, 2000);
-  assert.ok(timeline.durationMs >= 1500);
+  assert.equal(timeline.durationMs, 1250);
+  assert.ok(timeline.durationMs > attacks.at(-1));
 });
 
 function addNote(timeline, trackId, trackIndex, startMs, endMs) {

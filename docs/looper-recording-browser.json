@@ -1,0 +1,2251 @@
+{
+  "baseRevision": "47f76d1",
+  "radialAssertions": 742,
+  "checks": [
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "Other Looper contains a real manually recorded take",
+    "Empty initial learner Looper",
+    "step-practice available",
+    "Practice arms the actual intended Looper",
+    "Incomplete real performance receives a low score",
+    "Low score leaves a finalized real recording",
+    "Capture finalized once before results",
+    "Cached tutorial take reflects the finalized physical take",
+    "Gap 0 ends at the actual short hold release",
+    "initial empty take: retained chord schedules actual voices",
+    "initial empty take: physical Play produces Web Audio signal with clock muted",
+    "next-step available",
+    "Next preserves the low-scoring take",
+    "Other Looper remains byte-for-byte unchanged",
+    "previous-step available",
+    "Navigation progresses",
+    "step-practice available",
+    "Practice arms the actual intended Looper",
+    "Incomplete real performance receives a low score",
+    "Low score leaves a finalized real recording",
+    "Capture finalized once before results",
+    "Cached tutorial take reflects the finalized physical take",
+    "Gap 0 ends at the actual short hold release",
+    "prior take replaced: retained chord schedules actual voices",
+    "prior take replaced: physical Play produces Web Audio signal with clock muted",
+    "next-step available",
+    "Next preserves the low-scoring take",
+    "Other Looper remains byte-for-byte unchanged",
+    "previous-step available",
+    "Navigation progresses",
+    "step-practice available",
+    "step-practice available",
+    "Cancelling armed Practice before sound retains prior take",
+    "step-practice available",
+    "step-practice available",
+    "Cancelling a partial Practice finalizes its new take",
+    "next-step available",
+    "Partial take survives Next",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "next-step available",
+    "Navigation progresses",
+    "Manual delayed Stop keeps the actual release endpoint (0 ms)",
+    "Manual take begins on its actual onset",
+    "Manual delayed Stop keeps the actual release endpoint (2000 ms)",
+    "Manual take begins on its actual onset",
+    "Manual delayed Stop keeps the actual release endpoint (10000 ms)",
+    "Manual take begins on its actual onset",
+    "next-step available",
+    "previous-step available",
+    "Manual recording without Practice survives tutorial navigation",
+    "manual without Practice: retained chord schedules actual voices",
+    "manual without Practice: physical Play produces Web Audio signal with clock muted",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "previous-step available",
+    "Navigation progresses",
+    "step-demo available",
+    "step-demo available",
+    "Demonstrate restores its own temporary recording",
+    "step-demo available",
+    "Demo cleanup retains newer learner Record request",
+    "Late demo cleanup never replaces newer learner capture",
+    "All Practice/demo/manual transitions preserve the other take",
+    "manual after interrupted demonstration: retained chord schedules actual voices",
+    "manual after interrupted demonstration: physical Play produces Web Audio signal with clock muted"
+  ],
+  "takes": [
+    {
+      "prior": false,
+      "score": 5,
+      "timeline": {
+        "schemaVersion": 7,
+        "onsetOffsetMs": 0,
+        "durationMs": 666.6999999999971,
+        "contentEndMs": 666.6999999999971,
+        "recordedDurationMs": 666.6999999999971,
+        "beatIntervalMs": 750,
+        "sourceBeatIntervalMs": 750,
+        "timingMode": "metronome",
+        "beatAnalysis": null,
+        "gapBeats": 0,
+        "tracks": [
+          {
+            "trackId": "track-6",
+            "nodeId": "HIT_looper_node_6",
+            "trackIndex": 6,
+            "baselineActionState": {
+              "squeeze": 0.1793488225016645,
+              "bend": 0,
+              "earLeft": 0.2857142857142857,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "events": [
+              {
+                "id": 1,
+                "timeMs": 0,
+                "type": "squeezeStart",
+                "interpolation": "step",
+                "value": 0.1793488225016645,
+                "gateOnly": true
+              },
+              {
+                "id": 2,
+                "timeMs": 0,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.1793488225016645
+                }
+              },
+              {
+                "id": 3,
+                "timeMs": 33.5,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.4492881262789835
+                }
+              },
+              {
+                "id": 4,
+                "timeMs": 50.10000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.5480576523685332
+                }
+              },
+              {
+                "id": 5,
+                "timeMs": 83.5,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.6963550956101905
+                }
+              },
+              {
+                "id": 6,
+                "timeMs": 100,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7505165671285446
+                }
+              },
+              {
+                "id": 7,
+                "timeMs": 116.69999999999709,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7955047656971342
+                }
+              },
+              {
+                "id": 8,
+                "timeMs": 133.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8323804495902918
+                }
+              },
+              {
+                "id": 9,
+                "timeMs": 166.8000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8873820463500505
+                }
+              },
+              {
+                "id": 10,
+                "timeMs": 183.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9075799437297
+                }
+              },
+              {
+                "id": 11,
+                "timeMs": 200.10000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9242456268789054
+                }
+              },
+              {
+                "id": 12,
+                "timeMs": 216.8000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9379060641319346
+                }
+              },
+              {
+                "id": 13,
+                "timeMs": 250,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.958181699147416,
+                  "bend": 0.02081639239698578
+                }
+              },
+              {
+                "id": 14,
+                "timeMs": 266.8000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9657633907682965,
+                  "bend": 0.04015821637455029
+                }
+              },
+              {
+                "id": 15,
+                "timeMs": 283.5,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.971937120850104,
+                  "bend": 0.068023770483955
+                }
+              },
+              {
+                "id": 16,
+                "timeMs": 300,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9769427270955126,
+                  "bend": 0.10248974300405503
+                }
+              },
+              {
+                "id": 17,
+                "timeMs": 333.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9845085917191324,
+                  "bend": 0.15458430846206933
+                }
+              },
+              {
+                "id": 18,
+                "timeMs": 350.1000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9873020860358729,
+                  "bend": 0.19821912144310624
+                }
+              },
+              {
+                "id": 19,
+                "timeMs": 366.8000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9895918423866257,
+                  "bend": 0.23398546953928573
+                }
+              },
+              {
+                "id": 20,
+                "timeMs": 400.1000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9929987765734272,
+                  "bend": 0.3312899809591282
+                }
+              },
+              {
+                "id": 21,
+                "timeMs": 416.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.994254437751053,
+                  "bend": 0.3790904809259294
+                }
+              },
+              {
+                "id": 22,
+                "timeMs": 433.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9952905085328633,
+                  "bend": 0.4305908761832198
+                }
+              },
+              {
+                "id": 23,
+                "timeMs": 450,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9961351502820759,
+                  "bend": 0.47257583000969317
+                }
+              },
+              {
+                "id": 24,
+                "timeMs": 483.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9974033371087477,
+                  "bend": 0.5790918070348663
+                }
+              },
+              {
+                "id": 25,
+                "timeMs": 500.1000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9978715813701918,
+                  "bend": 0.6184199990214044
+                }
+              },
+              {
+                "id": 26,
+                "timeMs": 516.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9982533107452383,
+                  "bend": 0.6744135983326834
+                }
+              },
+              {
+                "id": 27,
+                "timeMs": 550.1000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9988264580769199,
+                  "bend": 0.7803265419289663
+                }
+              },
+              {
+                "id": 28,
+                "timeMs": 566.8000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9990380774877018,
+                  "bend": 0.8199392450179142
+                }
+              },
+              {
+                "id": 29,
+                "timeMs": 583.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9992105971576202,
+                  "bend": 0.8522329294026864
+                }
+              },
+              {
+                "id": 30,
+                "timeMs": 600,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9993521756278805,
+                  "bend": 0.8787347795188349
+                }
+              },
+              {
+                "id": 31,
+                "timeMs": 633.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9995647485336028,
+                  "bend": 0.9185259658189003
+                }
+              },
+              {
+                "id": 32,
+                "timeMs": 650,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9996428103715932,
+                  "bend": 0.933138237913741
+                }
+              },
+              {
+                "id": 33,
+                "timeMs": 666.6999999999971,
+                "type": "squeezeEnd",
+                "interpolation": "step",
+                "value": 0,
+                "gateOnly": true,
+                "releaseOrigin": "controller"
+              },
+              {
+                "id": 34,
+                "timeMs": 666.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8193818257721397,
+                  "bend": 0.7648697166094136
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prior": true,
+      "score": 5,
+      "timeline": {
+        "schemaVersion": 7,
+        "onsetOffsetMs": 0,
+        "durationMs": 649.9000000000087,
+        "contentEndMs": 649.9000000000087,
+        "recordedDurationMs": 649.9000000000087,
+        "beatIntervalMs": 750,
+        "sourceBeatIntervalMs": 750,
+        "timingMode": "metronome",
+        "beatAnalysis": null,
+        "gapBeats": 0,
+        "tracks": [
+          {
+            "trackId": "track-6",
+            "nodeId": "HIT_looper_node_6",
+            "trackIndex": 6,
+            "baselineActionState": {
+              "squeeze": 0.18032539496027167,
+              "bend": 1.7917153688660035e-90,
+              "earLeft": 0.2857142857142857,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "events": [
+              {
+                "id": 1,
+                "timeMs": 0,
+                "type": "squeezeStart",
+                "interpolation": "step",
+                "value": 0.18032539496027167,
+                "gateOnly": true
+              },
+              {
+                "id": 2,
+                "timeMs": 0,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.18032539496027167,
+                  "bend": 1.7917153688660035e-90
+                }
+              },
+              {
+                "id": 3,
+                "timeMs": 33.30000000000291,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.44863199999999986,
+                  "bend": 1.205227676235046e-90
+                }
+              },
+              {
+                "id": 4,
+                "timeMs": 49.90000000000873,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.5475192015650976,
+                  "bend": 9.890715116558732e-91
+                }
+              },
+              {
+                "id": 5,
+                "timeMs": 66.60000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.6291129802548104,
+                  "bend": 8.107168006725749e-91
+                }
+              },
+              {
+                "id": 6,
+                "timeMs": 100,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7508134516710901,
+                  "bend": 5.446934254281784e-91
+                }
+              },
+              {
+                "id": 7,
+                "timeMs": 116.60000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7955047656971342,
+                  "bend": 4.4700330095323647e-91
+                }
+              },
+              {
+                "id": 8,
+                "timeMs": 133.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8323804495902918,
+                  "bend": 3.663972541602989e-91
+                }
+              },
+              {
+                "id": 9,
+                "timeMs": 150,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8626065112209855,
+                  "bend": 3.0032652459148395e-91
+                }
+              },
+              {
+                "id": 10,
+                "timeMs": 183.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9075799437297,
+                  "bend": 2.020197212318557e-91
+                }
+              },
+              {
+                "id": 11,
+                "timeMs": 199.90000000000873,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9241553719973159,
+                  "bend": 1.6578772210680787e-91
+                }
+              },
+              {
+                "id": 12,
+                "timeMs": 216.60000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9378320844975148,
+                  "bend": 0.011946557409400356
+                }
+              },
+              {
+                "id": 13,
+                "timeMs": 233.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9490425384143573,
+                  "bend": 0.03334729441594959
+                }
+              },
+              {
+                "id": 14,
+                "timeMs": 266.70000000001164,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9657633907682965,
+                  "bend": 0.06526737244368966
+                }
+              },
+              {
+                "id": 15,
+                "timeMs": 283.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9719036863204473,
+                  "bend": 0.10024848637884808
+                }
+              },
+              {
+                "id": 16,
+                "timeMs": 300,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9769701651816404,
+                  "bend": 0.14088959520563368
+                }
+              },
+              {
+                "id": 17,
+                "timeMs": 316.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.981100538938721,
+                  "bend": 0.17402167252319037
+                }
+              },
+              {
+                "id": 18,
+                "timeMs": 349.90000000000873,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9872869575531985,
+                  "bend": 0.2665066290038886
+                }
+              },
+              {
+                "id": 19,
+                "timeMs": 366.70000000001164,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9895918423866257,
+                  "bend": 0.3127484637986475
+                }
+              },
+              {
+                "id": 20,
+                "timeMs": 383.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9914585331989946,
+                  "bend": 0.3501990152997878
+                }
+              },
+              {
+                "id": 21,
+                "timeMs": 400,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.992998776573426,
+                  "bend": 0.40409169121083904
+                }
+              },
+              {
+                "id": 22,
+                "timeMs": 433.20000000001164,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9952848975750117,
+                  "bend": 0.5046947224081717
+                }
+              },
+              {
+                "id": 23,
+                "timeMs": 450,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9961397494417367,
+                  "bend": 0.5423133300661122
+                }
+              },
+              {
+                "id": 24,
+                "timeMs": 466.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9968320808339226,
+                  "bend": 0.596095409342419
+                }
+              },
+              {
+                "id": 25,
+                "timeMs": 483.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9974033371087477,
+                  "bend": 0.6404720627868463
+                }
+              },
+              {
+                "id": 26,
+                "timeMs": 516.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9982533107452383,
+                  "bend": 0.749053495248855
+                }
+              },
+              {
+                "id": 27,
+                "timeMs": 533.2000000000116,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9985665774063561,
+                  "bend": 0.7890723162410099
+                }
+              },
+              {
+                "id": 28,
+                "timeMs": 550,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9988264580769198,
+                  "bend": 0.8273136751666966
+                }
+              },
+              {
+                "id": 29,
+                "timeMs": 566.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9990369314389806,
+                  "bend": 0.8582847641876895
+                }
+              },
+              {
+                "id": 30,
+                "timeMs": 583.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9992105971576203,
+                  "bend": 0.8838396200574324
+                }
+              },
+              {
+                "id": 31,
+                "timeMs": 616.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9994689948136479,
+                  "bend": 0.921862753860638
+                }
+              },
+              {
+                "id": 32,
+                "timeMs": 633.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9995647485336028,
+                  "bend": 0.9359528836318264
+                }
+              },
+              {
+                "id": 33,
+                "timeMs": 649.9000000000087,
+                "type": "squeezeEnd",
+                "interpolation": "step",
+                "value": 0,
+                "gateOnly": true,
+                "releaseOrigin": "controller"
+              },
+              {
+                "id": 34,
+                "timeMs": 649.9000000000087,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8202939878699287,
+                  "bend": 0.7680908360354208
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "manual": true,
+      "waitAfter": 0,
+      "start": 107224.8,
+      "timeline": {
+        "schemaVersion": 7,
+        "onsetOffsetMs": 0,
+        "durationMs": 650,
+        "contentEndMs": 650,
+        "recordedDurationMs": 650,
+        "beatIntervalMs": 750,
+        "sourceBeatIntervalMs": 750,
+        "timingMode": "metronome",
+        "beatAnalysis": null,
+        "gapBeats": 0,
+        "tracks": [
+          {
+            "trackId": "track-6",
+            "nodeId": "HIT_looper_node_6",
+            "trackIndex": 6,
+            "baselineActionState": {
+              "squeeze": 0.17934882258382923,
+              "bend": 6.397270674533937e-11,
+              "earLeft": 0.2857142857142857,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "events": [
+              {
+                "id": 1,
+                "timeMs": 0,
+                "type": "squeezeStart",
+                "interpolation": "step",
+                "value": 0.17934882258382923,
+                "gateOnly": true
+              },
+              {
+                "id": 2,
+                "timeMs": 0,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.17934882258382923,
+                  "bend": 6.397270674533937e-11
+                }
+              },
+              {
+                "id": 3,
+                "timeMs": 33.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.44863200005520354,
+                  "bend": 4.2981115899070085e-11
+                }
+              },
+              {
+                "id": 4,
+                "timeMs": 50,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.5475192016104006,
+                  "bend": 3.527250337276429e-11
+                }
+              },
+              {
+                "id": 5,
+                "timeMs": 83.30000000000291,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.6956311305577356,
+                  "bend": 2.3726646549811903e-11
+                }
+              },
+              {
+                "id": 6,
+                "timeMs": 100,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7505165671535233,
+                  "bend": 1.9448129639634305e-11
+                }
+              },
+              {
+                "id": 7,
+                "timeMs": 116.69999999999709,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7955047657176086,
+                  "bend": 1.5941137981128682e-11
+                }
+              },
+              {
+                "id": 8,
+                "timeMs": 133.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8321807451933575,
+                  "bend": 1.308211365487669e-11
+                }
+              },
+              {
+                "id": 9,
+                "timeMs": 166.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8872478716641864,
+                  "bend": 8.789433366378962e-12
+                }
+              },
+              {
+                "id": 10,
+                "timeMs": 183.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9075799437389532,
+                  "bend": 7.204475323109685e-12
+                }
+              },
+              {
+                "id": 11,
+                "timeMs": 200,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9241553720049096,
+                  "bend": 5.912361157167664e-12
+                }
+              },
+              {
+                "id": 12,
+                "timeMs": 233.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9489818269453765,
+                  "bend": 0.021583524284278496
+                }
+              },
+              {
+                "id": 13,
+                "timeMs": 250,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.958181699151603,
+                  "bend": 0.04141552649738917
+                }
+              },
+              {
+                "id": 14,
+                "timeMs": 266.59999999999127,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9656817621677775,
+                  "bend": 0.05758328002711457
+                }
+              },
+              {
+                "id": 15,
+                "timeMs": 283.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9719036863232604,
+                  "bend": 0.09473484637777706
+                }
+              },
+              {
+                "id": 16,
+                "timeMs": 316.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9811005389406132,
+                  "bend": 0.1710288703105826
+                }
+              },
+              {
+                "id": 17,
+                "timeMs": 333.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9845085917206834,
+                  "bend": 0.2111911459878247
+                }
+              },
+              {
+                "id": 18,
+                "timeMs": 350.09999999999127,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.987302086037142,
+                  "bend": 0.24411114344106483
+                }
+              },
+              {
+                "id": 19,
+                "timeMs": 366.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.989579441954608,
+                  "bend": 0.29465636861311906
+                }
+              },
+              {
+                "id": 20,
+                "timeMs": 400,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9929904352128938,
+                  "bend": 0.3922527304893305
+                }
+              },
+              {
+                "id": 21,
+                "timeMs": 416.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9942544377516284,
+                  "bend": 0.4405343626066587
+                }
+              },
+              {
+                "id": 22,
+                "timeMs": 433.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9952848975754839,
+                  "bend": 0.4916650327227222
+                }
+              },
+              {
+                "id": 23,
+                "timeMs": 466.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9968320808342399,
+                  "bend": 0.5899689091090962
+                }
+              },
+              {
+                "id": 24,
+                "timeMs": 483.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9974033371090079,
+                  "bend": 0.6262650013153152
+                }
+              },
+              {
+                "id": 25,
+                "timeMs": 500,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.997869045540941,
+                  "bend": 0.6797867250490555
+                }
+              },
+              {
+                "id": 26,
+                "timeMs": 516.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9982533107454132,
+                  "bend": 0.7358951114141262
+                }
+              },
+              {
+                "id": 27,
+                "timeMs": 550,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9988250599018176,
+                  "bend": 0.8223453754520574
+                }
+              },
+              {
+                "id": 28,
+                "timeMs": 566.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.999036931439077,
+                  "bend": 0.854381015790184
+                }
+              },
+              {
+                "id": 29,
+                "timeMs": 583.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9992096566514669,
+                  "bend": 0.880497609142103
+                }
+              },
+              {
+                "id": 30,
+                "timeMs": 600,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9993521756279453,
+                  "bend": 0.90204692497225
+                }
+              },
+              {
+                "id": 31,
+                "timeMs": 633.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9995647485336463,
+                  "bend": 0.9341886144164949
+                }
+              },
+              {
+                "id": 32,
+                "timeMs": 650,
+                "type": "squeezeEnd",
+                "interpolation": "step",
+                "value": 0,
+                "gateOnly": true,
+                "releaseOrigin": "controller"
+              },
+              {
+                "id": 33,
+                "timeMs": 650,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8202939878699644,
+                  "bend": 0.766642986426435
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "manual": true,
+      "waitAfter": 2000,
+      "start": 108108.1,
+      "timeline": {
+        "schemaVersion": 7,
+        "onsetOffsetMs": 0,
+        "durationMs": 700,
+        "contentEndMs": 700,
+        "recordedDurationMs": 700,
+        "beatIntervalMs": 750,
+        "sourceBeatIntervalMs": 750,
+        "timingMode": "metronome",
+        "beatAnalysis": null,
+        "gapBeats": 0,
+        "tracks": [
+          {
+            "trackId": "track-6",
+            "nodeId": "HIT_looper_node_6",
+            "trackIndex": 6,
+            "baselineActionState": {
+              "squeeze": 0.2303447898267611,
+              "bend": 0.04766059640073154,
+              "earLeft": 0.2857142857142857,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "events": [
+              {
+                "id": 1,
+                "timeMs": 0,
+                "type": "squeezeStart",
+                "interpolation": "step",
+                "value": 0.2303447898267611,
+                "gateOnly": true
+              },
+              {
+                "id": 2,
+                "timeMs": 0,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.2303447898267611,
+                  "bend": 0.04766059640073154
+                }
+              },
+              {
+                "id": 3,
+                "timeMs": 33.29999999998836,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.48227839277477214,
+                  "bend": 0.03205970705290964
+                }
+              },
+              {
+                "id": 4,
+                "timeMs": 66.69999999999709,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.6521602174474562,
+                  "bend": 0.021539841826866177
+                }
+              },
+              {
+                "id": 5,
+                "timeMs": 83.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7148845636191387,
+                  "bend": 0.017655661342054756
+                }
+              },
+              {
+                "id": 6,
+                "timeMs": 100,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7660196814110943,
+                  "bend": 0.014489139269869077
+                }
+              },
+              {
+                "id": 7,
+                "timeMs": 133.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8427964720735571,
+                  "bend": 0.00973476668284605
+                }
+              },
+              {
+                "id": 8,
+                "timeMs": 150,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8709907397002722,
+                  "bend": 0.007988847740949176
+                }
+              },
+              {
+                "id": 9,
+                "timeMs": 166.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8942543855173531,
+                  "bend": 0.006548255616785042
+                }
+              },
+              {
+                "id": 10,
+                "timeMs": 183.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.913323005214253,
+                  "bend": 0.0053674388363874614
+                }
+              },
+              {
+                "id": 11,
+                "timeMs": 216.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9416952520339319,
+                  "bend": 0.0036104986029155354
+                }
+              },
+              {
+                "id": 12,
+                "timeMs": 233.39999999999418,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9522090787389722,
+                  "bend": 0.0029594340163412824
+                }
+              },
+              {
+                "id": 13,
+                "timeMs": 250,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9607803241934073,
+                  "bend": 0.0024286630102391014
+                }
+              },
+              {
+                "id": 14,
+                "timeMs": 266.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9678526277234449,
+                  "bend": 0.025827476546720882
+                }
+              },
+              {
+                "id": 15,
+                "timeMs": 300,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9783755257898706,
+                  "bend": 0.08212386231578593
+                }
+              },
+              {
+                "id": 16,
+                "timeMs": 316.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9822749676426205,
+                  "bend": 0.10298546160532526
+                }
+              },
+              {
+                "id": 17,
+                "timeMs": 333.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9854712411031485,
+                  "bend": 0.1441473546467691
+                }
+              },
+              {
+                "id": 18,
+                "timeMs": 366.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9902269843591763,
+                  "bend": 0.20539223799440498
+                }
+              },
+              {
+                "id": 19,
+                "timeMs": 383.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9919893072645608,
+                  "bend": 0.25192435178990835
+                }
+              },
+              {
+                "id": 20,
+                "timeMs": 400,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9934260155740845,
+                  "bend": 0.3016287523483614
+                }
+              },
+              {
+                "id": 21,
+                "timeMs": 416.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9946114719121504,
+                  "bend": 0.34264083272765555
+                }
+              },
+              {
+                "id": 22,
+                "timeMs": 450,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9963753153550519,
+                  "bend": 0.4469321496109555
+                }
+              },
+              {
+                "id": 23,
+                "timeMs": 466.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9970289380452586,
+                  "bend": 0.4855791006092435
+                }
+              },
+              {
+                "id": 24,
+                "timeMs": 483.29999999998836,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9975617945084205,
+                  "bend": 0.5407931420238166
+                }
+              },
+              {
+                "id": 25,
+                "timeMs": 500,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9980014648766843,
+                  "bend": 0.5863513356469567
+                }
+              },
+              {
+                "id": 26,
+                "timeMs": 533.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9986572512852154,
+                  "bend": 0.6977809465326079
+                }
+              },
+              {
+                "id": 27,
+                "timeMs": 550,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9988980716861277,
+                  "bend": 0.7505263687133638
+                }
+              },
+              {
+                "id": 28,
+                "timeMs": 566.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9990967773445446,
+                  "bend": 0.7955127998072996
+                }
+              },
+              {
+                "id": 29,
+                "timeMs": 600,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9993924319894368,
+                  "bend": 0.8624482228647499
+                }
+              },
+              {
+                "id": 30,
+                "timeMs": 616.6999999999971,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9995019919309068,
+                  "bend": 0.8872523014041511
+                }
+              },
+              {
+                "id": 31,
+                "timeMs": 633.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9995917954326594,
+                  "bend": 0.9075835746843093
+                }
+              },
+              {
+                "id": 32,
+                "timeMs": 650,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9996650064411517,
+                  "bend": 0.9241583517444915
+                }
+              },
+              {
+                "id": 33,
+                "timeMs": 683.3999999999942,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9997749290641146,
+                  "bend": 0.9490445404065382
+                }
+              },
+              {
+                "id": 34,
+                "timeMs": 700,
+                "type": "squeezeEnd",
+                "interpolation": "step",
+                "value": 0,
+                "gateOnly": true,
+                "releaseOrigin": "controller"
+              },
+              {
+                "id": 35,
+                "timeMs": 700,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8204664727697805,
+                  "bend": 0.7788345195829922
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "manual": true,
+      "waitAfter": 10000,
+      "start": 111041.4,
+      "timeline": {
+        "schemaVersion": 7,
+        "onsetOffsetMs": 0,
+        "durationMs": 683.3000000000029,
+        "contentEndMs": 683.3000000000029,
+        "recordedDurationMs": 683.3000000000029,
+        "beatIntervalMs": 750,
+        "sourceBeatIntervalMs": 750,
+        "timingMode": "metronome",
+        "beatAnalysis": null,
+        "gapBeats": 0,
+        "tracks": [
+          {
+            "trackId": "track-6",
+            "nodeId": "HIT_looper_node_6",
+            "trackIndex": 6,
+            "baselineActionState": {
+              "squeeze": 0.18032539496259062,
+              "bend": 2.2012723771047883e-12,
+              "earLeft": 0.2857142857142857,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "events": [
+              {
+                "id": 1,
+                "timeMs": 0,
+                "type": "squeezeStart",
+                "interpolation": "step",
+                "value": 0.18032539496259062,
+                "gateOnly": true
+              },
+              {
+                "id": 2,
+                "timeMs": 0,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.18032539496259062,
+                  "bend": 2.2012723771047883e-12
+                }
+              },
+              {
+                "id": 3,
+                "timeMs": 33.30000000000291,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.4486320000015598,
+                  "bend": 1.4807231315415543e-12
+                }
+              },
+              {
+                "id": 4,
+                "timeMs": 66.60000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.6291129802558598,
+                  "bend": 9.9603348276507e-13
+                }
+              },
+              {
+                "id": 5,
+                "timeMs": 83.30000000000291,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.69599332857686,
+                  "bend": 8.164233515918039e-13
+                }
+              },
+              {
+                "id": 6,
+                "timeMs": 99.90000000000873,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7505165671292506,
+                  "bend": 6.699987848209514e-13
+                }
+              },
+              {
+                "id": 7,
+                "timeMs": 116.60000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.7955047656977129,
+                  "bend": 5.491809893252112e-13
+                }
+              },
+              {
+                "id": 8,
+                "timeMs": 150,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8626065112213743,
+                  "bend": 3.6897628617961415e-13
+                }
+              },
+              {
+                "id": 9,
+                "timeMs": 166.60000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.8872478716532165,
+                  "bend": 3.028008237222632e-13
+                }
+              },
+              {
+                "id": 10,
+                "timeMs": 183.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9075799437299614,
+                  "bend": 2.4819814559025046e-13
+                }
+              },
+              {
+                "id": 11,
+                "timeMs": 216.60000000000582,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9378320844976906,
+                  "bend": 1.6695468457409682e-13
+                }
+              },
+              {
+                "id": 12,
+                "timeMs": 233.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9490425384145014,
+                  "bend": 0.012115612474030106
+                }
+              },
+              {
+                "id": 13,
+                "timeMs": 249.90000000000873,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9581816991475344,
+                  "bend": 0.021992690654756918
+                }
+              },
+              {
+                "id": 14,
+                "timeMs": 266.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9657226007653227,
+                  "bend": 0.054091929018253125
+                }
+              },
+              {
+                "id": 15,
+                "timeMs": 300,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9769701651817054,
+                  "bend": 0.10196926113442759
+                }
+              },
+              {
+                "id": 16,
+                "timeMs": 316.70000000001164,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9811230292411874,
+                  "bend": 0.14387791778642872
+                }
+              },
+              {
+                "id": 17,
+                "timeMs": 333.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9845085917191762,
+                  "bend": 0.17804334517140843
+                }
+              },
+              {
+                "id": 18,
+                "timeMs": 349.90000000000873,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9872869575532345,
+                  "bend": 0.2299010088731553
+                }
+              },
+              {
+                "id": 19,
+                "timeMs": 383.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9914585331990188,
+                  "bend": 0.30776266564046906
+                }
+              },
+              {
+                "id": 20,
+                "timeMs": 399.90000000000873,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9929904352122119,
+                  "bend": 0.3601190409618882
+                }
+              },
+              {
+                "id": 21,
+                "timeMs": 416.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9942544377510694,
+                  "bend": 0.40331931797811227
+                }
+              },
+              {
+                "id": 22,
+                "timeMs": 450,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9961397494417477,
+                  "bend": 0.5114370828113581
+                }
+              },
+              {
+                "id": 23,
+                "timeMs": 466.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9968320808339316,
+                  "bend": 0.5511405032149558
+                }
+              },
+              {
+                "id": 24,
+                "timeMs": 483.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9974033371087551,
+                  "bend": 0.6076246375763361
+                }
+              },
+              {
+                "id": 25,
+                "timeMs": 500,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9978715813701975,
+                  "bend": 0.6659825088745444
+                }
+              },
+              {
+                "id": 26,
+                "timeMs": 533.2000000000116,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9985665774063601,
+                  "bend": 0.7740293782770684
+                }
+              },
+              {
+                "id": 27,
+                "timeMs": 549.9000000000087,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9988250599017032,
+                  "bend": 0.8142141030294234
+                }
+              },
+              {
+                "id": 28,
+                "timeMs": 566.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9990369314389832,
+                  "bend": 0.847716018278691
+                }
+              },
+              {
+                "id": 29,
+                "timeMs": 583.2000000000116,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9992096566513899,
+                  "bend": 0.8750279710862728
+                }
+              },
+              {
+                "id": 30,
+                "timeMs": 616.6000000000058,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9994689948136493,
+                  "bend": 0.9160354855662853
+                }
+              },
+              {
+                "id": 31,
+                "timeMs": 633.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9995647485336039,
+                  "bend": 0.9311764197941924
+                }
+              },
+              {
+                "id": 32,
+                "timeMs": 650,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.9996432354261888,
+                  "bend": 0.9435870590773846
+                }
+              },
+              {
+                "id": 33,
+                "timeMs": 683.3000000000029,
+                "type": "squeezeEnd",
+                "interpolation": "step",
+                "value": 0,
+                "gateOnly": true,
+                "releaseOrigin": "controller"
+              },
+              {
+                "id": 34,
+                "timeMs": 683.3000000000029,
+                "type": "gestureSnapshot",
+                "interpolation": "linear",
+                "values": {
+                  "squeeze": 0.6724269460608123,
+                  "bend": 0.6347198100204203
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "audio": [
+    {
+      "label": "initial empty take",
+      "peakRms": 0.09236103074681976,
+      "scheduled": [
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-13",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 82.58349931971597
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-14",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 82.58349931971597
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-15",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 82.58349931971597
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-16",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 83.25019931971596
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-17",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 83.25019931971596
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-18",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 83.25019931971596
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-19",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 83.91689931971597
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-20",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 83.91689931971597
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-21",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 83.91689931971597
+        }
+      ]
+    },
+    {
+      "label": "prior take replaced",
+      "peakRms": 0.08015152738424776,
+      "scheduled": [
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-22",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 100.58166417231178
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-23",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 100.58166417231178
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-24",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 100.58166417231178
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-25",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 101.23156417231176
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-26",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 101.23156417231176
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-27",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 101.23156417231176
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-28",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 101.88146417231178
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-29",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 101.88146417231178
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-30",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 101.88146417231178
+        }
+      ]
+    },
+    {
+      "label": "manual without Practice",
+      "peakRms": 0.09999444807421319,
+      "scheduled": [
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-31",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 120.83189931975176
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-32",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 120.83189931975176
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-33",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 120.83189931975176
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-34",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 121.51519931975173
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-35",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 121.51519931975173
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-36",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 121.51519931975173
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-37",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 122.19849931975173
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-38",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 122.19849931975173
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-39",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 122.19849931975173
+        }
+      ]
+    },
+    {
+      "label": "manual after interrupted demonstration",
+      "peakRms": 0.0828582139938804,
+      "scheduled": [
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-40",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 134.3333632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-41",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 134.3333632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-42",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 134.3333632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-43",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 134.8000632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-44",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 134.8000632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-45",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 134.8000632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-46",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 135.2667632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-47",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 135.2667632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-48",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 135.2667632652942
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-49",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 135.73346326529423
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-50",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 135.73346326529423
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-51",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 135.73346326529423
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff:action:scheduled-52",
+          "honk": "honk-c9893b19-d2e9-4e07-9538-8dc74d35b5ff",
+          "time": 136.20016326529424
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-880ff169-1fc5-4583-abb4-3a8a93b3878b:action:scheduled-53",
+          "honk": "honk-880ff169-1fc5-4583-abb4-3a8a93b3878b",
+          "time": 136.20016326529424
+        },
+        {
+          "voice": "looper-looper-08bf8535-212e-4080-a53d-f764612561ea:track-6:instrument-honk-1c67c685-42e6-42e1-9f85-b55fa6202364:action:scheduled-54",
+          "honk": "honk-1c67c685-42e6-42e1-9f85-b55fa6202364",
+          "time": 136.20016326529424
+        }
+      ]
+    }
+  ],
+  "headsetTested": false,
+  "acousticListeningTested": false,
+  "freePlayTransition": {
+    "heldCaptureFinalized": true,
+    "originMs": 12355.4,
+    "durationMs": 603.9000000119213,
+    "sourceBeatIntervalMs": 857.1428571428571,
+    "restored": true,
+    "physicalPlayScheduledAudioTimes": [
+      1.6853988661893093,
+      2.289298866201232
+    ]
+  }
+}

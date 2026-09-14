@@ -10,7 +10,7 @@ Implemented from clean branch **Tutorial**, commit **ef47265**. This report supe
 - Only committed placements bind roles. Ordinary Loopers fill Chord Looper and Percussion Looper in order; cancellation consumes no role, and replacement preserves the survivor. Recipe identity determines chord and melody roles.
 - Composition chords created from the radial menu during a lesson lock through the existing service on placement. Body grabs move the group silently; squeeze targets sound the chord. Intentional unlock persists. Free-play defaults remain unchanged.
 - Setup observes actual scene state without Practice. Next waits only for the current physical setup. Music and recordings can be skipped; no prerequisite construction or backing generation occurs. Musical actions explain missing requirements.
-- Demonstrations restore checkpoints, takes, settings and stopped/paused/playing transports. Practice keeps successful intentional takes and supports cancellation/retry. A physically held stick remains equipped when entering percussion Practice.
+- Demonstrations restore checkpoints, takes, settings and stopped/paused/playing transports. Practice recording preservation was subsequently corrected for every actual take, including failures and cancellation; see [Looper recording validation](looper-recording-validation.md). A physically held stick remains equipped when entering percussion Practice.
 - Seven green billboards cover the four chord roles, Metronome and two Loopers. Cached combined body bounds and separate native text bounds determine world-space clearance, converted into the label parent’s coordinates. Shared native note styling is idempotent and handles delayed font readiness and retuning.
 
 ## Verification

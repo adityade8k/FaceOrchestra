@@ -58,7 +58,7 @@ export class TutorialSession {
     this.discardAttempt(now);this.phase='ready';this.result=null;this.attempt=0;this.attemptAssisted=false;this.revision++;return true;
   }
   discardAttempt(now) {
-    this.evidence=[];this.seen.clear();this.anchorMs=null;this.enteredAt=now;this.failed=false;this.playbackSince=null;this.phrasesPassed=[];this.feedback='';this.finalRestApplied=false;
+    this.evidence=[];this.seen.clear();this.anchorMs=null;this.enteredAt=now;this.failed=false;this.playbackSince=null;this.phrasesPassed=[];this.feedback='';this.finalRestApplied=false;this.pendingAssessment=null;
   }
   startAttempt(now,{assisted=false}={}) {
     this.discardAttempt(now);this.phase='practicing';this.result=null;this.attempt++;this.attemptAssisted=assisted;this.revision++;
@@ -73,6 +73,11 @@ export class TutorialSession {
   }
   finishAttempt(snapshot,now,reason='') {
     const step=this.step;
+    const capture=snapshot.loopers?.[step.looperRole];
+    if(step.type==='record'&&(capture?.recording||capture?.recordArmed)){
+      this.pendingAssessment={now,reason};return;
+    }
+    this.pendingAssessment=null;
     if(scoreForStep(step).length){
       let result=scoreAttempt(step,this.evidence,{reason});
       if(step.type==='record'&&result.ok){
@@ -233,7 +238,7 @@ export class TutorialSession {
       const owner=snapshot.loopers?.[step.looperRole];
       const other=snapshot.loopers?.[step.looperRole==='chordLooper'?'percussionLooper':'chordLooper'];
       const playing=step.type==='start-all'?snapshot.aligned&&snapshot.startAllRequest?.ok&&snapshot.loopers.chordLooper.playbackObserved&&snapshot.loopers.percussionLooper.playbackObserved:owner?.playing&&!owner.playArmed&&!other?.playing&&owner.playbackObserved;
-      if(playing&&snapshot.audioRunning&&!snapshot.liveGestures&&!snapshot.anyStickContact){this.playbackSince??=now;if(now-this.playbackSince>=C.loopBeats*C.beatMs)result={ok:true,message:step.type==='start-all'?'Both parts share the same phrase origin.':'One complete backing cycle heard.'};}
+      if(playing&&snapshot.audioRunning&&!snapshot.liveGestures&&!snapshot.anyStickContact){this.playbackSince??=now;if(now-this.playbackSince>=C.loopBeats*C.beatMs)result={ok:true,message:step.type==='start-all'?'Both parts launched together on the same beat.':'One complete backing cycle heard.'};}
       else this.playbackSince=null;
     }
     if(result)this.finishResult(result,now);

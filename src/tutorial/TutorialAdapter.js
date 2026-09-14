@@ -190,6 +190,10 @@ export class TutorialAdapter {
     controller.position.z+=.12;controller.quaternion.identity();controller.updateMatrixWorld(true);
   }
   command(action, now, origin = this.origin) {
+    const demo=origin==='demonstration'?this.r.tutorial?.demo:null;
+    if(demo&&!this.r.tutorial.flow.demoOwnsTakes(demo)){
+      this.r.tutorial.flow.stopDemo(false,'Example stopped because an instrument changed. Your current take is kept.');return;
+    }
     const chords=this.get('chordLooper'), percussion=this.get('percussionLooper'), metro=this.get('metronome');
     if (action.startsWith('clock-')) {
       connectTutorialClock(this,action.slice(6));
@@ -213,8 +217,7 @@ export class TutorialAdapter {
         if(looper && match[1]==='record') {
           // Metronome stick routing stays global; only the intended recorder is armed.
           const other=match[2]==='chordLooper'?percussion:chords;
-          if(other?.transport.recording || other?.transport.recordArmed) other.stop();
-          this.takeRoutes[match[2]]=resolveTutorialRoutes(this);
+          if(other?.transport.recording || other?.transport.recordArmed) return;
           this.r.pressLooperButton(looper,'record',null,now);
         } else if(looper && match[1]==='stop-record'&&(looper.transport.recording||looper.transport.recordArmed)) this.r.pressLooperButton(looper,'stop',null,now);
         else if(looper && match[1]==='play') {
@@ -222,6 +225,11 @@ export class TutorialAdapter {
           this.r.pressLooperButton(looper,'play',null,now);
         }
       }
+    }
+    if(demo){
+      const role=/-(chordLooper|percussionLooper)$/.exec(action)?.[1];
+      if(role)this.r.tutorial.flow.rememberDemoCommand(role);
+      if(action==='start-all')for(const {role} of TUTORIAL_LOOPERS)this.r.tutorial.flow.rememberDemoCommand(role);
     }
     this.snapshotAt=-Infinity;
     this.emit({id:`command-${++this.sequence}`,kind:'command',origin,action,startMs:now});
@@ -379,6 +387,9 @@ export class TutorialAdapter {
     for(const {role} of TUTORIAL_LOOPERS) {
       const h=this.get(role), recording=Boolean(h?.transport.recording);
       const previous=this.takeState[role] || {};
+      // Route metadata belongs to the actual new capture, not an armed request
+      // that can still be cancelled while retaining the previous take.
+      if(recording&&previous.timeline!==h.timeline)this.takeRoutes[role]=routes;
       if(h?.timeline && !recording && (previous.recording || previous.timeline!==h.timeline || previous.duration!==h.timeline.durationMs)) {
         this.takes[role]=h.timeline.hasRecording()?h.timeline.toJSON():null;
       }
@@ -399,7 +410,8 @@ export class TutorialAdapter {
         tempoLabel:timing?.connected ? `${timing.bpm} BPM` : '70 BPM · Internal'};
     }
     const [a,b]=TUTORIAL_LOOPERS.map(l=>loopers[l.role]);
-    const aligned=Boolean(a.playing && b.playing && Number.isFinite(a.startBeat) && a.startBeat===b.startBeat && Math.abs(a.phase-b.phase)<1e-7);
+    // Shared launch remains valid when unequal content cycles later diverge.
+    const aligned=Boolean(a.playing && b.playing && Number.isFinite(a.startBeat) && a.startBeat===b.startBeat);
     return {...this.snapshotCache,wires:routes.wires,routes,takeRoutes:this.takeRoutes,takeEvidence:this.takeEvidence,loopers,aligned,startAllRequest:this.startAllRequest,bpm:metro?.bpm,clockPlaying:Boolean(metro?.playing),tempoStableMs:this.tempoSince===null?0:now-this.tempoSince,
       liveGestures:this.gestures.size,anyStickContact:sticks.some(s=>s.contactTargetIds.size>0),
       anyStickActive:sticks.some(s=>s.equipped),stickActive:simActive || Boolean(stickController),stickOrigin:simActive ? this.virtuals[1].userData.tutorialOrigin : 'learner',
@@ -412,19 +424,20 @@ export class TutorialAdapter {
     else if(roles.length===1)this.r.pressLooperButton(this.get(roles[0]),'play',null,now);
     return roles;
   }
-  nextBoundary(now, beats=1, countIn=4,backingRole=null) {
-    const metro=this.get('metronome'), looper=this.get(backingRole||'chordLooper');
+  nextBoundary(now, countIn=4) {
+    const metro=this.get('metronome');
     const timing=metro?.getBeatTiming(now);
     if(!metro?.playing || !Number.isFinite(timing?.beatOriginMs)) return null;
-    const startBeat=looper?.looperData.pendingLaunch?.targetBeat??looper?.looperData.clockPlaybackStartBeatPosition;
-    const base=beats===16 && Number.isFinite(startBeat)
-      ? timing.beatOriginMs + startBeat*timing.beatIntervalMs : timing.beatOriginMs;
-    const interval=timing.beatIntervalMs;
-    return base+Math.ceil((now+countIn*interval-base)/(beats*interval))*beats*interval;
+    // Count-ins follow the metronome's next beat. Trimmed backing takes can
+    // have unequal, fractional-beat cycles; there is no common phrase boundary
+    // to wait for after their shared launch.
+    const interval=timing.beatIntervalMs,base=timing.beatOriginMs;
+    return base+Math.ceil((now+countIn*interval-base)/interval)*interval;
   }
+
   finishCapture(session,now){
     const step=session?.step,looper=this.get(step?.looperRole);
-    if(step?.type!=='record'||session.anchorMs===null||!looper?.transport.recording)return;
+    if(step?.type!=='record'||session.anchorMs===null||session.mode==='practice'&&session.phase!=='practicing'||!looper?.transport.recording)return;
     // Stop during the written final breath once real gestures have released.
     // Assessment remains at the endpoint (with grace); no recorded event is moved.
     if(now>=session.anchorMs+(step.beats-.25)*session.beatMs&&this.gestures.size===0&&

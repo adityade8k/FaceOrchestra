@@ -93,7 +93,7 @@ test('independent take validation rejects wrong ownership and incomplete real ev
   for(const role of ['chordLooper','percussionLooper']) {
     const {timeline,evidence,routes}=takeFixture(role);
     assert.equal(validateTake(timeline,evidence,role,routes).ok,true);
-    assert.equal(validateTake({...timeline,durationMs:12750},evidence,role,routes).ok,false);
+    assert.equal(validateTake({...timeline,durationMs:11775},evidence,role,routes).ok,true);
     assert.equal(validateTake({...timeline,gapBeats:1},evidence,role,routes).ok,false);
     assert.equal(validateTake(timeline,evidence.slice(1),role,routes).ok,false);
     const extra=role==='chordLooper'?{type:'drumHit',timeMs:0,value:'hihat'}:{type:'squeezeStart',timeMs:0,value:1};
@@ -123,13 +123,13 @@ function conductorFixture(type='phrase') {
   let released=0,cleared=0,stopped=0;
   const session=new TutorialSession({mode:'simulation',steps:[{id:'record',type:'record',timed:true},{id:'phrase',type,phrase:'A',timed:true}]});session.index=1;
   const looper={transport:{recording:type==='record'},clearRecording(){cleared++;},stop(){stopped++;}};
-  const adapter={releaseVirtuals(){released++;},get(){return looper;}};
+  const adapter={releaseVirtuals(){released++;},get(){return looper;},command(){stopped++;looper.transport.recording=false;}};
   const conductor=new CompositionConductor(adapter,session);
   return {conductor,session,stats:()=>({released,cleared,stopped})};
 }
-test('pause is idempotent, abandons interrupted takes and resumes from a fresh attempt',()=>{
+test('pause is idempotent, finalizes interrupted takes and resumes from a fresh attempt',()=>{
   const {conductor,session,stats}=conductorFixture('record');conductor.pause();conductor.pause();
-  assert.deepEqual(stats(),{released:1,cleared:1,stopped:0});conductor.resume(100);assert.equal(session.step.id,'record');assert.equal(session.anchorMs,null);
+  assert.deepEqual(stats(),{released:1,cleared:0,stopped:1});conductor.resume(100);assert.equal(session.step.id,'record');assert.equal(session.anchorMs,null);
   conductor.stop();conductor.stop();assert.equal(stats().released,2);
 });
 test('tab delays pause instead of dispatching overdue musical gestures',()=>{

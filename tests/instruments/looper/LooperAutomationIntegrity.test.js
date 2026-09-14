@@ -32,7 +32,7 @@ test("60 BPM recording and playback preserve full squeeze and bend extrema at ev
     engine.start(0);
 
     for (const recordedTimeMs of [500, 1000, 1500]) {
-      const wallTimeMs = recordedTimeMs / rate;
+      const wallTimeMs = (recordedTimeMs - timeline.onsetOffsetMs) / rate;
       engine.update(wallTimeMs, timeline, rate, {
         onTrackSnapshot: (_track, snapshot) => snapshots.push({
           wallTimeMs,
@@ -44,8 +44,8 @@ test("60 BPM recording and playback preserve full squeeze and bend extrema at ev
     }
 
     const peak = snapshots.at(-2);
-    assertClose(peak.recordedTimeMs, 1000);
-    assertClose(peak.wallTimeMs, 1000 / rate);
+    assertClose(peak.recordedTimeMs, 1000 - timeline.onsetOffsetMs);
+    assertClose(peak.wallTimeMs, (1000 - timeline.onsetOffsetMs) / rate);
     assertClose(peak.squeeze, 1);
     assertClose(peak.bend, 1);
     assertClose(snapshots.at(-1).bend, 1);

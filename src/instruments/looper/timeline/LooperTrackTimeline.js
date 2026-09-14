@@ -118,21 +118,31 @@ export class LooperTrackTimeline {
   }
 
   getContentEndMs() {
-    let endMs = 0;
+    this.sortEvents();
+    let endMs = 0, held = false;
     for (const event of this.events) {
-      if (!event.support) endMs = Math.max(endMs, event.timeMs);
+      if (event.support) continue;
+      if (isDrumHitEvent(event)) {
+        endMs = Math.max(endMs, event.timeMs + event.durationMs);
+        continue;
+      }
+      if (event.type === LooperActionEventType.SqueezeStart) held = true;
+      // A release closes the entire performed hold, including a forced Stop.
+      if (held) endMs = Math.max(endMs, event.timeMs);
+      if (event.type === LooperActionEventType.SqueezeEnd) held = false;
+      if (!this.hasDiscreteGates && !isHonkGateEvent(event)) {
+        const squeeze = getEventFieldValue(event, "squeeze");
+        if (squeeze !== undefined) {
+          held = Number(squeeze) > SQUEEZE_ONSET_THRESHOLD;
+          if (held) endMs = Math.max(endMs, event.timeMs);
+        }
+      }
     }
     return endMs;
   }
 
   getIntentionalContentEndMs() {
-    let endMs = 0;
-    for (const event of this.events) {
-      if ((!event.synthetic || event.preserveDuration) && !event.support) {
-        endMs = Math.max(endMs, event.timeMs);
-      }
-    }
-    return endMs;
+    return this.getContentEndMs();
   }
 
   getMusicalOnsetTimes() {
@@ -192,6 +202,9 @@ export class LooperTrackTimeline {
     };
     this.events.sort((first, second) =>
       first.timeMs - second.timeMs ||
+      // Equal-time gates keep their recorded order: release then reattack for
+      // adjacent notes, or start then release for a same-frame capture.
+      (isHonkGateEvent(first) && isHonkGateEvent(second) ? first.id - second.id : 0) ||
       (typeOrder[first.type] ?? 10) - (typeOrder[second.type] ?? 10) ||
       first.id - second.id,
     );
@@ -206,11 +219,15 @@ export class LooperTrackTimeline {
     this.drumEvents = [];
     this.eventOwners = new Map();
     this.hasDiscreteGates = false;
-    let owner;
+    let owner, releasedOwner, releasedAt;
     for (const event of this.events) {
       if (event.type === LooperActionEventType.SqueezeStart) owner = event;
-      this.eventOwners.set(event, owner);
-      if (event.type === LooperActionEventType.SqueezeEnd) owner = null;
+      // The final expressive sample can follow its gate release at the same
+      // timestamp. It still belongs to that voice, never to the next cycle.
+      this.eventOwners.set(event, owner || (event.timeMs === releasedAt ? releasedOwner : owner));
+      if (event.type === LooperActionEventType.SqueezeEnd) {
+        releasedOwner = owner; releasedAt = event.timeMs; owner = null;
+      }
       if (event.gateOnly && isHonkGateEvent(event)) this.hasDiscreteGates = true;
       if (isDrumHitEvent(event)) this.drumEvents.push(event);
       if (isHonkGateEvent(event)) this.gateEvents.push(event);
@@ -249,13 +266,25 @@ export class LooperTrackTimeline {
     return sliceEventsBetween(this.performanceEvents, startMs, endMs, { includeStart, includeEnd });
   }
 
-  normalize(offsetMs) {
-    if (!Number.isFinite(offsetMs) || offsetMs <= 0) {
-      return;
+  normalize(offsetMs, endMs = Infinity) {
+    if (!Number.isFinite(offsetMs) || offsetMs < 0) return;
+    if (!offsetMs && this.events.every(event => event.timeMs <= endMs)) return;
+    this.sortEvents();
+    // Sample before removing pre-onset automation. Preserve its interpolation
+    // mode so all tracks retain the exact state at the shared first onset.
+    const support = [];
+    for (const [field, events] of this.fieldEvents) {
+      const previous = events[upperBoundByTime(events, offsetMs) - 1];
+      if (!offsetMs || previous?.timeMs === offsetMs) continue;
+      const value = field === "vowel" ? this.sampleStepField(field, offsetMs) : this.sampleNumericField(field, offsetMs);
+      if (value !== undefined) support.push({field, value, interpolation: previous?.interpolation || "linear"});
     }
+    this.events = this.events.filter(event => event.timeMs >= offsetMs && event.timeMs <= endMs);
     for (const event of this.events) {
-      event.timeMs = Math.max(event.timeMs - offsetMs, 0);
+      event.timeMs -= offsetMs;
     }
+    for (const point of support) this.addFieldEvent(point.field, 0, point.value, point.interpolation, false, {support: true});
+    this.rebuildRecordedFields();
     this.sorted = false;
   }
 

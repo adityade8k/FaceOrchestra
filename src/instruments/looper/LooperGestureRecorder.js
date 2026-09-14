@@ -97,6 +97,8 @@ export class LooperGestureRecorder {
     }
 
     const nextGateActive = this.resolveGateState(state, captured, action);
+    if (state.lastObservedAtMs === elapsedMs && nextGateActive === state.squeezeGateActive &&
+      ALL_FIELDS.every(field => action[field] === state.lastObserved[field])) return;
     let wroteEvent = false;
     if (nextGateActive !== state.squeezeGateActive) {
       const type = nextGateActive
@@ -113,6 +115,9 @@ export class LooperGestureRecorder {
         releaseOrigin: nextGateActive ? null : (captured.releaseOrigin || "controller"),
       });
       if (nextGateActive) timeline.markMusicalOnset(elapsedMs);
+      // Arming begins on sound, so an already bent first note can also be the
+      // capture baseline. It still needs a recorded bend even without a turn.
+      if (nextGateActive && action.bend) this.activateField(state, "bend");
       state.squeezeGateActive = nextGateActive;
       this.activateField(state, "squeeze");
       wroteEvent = true;

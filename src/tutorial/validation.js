@@ -69,8 +69,8 @@ export function validateTake(timeline, evidence, role, routes = {}, tolerances =
   const chords = role === "chordLooper";
   if (!["chordLooper", "percussionLooper"].includes(role)) return fail("Specify the recording owner.");
   if (!timeline || timeline.timingMode !== 'metronome') return fail('Record with the connected Metronome running.');
-  if (timeline.gapBeats !== 0 || Math.abs(timeline.durationMs / timeline.beatIntervalMs - 16) > 0.01)
-    return fail('The captured loop must be 16 beats with Gap 0. Release in the final breath before beat 17, then record again.');
+  if (timeline.gapBeats !== 0) return fail('Leave Gap at zero for this exercise.');
+  if (!(timeline.durationMs > 0)) return fail('Record a note or strike before playing the take.');
   if (chords && evidence.some(e=>e.kind==='strike')) return fail('Keep percussion out of the chord take.');
   if (!chords && evidence.some(e=>e.kind==='note')) return fail('Record only stick taps in Percussion Looper.');
   const expectedDrums=C.percussion.map(event=>({...event,lane:routes.percussion?.[event.role]?.trackId}));
@@ -78,12 +78,17 @@ export function validateTake(timeline, evidence, role, routes = {}, tolerances =
   const live = chords ? validateSequence(C.backing, evidence,tolerances) : validateSequence(expectedDrums, evidence, {...tolerances,kind:'strike'});
   if (!live.ok) return live;
   if (!chords && evidence.filter(e=>e.kind==='strike').some(e=>e.recordedCount !== 1)) return fail('Each tap must enter only Percussion Looper through its real cable route.');
+  // Live evidence keeps its original count-in coordinates. Only the stored
+  // timeline is normalized; adding its actual first onset back cannot improve
+  // an early/late performance's score. Older schemas retain the clock offset.
+  const firstBeat = timeline.schemaVersion >= 7
+    ? Math.min(...evidence.filter(e=>e.kind===(chords?'note':'strike')).map(e=>e.beat)) : 0;
   const gates = [], drums = [];
   for (const track of timeline.tracks || []) {
     let open = null;
     for (const e of track.events || []) {
       if (e.type === 'drumHit') drums.push({kind:'strike',role:C.percussion.find(p=>p.type===e.value)?.role || 'unknown',
-        beat:e.timeMs / timeline.beatIntervalMs, lane:track.trackId, percussionType:e.value,withdrawn:true});
+        beat:firstBeat + e.timeMs / timeline.beatIntervalMs, lane:track.trackId, percussionType:e.value,withdrawn:true});
       if (!chords && ['squeezeStart','squeezeEnd'].includes(e.type)) return fail('Percussion take contains a pitched squeeze.');
       if (chords && e.type === 'drumHit') return fail('Chord take contains percussion.');
       if (e.type === 'squeezeStart') {
@@ -94,7 +99,7 @@ export function validateTake(timeline, evidence, role, routes = {}, tolerances =
         const group = C.backing.find(g=>routes.chords?.[g.role]?.trackId === track.trackId);
         if (!group || e.synthetic) return fail('A chord was not released normally before Stop.');
         gates.push({kind:'note',role:group.role,midis:group.midis,voiced:true,articulated:true,released:true,
-          startMs:open.timeMs,endMs:e.timeMs,beat:open.timeMs / timeline.beatIntervalMs,
+          startMs:open.timeMs,endMs:e.timeMs,beat:firstBeat + open.timeMs / timeline.beatIntervalMs,
           durationBeats:(e.timeMs-open.timeMs)/timeline.beatIntervalMs,maxAbsBend:0});
         open = null;
       }

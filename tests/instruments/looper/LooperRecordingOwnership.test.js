@@ -41,13 +41,13 @@ function setup() {
 }
 test('separate real recorder takes preserve chord ownership while metronome strikes fan out normally',()=>{
   const h=setup(),before=JSON.stringify(h.chords.looperData.timeline.toJSON());
-  assert.equal(h.chords.looperData.timeline.durationMs,12000);
+  assert.equal(h.chords.looperData.timeline.durationMs,11755);
   h.percussion.looperController.startRecording(h.percussion,12000);
   const targets={percussion:h.registry.get('h4'),metronome:h.metro,percussionLooper:h.percussion};
   for(const hit of C.percussion)assert.equal(routeStickStrikeToLooperRecordings({event:{percussionType:hit.type,timestamp:12000+hit.beat*750+20},target:targets[hit.role],loopers:h.loopers,metronomeConnectionManager:h.manager,resolveInstrument:id=>h.registry.get(id)}),1);
   h.percussion.looperController.stopRecording(h.percussion,23900);
   const timeline=h.percussion.looperData.timeline;
-  assert.equal(timeline.durationMs,12000);assert.equal(timeline.gapBeats,0);
+  assert.equal(timeline.durationMs,11770);assert.equal(timeline.gapBeats,0);
   const hits=[...timeline.tracks.values()].flatMap(t=>t.events.filter(e=>e.type==='drumHit'));
   assert.equal(hits.length,12);for(const type of ['boink','metronomeWood','hihat'])assert.equal(hits.filter(h=>h.value===type).length,4);
   assert.ok([...timeline.tracks.values()].every(t=>!t.events.some(e=>e.type==='squeezeStart')));

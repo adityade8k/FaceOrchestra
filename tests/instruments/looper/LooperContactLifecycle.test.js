@@ -443,7 +443,8 @@ function createHarness({
       releaseOrigin: "controller",
     });
   }
-  timeline.finalizeDuration();
+  // This scheduler fixture explicitly controls the cycle and initial phase.
+  timeline.sortTracks();
   timeline.durationMs = durationMs;
   timeline.recordedDurationMs = durationMs;
   looper.looperData.hasRecording = true;

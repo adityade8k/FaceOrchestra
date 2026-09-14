@@ -37,12 +37,27 @@ for(const [press,beat] of [[749.999,1],[750,2],[750.001,2]])test(`Play at ${pres
   assert.equal(h.a.looperData.playArmed,true);assert.equal(h.a.looperData.pendingLaunch.targetBeat,beat);
   h.run(beat*750);assert.equal(h.a.looperData.clockPlaybackStartBeatPosition,beat);
   const starts=h.calls.filter(c=>c.kind==='start');assert.equal(starts.length,1);
-  close(starts[0].scheduledTime,10+(beat*750+110)/1000);
+  close(starts[0].scheduledTime,10+beat*750/1000);
   assert.equal(JSON.stringify(h.a.timeline.toJSON()),before);
   h.a.looperController.stopPlayback(h.a);
 });
 test('floating equality tolerance only treats microscopic rounding error as an exact beat',()=>{
   assert.equal(nextBeatAfter(1-1e-10),2);assert.equal(nextBeatAfter(1-1e-6),1);assert.equal(nextBeatAfter(1+1e-6),2);
+});
+test('Start All shares launch and source tempo without forcing unequal fractional cycles to align',()=>{
+  const h=fixture(),track=h.b.timeline.getTrack('track-0');
+  track.events.at(-1).timeMs+=137.25;track.sorted=false;h.b.timeline.finalizeDuration();
+  const saved=[h.a,h.b].map(l=>JSON.stringify(l.timeline.toJSON()));
+  h.set(500);const request=LooperController.startAll([h.a,h.b],500);h.quiet();h.run(750);
+  assert.equal(request.targetBeat,1);
+  const starts=h.calls.filter(c=>c.kind==='start');close(starts[0].scheduledTime,starts[1].scheduledTime);
+  const later=750+8*h.a.timeline.durationMs+123;h.run(later);
+  close(h.a.looperController.getAbsoluteSourcePosition(h.a,later),h.b.looperController.getAbsoluteSourcePosition(h.b,later));
+  assert.notEqual(h.a.looperData.playbackEngine.elapsedMs,h.b.looperData.playbackEngine.elapsedMs);
+  h.bpm(110);h.run(later);
+  for(const [i,l] of [h.a,h.b].entries()){
+    assert.equal(JSON.stringify(l.timeline.toJSON()),saved[i]);l.looperController.stopPlayback(l);
+  }
 });
 test('Start All validates the batch before mutation and shares request time, launch and phase through BPM changes',()=>{
   const h=fixture();h.set(749.999);
@@ -89,14 +104,14 @@ test('scheduler prepares attacks ahead of frames and late starts recover at targ
   assert.equal(late.a.looperData.clockPlaybackStartBeatPosition,1);close(late.a.looperData.playbackEngine.elapsedMs,2050);
   late.a.looperController.stopPlayback(late.a);
 });
-test('disconnect retains canonical timestamps and bends, and 80 BPM source plays in 13.714 seconds at internal 70',()=>{
+test('disconnect retains canonical timestamps and bends, and content duration scales from source 80 BPM to internal 70',()=>{
   const h=fixture(),before=JSON.stringify(h.a.timeline.toJSON());h.set(100);h.a.looperController.startPlayback(h.a,100);h.quiet();
   h.disconnect();h.a.looperController.handleClockDisconnected(h.a);assert.equal(h.a.looperData.armed,false);
   const t=1000;h.set(t);h.a.looperController.startPlayback(h.a,t);h.quiet();
   const target=h.a.looperData.pendingLaunch.targetBeat;const start=target*60000/LOOPER_STANDALONE_BPM;
   h.run(start);close(h.a.looperController.getPlaybackRate(h.a,start),70/80);
-  h.run(start+16*60000/70);close(h.a.looperData.playbackEngine.elapsedMs,0);
-  close(h.a.timeline.durationMs/(70/80),13714.285714285714);
+  h.run(start+h.a.timeline.durationMs/(70/80));close(h.a.looperData.playbackEngine.elapsedMs,0);
+  close(h.a.timeline.durationMs/(70/80),13245.714285714286);
   assert.equal(JSON.stringify(h.a.timeline.toJSON()),before);
   h.a.looperController.stopPlayback(h.a);
 });

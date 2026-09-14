@@ -1,5 +1,5 @@
 import { clamp, lerp } from "../audioMath.js";
-import { PERCUSSION_PROFILES, PERCUSSION_TYPES } from "./percussionProfiles.js";
+import { PERCUSSION_PROFILES, PERCUSSION_TYPES, getPercussionDurationMs } from "./percussionProfiles.js";
 
 export class PercussionVoiceService {
   constructor({ ensureAudio, getDestination }) {
@@ -96,8 +96,7 @@ export class PercussionVoiceService {
     const shellSeconds = Math.max(settings.shellSeconds ?? bodySeconds * 0.72, 0.03);
     const malletSeconds = Math.max(settings.malletSeconds ?? 0.04, 0.005);
     const roomTailSeconds = Math.max(settings.roomTailSeconds ?? 0.16, 0);
-    const stopAt =
-      now + Math.max(bodySeconds, subSeconds, shellSeconds, malletSeconds) + roomTailSeconds + 0.05;
+    const stopAt = now + getPercussionDurationMs(PERCUSSION_TYPES.boink) / 1000;
     const malletSampleCount = Math.max(Math.floor(context.sampleRate * malletSeconds), 1);
     const malletBuffer = context.createBuffer(1, malletSampleCount, context.sampleRate);
     const malletSamples = malletBuffer.getChannelData(0);
@@ -255,8 +254,7 @@ export class PercussionVoiceService {
       noiseSeconds,
     );
     const metallicEchoTailSeconds = Math.max(settings.metallicEchoTailSeconds ?? 0.2, 0);
-    const stopAt =
-      now + Math.max(noiseSeconds, metallicDecaySeconds) + metallicEchoTailSeconds + 0.06;
+    const stopAt = now + getPercussionDurationMs(PERCUSSION_TYPES.hihat) / 1000;
 
     output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
     output.connect(this.getDestination(context));
@@ -367,7 +365,7 @@ export class PercussionVoiceService {
     const noiseGain = context.createGain();
     const bodySeconds = Math.max(settings.bodyDecaySeconds, 0.03);
     const noiseSeconds = Math.max(settings.noiseSeconds, 0.005);
-    const stopAt = now + Math.max(bodySeconds, noiseSeconds) + 0.03;
+    const stopAt = now + getPercussionDurationMs(PERCUSSION_TYPES.metronomeWood) / 1000;
 
     output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
     output.connect(this.getDestination(context));

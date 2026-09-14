@@ -131,6 +131,7 @@ export class TutorialRuntime {
   beforeFrame(now) {
     if(!this.ready||this.busy||this.disposed)return;
     if(this.pendingXRPlacementFrames>0) {this.panel.recenter(this.r.getUserCamera(),Boolean(this.session));this.pendingXRPlacementFrames--;}
+    if(this.demo&&!this.flow.demoOwnsTakes(this.demo))this.flow.stopDemo(false,'Example stopped because an instrument changed. Your current take is kept.');
     try {this.conductor?.update(now);this.demo?.conductor.update(now);}
     catch(error){this.flow.fail(error.message);if(this.session?.mode==='simulation'){this.session.reject(error.message);this.conductor?.pause(error.message);}this.adapter.releaseVirtuals();console.error('Tutorial conductor:',error);}
     // The score's final rest stops backing; the attempt retains release grace.
@@ -153,6 +154,11 @@ export class TutorialRuntime {
         const previous=this.session.step?.id;
         const previousPhase=this.session.phase;
         this.session.update(snapshot,now);
+        if(this.session.pendingAssessment){
+          const {reason}=this.session.pendingAssessment;
+          const finalized=this.flow.finalizeCapture(this.session,now)||this.adapter.snapshot(now);
+          this.session.finishAttempt(finalized,now,reason);
+        }
         if(previousPhase!=='results'&&this.session.phase==='results')this.flow.finishPractice();
         if(this.session.step?.id!==previous) {
           this.uiFeedback='';this.lastDraw=-Infinity;

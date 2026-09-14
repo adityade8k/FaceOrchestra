@@ -92,6 +92,7 @@ export const LooperTransportRuntimeMethods = {
         return;
       }
   
+      looperState.looperData.activityRevision++;
       if (action === "record") {
         this.setLooperButtonMorph(looperState, "record", 1, morphName);
         this.setLooperButtonMorph(looperState, "play", 0);

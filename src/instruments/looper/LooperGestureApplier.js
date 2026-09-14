@@ -151,6 +151,13 @@ export class LooperGestureApplier {
 
       if (isEnd) {
         if (scheduledVoice && !Number.isFinite(scheduledVoice.releaseScheduledAt)) {
+          // Publish the final expression while this voice is still addressable.
+          // Its gate release owns the click-free amplitude envelope; a sampled
+          // closed gate must not first ramp the held voice down to zero.
+          scheduledSnapshot.squeeze = scheduledVoice.lastSqueeze ?? event.value;
+          this.adapter.updateActionVoiceByHonkId?.(
+            scheduledVoice.voiceId, honkId, scheduledSnapshot, volume, { scheduledTime },
+          );
           this.adapter.releaseActionVoice?.(scheduledVoice.voiceId, honkId, {
             scheduledTime,
             origin: event.releaseOrigin || HONK_RELEASE_ORIGINS.controller,
@@ -180,7 +187,8 @@ export class LooperGestureApplier {
           this.indexGeneration(scheduledVoice);
         }
       }
-      if (scheduledVoice) {
+      if (scheduledVoice && !(scheduledVoice.releaseScheduledAt <= scheduledTime)) {
+        scheduledVoice.lastSqueeze = scheduledSnapshot.squeeze;
         this.adapter.updateActionVoiceByHonkId?.(
           scheduledVoice.voiceId,
           honkId,

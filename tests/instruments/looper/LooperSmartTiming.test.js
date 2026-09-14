@@ -17,7 +17,7 @@ const smartTiming = {
   nearestBeatMs: 1000,
 };
 
-test("clocked recording preserves event timing from the launch beat", () => {
+test("clocked recording preserves relative event timing from the first sound", () => {
   const recorder = new LooperGestureRecorder({ sampleIntervalMs: 1 });
   const timeline = new LooperTimeline();
   const track = new LooperTrack({ index: 0, connectedHonkId: "honk-1" });
@@ -35,9 +35,9 @@ test("clocked recording preserves event timing from the launch beat", () => {
   recorder.updateTrack(timeline, track, 1275, capture);
   recorder.stop(timeline, [track], 1600, 1, capture);
 
-  assert.deepEqual(timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs), [50, 275]);
-  assert.equal(timeline.contentEndMs, 275);
-  assert.equal(timeline.durationMs, 500);
+  assert.deepEqual(timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs), [0, 225]);
+  assert.equal(timeline.contentEndMs, 225);
+  assert.equal(timeline.durationMs, 225);
 });
 
 test("clocked recording rejects recordings with no musical onset", () => {
@@ -53,7 +53,7 @@ test("clocked recording rejects recordings with no musical onset", () => {
   action = { squeeze: 0 };
   recorder.updateTrack(timeline, track, 1100, capture);
   assert.equal(recorder.stop(timeline, [track], 1500, 1, capture), true);
-  assert.equal(timeline.durationMs, 1000);
+  assert.equal(timeline.durationMs, 125);
 
   const empty = new LooperTimeline();
   recorder.start(empty, [track], 2000, capture, smartTiming);
@@ -75,8 +75,8 @@ test("a held final note is safely released and keeps its performed duration thro
 
   assert.deepEqual(timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs), [0, 400]);
   assert.equal(timeline.contentEndMs, 400);
-  assert.equal(timeline.recordedDurationMs, 500);
-  assert.equal(timeline.durationMs, 500);
+  assert.equal(timeline.recordedDurationMs, 400);
+  assert.equal(timeline.durationMs, 400);
 });
 
 test("clocked playback chooses the next beat and stays silent while waiting", () => {
@@ -122,6 +122,6 @@ test("percussion timing stays relative to a clocked loop's launch beat", () => {
   timeline.addDrumHitEvent("percussion", { timeMs: 410, drumType: "hihat" });
   timeline.stopRecording(1800, 1);
 
-  assert.equal(timeline.contentEndMs, 410);
-  assert.equal(timeline.durationMs, 500);
+  assert.equal(timeline.contentEndMs, 990.0000000000001);
+  assert.equal(timeline.durationMs, 990.0000000000001);
 });

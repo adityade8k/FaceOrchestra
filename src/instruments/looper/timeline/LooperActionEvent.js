@@ -1,3 +1,4 @@
+import { getPercussionDurationMs } from "../../../audio/percussion/percussionProfiles.js";
 import { ACTION_FIELDS, actionStateToJSON } from "./actionState.js";
 
 export const LooperActionEventType = Object.freeze({
@@ -70,6 +71,7 @@ export class LooperActionEvent {
     support = false,
     preserveDuration = false,
     releaseOrigin = null,
+    durationMs = null,
   } = {}) {
     this.id = id;
     this.timeMs = Math.max(Number.isFinite(timeMs) ? timeMs : 0, 0);
@@ -82,6 +84,7 @@ export class LooperActionEvent {
     this.support = Boolean(support);
     this.preserveDuration = Boolean(preserveDuration);
     this.releaseOrigin = releaseOrigin || null;
+    if (isDrumHitEvent(this)) this.durationMs = Number.isFinite(durationMs) && durationMs > 0 ? durationMs : getPercussionDurationMs(value);
   }
 
   clone() {
@@ -108,6 +111,7 @@ export class LooperActionEvent {
     if (this.support) serialized.support = true;
     if (this.preserveDuration) serialized.preserveDuration = true;
     if (this.releaseOrigin) serialized.releaseOrigin = this.releaseOrigin;
+    if (this.durationMs > 0) serialized.durationMs = this.durationMs;
     return serialized;
   }
 
@@ -124,6 +128,7 @@ export class LooperActionEvent {
       support: serialized.support,
       preserveDuration: serialized.preserveDuration,
       releaseOrigin: serialized.releaseOrigin,
+      durationMs: serialized.durationMs,
     });
   }
 }

@@ -118,20 +118,20 @@ To disconnect a Honk from Loopers, Grip the connected Honk and shake it through 
 
 ### Record and finish a phrase
 
-Record arms until the first Honk attack or Stick strike, then uses the beat immediately before that onset as the recording origin. An unconnected Looper records against a known 70 BPM internal grid; a connected Looper uses its running Metronome. The first note keeps its actual offset within the beat. A paused connected Metronome must be started before recording or playback.
+Record arms until the first Honk attack or Stick strike, then uses that actual onset as the recording origin. An unconnected Looper records against a known 70 BPM internal grid; a connected Looper uses its running Metronome. All subsequent events keep their timing relative to the first sound. A paused connected Metronome must be started before recording or playback.
 
 Stop always remains under the musician’s control. Recording does not automatically stop after the final note, so you may wait and play another note whenever you choose.
 
 When you do press Stop:
 
 - Stop ends capture but does not add trailing silence.
-- The base loop boundary follows the final played onset and extends as needed to preserve intentional note releases.
-- The first note keeps its clock-relative position within the beat on every repetition.
+- The base loop boundary is the final full note/release or finite percussion envelope endpoint.
+- The first note is at source time zero on every repetition.
 - Gap 0 adds no extra beat. Gap 1–4 adds exactly that many whole beats.
 - Waiting silently one second or twenty seconds before Stop does not change the finished rhythm.
 - A held final Honk is safely released at Stop; its held duration is preserved. Normal releases can also extend the phrase beyond the final onset.
 
-Recorded attacks, releases, bends, vowels, nose/ear motion, and percussion keep their captured source timestamps. Playback scales them together with tempo. For example, a 16-beat take recorded at 80 BPM lasts 12 seconds at 80 and about 13.714 seconds at internal 70 BPM. The label shows `70 BPM · Internal` when disconnected. No extra Metronome or click is created. Legacy recordings without a reliable source tempo retain their native millisecond timing; see [compatibility policy](docs/tutorial.md#clocks-and-compatibility).
+Recordings start at their first actual sound and end at their final full note/release or percussion envelope. One shared offset normalizes all tracks; interior rests, bends and expression stay intact. Gap 0 adds no beat rounding or waiting before/after the performance. Changing Gap adds only its explicit beats. Learner takes survive Practice results and navigation regardless of score. Recorded attacks, releases, bends, vowels, nose/ear motion, and percussion keep their relative source timestamps. Playback scales them together with tempo. For example, a 15.7-beat take recorded at 80 BPM lasts 11.775 seconds at 80 and about 13.457 seconds at internal 70 BPM. Start All shares the initial next-beat launch; unequal loop lengths can drift apart at subsequent wraps. The label shows `70 BPM · Internal` when disconnected. No extra Metronome or click is created. Legacy recordings without a reliable source tempo retain their native millisecond timing; see [compatibility policy](docs/tutorial.md#clocks-and-compatibility).
 
 ### Record Stick hits
 

@@ -85,7 +85,7 @@ test('navigation cancels musical actions waiting for audio without building or s
     const steps=[{id:'one',type:'note',role:'melody-C4',midis:[60]},{id:'two',type:'note',role:'melody-C4',midis:[60]}];
     const t={session:new TutorialSession({steps}),cues:{reset(){}},render(){},
       adapter:{snapshot:()=>({roles:{'melody-C4':{ready:true,placed:true,correctPitch:true,contactExact:true}}}),releaseAll:()=>calls.push('release')},
-      r:{audioSystem:{ensureAudio:()=>audio},deletePendingSpawnPlacement:()=>calls.push('cancel-preview')}};
+      r:{instrumentRegistry:{getByKind:()=>[]},audioSystem:{ensureAudio:()=>audio},deletePendingSpawnPlacement:()=>calls.push('cancel-preview')}};
     const flow=new TutorialLessonFlow(t),pending=flow[action]();
     flow.navigate(1);ready();await pending;
     assert.equal(t.session.index,1);assert.equal(t.session.phase,'ready');assert.equal(t.demo,undefined);

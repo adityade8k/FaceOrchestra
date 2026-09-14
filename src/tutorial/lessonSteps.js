@@ -7,8 +7,8 @@ function add(id, type, title, instruction, options = {}) {
     cleanup: 'Release owned gestures and temporary targets on retry or exit.', ...options }));
 }
 add('intro','ack','An original Jog-inspired study',
-  'Sa = C. G = E, g = Eb, n = Bb. Build a 16-beat backing, then play the melody and descending g → S glides.', { action: 'begin', actionLabel: 'Begin' });
-add('metronome','spawn','Place a Metronome','One shared clock anchors the 16-beat cycle. Keep it within reach of your stick hand.', { role:'metronome', kind:'metronome', catalogId:'metronome' });
+  'Sa = C. G = E, g = Eb, n = Bb. Practice the 16-beat backing score, then play the melody and descending g → S glides.', { action: 'begin', actionLabel: 'Begin' });
+add('metronome','spawn','Place a Metronome','One shared clock anchors the 16-beat exercise. Keep it within reach of your stick hand.', { role:'metronome', kind:'metronome', catalogId:'metronome' });
 for (const [index,l] of TUTORIAL_LOOPERS.entries()) add(l.role,'spawn',`Place ${l.label}`,`Radial menu → Instruments → Looper. The ${index?'second':'first'} placed Looper becomes ${l.label}. Leave room for its cables and buttons.`, {role:l.role,kind:'looper',catalogId:'looper'});
 for (const l of TUTORIAL_LOOPERS) add(`clock-${l.role}`,'clock-wire',`Connect ${l.label}`,`Give ${l.label} the shared pulse. Use any free Metronome output and compatible Looper socket; each Looper needs its own output.`,{looperRole:l.role,action:`clock-${l.role}`,actionLabel:`Connect ${l.label}`});
 add('tempo','tempo','Set 80 BPM and start','Set the Metronome to 80 BPM and press Play. Set both Looper Gap controls to zero. Keep the click audible for this lesson.',{action:'tempo',actionLabel:'80 BPM · Start · Both Gap 0'});
@@ -32,7 +32,7 @@ for (const [role,label] of [['percussion','percussion Honk'],['metronome','Metro
   `Tap the ${label} once, then withdraw completely. Leave room for the sound to finish.`,{role});
 add('drums-rehearse','drums','Rehearse the stick pattern','Repeat four times: Honk on 1, wood on 3, hihat on 4. Twelve clean strikes across 16 beats. Practice counts you in.',{timed:true,beats:16});
 add('record-percussion','record','Record percussion alone','Practice arms Percussion Looper and counts you in. Repeat Honk / rest / wood / hihat four times. Withdraw after every strike.',{looperRole:'percussionLooper',timed:true,beats:16,action:'record-percussionLooper',actionLabel:'Record Percussion'});
-add('finalize-percussion','finalize','Inspect the percussion take','Twelve clear taps, three colours, one 16-beat cycle. Practice checks the completed percussion take.',{looperRole:'percussionLooper',action:'stop-record-percussionLooper',actionLabel:'Finish percussion take'});
+add('finalize-percussion','finalize','Inspect the percussion take','Twelve clear taps across the 16-beat score. The loop ends with the final sound. Practice checks the completed percussion take.',{looperRole:'percussionLooper',action:'stop-record-percussionLooper',actionLabel:'Finish percussion take'});
 add('playback-percussion','playback','Listen to Percussion Looper alone','Play Percussion stops the chord playback for this check. Listen for one full cycle of all three percussion sounds.',{looperRole:'percussionLooper',action:'play-percussionLooper',actionLabel:'Play Percussion'});
 add('start-all','start-all','Start both parts together','Practice restarts both recorded parts on one shared next beat. Separate Play presses can start different points in the phrase. If either take is missing, choose Next Step.',{action:'start-all',actionLabel:'Start All'});
 add('unequip','unequip','Put away the stick','Release Grip to unequip the stick before melody practice. Both hands can now squeeze again.');

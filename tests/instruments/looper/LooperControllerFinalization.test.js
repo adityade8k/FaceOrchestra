@@ -8,32 +8,28 @@ import { LooperActionEventType } from "../../../src/instruments/looper/timeline/
 
 const BEAT_INTERVAL_MS = 500;
 
-test("connected off-beat phase and X o X X pattern survive immediate and delayed Stop", () => {
-  const immediate = recordHonkPhrase({ stopMs: 2200 });
-  const delayed = recordHonkPhrase({ stopMs: 5000 });
-  const muchLater = recordHonkPhrase({ stopMs: 20_000 });
+test("off-beat recording retains interior rests with the same content cycle after delayed Stop", () => {
+  const immediate = recordHonkPhrase({ stopMs: 1900 });
+  const delayed = recordHonkPhrase({ stopMs: 3900 });
+  const muchLater = recordHonkPhrase({ stopMs: 11_900 });
 
   for (const recording of [immediate, delayed, muchLater]) {
-    assert.equal(recording.timeline.recordedDurationMs, 2000);
-    assert.equal(recording.timeline.durationMs, 2000);
-    assert.deepEqual(recording.timeline.getMusicalOnsetTimes(), [100, 1100, 1600]);
+    assert.equal(recording.timeline.recordedDurationMs, 1800);
+    assert.equal(recording.timeline.durationMs, 1800);
+    assert.deepEqual(recording.timeline.getMusicalOnsetTimes(), [0, 1000, 1500]);
     assert.deepEqual(getPlaybackAttacks(recording.timeline), [
-      100, 1100, 1600, 2100, 3100, 3600, 4100,
+      0, 1000, 1500, 1800, 2800, 3300, 3600,
     ]);
     assert.equal(recording.timeline.tracks.size, 1);
   }
 
   assert.equal(immediate.timeline.firstOnsetElapsedMs, delayed.timeline.firstOnsetElapsedMs);
-  assert.equal(immediate.timeline.firstOnsetElapsedMs, 100);
-  assert.equal(
-    getBeatPattern(getPlaybackAttacks(immediate.timeline), { phaseMs: 100, beatCount: 8 }),
-    "X o X X X o X X",
-  );
+  assert.equal(immediate.timeline.firstOnsetElapsedMs, 0);
   assert.deepEqual(immediate.timeline.toJSON(), delayed.timeline.toJSON());
   assert.deepEqual(delayed.timeline.toJSON(), muchLater.timeline.toJSON());
 });
 
-test("a Metronome-connected onset exactly on a beat repeats on the next phrase beat", () => {
+test("a beat-aligned onset repeats immediately after its full release", () => {
   const recording = createHarness({ connected: true });
   recording.controller.startRecording(recording.looper, 0);
   setHonk(recording, 0, 500, 1);
@@ -42,31 +38,31 @@ test("a Metronome-connected onset exactly on a beat repeats on the next phrase b
 
   assert.equal(recording.timeline.timingMode, "metronome");
   assert.deepEqual(recording.timeline.getMusicalOnsetTimes(), [0]);
-  assert.equal(recording.timeline.recordedDurationMs, BEAT_INTERVAL_MS);
-  assert.equal(recording.timeline.durationMs, BEAT_INTERVAL_MS);
+  assert.equal(recording.timeline.recordedDurationMs, 100);
+  assert.equal(recording.timeline.durationMs, 100);
   assert.deepEqual(
-    getPlaybackAttacks(recording.timeline, [0, 100, 500, 600, 1000]),
-    [0, 500, 1000],
+    getPlaybackAttacks(recording.timeline, [0, 100, 200]),
+    [0, 100, 200],
   );
 });
 
 test("a real late release and a note held until Stop preserve their performed durations", () => {
   const tail = recordHonkPhrase({ stopMs: 5000, finalReleaseMs: 2400 });
-  assert.equal(tail.timeline.contentEndMs, 2400);
-  assert.equal(tail.timeline.recordedDurationMs, 2500);
+  assert.equal(tail.timeline.contentEndMs, 2300);
+  assert.equal(tail.timeline.recordedDurationMs, 2300);
 
   const held = recordHonkPhrase({ stopMs: 5000, holdFinalNote: true });
   const track = held.timeline.getTrack("track-0");
   const releasesAtStop = track.events.filter((event) => (
-    event.type === LooperActionEventType.SqueezeEnd && event.timeMs === 5000
+    event.type === LooperActionEventType.SqueezeEnd && event.timeMs === 4900
   ));
   assert.equal(releasesAtStop.length, 1);
   assert.equal(releasesAtStop[0].synthetic, true);
   assert.equal(releasesAtStop[0].preserveDuration, true);
-  assert.equal(held.timeline.recordedDurationMs, 5000);
-  assert.equal(held.timeline.durationMs, 5000);
-  assert.deepEqual(held.timeline.getMusicalOnsetTimes(), [100, 1100, 1600]);
-  assert.deepEqual(getPlaybackAttacks(held.timeline), [100, 1100, 1600]);
+  assert.equal(held.timeline.recordedDurationMs, 4900);
+  assert.equal(held.timeline.durationMs, 4900);
+  assert.deepEqual(held.timeline.getMusicalOnsetTimes(), [0, 1000, 1500]);
+  assert.deepEqual(getPlaybackAttacks(held.timeline), [0, 1000, 1500]);
 });
 
 test('standalone recordings retain off-grid events against a known 70 BPM reference', () => {
@@ -76,13 +72,13 @@ test('standalone recordings retain off-grid events against a known 70 BPM refere
     assert.equal(recording.timeline.timingMode,'internal');
     assert.equal(recording.timeline.sourceBeatIntervalMs,60000/70);
     assert.equal(recording.timeline.beatAnalysis,null);
-    assert.deepEqual(recording.timeline.getMusicalOnsetTimes(),[500,1000,1500,2000]);
-    assert.equal(recording.timeline.durationMs,3*60000/70);
+    assert.deepEqual(recording.timeline.getMusicalOnsetTimes(),[0,500,1000,1500]);
+    assert.equal(recording.timeline.durationMs,1600);
   }
   assert.deepEqual(immediate.timeline.toJSON(),delayed.timeline.toJSON());
   const held=recordInferredHonkPhrase({stopMs:7000,holdFinalNote:true});
-  assert.ok(held.timeline.recordedDurationMs>=7000);
-  assert.equal(held.timeline.getTrack('track-0').gateEvents.at(-1).timeMs,7000);
+  assert.ok(held.timeline.recordedDurationMs===6500);
+  assert.equal(held.timeline.getTrack('track-0').gateEvents.at(-1).timeMs,6500);
 });
 
 test("latest simultaneous and cross-track Honk onsets control one boundary", () => {
@@ -99,8 +95,8 @@ test("latest simultaneous and cross-track Honk onsets control one boundary", () 
   setHonk(harness, 1, 900, 0);
   harness.controller.stopRecording(harness.looper, 5000);
 
-  assert.deepEqual(harness.timeline.getMusicalOnsetTimes(), [100, 100, 700, 700]);
-  assert.equal(harness.timeline.recordedDurationMs, 1000);
+  assert.deepEqual(harness.timeline.getMusicalOnsetTimes(), [0, 0, 600, 600]);
+  assert.equal(harness.timeline.recordedDurationMs, 800);
 });
 
 test("controller records percussion-only and mixed phrases from their latest onset", () => {
@@ -109,8 +105,8 @@ test("controller records percussion-only and mixed phrases from their latest ons
   percussion.controller.recordSelfDrumHit(percussion.looper, "boink", 100);
   percussion.controller.recordSelfDrumHit(percussion.looper, "hihat", 650);
   percussion.controller.stopRecording(percussion.looper, 5000);
-  assert.deepEqual(percussion.timeline.getMusicalOnsetTimes(), [100, 650]);
-  assert.equal(percussion.timeline.recordedDurationMs, 1000);
+  assert.deepEqual(percussion.timeline.getMusicalOnsetTimes(), [0, 550]);
+  assert.equal(percussion.timeline.recordedDurationMs, 1070);
 
   const mixed = createHarness({ connected: true, trackCount: 1 });
   mixed.controller.startRecording(mixed.looper, 0);
@@ -118,8 +114,8 @@ test("controller records percussion-only and mixed phrases from their latest ons
   setHonk(mixed, 0, 1200, 1);
   setHonk(mixed, 0, 1300, 0);
   mixed.controller.stopRecording(mixed.looper, 5000);
-  assert.deepEqual(mixed.timeline.getMusicalOnsetTimes(), [100, 1200]);
-  assert.equal(mixed.timeline.recordedDurationMs, 1500);
+  assert.deepEqual(mixed.timeline.getMusicalOnsetTimes(), [0, 1100]);
+  assert.equal(mixed.timeline.recordedDurationMs, 1200);
 });
 
 test("controller Gap 0 through 4 adds whole beats without changing the base phrase", () => {
@@ -133,8 +129,8 @@ test("controller Gap 0 through 4 adds whole beats without changing the base phra
       "gap",
       LooperControlMapping.getGapControlFromBeats(gapBeats),
     );
-    assert.equal(recording.timeline.recordedDurationMs, 2000);
-    assert.equal(recording.timeline.durationMs, 2000 + gapBeats * BEAT_INTERVAL_MS);
+    assert.equal(recording.timeline.recordedDurationMs, 1800);
+    assert.equal(recording.timeline.durationMs, 1800 + gapBeats * BEAT_INTERVAL_MS);
   }
 });
 
@@ -150,9 +146,9 @@ test("controller restoration repairs Stop-time padding without changing attacks"
   const restored = createHarness({ connected: true });
   restored.controller.restoreState(restored.looper, serialized);
 
-  assert.equal(restored.timeline.recordedDurationMs, 2000);
-  assert.equal(restored.timeline.durationMs, 2000);
-  assert.deepEqual(restored.timeline.getMusicalOnsetTimes(), [100, 1100, 1600]);
+  assert.equal(restored.timeline.recordedDurationMs, 1800);
+  assert.equal(restored.timeline.durationMs, 1800);
+  assert.deepEqual(restored.timeline.getMusicalOnsetTimes(), [0, 1000, 1500]);
 });
 
 function recordHonkPhrase({
@@ -230,18 +226,11 @@ function setHonk(harness, trackIndex, now, squeeze) {
   harness.controller.updateRecordings([harness.looper], now);
 }
 
-function getPlaybackAttacks(timeline, sampleTimes = [
-  0, 100, 200, 1100, 1200, 1600, 1700, 2000, 2100, 2200, 3100, 3200, 3600,
-  3700, 4000, 4100,
-]) {
-  const engine = new LooperPlaybackEngine();
-  const attacks = [];
-  let active = false;
-  let now = 0;
+function getPlaybackAttacks(timeline, sampleTimes = null) {
+  const engine = new LooperPlaybackEngine(), attacks = [];
+  let active = false, now = 0;
   const handlers = {
-    onReleaseTrack() {
-      active = false;
-    },
+    onReleaseTrack() { active = false; },
     onTrackSnapshot(_track, snapshot) {
       const nextActive = Number(snapshot.squeeze || 0) > 0.025;
       if (nextActive && !active) attacks.push(now);
@@ -249,15 +238,6 @@ function getPlaybackAttacks(timeline, sampleTimes = [
     },
   };
   engine.start(0);
-  for (now of sampleTimes) {
-    engine.update(now, timeline, 1, handlers);
-  }
+  for (now of sampleTimes || Array.from({length: 3601}, (_,i)=>i)) engine.update(now, timeline, 1, handlers);
   return attacks;
-}
-
-function getBeatPattern(attacks, { phaseMs = 0, beatCount, beatIntervalMs = BEAT_INTERVAL_MS }) {
-  const attackTimes = new Set(attacks);
-  return Array.from({ length: beatCount }, (_value, index) => (
-    attackTimes.has(phaseMs + index * beatIntervalMs) ? "X" : "o"
-  )).join(" ");
 }

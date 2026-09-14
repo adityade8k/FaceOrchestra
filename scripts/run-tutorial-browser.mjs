@@ -34,7 +34,7 @@ try {
   await send('Page.reload',{ignoreCache:true});
   await new Promise(resolve=>setTimeout(resolve,1500));
   const result=await send('Runtime.evaluate',{
-    expression:['usability','spawn','radial'].includes(process.env.TUTORIAL_TEST)?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-tutorial-radial-browser.mjs')).validateStandalone(app);})()`:`(async()=>{
+    expression:process.env.TUTORIAL_TEST==='recording'?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-looper-recording-browser.mjs')).validateStandalone(app);})()`:['usability','spawn','radial'].includes(process.env.TUTORIAL_TEST)?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-tutorial-radial-browser.mjs')).validateStandalone(app);})()`:`(async()=>{
       const {app}=await import('/src/main.js');
       const {validate}=await import('/scripts/validate-tutorial-browser.mjs');
       const report=await validate(app,{onProgress:p=>tutorialTestProgress(JSON.stringify(p))});

@@ -97,6 +97,8 @@ export class LooperController {
       playbackEngine: new LooperPlaybackEngine(),
       transport: new LooperTransport(),
       hasRecording: false,
+      takeRevision: 0,
+      activityRevision: 0,
       durationMs: 0,
       buttonMorphReleaseTimes: new Map(),
       playingHeadMorphValue: 0,
@@ -161,6 +163,7 @@ export class LooperController {
   armRecording(looperState, now, timing) {
     const data = looperState.looperData;
     this.stopPlayback(looperState);
+    data.takeRevision++;
     data.armedAction = "record";
     data.armedAtMs = now;
     data.armedAfterBeatOrdinal = null;
@@ -205,6 +208,7 @@ export class LooperController {
       return false;
     }
 
+    data.takeRevision++;
     data.hasRecording = this.recorder.stop(
       data.timeline,
       data.tracks,
@@ -225,8 +229,7 @@ export class LooperController {
         data.timeline.beatAnalysis = { ...beatAnalysis };
         data.timeline.finalizeDuration(LOOPER_MIN_ACTION_DURATION_MS);
       } else {
-        // Preserve the ordinary, non-beat fallback: trim the pre-performance
-        // rest only when no reliable grid was inferred.
+        // Tempo inference does not add silence or change musical boundaries.
         data.timeline.normalizeToFirstAction();
         data.timeline.finalizeDuration(LOOPER_MIN_ACTION_DURATION_MS);
       }
@@ -246,6 +249,7 @@ export class LooperController {
     }
 
     this.stopPlayback(looperState);
+    data.takeRevision++;
     data.timeline.clearRecording();
     data.hasRecording = false;
     data.durationMs = 0;
@@ -421,9 +425,8 @@ export class LooperController {
     if (!data?.transport.recordArmed) return false;
     const timing = this.getTimingForLooper(looperState, now);
     if (!timing.active || !hasBeatGrid(timing)) return false;
-    const beatOrdinal = Math.floor(timing.beatPosition + 1e-9);
-    const beatStartMs = timing.beatOriginMs + beatOrdinal * timing.beatIntervalMs;
-    return this.beginRecording(looperState, beatStartMs, timing);
+    // Keep the clock as tempo authority, but begin at the actual sound.
+    return this.beginRecording(looperState, now, timing);
   }
 
   updatePlayback(looperStates, now = performance.now()) {
@@ -705,13 +708,19 @@ export class LooperController {
   scheduleSourceRange(looperState, absoluteStartMs, absoluteEndMs, clock) {
     const data = looperState.looperData;
     const durationMs = Math.max(data.timeline.durationMs, 1);
-    let cursor = absoluteStartMs;
-    let includeStart = clock.includeStart;
-    while (cursor <= absoluteEndMs) {
-      const cycle = Math.floor(cursor / durationMs);
+    // Compute each cycle once, rather than repeatedly adding its fractional
+    // duration and dividing again. Floating error at a shared window boundary
+    // must not skip or repeat the next time-zero attack.
+    const cycleAt = time => {
+      const nearest = Math.round(time / durationMs);
+      return Math.abs(time - nearest * durationMs) < 1e-7 ? nearest : Math.floor(time / durationMs);
+    };
+    const firstCycle = cycleAt(absoluteStartMs), lastCycle = cycleAt(absoluteEndMs);
+    for (let cycle = firstCycle; cycle <= lastCycle; cycle++) {
+      const includeStart = cycle === firstCycle ? clock.includeStart : true;
       const cycleStart = cycle * durationMs;
-      const localStart = cursor - cycleStart;
-      const localEnd = Math.min(absoluteEndMs - cycleStart, durationMs);
+      const localStart = cycle === firstCycle ? Math.max(absoluteStartMs - cycleStart, 0) : 0;
+      const localEnd = cycle === lastCycle ? Math.max(absoluteEndMs - cycleStart, 0) : durationMs;
       const eventSource = clock.trackTimeline || data.timeline;
       const entries = eventSource.getPerformanceEventsBetween(localStart, localEnd, {
         includeStart,
@@ -734,7 +743,9 @@ export class LooperController {
         const track = this.getTrack(looperState, trackTimeline.trackIndex);
         if (!track) continue;
         const snapshot = createActionState();
-        data.timeline.sampleTrack(trackTimeline, event.timeMs, snapshot);
+        // Event endpoints retain their final expression even at the start of
+        // an explicit Gap. Tail-padding neutralization is for visual sampling.
+        trackTimeline.sample(event.timeMs, snapshot);
         this.applier.scheduleTrackEvent(looperState, track, trackTimeline, event, snapshot, {
           volume: data.volume,
           scheduledTime,
@@ -764,13 +775,6 @@ export class LooperController {
         });
         (data.audioScheduling.percussionTimes ||= []).push(scheduledTime);
         if (data.audioScheduling.percussionTimes.length > 32) data.audioScheduling.percussionTimes.shift();
-      }
-      if (localEnd < durationMs || cycleStart + durationMs > absoluteEndMs) break;
-      cursor = cycleStart + durationMs;
-      includeStart = true;
-      if (cursor === absoluteEndMs) {
-        // Schedule the time-zero boundary exactly once for the next cycle.
-        continue;
       }
     }
   }
@@ -1005,6 +1009,7 @@ export class LooperController {
     }
     const clamped = Math.min(Math.max(value, -1), 1);
     if (control === "gap") {
+      if (data.gapBeats !== LooperControlMapping.getGapBeatsFromControl(clamped)) data.activityRevision++;
       data.gapBeats = LooperControlMapping.getGapBeatsFromControl(clamped);
       data.gapControlValue = LooperControlMapping.getGapControlFromBeats(data.gapBeats);
       if (!data.transport.recording && data.timeline?.hasRecording()) {
@@ -1013,6 +1018,7 @@ export class LooperController {
       }
       return data.gapControlValue;
     } else if (control === "volume") {
+      if (data.volumeControlValue !== clamped) data.activityRevision++;
       data.volumeControlValue = clamped;
       data.volume = LooperControlMapping.getVolumeFromControl(clamped);
     } else {
@@ -1054,6 +1060,7 @@ export class LooperController {
         }
       }
     }
+    data.takeRevision++;
     data.timeline = LooperTimeline.fromJSON(serialized.timeline || {});
     data.hasRecording = data.timeline.hasRecording();
     data.durationMs = data.timeline.durationMs;

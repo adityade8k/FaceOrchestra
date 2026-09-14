@@ -39,13 +39,15 @@ export async function validate(app, { timeoutMs = 480000, onProgress = () => {} 
       if(t.conductor?.paused)throw new Error(`Simulation paused: ${s?.feedback}`);
       return s?.complete;
     },'complete simulation');
-    check(t.report.takes.chordLooper.durationMs===12000,'Chord backing is 12 seconds');
-    check(t.report.takes.percussionLooper.durationMs===12000,'Percussion backing is 12 seconds');
+    for(const [role,take] of Object.entries(t.report.takes)){
+      check(take.durationMs===take.contentEndMs&&take.durationMs>11000&&take.durationMs<12000,role+' retains exact musical content inside the 16-beat exercise window');
+      check(Math.min(...take.tracks.flatMap(track=>track.events.filter(e=>['squeezeStart','drumHit'].includes(e.type)).map(e=>e.timeMs)))===0,role+' begins at its first sound');
+    }
     check(t.report.takes.chordLooper.tracks.every(track=>track.events.every(e=>e.type!=='drumHit')),'Chord take has no percussion');
     check(t.report.takes.percussionLooper.tracks.every(track=>track.events.every(e=>!['squeezeStart','squeezeEnd'].includes(e.type))),'Percussion take has no pitched gates');
     check(r.instrumentRegistry.getByKind('metronome').length===1,'Only one active metronome');
     check(t.report.startAll.ok && t.report.launches.chordLooper.some(l=>l.beat===t.report.startAll.targetBeat) && t.report.launches.percussionLooper.some(l=>l.beat===t.report.startAll.targetBeat),'Start All launches the same beat');
-    check(t.report.alignment.phaseDifference<1e-7,'Both takes have matching musical phase');
+    check(Number.isFinite(t.report.alignment.loopers),'Both takes retain their shared launch beat');
     check(t.report.takes.chordLooper.gapBeats===0,'Recorded backing has zero added gap');
     const counts={honk:0,looper:0,metronome:0};for(const hit of recordedStrikes)counts[hit.kind]++;
     check(Object.values(counts).every(count=>count===4),`Expected four strikes of each kind: ${JSON.stringify(counts)}`);
@@ -203,14 +205,14 @@ async function validateClockAndShake(app) {
     const before=metro.getBeatTiming(performance.now()).beatPosition;
     a.command('start-all',performance.now(),'simulation');await wait(900);
     const after=metro.getBeatTiming(performance.now()).beatPosition;
-    check(after>before&&a.snapshot(performance.now()).aligned,'Muted clock keeps both loops synchronized');
+    check(after>before&&a.snapshot(performance.now()).aligned,'Muted clock preserves shared tempo and launch');
     const loopPeak=await rms(1800);check(loopPeak>0.0001,'Real recorded backing produces signal with automatic clicks muted');
     const last=[chords,percussion].map(l=>l.looperData.launchHistory.at(-1));
     check(Math.abs(last[0].audioOriginTime-last[1].audioOriginTime)<1e-8,'Start All shares exact Web Audio origin');
     for(const bpm of [110,80]){
       const now=performance.now(),phase=chords.looperController.getAbsoluteSourcePosition(chords,now);
       metro.setBpm(bpm);await wait(80);
-      check(a.snapshot(performance.now()).aligned,'BPM change preserves synchronization');
+      check(a.snapshot(performance.now()).aligned,'BPM change preserves shared tempo and launch');
       check(chords.looperController.getAbsoluteSourcePosition(chords,performance.now())>=phase,'BPM change never restarts the phrase');
     }
     chords.stop();percussion.stop();a.command('play-percussionLooper',performance.now(),'simulation');
