@@ -7,6 +7,7 @@ import {scoreAttempt,PRACTICE_TOLERANCES as P} from '../../src/tutorial/scoring.
 import {timingCueState} from '../../src/tutorial/timingCueState.js';
 import {resolveTutorialRoutes,connectTutorialClock,connectTutorialHonk,recordingFitsRoutes} from '../../src/tutorial/TutorialRoutes.js';
 import {validateSetup} from '../../src/tutorial/validation.js';
+import {isSetupStep,setupStatus} from '../../src/tutorial/TutorialLessonPolicy.js';
 const step={id:'hold',type:'note',role:'melody-C4',midis:[60],minimumMs:450};
 const note=(options={})=>({id:'real-note',kind:'note',origin:'learner',role:'melody-C4',midis:[60],voiced:true,articulated:true,released:true,allReleased:true,startMs:100,endMs:800,maxAbsBend:0,...options});
 
@@ -27,7 +28,7 @@ test('every catalog step supports Next, Previous and a bounded terminal attempt'
     s.navigate(index+1,2000);assert.equal(s.complete,index===LESSON_STEPS.length-1);
     s.navigate(index,3000);assert.equal(s.step.id,step.id);assert.equal(s.phase,'ready');
     s.startAttempt(4000);if(step.timed)s.startCountIn(5000);
-    s.update({},999999);assert.equal(s.phase,'results',`automatic recovery: ${step.id}`);
+    s.update({},999999);assert.equal(s.phase,isSetupStep(step)&&!setupStatus(step,{}).ok?'ready':'results',`automatic recovery: ${step.id}`);
   }
 });
 test('skipped and assisted steps cannot appear as learner passes',()=>{

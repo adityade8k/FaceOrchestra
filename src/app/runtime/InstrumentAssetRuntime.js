@@ -128,6 +128,7 @@ export const InstrumentAssetRuntimeMethods = {
       this.noteFontLoadPromise = this.assetRepository.loadFont("noteLabel", NOTE_LABEL_SETTINGS.fontUrl);
     }
     this.noteFont = await this.noteFontLoadPromise;
+    for(const h of this.instrumentRegistry.getByKind('honk'))if(!h.noteLabelGroup)this.createNoteLabel(h);
     return this.noteFont;
   },
 

@@ -290,6 +290,7 @@ export const HonkPresentationRuntimeMethods = {
       state.root.add(group);
       state.noteLabelGroup = group;
       this.updateNoteLabel(state);
+      if(this.tutorial?.session)this.tutorial.adapter.labelPresentation.styleNote(state);
     },
     applyNoteLabelTransform(group) {
       const position = NOTE_LABEL_SETTINGS.position || {};

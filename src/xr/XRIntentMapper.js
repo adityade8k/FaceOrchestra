@@ -40,7 +40,9 @@ export class XRIntentMapper {
     if (button === "grip") {
       return [{ ...base, type: pressed ? XRIntentType.GripBegin : XRIntentType.GripEnd }];
     }
-    if (button === "primary" && handedness === "right") {
+    // A on the right and the previously unused Y on the left open the same
+    // placement menu. X keeps its existing delete action; B keeps lock/context.
+    if (button === "primary" && handedness === "right" || button === "secondary" && handedness === "left") {
       return [{ ...base, type: pressed ? XRIntentType.SpawnMenuOpen : XRIntentType.SpawnMenuConfirm }];
     }
     if (button === "primary" && handedness === "left" && pressed) {

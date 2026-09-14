@@ -36,7 +36,7 @@ export function connectTutorialClock(adapter,role) {
   if(existing?.metronomeId===metro.id&&looper.tracks.some(t=>t.trackId===existing.targetPortId&&(role==='chordLooper'||!t.connectedHonkId)))return existing;
   const portId=existing?.metronomeId===metro.id?existing.portId:[...metro.connectionPorts.keys()].find(id=>!manager.getConnectionsForMetronome(metro.id).some(c=>c.portId===id));
   const track=looper.tracks.find(t=>!t.connectedHonkId);
-  if(!portId||!track)throw new Error('Free a Metronome output and an unused Looper socket, then choose Prepare again.');
+  if(!portId||!track)throw new Error('Free a Metronome output and an unused Looper socket.');
   return manager.connect({metronomeId:metro.id,portId,targetKind:'looper',targetId:looper.id,targetPortId:track.trackId});
 }
 
@@ -51,7 +51,7 @@ export function connectTutorialHonk(adapter,role) {
   const preferred=(captured?.chords?.[role]||captured?.percussion?.[role])?.trackId;
   const available=t=>!t.connectedHonkId&&t.trackId!==clock?.targetPortId;
   const track=looper.tracks.find(t=>t.trackId===preferred&&available(t))||looper.tracks.find(available);
-  if(!track)throw new Error(`Free a socket on ${role==='percussion'?'Percussion':'Chord'} Looper, then choose Prepare again.`);
+  if(!track)throw new Error(`Free a socket on ${role==='percussion'?'Percussion':'Chord'} Looper.`);
   adapter.r.connectLooperTrackToHonk(looper,track.index,ids[0]);return track;
 }
 

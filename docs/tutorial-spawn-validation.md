@@ -1,5 +1,7 @@
 # Tutorial Spawn validation
 
+Historical report: panel Spawn was superseded by the radial-only lesson. See [current validation](tutorial-radial-validation.md).
+
 Implemented on `Tutorial` from the clean existing tutorial commit `172a8eb`.
 
 Tutorial Spawn now passes the initiating physical controller through the action handlers to normal placement. It reserves the request before audio startup, blocks duplicates, waits for the clicking Trigger to be released, and accepts a fresh placement press. Grip cancels and permits retry. A preview does not complete practice or count as assistance. Navigation invalidates requests still awaiting audio. Desktop Spawn explains that an initiating XR controller is required; it does not substitute a virtual or default right hand.

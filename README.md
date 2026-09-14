@@ -51,35 +51,35 @@ The optional in-headset instruction panel is currently disabled because `SHOW_IN
 
 ## Quest-style controls
 
-Trigger and Grip work on either hand. Menu, lock, and delete actions have fixed handedness.
+Trigger and Grip work on either hand. Right A and left Y open the menu on that hand; lock and delete keep their existing handedness.
 
 | Control | What it does |
 | --- | --- |
-| Hold **Right A** | Open the category ring. Roll the right controller to choose Instruments, Scales, Chords, or Presets; pull it toward you to open that category's depth-separated item ring. |
-| Release **Right A** | On the item ring, confirm the highlighted item and create its placement preview. On the category ring, close without a preview. |
+| Hold **Right A** or **Left Y** | Open the category ring. Roll that controller to choose Instruments, Scales, Chords, or Presets; pull it toward you to open that category's item ring. |
+| Release **Right A** or **Left Y** | On the item ring, confirm the highlighted item and create its placement preview. On the category ring, close without a preview. |
 | **Trigger** during preview | Place the preview. |
 | **Grip** during menu or preview | Cancel it. |
-| Right thumbstick left/right during preview | Scale the entire preview down/up in steps. |
-| Right thumbstick down/up during preview | Move the entire preview closer to/farther from the controller in steps. |
+| Owning thumbstick left/right during preview | Scale the entire preview down/up in steps. |
+| Owning thumbstick down/up during preview | Move the entire preview closer to/farther from the controller in steps. |
 | Hold **Grip** on an instrument | Move and rotate it with that controller. |
 | Thumbstick left/right on the gripping hand | Scale the current instrument or locked Honk group down/up in steps. |
-| **Grip + Right A** | Duplicate the unlocked Honk or Looper being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated. |
+| **Grip + Right A / Left Y** | Duplicate the unlocked Honk or Looper being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated. |
 | **Right B** | Lock or unlock the pointed Honk formation, Looper, or Metronome. |
 | **Left X** | Delete the pointed instrument and clean up its audio and connections. |
 | Hold **Grip** where no transform target is pointed at | Equip the Stick; release Grip to put it away. |
 
-The radial menu is suppressed whenever Grip is active, including a Grip+A duplication. It pulses the right controller when the menu opens, the highlighted parent or child changes, the active depth layer changes, or the menu is confirmed, dismissed, cancelled, or otherwise closed. If placement is cancelled, every instrument in that preview is removed.
+The radial menu is suppressed whenever Grip is active, including duplication. It pulses the initiating controller when the menu opens, selection or depth changes, or the menu is confirmed, dismissed, cancelled or closed. If placement is cancelled, every instrument in that preview is removed.
 
 ## Spawn menu
 
-The radial menu has two depth phases with one ring visible at a time. Keep A held while navigating: roll to select a parent category, pull the controller physically toward the headset to hide the category ring and reveal that category's item ring, then roll from the new baseline to select an item. Push the controller away to hide the item ring and restore the category ring. The categories and items are:
+The radial menu has two depth phases with one ring visible at a time. Keep right A or left Y held while navigating: roll to select a parent category, pull the controller physically toward the headset to hide the category ring and reveal that category's item ring, then roll from the new baseline to select an item. Push the controller away to hide the item ring and restore the category ring. The categories and items are:
 
 - **Instruments:** Honk (one default F4 Honk), Looper (one eight-track Looper), and Metronome.
-- **Scales:** C Major Scale; F Natural Minor Scale; and F-sharp Natural Minor Scale. Each creates its existing eight-Honk row.
-- **Chords:** A Minor (`A4 C4 E5`); E Major (`E3 B4 G#4`); C Major (`C4 E4 G4`); and D Minor (`F4 A4 D5`). Each creates a three-Honk row in the listed order.
-- **Presets:** Quiet (`G3 C4 E4 D5 C5 B4 A4 G#4`); Melody (`G#4 A4 B4 C4 D4 E4 F4 E6 E4`); Bass (`C4 E4 G4 A4`); Decoration (`C4 D4 E5`); Still Believe (`G#5 A5`); and Metronome 93, which creates one metronome initialized at 93 BPM. The note order and Melody's repeated E4 are intentional.
+- **Scales:** C Major (the existing eight-Honk row) and Jog Study (`C4 Eb4 E4 F4 G4 Bb4 C5`).
+- **Chords:** Group 1 (`C3 G3 C4`); Group 2 (`C3 F3 G3`); Group 3 (`Bb2 C3 G3`); and Group 4 (`G2 C3 C4`).
+- **Presets:** Quiet (`G3 C4 E4 D5 C5 B4 A4 G#4`) and Melody (`G#4 A4 B4 C4 D4 E4 F4 E6 E4`). The note order and Melody's repeated E4 are intentional.
 
-Scale, chord, and Honk-row preset entries are placement recipes. Their Honks remain independent instruments after placement; you can retune, move, connect, lock, duplicate, or delete them individually. Metronome 93 uses the ordinary metronome placement and persistence path with its initial BPM set to 93. Parent categories are navigation only and releasing A on that ring creates nothing. The Stick is equipment, so it is not shown in the radial menu.
+Scale, chord, and Honk-row preset entries are placement recipes. Free-play Honks remain independent after placement. During the tutorial, composition chords lock as groups upon placement; a later intentional unlock is respected. Release the menu button to preview on that hand, then press Trigger to place or Grip to cancel. A held Trigger must first be released. Parent categories are navigation only; releasing there creates nothing. Legacy recipes remain available internally for saved scenes. The Stick is Grip equipment and is not shown in the radial menu.
 
 ## Play a Honk
 

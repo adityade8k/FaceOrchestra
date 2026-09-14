@@ -1,4 +1,5 @@
 import { ASSET_PATHS } from "./assets.js";
+import { COMPOSITION } from "../tutorial/composition.js";
 
 export const SPAWN_DISTANCE = 1.5;
 export const DEFAULT_INSTRUMENT_DISTANCE = 1.5;
@@ -36,7 +37,7 @@ export const RADIAL_MENU_SETTINGS = Object.freeze({
 export const SPAWN_CATALOG_ENTRIES = Object.freeze([
   { id: "metronome", label: "Metronome", action: "instrument", kind: "metronome", modelPath: ASSET_PATHS.models.metronome, color: 0xff8c42 },
   { id: "honk", label: "Honk", action: "instrument", kind: "honk", modelPath: ASSET_PATHS.models.honk, color: 0xf7d04a },
-  { id: "honk-cmajor", label: "C Major Scale", action: "formation", recipeId: "honk-cmajor", color: 0x72d572 },
+  { id: "honk-cmajor", label: "C Major", action: "formation", recipeId: "honk-cmajor", color: 0x72d572 },
   { id: "honk-fminor", label: "F Natural Minor", action: "formation", recipeId: "honk-fminor", color: 0xb78cff },
   { id: "honk-fsharpminor", label: "F# Natural Minor", action: "formation", recipeId: "honk-fsharpminor", color: 0x8f7cff },
   { id: "chord-aminor", label: "A Minor", action: "formation", recipeId: "chord-aminor", color: 0xff7fb0 },
@@ -64,13 +65,13 @@ export const SPAWN_RADIAL_CATEGORIES = Object.freeze([
     id: "category-scales",
     label: "Scales",
     color: 0x72d572,
-    childIds: Object.freeze(["honk-cmajor", "honk-fminor", "honk-fsharpminor"]),
+    childIds: Object.freeze(["honk-cmajor", "jog-melody"]),
   }),
   Object.freeze({
     id: "category-chords",
     label: "Chords",
     color: 0x5ac8fa,
-    childIds: Object.freeze(["chord-aminor", "chord-emajor", "chord-cmajor", "chord-dminor"]),
+    childIds: Object.freeze(COMPOSITION.backing.map(group=>group.catalogId)),
   }),
   Object.freeze({
     id: "category-presets",
@@ -79,10 +80,6 @@ export const SPAWN_RADIAL_CATEGORIES = Object.freeze([
     childIds: Object.freeze([
       "preset-quiet",
       "preset-melody",
-      "preset-bass",
-      "preset-decoration",
-      "preset-still-believe",
-      "preset-metronome-93",
     ]),
   }),
 ]);

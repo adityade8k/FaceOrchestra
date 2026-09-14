@@ -94,6 +94,9 @@ test("right primary maps to spawn open/confirm without changing the left-hand de
     mapper.map({ ...base, handedness: "left", pressed: true })[0].type,
     XRIntentType.InstrumentDelete,
   );
+  assert.equal(mapper.map({ ...base, button: "secondary", handedness: "left", pressed: true })[0].type, XRIntentType.SpawnMenuOpen);
+  assert.equal(mapper.map({ ...base, button: "secondary", handedness: "left", pressed: false })[0].type, XRIntentType.SpawnMenuConfirm);
+  assert.equal(mapper.map({ ...base, button: "secondary", handedness: "right", pressed: true })[0].type, XRIntentType.ContextSecondary);
 });
 
 test("thumbstick X and Y emit independent edge-triggered steps with intuitive signs", () => {

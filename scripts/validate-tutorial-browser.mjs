@@ -67,12 +67,12 @@ export async function validate(app, { timeoutMs = 480000, onProgress = () => {} 
     const recordingDemonstrations=await validateRecordingDemonstrations(app);
     onProgress({step:'clock, audio and grip checks',seconds:Math.round((performance.now()-started)/1000)});
     const clockAndShake=await validateClockAndShake(app);
-    await click('return-play');
+    await click('exit');
     check(r.persistenceStore.storage.getItem(r.persistenceStore.key)===saved,'Lesson never overwrote saved free play');
     check(JSON.stringify(r.sceneSerializer.serialize().instruments)===freeScene,'Returning to Play restored the exact free-play instruments');
     check(r.instrumentRegistry.size===1,'Lesson objects removed');
     check(!t.adapter.virtuals.some(c=>r.controllerStates.get(c).trigger||r.isControllerStickActive(c)),'No held virtual input');
-    const {controller,checks:learnerFlow}=await (await import('./validate-tutorial-usability-browser.mjs')).validateLearnerFlow(app,{click,wait,check,onProgress,realTake});
+    const {controller,checks:learnerFlow}=await (await import('./validate-tutorial-radial-browser.mjs')).validateLearnerFlow(app);
     // Real Three.js panel planes capture Trigger through release, including crossing to a Honk.
     const THREE=await import('three');
     t.panel.setXR(true,r.camera);t.panel.recenter(r.camera,true);

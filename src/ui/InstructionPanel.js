@@ -59,8 +59,8 @@ export class InstructionPanel {
     ctx.fillStyle = "rgba(247, 239, 226, 0.92)";
     const lines = [
       "Close this panel to spawn the first face instrument.",
-      "After closing, hold A and roll your wrist to choose a spawn category.",
-      "Pull the controller toward you, roll to choose an item, then release A.",
+      "After closing, hold right A or left Y and roll to choose a category.",
+      "Pull toward you, roll to choose an item, then release A or Y.",
       "Press grip while the menu is open to cancel.",
       "Aim at the mouth and press trigger to cycle vowels.",
       "Aim at the horn and hold trigger to squeeze and play sound.",

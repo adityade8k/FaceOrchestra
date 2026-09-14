@@ -16,6 +16,7 @@ export class CompositionConductor {
     if(this.session.complete) {this.stop();this.finished=true;return;}
     if(this.session.failed) {this.adapter.releaseVirtuals();return;}
     const step=this.session.step;
+    if(this.demonstration&&['ack','spawn','clock-wire','wire','tempo','timbre','stick','unequip'].includes(step.type))return;
     if(this.stepId!==`${step.id}:${this.session.attempt}`) {
       this.adapter.squeeze(null,false,0,now);
       this.stepId=`${step.id}:${this.session.attempt}`;this.stepAt=now;this.actions.clear();this.noteId=null;
@@ -46,11 +47,13 @@ export class CompositionConductor {
       if(this.session.anchorMs===null && elapsed>=300) {
         const phrase=step.type==='phrase' || step.type==='performance';
         const looper=this.adapter.get('chordLooper');
-        if(phrase && !this.adapter.snapshot(now).aligned) {
+        if(phrase && !this.demonstration && !this.adapter.snapshot(now).aligned) {
           this.once('backing',()=>this.adapter.command('start-all',now,this.origin));return;
         }
+        if(phrase&&this.demonstration)this.once('backing',()=>{this.backingRoles=this.adapter.startAvailableBacking(now);});
         const accompany=step.type==='record' && step.looperRole==='percussionLooper' && looper?.transport.playing;
-        const anchor=this.adapter.nextBoundary(now,phrase || accompany ? 16 : 1,4);
+        const boundary=(phrase&&(!this.demonstration||this.backingRoles?.length))||accompany?16:1;
+        const anchor=this.adapter.nextBoundary(now,boundary,4,this.backingRoles?.[0]);
         if(anchor!==null) this.session.startCountIn(anchor,this.adapter.get('metronome').getBeatTiming(now).beatIntervalMs);
       }
       if(this.session.anchorMs===null) return;

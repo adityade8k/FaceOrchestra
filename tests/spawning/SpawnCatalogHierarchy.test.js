@@ -7,21 +7,18 @@ import { SpawnPlacementController } from "../../src/spawning/SpawnPlacementContr
 
 const EXPECTED = Object.freeze({
   Instruments: ["honk", "looper", "metronome"],
-  Scales: ["honk-cmajor", "honk-fminor", "honk-fsharpminor"],
-  Chords: ["chord-aminor", "chord-emajor", "chord-cmajor", "chord-dminor"],
+  Scales: ["honk-cmajor", "jog-melody"],
+  Chords: ["jog-group-1", "jog-group-2", "jog-group-3", "jog-group-4"],
   Presets: [
     "preset-quiet",
     "preset-melody",
-    "preset-bass",
-    "preset-decoration",
-    "preset-still-believe",
-    "preset-metronome-93",
   ],
 });
 
 const EXPECTED_LABELS = Object.freeze({
-  Chords: ["A Minor", "E Major", "C Major", "D Minor"],
-  Presets: ["Quiet", "Melody", "Bass", "Decoration", "Still Believe", "Metronome 93"],
+  Scales: ["C Major", "Jog Study"],
+  Chords: ["Group 1: C3 · G3 · C4", "Group 2: C3 · F3 · G3", "Group 3: Bb2 · C3 · G3", "Group 4: G2 · C3 · C4"],
+  Presets: ["Quiet", "Melody"],
 });
 
 test("radial categories have the required order and exact leaf IDs", () => {
@@ -97,6 +94,7 @@ test("all instrument, formation, and Metronome 93 leaves retain the existing act
       componentId: "metronome",
       bpm: 93,
       color: 0xffd166,
+      visibleInRadial: false,
     }),
   );
 });

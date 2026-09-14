@@ -384,3 +384,13 @@ Never attach private keys, local certificate contents, authentication tokens, or
 - [ ] Grip/shake one source in a frozen chord: only that source’s direct Looper assignment detaches. Both clock cables and other assignments survive.
 - [ ] Try one-way relocation, jitter, release/regrip, tracking loss and repeated shaking during cooldown. No false disconnect or repeated feedback.
 - [ ] Confirm comfortable two-Looper labels/layout, readable 70 BPM/Internal status, audible click at lesson volume, and percussion/chord acoustic balance on the actual headset.
+
+## Radial-only lesson follow-up (headset checks not yet performed)
+
+- [ ] Hold right A and left Y independently; roll, pull, select and release. Verify the preview stays on the initiating hand. Hold Trigger during selection, release it, then use a fresh press to place. Grip cancels and permits retry.
+- [ ] Place two ordinary Loopers; cancel and replace one without renaming the surviving role. Place all four composition chords and Jog Study through their visible categories.
+- [ ] Grip a non-anchor locked chord member and move/scale the complete chord. A body grab stays silent; the normal squeeze target sounds all three voices. Intentional unlock persists.
+- [ ] Confirm each green billboard clears its complete body and native note/BPM text after movement, rotation and scaling. Check all chord and melody native note names at comfortable reading distance.
+- [ ] Confirm all six fixed lesson controls remain legible and easy to reach. Verify setup completion without Practice and that holding Grip survives navigation into a percussion exercise.
+- [ ] Skip both recordings and practice melody against the Metronome alone, then repeat with one available part. Cancel Demonstrate, Practice and pending count-ins with their existing buttons and with navigation/Exit.
+- [ ] Listen for complete voice release, restored paused/playing transport and unchanged recorded takes after demonstrations. Check perceived timing, balance and tracking behavior on hardware.

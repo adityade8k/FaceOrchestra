@@ -1,174 +1,139 @@
 import { TutorialSession } from './TutorialSession.js';
 import { CompositionConductor } from './CompositionConductor.js';
 import { LESSON_STEPS } from './lessonSteps.js';
-import { TutorialPreparation, requiredRecordings, isSetupStep } from './TutorialPreparation.js';
-import { COMPOSITION, TUTORIAL_LOOPERS } from './composition.js';
-import { recordingFitsRoutes } from './TutorialRoutes.js';
+import { TUTORIAL_LOOPERS } from './composition.js';
+import { isSetupStep, musicUnavailable, setupStatus } from './TutorialLessonPolicy.js';
 
-// Asynchronous scene preparation is separate from pure attempts and frame cues.
+// The learner flow observes setup. Automatic construction belongs to the
+// separately invoked full-composition conductor.
 export class TutorialLessonFlow {
-  constructor(t){this.t=t;this.a=t.adapter;this.preparation=new TutorialPreparation(t);this.generation=0;this.preparing=false;this.pending=null;this.practiceBackup=null;}
-  snapshots(){return Object.fromEntries(TUTORIAL_LOOPERS.flatMap(({role})=>{const h=this.a.get(role);return h?[[role,{state:h.looperController.serializeState(h),routes:this.a.takeRoutes[role],evidence:this.a.takeEvidence[role]}]]:[];}));}
-  restore(saved,except=null){
-    for(const [role,value] of Object.entries(saved||{}))if(role!==except){const h=this.a.get(role);if(h){h.stop();h.looperController.restoreState(h,value.state,{preserveConnections:true});this.a.takeRoutes[role]=value.routes;this.a.takeEvidence[role]=value.evidence;}}
+  constructor(t){this.t=t;this.a=t.adapter;this.generation=0;this.practiceBackup=null;this.ownedPlayback=new Set();}
+  snapshots(){
+    const now=performance.now();
+    return Object.fromEntries(TUTORIAL_LOOPERS.flatMap(({role})=>{
+      const h=this.a.get(role);if(!h)return [];
+      return [[role,{id:h.id,state:h.looperController.serializeState(h),routes:this.a.takeRoutes[role],evidence:this.a.takeEvidence[role],
+        transport:h.transport.state,source:h.transport.playing?h.looperController.getAbsoluteSourcePosition(h,now):h.looperData.playbackEngine.elapsedMs,
+        pendingSource:h.looperData.pendingLaunch?.resumeSourceMs}]];
+    }));
+  }
+  restore(saved,{transports=false}={}){
+    const now=performance.now(),audioAnchor={wallMs:now,audioSeconds:this.t.r.audioSystem.audioContextService.context?.currentTime};
+    for(const [role,value] of Object.entries(saved||{})){
+      const h=this.a.get(role);if(!h||h.id!==value.id)continue;
+      h.stop();h.looperController.restoreState(h,value.state,{preserveConnections:true});
+      this.a.takeRoutes[role]=value.routes;this.a.takeEvidence[role]=value.evidence;
+      if(transports&&['playing','paused','armed-playback'].includes(value.transport)){
+        // Resume from the saved source point through the existing scheduler.
+        // One request time/audio anchor preserves alignment between both parts.
+        h.transport.play();h.transport.pause();h.looperData.playbackEngine.elapsedMs=value.pendingSource??value.source??0;
+        if(value.transport!=='paused')h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{resume:true,audioAnchor});
+      }
+    }
     this.a.snapshotAt=-Infinity;
   }
-  cancelOutgoing({keepResult=false}={}) {
-    this.spawnRequest=null;
-    this.generation++;this.preparing=false;
-    this.stopDemo(false);this.restore(this.practiceBackup);this.practiceBackup=null;
-    this.a.releaseAll();this.t.r.deletePendingSpawnPlacement();this.t.cues.reset();
-    for(const {role} of TUTORIAL_LOOPERS)this.a.get(role)?.stop();
-    if(!keepResult&&this.t.session?.mode==='practice'){this.t.session.discardAttempt(performance.now());this.t.session.phase='ready';this.t.session.result=null;}
+  cancelPractice({keepResult=false,preserveSticks=false}={}){
+    const s=this.t.session;
+    if(s?.phase!=='practicing'&&!this.practiceBackup&&!this.ownedPlayback.size)return;
+    if(s?.step?.type==='record')this.a.get(s.step.looperRole)?.stop();
+    for(const role of this.ownedPlayback)this.a.get(role)?.stop();
+    this.ownedPlayback.clear();this.restore(this.practiceBackup);this.practiceBackup=null;
+    this.a.releaseAll({preserveSticks});this.t.cues.reset();
+    if(s&&!keepResult){s.discardAttempt(performance.now());s.phase='ready';s.result=null;}
   }
-  async prepare(step,{includeCurrent=false,recordings=true,resume=null}={}) {
-    const generation=++this.generation;this.preparing=true;this.t.uiFeedback='Preparing this step…';this.t.render(performance.now());
-    const check=()=>{if(generation!==this.generation||!this.t.session)throw new Error('Preparation cancelled.');};
-    try {
-      const changes=await this.preparation.prepare(step,{includeCurrent,check});check();
-      const missing=recordings?requiredRecordings(step).filter(role=>!recordingFitsRoutes(this.a,role)):[];
-      if(missing.length){this.pending={...resume,step,missing};this.t.uiFeedback=`This step needs ${missing.map(role=>role==='chordLooper'?'the chord backing':'percussion').join(' and ')} recorded for the current setup. Choose the recording action below.`;return false;}
-      this.pending=null;this.t.uiFeedback=changes.length?`Prepared: ${changes.slice(-3).join('; ')}.`:'Setup ready.';return true;
-    } catch(error) {
-      if(generation===this.generation){this.t.uiFeedback=error.message;this.t.r.deletePendingSpawnPlacement();this.a.releaseVirtuals();this.t.cues.reset();}
-      return false;
-    } finally {if(generation===this.generation){this.preparing=false;this.t.render(performance.now());}}
+  cancelOutgoing({keepResult=false,preserveSticks=false}={}){
+    this.generation++;this.stopDemo(false);this.cancelPractice({keepResult,preserveSticks});
+    this.a.releaseAll({preserveSticks});this.t.r.deletePendingSpawnPlacement();this.t.cues.reset();
   }
-  async navigate(direction) {
+  unavailable(){return musicUnavailable(this.t.session?.step,this.a.snapshot(performance.now()));}
+  navigate(direction){
     const s=this.t.session;if(!s||s.mode!=='practice')return;
-    const index=Math.max(0,Math.min(s.index+direction,s.steps.length)),step=s.steps[index];
-    this.cancelOutgoing();
-    if(direction>0&&step&&!await this.prepare(step,{resume:{kind:'navigate',index}}))return;
-    s.navigate(index,performance.now());this.pending=null;this.t.uiFeedback='';this.t.cues.reset();this.t.render(performance.now());
+    if(direction>0&&isSetupStep(s.step)){
+      const status=setupStatus(s.step,this.a.snapshot(performance.now()));
+      if(!status.ok){this.t.uiFeedback=status.message;return;}
+    }
+    this.cancelOutgoing({keepResult:true,preserveSticks:true});
+    s.navigate(s.index+direction,performance.now());this.t.uiFeedback='';this.t.render(performance.now());
   }
-  async practice() {
-    const s=this.t.session;if(!s||s.complete)return;
-    this.cancelOutgoing();
-    if(!await this.prepare(s.step,{resume:{kind:'practice'}}))return;
-    const step=s.step,now=performance.now();
+  async practice(){
+    const s=this.t.session;if(!s||s.complete||isSetupStep(s.step))return;
+    if(s.phase==='practicing'){this.cancelPractice({preserveSticks:true});this.t.uiFeedback='Practice stopped. Press Practice to try again.';return;}
+    if(this.t.demo){this.t.uiFeedback='Press Demonstrate to stop the example first.';return;}
+    const reason=this.unavailable();if(reason){this.t.uiFeedback=reason;return;}
+    const generation=++this.generation;
+    await this.t.r.audioSystem.ensureAudio();if(generation!==this.generation||this.t.session!==s)return;
+    this.a.releaseAll({preserveSticks:true});const step=s.step,now=performance.now();
     this.practiceBackup=step.type==='record'?this.snapshots():null;
-    s.startAttempt(now,{assisted:isSetupStep(step)&&s.assisted.has(step.id)});
-    try {
-      if(['note','playback','start-all','finalize'].includes(step.type)&&step.action)this.a.command(step.action,now,step.type==='note'?'assistance':'learner');
-      if(step.type==='record')this.a.command(step.action,now,'learner');
+    s.startAttempt(now);
+    try{
+      if(['playback','start-all','finalize','record'].includes(step.type)&&step.action){
+        this.a.command(step.action,now,'learner');
+        for(const {role} of TUTORIAL_LOOPERS)if(this.a.get(role)?.transport.playing||this.a.get(role)?.looperData.playArmed)this.ownedPlayback.add(role);
+      }
       if(step.timed){
         const phrase=['phrase','performance'].includes(step.type);
-        if(phrase){
-          this.a.command('start-all',now,'assistance');
-          const generation=this.generation,end=now+2500;
-          while(!this.a.snapshot(performance.now()).aligned&&performance.now()<end){await this.preparation.frame();if(generation!==this.generation)return;}
-          if(!this.a.snapshot(performance.now()).aligned)throw new Error('Both backing parts must be connected and playing. Choose Prepare, then Practice.');
-        }
-        const accompany=step.looperRole==='percussionLooper'&&this.a.get('chordLooper')?.transport.playing;
-        const anchor=this.a.nextBoundary(performance.now(),phrase||accompany?16:1,4);
-        if(anchor===null)throw new Error('Start the 80 BPM Metronome, then Practice again.');
-        s.startCountIn(anchor,this.a.get('metronome').getBeatTiming(performance.now()).beatIntervalMs);
+        const backing=(phrase||step.type==='record'&&step.looperRole==='percussionLooper')?this.a.startAvailableBacking(now,{excludeRole:step.looperRole}):[];
+        for(const role of backing)this.ownedPlayback.add(role);
+        const anchor=this.a.nextBoundary(now,backing.length?16:1,4,backing[0]);
+        if(anchor===null)throw new Error('Start the 80 BPM Metronome, then press Practice.');
+        s.startCountIn(anchor,this.a.get('metronome').getBeatTiming(now).beatIntervalMs);
       }
-      this.t.uiFeedback='Your turn.';
+      this.t.uiFeedback='Your turn. Press Practice again to stop.';
     }catch(error){s.finishResult({ok:false,message:error.message},performance.now());this.finishPractice();}
-    this.t.render(performance.now());
   }
-  finishPractice() {
+  finishPractice(){
     const s=this.t.session;if(s?.mode!=='practice'||s.phase!=='results')return;
-    if(s.step.type==='record') {
-      this.a.get(s.step.looperRole)?.stop();
-      if(s.result?.ok){this.a.takeEvidence[s.step.looperRole]=s.takeEvidence[s.step.looperRole];this.practiceBackup=null;}else this.restore(this.practiceBackup);
+    if(!isSetupStep(s.step)){
+      if(s.step.type==='record'){
+        this.a.get(s.step.looperRole)?.stop();
+        if(s.result?.ok){this.a.takeEvidence[s.step.looperRole]=s.takeEvidence[s.step.looperRole];this.practiceBackup=null;}
+        else this.restore(this.practiceBackup);
+      }
+      this.practiceBackup=null;for(const role of this.ownedPlayback)this.a.get(role)?.stop();this.ownedPlayback.clear();
+      this.a.releaseAll({preserveSticks:true});this.t.cues.reset();
     }
-    this.practiceBackup=null;this.a.releaseAll();this.t.cues.reset();
+    this.t.uiFeedback='';this.t.panel.completeEffect(performance.now(),s.result?.ok);
+  }
+  async demonstrate(){
+    const s=this.t.session;if(!s||s.complete||s.mode!=='practice'||isSetupStep(s.step))return;
+    if(this.t.demo){this.stopDemo(false);return;}
+    if(s.phase==='practicing'){this.t.uiFeedback='Press Practice to stop your attempt first.';return;}
+    const reason=this.unavailable();if(reason){this.t.uiFeedback=reason;return;}
+    const generation=++this.generation;
+    await this.t.r.audioSystem.ensureAudio();if(generation!==this.generation||this.t.session!==s)return;
+    this.a.releaseAll();const step=s.step,now=performance.now();
+    const savedTakes=this.snapshots(),metro=this.a.get('metronome');
+    const savedHonks=new Map(this.t.r.instrumentRegistry.getByKind('honk').map(h=>[h.id,{...h.serialize().performanceDefaults}]));
+    const steps=step.type==='record'?[step,LESSON_STEPS.find(candidate=>candidate.type==='finalize'&&candidate.looperRole===step.looperRole)]:[step];
+    const session=new TutorialSession({mode:'demonstration',origin:'demonstration',now,steps});session.takeEvidence={...this.a.takeEvidence};
+    this.t.demo={session,stepId:step.id,savedTakes,savedHonks,checkpoint:{phase:s.phase,result:s.result,feedback:s.feedback},
+      savedMetro:metro?{id:metro.id,bpm:metro.bpm,volume:metro.volume,playing:metro.playing}:null,
+      conductor:new CompositionConductor(this.a,session,{origin:'demonstration',demonstration:true})};
     for(const {role} of TUTORIAL_LOOPERS)this.a.get(role)?.stop();
-    this.t.uiFeedback='';this.t.panel.completeEffect(performance.now(),s.result?.ok);this.t.render(performance.now());
+    s.phase='demonstrating';this.a.setVirtualsActive(true,'demonstration');
+    this.t.uiFeedback='Watch the example. Press Demonstrate again to stop.';
   }
-  async demonstrate({recordRole=null}={}) {
-    const s=this.t.session;if(!s||s.complete||s.mode!=='practice')return;
-    const pending=this.pending;this.cancelOutgoing();
-    const step=recordRole?LESSON_STEPS.find(step=>step.type==='record'&&step.looperRole===recordRole):s.step;
-    if(!await this.prepare(step,{includeCurrent:step.type==='spawn'&&this.a.members(step.role).length>0,recordings:!recordRole,resume:{kind:'demo'}}))return;
-    const recordDemo=step.type==='record';
-    const steps=recordDemo?LESSON_STEPS.filter(candidate=>candidate.looperRole===step.looperRole&&['record','finalize','playback'].includes(candidate.type)):[step];
-    const now=performance.now(),session=new TutorialSession({mode:'demonstration',origin:recordRole?'assistance':'demonstration',now,steps});
-    session.takeEvidence={...this.a.takeEvidence};
-    this.t.demo={session,stepId:s.step.id,recordRole,savedTakes:recordDemo?this.snapshots():null,resume:recordRole?pending:null,
-      conductor:new CompositionConductor(this.a,session,{origin:session.origin,demonstration:true})};
-    s.phase='demonstrating';s.result=null;this.a.setVirtualsActive(true,session.origin);
-    this.t.uiFeedback=recordRole?'Recording a real take. Stop Demonstration cancels safely.':'Watch, then choose Practice.';this.t.render(now);
-  }
-  stopDemo(completed=false,message='') {
+  stopDemo(completed=false,message=''){
     const demo=this.t.demo;if(!demo)return;
-    demo.conductor.stop();this.a.releaseVirtuals();
-    for(const {role} of TUTORIAL_LOOPERS)this.a.get(role)?.stop();
-    this.restore(demo.savedTakes,completed?demo.recordRole:null);this.t.demo=null;this.t.cues.reset();
-    if(completed&&demo.recordRole)this.a.takeEvidence[demo.recordRole]=demo.session.takeEvidence[demo.recordRole];
-    if(!completed&&demo.recordRole&&demo.resume)this.pending=demo.resume;
-    this.a.setVirtualsActive(this.t.session?.mode==='simulation',this.t.session?.origin);
-    const s=this.t.session;
-    if(s?.mode==='practice'){
-      s.discardAttempt(performance.now());s.phase='ready';
-      if(completed){s.demonstrated.add(demo.stepId);if(demo.recordRole||isSetupStep(s.step))s.assisted.add(demo.stepId);}
-      this.t.uiFeedback=message||(completed?demo.recordRole?'Recording ready.':'Demonstration complete. Choose Practice.':'Demonstration stopped. Practice or try it again.');
-      this.t.render(performance.now());
-      if(completed&&demo.recordRole&&demo.resume){this.pending=demo.resume;queueMicrotask(()=>this.resumePending());}
+    demo.conductor.stop();this.a.releaseVirtuals();this.t.demo=null;this.t.cues.reset();
+    for(const [id,defaults] of demo.savedHonks){const h=this.t.r.instrumentRegistry.get(id);if(h){h.setLivePerformance(defaults);h.setVowel(defaults.vowel);}}
+    const saved=demo.savedMetro,metro=this.a.get('metronome'),now=performance.now();
+    if(saved&&metro?.id===saved.id){if(metro.bpm!==saved.bpm)metro.setBpm(saved.bpm,now);metro.setVolume(saved.volume);if(saved.playing&&!metro.playing)metro.play(now);if(!saved.playing&&metro.playing)metro.pause(now);}
+    this.restore(demo.savedTakes,{transports:true});this.a.setVirtualsActive(false);
+    const s=this.t.session;if(s?.mode==='practice'){
+      Object.assign(s,demo.checkpoint);if(completed)s.demonstrated.add(demo.stepId);
+      this.t.uiFeedback=message||(completed?'Example complete. Your checkpoint and recordings are restored.':'Example stopped. Your checkpoint and recordings are restored.');
     }
-  }
-  async resumePending(){
-    const pending=this.pending;if(!pending||!this.t.session)return;
-    if(pending.kind==='navigate'){
-      if(await this.prepare(pending.step,{resume:pending}))this.t.session.navigate(pending.index,performance.now());
-    }else if(pending.kind==='practice')await this.practice();
-    else if(pending.kind==='demo')await this.demonstrate();
-    this.t.render(performance.now());
   }
   fail(message){
     if(this.t.demo)this.stopDemo(false,message);
-    else if(this.t.session?.mode==='practice'&&this.t.session.phase==='practicing'){
-      this.t.session.finishResult({ok:false,message},performance.now());this.finishPractice();
-    }else this.t.uiFeedback=message;
+    else if(this.t.session?.phase==='practicing'){this.t.session.finishResult({ok:false,message},performance.now());this.finishPractice();}
+    else this.t.uiFeedback=message;
   }
-  spawnUnavailable() {
-    const s=this.t.session;
-    if(!s||s.mode!=='practice'||s.step?.type!=='spawn')return 'Choose a placement step first.';
-    if(this.t.r.pendingSpawnPlacement)return 'Place with Trigger or cancel with Grip first.';
-    if(this.spawnRequest)return 'Creating the placement preview.';
-    if(this.preparing||this.t.demo)return 'Finish or stop the current demonstration or preparation first.';
-    const members=this.a.members(s.step.role);
-    if(members.length&&members.every(h=>!h.pendingPlacement))return 'Already placed. Choose Practice, or move the existing instrument.';
-    return '';
-  }
-  async spawn(controller) {
-    const unavailable=this.spawnUnavailable();
-    if(unavailable){this.t.uiFeedback=unavailable;return;}
-    if(!controller||controller.userData.virtualTutorial||!this.t.r.controllerStates.has(controller)){
-      this.t.uiFeedback='Use Spawn with either controller in XR, then position with that hand.';return;
-    }
-    const session=this.t.session,step=session.step,generation=this.generation;
-    const request={};this.spawnRequest=request;this.t.render(performance.now());
-    try {
-      await this.t.r.audioSystem.ensureAudio();
-      if(this.spawnRequest!==request||generation!==this.generation||this.t.session!==session||session.step!==step||this.preparing||this.t.demo||this.t.r.pendingSpawnPlacement)return;
-      // Manual placement belongs to the current attempt. Keep its evidence and
-      // the learner's controller pose; prerequisite assistance remains explicit.
-      this.a.select(step,controller,'learner');
-      const preview=this.t.r.pendingSpawnPlacement;
-      if(!preview||preview.controller!==controller)return;
-      preview.waitForTriggerRelease=Boolean(this.t.r.controllerStates.get(controller)?.trigger);
-      preview.tutorialSpawn={stepId:step.id,lockChord:COMPOSITION.backing.some(group=>group.catalogId===step.catalogId)};
-      if(preview.tutorialSpawn.lockChord)this.a.showChordNotes(preview.instruments);
-      this.t.uiFeedback='Position with this hand. Release Trigger, then press again to place. Grip cancels.';
-    } finally {
-      if(this.spawnRequest===request)this.spawnRequest=null;
-      this.t.render(performance.now());
-    }
-  }
-  async action(id,controller=null){
+  action(id){
     if(id==='previous-step')return this.navigate(-1);
     if(id==='next-step')return this.navigate(1);
-    if(id==='step-practice'||id==='practice-again')return this.practice();
+    if(id==='step-practice')return this.practice();
     if(id==='step-demo')return this.demonstrate();
-    if(id==='stop-demo'){this.stopDemo(false);return;}
-    if(id==='cancel-preparation'){this.cancelOutgoing();this.t.uiFeedback='Preparation cancelled. Choose Prepare to continue.';return;}
-    if(id==='prepare-step')return this.prepare(this.pending?.step||this.t.session.step,{includeCurrent:true,resume:this.pending});
-    if(id==='record-backing')return this.demonstrate({recordRole:'chordLooper'});
-    if(id==='record-percussion')return this.demonstrate({recordRole:'percussionLooper'});
-    if(id==='spawn-step')return this.spawn(controller);
-    if(id==='finish-attempt'){this.t.session.finishAttempt(this.a.snapshot(performance.now()),performance.now());this.finishPractice();}
   }
 }

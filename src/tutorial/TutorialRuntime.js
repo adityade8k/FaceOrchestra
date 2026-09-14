@@ -7,12 +7,12 @@ import { COMPOSITION as C, describeNote, TUTORIAL_LOOPERS } from './composition.
 import { scoreForStep } from './scoring.js';
 import { TutorialLessonFlow } from './TutorialLessonFlow.js';
 import { TutorialTimingCues } from './TutorialTimingCues.js';
+import { LESSON_CONTROL_IDS, setupStatus } from './TutorialLessonPolicy.js';
 
 export class TutorialRuntime {
   constructor(runtime) {
     this.r=runtime;this.adapter=new TutorialAdapter(runtime,e=>this.accept(e));
     this.cues=new TutorialTimingCues(this.adapter);this.flow=new TutorialLessonFlow(this);
-    this.adapter.placementShift=preview=>this.flow.preparation.findFreePlacement(preview);
     this.session=null;this.conductor=null;this.demo=null;this.freePlayScene=null;this.busy=false;
     this.screen='launch';this.ready=false;this.disposed=false;this.lastDraw=-Infinity;this.diagnostics=[];
     this.ray=new THREE.Raycaster();this.ray.far=2.5;this.position=new THREE.Vector3();this.quaternion=new THREE.Quaternion();this.rayDirection=new THREE.Vector3();
@@ -43,66 +43,34 @@ export class TutorialRuntime {
   }
   observeStrike(event,context,recordedCount) {if(this.session)this.adapter.observeStrike(event,context,recordedCount);}
   onPreview(preview,entry,controller) {if(this.session)this.adapter.bindPreview(preview,entry,controller);}
-  onPlaced(instruments,preview) {
-    if(!this.session)return;
-    const tutorialSpawn=preview?.tutorialSpawn;
-    this.adapter.placed(instruments,preview);
-    if(tutorialSpawn)this.uiFeedback='Placed. Grab to move it, or continue with Practice.';
-  }
-  onSpawnCancelled(preview) {
-    if(!this.session||!preview?.tutorialSpawn)return;
-    this.adapter.snapshotAt=-Infinity;
-    this.uiFeedback='Placement cancelled. Choose Spawn to try again.';this.lastDraw=-Infinity;
-  }
-  async action(id, controller=null) {
+  onPlaced(instruments,preview) {if(this.session)this.adapter.placed(instruments,preview);}
+  onSpawnCancelled() {this.adapter.snapshotAt=-Infinity;this.lastDraw=-Infinity;}
+  async action(id,controller=null) {
     if(this.busy||this.disposed)return;
-    // Reserve manual Spawn before the audio await so concurrent clicks cannot
-    // replace a preview, and navigation can invalidate an unfinished request.
-    if(id==='spawn-step'){
-      try{await this.flow.action(id,controller);}catch(error){this.flow.fail(error.message);}
+    if(this.session){
+      // No hidden Spawn, Prepare, connection or backing-generation routes.
+      if(!LESSON_CONTROL_IDS.includes(id))return;
+      if(id==='exit'){await this.enterPlay();return;}
+      if(id==='recenter'){this.panel.recenter(this.r.getUserCamera(),true);return;}
+      try{
+        if(this.session.mode==='simulation'){
+          if(id==='step-demo'&&!this.session.complete){
+            if(this.conductor?.paused)this.conductor.resume(performance.now());else this.conductor?.pause();
+          }
+        }else await this.flow.action(id);
+      }catch(error){this.flow.fail(error.message);}
       this.render(performance.now());return;
     }
-    // Called directly by an actual browser click or XR trigger: respect autoplay.
-    try { await this.r.audioSystem.ensureAudio(); }
-    catch {this.uiFeedback='Audio could not start. Enable audio for this site, then click this action again.';this.render(performance.now());return;}
-    const now=performance.now();
-    if(['previous-step','next-step','step-demo','step-practice','practice-again','stop-demo','prepare-step','cancel-preparation','record-backing','record-percussion','spawn-step','finish-attempt'].includes(id)) {
-      try{await this.flow.action(id,controller);}catch(error){this.flow.fail(error.message);}this.render(performance.now());return;
+    if(id==='tutorial'){this.screen='tutorial';this.render(performance.now());return;}
+    if(id==='back'){this.screen='launch';this.render(performance.now());return;}
+    if(id==='play'){await this.enterPlay();return;}
+    if(id==='practice'||id==='simulate'){
+      try{await this.r.audioSystem.ensureAudio();await this.enter(id==='simulate'?'simulation':'practice');}
+      catch(error){this.uiFeedback=error.message;this.render(performance.now());}
     }
-    if(id==='tutorial'){this.screen='tutorial';this.render(now);return;}
-    if(id==='back'){this.screen='launch';this.render(now);return;}
-    if(['play','exit','return-play'].includes(id) && (id!=='play'||!this.session)) {await this.enterPlay();return;}
-    if(id==='practice'||id==='simulate'||id==='restart'||id==='retry-composition') {
-      await this.enter(id==='simulate'||(['restart','retry-composition'].includes(id)&&this.session?.mode==='simulation')?'simulation':'practice');return;
-    }
-    if(id==='recenter'){this.panel.recenter(this.r.getUserCamera(),Boolean(this.session));return;}
-    if(id==='pause'){this.conductor?.pause();return;}
-    if(id==='resume'){this.conductor?.resume(now);return;}
-    if(id==='stop'){this.conductor?.stop();this.stopDemo();this.adapter.releaseAll();this.adapter.stopSound();await this.enterPlay();this.screen='tutorial';this.render(now);return;}
-    if(id==='demo'){this.demonstrate(now);return;}
-    if(id==='swap'){this.adapter.stickHand=1-this.adapter.stickHand;this.uiFeedback=`Use your ${this.adapter.stickHand?'right':'left'} hand for the stick, the other hand for chords.`;this.render(now);return;}
-    if(id==='retry'){this.retry(now);return;}
-    if(!this.session) {
-      if(id==='free-honk')this.r.beginPendingSpawnPlacement(this.r.getRightController(),'honk');
-      if(id==='place')this.adapter.place();
-      return;
-    }
-    const step=this.session.step;
-    if(id==='select') {this.adapter.select(step,controller||this.r.getRightController(),'learner');}
-    else if(id==='place')this.adapter.place();
-    else if(id==='cancel')this.r.deletePendingSpawnPlacement();
-    else if(id==='count-in') {
-      if(step.type==='record'&&!this.adapter.get(step.looperRole)?.transport.recordArmed){this.uiFeedback='Press Record first to arm the take.';return;}
-      const phrase=['phrase','performance'].includes(step.type);
-      if(phrase && !this.adapter.snapshot(now).aligned) {this.uiFeedback='Use Start All to align both recorded parts, then Count in.';return;}
-      const accompany=step.type==='record' && step.looperRole==='percussionLooper' && this.adapter.get('chordLooper')?.transport.playing;
-      const anchor=this.adapter.nextBoundary(now,phrase || accompany?16:1,4);
-      if(anchor!==null)this.session.startCountIn(anchor,this.adapter.get('metronome').getBeatTiming(now).beatIntervalMs);else this.uiFeedback='Start the Metronome before counting in.';
-    } else this.adapter.command(id,now,'learner');
-    this.lastDraw=-Infinity;
   }
   async enter(mode) {
-    this.flow.cancelOutgoing();this.flow.pending=null;
+    this.flow.cancelOutgoing();
     this.busy=true;this.r.sessionMode='transition';
     try {
       if(!this.freePlayScene)this.freePlayScene=this.r.sceneSerializer.serialize();
@@ -118,7 +86,7 @@ export class TutorialRuntime {
     } finally {this.busy=false;}
   }
   async enterPlay() {
-    this.flow.cancelOutgoing();this.flow.pending=null;
+    this.flow.cancelOutgoing();
     const firstPlay=!this.freePlayScene&&!this.session;
     this.busy=true;this.r.sessionMode='transition';
     try {
@@ -180,7 +148,7 @@ export class TutorialRuntime {
         this.demo.session.update(snapshot,now);
         const ds=this.demo.session,limit=ds.step?.timed?(ds.step.beats+24)*ds.beatMs+5000:['playback','start-all'].includes(ds.step?.type)?30000:10000;
         if(ds.complete||ds.failed||this.demo.conductor.paused)this.flow.stopDemo(ds.complete,ds.failed||this.demo.conductor.paused?ds.feedback:'');
-        else if(now-ds.enteredAt>limit)this.flow.stopDemo(false,`${ds.step.title} could not complete. Choose Prepare, then Demonstrate again.`);
+        else if(now-ds.enteredAt>limit)this.flow.stopDemo(false,`${ds.step.title} could not complete. Check the instruments, then press Demonstrate again.`);
       } else if(!this.conductor?.paused) {
         const previous=this.session.step?.id;
         const previousPhase=this.session.phase;
@@ -201,7 +169,7 @@ export class TutorialRuntime {
       }
     }
     this.adapter.focusRing.visible=false;
-    this.cues.update(this.demo?.session||this.session,now,{active:!this.flow.preparing&&!this.conductor?.paused&&this.session?.phase!=='results'});
+    this.cues.update(this.demo?.session||this.session,now,{active:!this.conductor?.paused&&(Boolean(this.demo)||this.session?.phase!=='results')});
     this.panel.animate?.(now);
     if(now-this.lastDraw>=100&&(this.session||this.lastPendingPreview!==this.r.pendingSpawnPlacement)){
       this.render(now);this.lastDraw=now;this.lastPendingPreview=this.r.pendingSpawnPlacement;
@@ -211,7 +179,7 @@ export class TutorialRuntime {
       this.panel.hover(hit?.object);
     }
   }
-  blocksController(controller) {return Boolean(this.busy || ((this.session?.mode==='simulation'||this.demo||this.flow.preparing)&&!controller.userData.virtualTutorial));}
+  blocksController(controller) {return Boolean(this.busy || ((this.session?.mode==='simulation'||this.demo)&&!controller.userData.virtualTutorial));}
   panelHit(controller) {
     if(!this.panel?.group.visible)return null;
     controller.getWorldPosition(this.position);controller.getWorldQuaternion(this.quaternion);
@@ -238,74 +206,63 @@ export class TutorialRuntime {
   onXREnd() {this.pendingXRPlacementFrames=0;this.conductor?.stop();this.flow.cancelOutgoing();this.adapter.releaseAll();this.panel?.setXR(false);if(this.session)this.enterPlay().catch(error=>console.error(error));}
   render(now) {
     if(!this.panel)return;
-    const b=(id,label,disabled=false)=>({id,label,disabled});
+    const button=(id,label,disabled=false,extra={})=>({id,label,disabled,...extra});
     let model;
-    if(this.screen==='launch') model={title:'Honk Orchestra',instruction:'Play freely, or learn to build and perform an original composition with guided practice.',actions:[b('play','Play'),b('tutorial','Tutorial')]};
-    else if(this.screen==='tutorial') model={title:C.title,instruction:'An original Jog-inspired study. Build a 16-beat accompaniment, then learn the melody and descending glides. Simulation uses visible virtual hands and the same instruments.',feedback:'Enable sound with the button below. Simulation records two separate takes and performs the whole piece; allow several minutes. Practice includes individual drills.',actions:[b('practice','Start Practice'),b('simulate','Simulate Composition'),b('back','Back')]};
-    else if(this.screen==='play') model={title:'Free play',instruction:'In XR: hold A to choose an instrument; roll and pull to choose an item. Release A to preview; Trigger places. Aim at the yellow sphere and squeeze. Grip in empty space equips a stick.',actions:[b('tutorial','Tutorial'),b('free-honk','Spawn Honk'),...(this.r.pendingSpawnPlacement?[b('place','Place')]:[])]};
-    else if(this.session?.complete) model={title:'Study complete',instruction:'VIRAG 2 · A, B, A, C, B, D.',feedback:this.report?.durationSeconds?`Simulation: ${this.report.durationSeconds.toFixed(1)} seconds.`:`${[...this.session.outcomes.values()].filter(o=>o.status==='passed').length} passed · ${[...this.session.outcomes.values()].filter(o=>o.status==='assisted').length} assisted · ${[...this.session.outcomes.values()].filter(o=>o.status==='skipped').length} skipped.`,navigation:this.session.mode==='practice'?[b('previous-step','Previous Step'),b('next-step','Next Step',true),b('step-demo','Demonstrate',true),b('step-practice','Practice',true)]:undefined,actions:[b('retry-composition','Restart Lesson'),b('return-play','Return to Play')]};
-    else if(this.session) {
-      const s=this.session,shown=this.demo?.session||s,step=shown.step;let target='';
-      if(step.timed&&shown.anchorMs!==null&&s.phase!=='results') {
-        const beat=(now-shown.anchorMs)/shown.beatMs;
-        if(beat<0)target=`Count in: ${Math.ceil(-beat)} · start at the clock boundary`;
-        else {
-          const phraseIndex=Math.min(5,Math.floor(beat/16));
-          target=`Beat ${Math.min(step.beats,Math.floor(beat)+1)} / ${step.beats}${step.type==='performance'?` · Phrase ${C.order[phraseIndex]} (${phraseIndex+1}/6)`:''}`;
-          const next=scoreForStep(step).find(e=>e.beat+(e.beats??.4)>beat);
-          if(next?.pitch)target+=`\n${describeNote(next)}`;
-          else if(next?.role)target+=`\n${next.label||({percussion:'Honk · boink',metronome:'Metronome · wood',percussionLooper:'Looper · hihat'}[next.role])||next.role}${next.notes?`: ${next.notes}`:''}`;
-        }
-      } else if(step.midis)target=step.role+(step.bend?' · Eb4 → C4':'');
-      this.panel.setTransport(target);
-      const simulation=s.mode==='simulation';
-      let actions=[];
-      if(simulation) actions=[b(this.conductor?.paused?'resume':'pause',this.conductor?.paused?'Resume':'Pause'),...(s.failed?[b('retry','Retry take / phrase')]:[]),b('restart','Restart'),b('stop','Stop')];
-      else {
-        if(this.demo)actions.push(b('stop-demo','Stop Demonstration'));
-        else if(this.flow.preparing)actions.push(b('cancel-preparation','Cancel Preparation'));
-        else {
-          if(s.step.type==='spawn'){
-            const reason=this.flow.spawnUnavailable();actions.push({...b('spawn-step','Spawn',Boolean(reason)),reason});
-          }
-          if(s.step.action&&!['record','ack'].includes(s.step.type))actions.push(b(s.step.action,s.step.actionLabel||s.step.action));
-          const missing=this.flow.pending?.missing||[];
-          if(missing.includes('chordLooper')||s.step.looperRole==='chordLooper'&&s.step.type==='record')actions.push(b('record-backing','Record Backing'));
-          if(missing.includes('percussionLooper')||s.step.looperRole==='percussionLooper'&&s.step.type==='record')actions.push(b('record-percussion','Record Percussion'));
-          if(s.phase==='practicing')actions.push(b('finish-attempt','Finish Attempt'));
-          actions.push(b('prepare-step','Prepare'));
-          if(s.step.id!=='start-all'&&TUTORIAL_LOOPERS.every(l=>this.adapter.get(l.role)?.timeline.hasRecording()))actions.push(b('start-all','Start All'));
-        }
-      }
-      actions.push(b('recenter','Recenter'),b('exit','Exit'));
-      const navigation=simulation?undefined:[
-        {...b('previous-step','Previous Step',s.index===0),reason:s.index===0?'This is the first step.':''},
-        {...b('next-step','Next Step',this.flow.preparing),primary:s.phase==='results',reason:this.flow.preparing?'Preparation is running. Cancel it or wait.':''},
-        {...b('step-demo','Demonstrate',Boolean(this.demo)||this.flow.preparing),primary:s.phase==='ready'&&!s.demonstrated.has(s.step.id),reason:this.demo?'Stop the current demonstration first.':''},
-        {...b('step-practice',s.phase==='results'?'Practice Again':'Practice',Boolean(this.demo)||this.flow.preparing),primary:s.phase==='ready'&&s.demonstrated.has(s.step.id),reason:this.demo?'Practice becomes available after the demonstration.':''},
+    if(!this.session){
+      if(this.screen==='launch')model={title:'Honk Orchestra',instruction:'Play freely, or build and perform the Jog Study.',actions:[button('play','Play'),button('tutorial','Tutorial')]};
+      else if(this.screen==='tutorial')model={title:C.title,instruction:'Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.',feedback:'Full simulation builds and performs the composition automatically; allow several minutes.',actions:[button('practice','Start Lesson'),button('simulate','Full Simulation'),button('back','Back')]};
+      else model={title:'Free play',instruction:'Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.',actions:[button('tutorial','Tutorial')]};
+      if(this.uiFeedback)model.feedback=this.uiFeedback;
+      this.panel.setTransport('');
+    }else{
+      const s=this.session,simulation=s.mode==='simulation',step=s.step,shown=this.demo?.session||s;
+      const activeDemo=Boolean(this.demo),activePractice=s.phase==='practicing';
+      const snapshot=this.adapter.snapshot(now),setup=step&&setupStatus(step,snapshot);
+      const reason=s.complete?'The study is complete.':simulation?'':this.flow.unavailable();
+      const nextDisabled=simulation||s.complete||Boolean(setup&&!setup.ok);
+      const navigation=[
+        button('previous-step','Previous Step',simulation||s.index===0),
+        button('next-step','Next Step',nextDisabled,{primary:!nextDisabled&&s.phase==='results',reason:setup&&!setup.ok?setup.message:''}),
+        button('step-demo','Demonstrate',s.complete||(!simulation&&!activeDemo&&(activePractice||Boolean(reason))),{active:simulation?!this.conductor?.paused:activeDemo,primary:!reason&&s.phase==='ready'&&!s.demonstrated.has(step?.id),reason:activePractice?'Press Practice to stop the attempt.':reason}),
+        button('step-practice','Practice',simulation||s.complete||(!activePractice&&(activeDemo||Boolean(reason))),{active:activePractice,primary:!reason&&!activeDemo&&(s.phase==='results'||s.demonstrated.has(step?.id)),reason:activeDemo?'Press Demonstrate to stop the example.':reason}),
       ];
-      let feedback=this.uiFeedback||s.feedback||(simulation?'':'Demonstrate, then Practice. Next prepares any missing prerequisites.');
-      if(s.result){
-        const names={targets:'Targets',timing:'Onsets',holdRelease:'Hold/release',bend:'Bend'};
-        const scores=s.result.components?Object.entries(s.result.components).map(([key,value])=>`${names[key]} ${value}`).join(' · '):'';
-        feedback=`${s.result.score===undefined?s.result.assisted?'Setup ready · assisted':s.result.ok?'Completed':'Try again':`${s.result.score}/100${s.result.ok?' · Well played':''}`}\n${scores}${scores?'\n':''}${s.result.message}`;
-        const mismatch=s.result.details?.find(d=>d.heard==='missing'||d.extra||d.correct===false);
-        const name=role=>C.backing.find(g=>g.role===role)?.label||role?.replace('melody-','')||'rest';
-        if(mismatch)feedback+=`\nExpected ${name(mismatch.expected)}; heard ${name(mismatch.heard)}.`;
-        else {
-          const timing=s.result.details?.find(d=>d.onsetErrorBeats>.12||d.holdErrorBeats>.175);
-          if(timing)feedback+=step.timed?`\n${name(timing.expected)}: expected beat ${(timing.beat+1).toFixed(1)}, heard ${(timing.heardBeat+1).toFixed(1)}${Number.isFinite(timing.expectedHold)?`; hold ${timing.expectedHold} beats, heard ${timing.heardHold.toFixed(1)}`:''}.`:`\nExpected a ${Math.round(timing.expectedHold)} ms hold; heard ${Math.round(timing.heardHold)} ms.`;
+      let target='';
+      if(shown.step?.timed&&shown.anchorMs!==null&&(activeDemo||s.phase!=='results')){
+        const beat=(now-shown.anchorMs)/shown.beatMs;
+        if(beat<0)target='Count in: '+Math.ceil(-beat);
+        else{
+          target='Beat '+Math.min(shown.step.beats,Math.floor(beat)+1)+' / '+shown.step.beats;
+          const note=scoreForStep(shown.step).find(e=>e.beat+(e.beats??.4)>beat);
+          if(note?.pitch)target+='\n'+describeNote(note);
+          else if(note?.role)target+='\n'+(C.backing.find(g=>g.role===note.role)?.label||({percussion:'Honk · boink',metronome:'Metronome · wood',percussionLooper:'Looper · hihat'}[note.role])||note.role);
         }
       }
-      if(TUTORIAL_LOOPERS.every(l=>this.adapter.get(l.role)?.looperData.playArmed))feedback='Starting both on the next beat';
-      model={title:step.title,instruction:step.instruction,navigation,actions,feedback,result:s.phase==='results'?(s.result?.ok?'passed':'retry'):null,
-        progress:`${simulation?'Simulation':this.demo?'Demonstration':'Lesson'} · ${s.index+1}/${s.steps.length}${s.phase==='practicing'?` · Attempt ${s.attempt}`:s.phase==='results'?' · Results':''}`};
+      this.panel.setTransport(target);
+      let feedback=simulation?(this.conductor?.paused?'Simulation paused. Press Demonstrate to resume.':'Full simulation running. Press Demonstrate to pause.'):
+        setup?.message||this.uiFeedback||s.feedback||reason||'Demonstrate or Practice. Next Step skips this exercise.';
+      if(!simulation&&!activeDemo&&!activePractice&&reason&&!setup)feedback=reason;
+      if(s.result&&!activeDemo&&!setup&&reason!=='No recording yet; you can skip this step'){
+        const result=s.result,names={targets:'Targets',timing:'Onsets',holdRelease:'Hold/release',bend:'Bend'};
+        feedback=(result.score===undefined?(result.ok?'Completed':'Try again'):result.score+'/100'+(result.ok?' · Well played':''))+'\n';
+        if(result.components)feedback+=Object.entries(result.components).map(([key,value])=>names[key]+' '+value).join(' · ')+'\n';
+        feedback+=result.message;
+        const mismatch=result.details?.find(d=>d.heard==='missing'||d.extra||d.correct===false);
+        const name=role=>C.backing.find(g=>g.role===role)?.label||role?.replace('melody-','')||'rest';
+        if(mismatch)feedback+='\nExpected '+name(mismatch.expected)+'; heard '+name(mismatch.heard)+'.';
+        else{
+          const timing=result.details?.find(d=>d.onsetErrorBeats>.12||d.holdErrorBeats>.175);
+          if(timing)feedback+=step.timed?'\n'+name(timing.expected)+': expected beat '+(timing.beat+1).toFixed(1)+', heard '+(timing.heardBeat+1).toFixed(1)+'.':'\nExpected a '+Math.round(timing.expectedHold)+' ms hold; heard '+Math.round(timing.heardHold)+' ms.';
+        }
+        feedback+='\nPractice retries; Next Step continues.';
+      }
+      if(s.complete)feedback=simulation?'Simulation complete in '+(this.report?.durationSeconds||0).toFixed(1)+' seconds.':
+        [...s.outcomes.values()].filter(o=>o.status==='passed').length+' completed · '+[...s.outcomes.values()].filter(o=>o.status==='skipped').length+' skipped.';
+      model={title:s.complete?'Study complete':step.title,instruction:s.complete?'VIRAG 2 · A, B, A, C, B, D.':step.instruction,
+        navigation,actions:[button('recenter','Recenter'),button('exit','Exit')],feedback,
+        result:!activeDemo&&s.phase==='results'?(s.result?.ok?'passed':'retry'):null,
+        progress:(simulation?'Simulation':activeDemo?'Demonstration':'Lesson')+' · '+Math.min(s.index+1,s.steps.length)+'/'+s.steps.length+(activePractice?' · Practice':s.phase==='results'?' · Results':'')};
     }
-    if(model) {
-      if(!this.session?.step)this.panel.setTransport('');
-      if(this.uiFeedback && !this.session) model.feedback=this.uiFeedback;
-      this.panel.render({visible:true,...model});
-    }
+    this.panel.render({visible:true,...model});
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.conductor?.stop();this.stopDemo();

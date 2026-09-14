@@ -2,6 +2,7 @@ import { COMPOSITION as C, TOLERANCES as T } from './composition.js';
 import { LESSON_STEPS, SIMULATION_STEPS } from './lessonSteps.js';
 import { expectedForStep, validateNote, validateSequence, validateSetup, validateTake } from './validation.js';
 import { scoreAttempt, scoreForStep, PRACTICE_TOLERANCES as P } from './scoring.js';
+import { setupStatus } from './TutorialLessonPolicy.js';
 
 // Pure state machine: no Three.js, DOM, audio or wall-clock dependencies.
 export class TutorialSession {
@@ -54,7 +55,7 @@ export class TutorialSession {
     if(this.mode!=='practice')return false;
     if(this.step&&!this.outcomes.has(this.step.id))this.outcomes.set(this.step.id,{status:this.assisted.has(this.step.id)?'assisted':'skipped'});
     this.index=Math.max(0,Math.min(index,this.steps.length));this.complete=this.index>=this.steps.length;
-    this.discardAttempt(now);this.phase='ready';this.result=null;this.attempt=0;this.revision++;return true;
+    this.discardAttempt(now);this.phase='ready';this.result=null;this.attempt=0;this.attemptAssisted=false;this.revision++;return true;
   }
   discardAttempt(now) {
     this.evidence=[];this.seen.clear();this.anchorMs=null;this.enteredAt=now;this.failed=false;this.playbackSince=null;this.phrasesPassed=[];this.feedback='';this.finalRestApplied=false;
@@ -80,7 +81,7 @@ export class TutorialSession {
       }
       this.finishResult(result,now);return;
     }
-    const result=validateSetup(step,snapshot,null)||{ok:false,message:reason||'The action is incomplete. Prepare the step, then Practice again.'};
+    const result=validateSetup(step,snapshot,null)||{ok:false,message:reason||'The action is incomplete. Check the instruments, then press Practice.'};
     this.finishResult({...result,assisted:this.attemptAssisted},now);
   }
   retry(now, { recording = false } = {}) {
@@ -180,17 +181,28 @@ export class TutorialSession {
     if (result.ok) this.advance(now);
   }
   updatePractice(snapshot,now) {
+    const automatic=setupStatus(this.step,snapshot);
+    if(automatic){
+      this.feedback=automatic.message;
+      if(automatic.ok){
+        if(this.phase!=='results')this.finishResult(automatic,now);
+      }else{
+        this.phase='ready';this.result=null;this.checkpoints.delete(this.step.id);
+        if(this.outcomes.get(this.step.id)?.status==='passed')this.outcomes.delete(this.step.id);
+      }
+      return;
+    }
     if(this.phase!=='practicing')return;
     const step=this.step,elapsed=now-this.enteredAt;
     if(step.timed&&snapshot.roles&&scoreForStep(step).some(event=>!snapshot.roles[event.role]?.ready)){
-      this.finishAttempt(snapshot,now,'A required target is missing. Choose Prepare, then Practice again.');return;
+      this.finishAttempt(snapshot,now,'A required target is missing. Place it with the radial menu, then press Practice.');return;
     }
     const writtenRest=step.type==='performance'&&this.anchorMs!==null&&now>=this.anchorMs+95*this.beatMs;
     if(step.timed&&!writtenRest&&snapshot.clockPlaying!==undefined&&(!snapshot.clockPlaying||Math.abs(snapshot.bpm-C.bpm)>T.bpm)){
-      this.finishAttempt(snapshot,now,'The 80 BPM clock changed or paused. Choose Prepare, then Practice again.');return;
+      this.finishAttempt(snapshot,now,'The clock changed or paused. Start it at 80 BPM, then press Practice.');return;
     }
     if(step.looperRole&&snapshot.loopers?.[step.looperRole]?.clockWired===false&&['record','playback'].includes(step.type)){
-      this.finishResult({ok:false,message:'The Looper clock cable is disconnected. Choose Prepare, then Practice again.'},now);return;
+      this.finishResult({ok:false,message:'Reconnect the Looper clock cable, then press Practice.'},now);return;
     }
     const setup=validateSetup(step,snapshot,null);
     if(setup){
@@ -200,7 +212,7 @@ export class TutorialSession {
       return;
     }
     if(step.timed){
-      if(this.anchorMs===null){if(elapsed>10000)this.finishResult({ok:false,message:'The count-in could not start. Choose Prepare, then Practice again.'},now);return;}
+      if(this.anchorMs===null){if(elapsed>10000)this.finishResult({ok:false,message:'Start the Metronome at 80 BPM, then press Practice.'},now);return;}
       const beat=(now-this.anchorMs)/this.beatMs;
       if(beat<step.beats)return;
       if((snapshot.liveGestures||snapshot.anyStickContact)&&beat<step.beats+P.releaseGraceBeats)return;
@@ -225,7 +237,7 @@ export class TutorialSession {
       else this.playbackSince=null;
     }
     if(result)this.finishResult(result,now);
-    else if(elapsed>30000)this.finishResult({ok:false,message:'This action did not complete. Choose Prepare or Practice again.'},now);
+    else if(elapsed>30000)this.finishResult({ok:false,message:'This action did not complete. Check the instrument, then press Practice again or skip with Next Step.'},now);
   }
   exportProgress() { return { composition:C.id,version:C.version,mode:this.mode,complete:this.complete,
     checkpoints:[...this.checkpoints.keys()],outcomes:Object.fromEntries(this.outcomes),demonstrated:[...this.demonstrated],phrasesPassed:[...this.phrasesPassed] }; }

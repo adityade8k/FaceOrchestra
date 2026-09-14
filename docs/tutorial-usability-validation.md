@@ -1,5 +1,7 @@
 # Tutorial usability validation
 
+Historical report: preparation and backing-generation controls were superseded by the six-control radial-only lesson. See [current validation](tutorial-radial-validation.md).
+
 Implemented on `Tutorial`, starting from clean commit `51bf57bac1a7813625b6b5a3eebc7d3fd09d73d9`. Shared audio synthesis, looper capture/playback, collision detection, metronome admission and shake code remain unchanged.
 
 ## Changes

@@ -148,6 +148,7 @@ export const SpawnRuntimeMethods = {
       }
 
       this.pendingSpawnPlacement = preview;
+      preview.waitForTriggerRelease=Boolean(this.controllerStates.get(controller)?.trigger);
       this.tutorial?.onPreview(preview, entry, controller);
       this.interactionCoordinator.setMode(controller, ControllerMode.SPAWN_PREVIEW);
     },

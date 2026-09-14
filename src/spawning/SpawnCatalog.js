@@ -6,7 +6,9 @@ import {
 
 export class SpawnCatalog {
   constructor(entries = SPAWN_CATALOG_ENTRIES, categories = SPAWN_RADIAL_CATEGORIES) {
-    this.entries = [...entries, ...TUTORIAL_LOOPERS.map(p => ({id:p.catalogId,label:p.label,componentId:"looper",action:"instrument",visibleInRadial:false})), ...TUTORIAL_PRESETS.map(p => ({id:p.id,label:p.label,action:'formation',recipeId:p.id,visibleInRadial:false}))].map((entry) => Object.freeze({ ...entry }));
+    const visibleIds=new Set(categories.flatMap(category=>category.childIds));
+    this.entries = [...entries, ...TUTORIAL_LOOPERS.map(p => ({id:p.catalogId,label:p.label,componentId:"looper",action:"instrument"})), ...TUTORIAL_PRESETS.map(p => ({id:p.id,label:p.role==='melody'?'Jog Study':p.label,action:'formation',recipeId:p.id}))]
+      .map((entry) => Object.freeze({ ...entry, visibleInRadial:entry.visibleInRadial!==false&&visibleIds.has(entry.id) }));
     this.byId = new Map(this.entries.map((entry) => [entry.id, entry]));
     if (this.byId.size !== this.entries.length) {
       throw new Error("Spawn catalog entry IDs must be unique.");

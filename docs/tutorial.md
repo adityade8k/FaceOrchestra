@@ -1,6 +1,6 @@
 # Honk Orchestra composition tutorial
 
-Choose **Tutorial → Start Practice** or **Simulate Composition** from the opening panel. Desktop and XR panel buttons use the same handlers. Run `npm run dev`, open `http://localhost:5173`, wait for assets and enable audio by clicking. Simulation uses real virtual controller rays, squeeze gestures, stick-body collisions, connections, recording and Web Audio. It never constructs or repairs a take’s events.
+Choose **Tutorial → Start Lesson** or **Full Simulation** from the opening panel. Desktop and XR panel buttons use the same handlers. Run `npm run dev`, open `http://localhost:5173`, wait for assets and enable audio by clicking. Simulation uses real virtual controller rays, squeeze gestures, stick-body collisions, connections, recording and Web Audio. It never constructs or repairs a take’s events.
 
 ## Two backing parts
 
@@ -19,10 +19,10 @@ Practice proceeds through:
 2. Place and wire all four chord groups; audition E/O, soften the backing and rehearse chord holds.
 3. Arm only Chord Looper, count in, record Groups 1–4 on zero-based beats 0/4/8/12, holding about 3.7 beats each. Stop after the final release. Validate and listen to Chord Looper alone.
 4. Place and wire the percussion Honk; equip a stick and rehearse all three targets and the pattern.
-5. Arm only Percussion Looper. Its count-in aligns with the Chord Looper phrase while chords accompany it. On zero-based beats 0/4/8/12 strike the Honk; 2/6/10/14 the Metronome; 3/7/11/15 Percussion Looper. Withdraw between strikes. Stop, validate twelve real recorded collisions, and listen to Percussion Looper alone.
-6. Choose **Start All**, listen to both aligned parts, put away the stick and continue the seven-note melody, descending bend and A–B–A–C–B–D lessons.
+5. Arm only Percussion Looper. If a chord take exists, its count-in aligns with that phrase; otherwise the Metronome supplies the count-in. On zero-based beats 0/4/8/12 strike the Honk; 2/6/10/14 the Metronome; 3/7/11/15 Percussion Looper. Withdraw between strikes. Stop, validate twelve real recorded collisions, and listen to Percussion Looper alone.
+6. On the “Start both parts together” step, choose **Practice** to listen to both aligned parts, put away the stick and continue the seven-note melody, descending bend and A–B–A–C–B–D lessons.
 
-A percussion retry replaces only Percussion Looper if the new take passes. A failed or cancelled attempt restores its previous completed take. The validator compares the successful chord take before accepting percussion. Metronome strikes retain their established fan-out routing; recorder arming determines which take receives them. Duration comes from real musical onsets and normal releases, including the last percussion onset on beat 15. No manual duration repair is used.
+A percussion retry replaces only Percussion Looper if the new take passes. A failed or cancelled attempt restores its previous completed take. Metronome strikes retain their established fan-out routing; recorder arming determines which take receives them. Duration comes from real musical onsets and normal releases, including the last percussion onset on beat 15. No manual duration repair is used.
 
 ## Play and Start All
 
@@ -54,25 +54,46 @@ The detector retains one boundary sample in its bounded 360 ms window. It requir
 
 ## Practice, demonstrations and cleanup
 
-For XR, serve HTTPS with `npm run dev:https`, enter AR/VR and choose Practice. Click **Spawn** with either controller: the requested preset previews on that controller's ray. Position it, release the clicking Trigger, then press Trigger again to place; Grip cancels. The owning hand's thumbstick adjusts normal preview distance and scale. Spawn remains unavailable during the preview and becomes available after cancellation. No separate Select or Place Preview button is needed. Recenter moves the panel.
+For XR, serve HTTPS with `npm run dev:https`. Open the radial menu with **right A or left Y**, roll to a category, pull toward yourself, roll to an item and release the menu button. The preview follows that controller. Trigger places; Grip cancels; the owning thumbstick adjusts distance and scale. A held Trigger must be released before a fresh press can place. Left X still deletes and right B retains its context/lock behavior.
 
-Chord groups created by the tutorial's **Spawn** action enter the existing locked mode when placed, with their preset pitches and native note text. Those native labels fit the close chord spacing so neighboring names do not overlap. Grab any member to move the whole chord. Only the yellow squeeze target sounds it; a body grab does not. Keep groups separate from one another. This is a creation default: a later user unlock is respected. Radial-menu presets, individual Honks, melody rows, Metronomes, Loopers, demonstrations and automatic prerequisite placement retain their normal lock defaults. Hold Trigger on a yellow squeeze sphere, keep your wrist level for chords, and roll downward for Eb4 → C4. Grip in empty space equips the stick; releasing Grip puts it away. Either physical hand can perform either part.
+The visible catalog is:
 
-Every step keeps **Previous Step / Next Step / Demonstrate / Practice** in the same positions. Context actions sit below the musical instruction. Demonstrate is primary on entry; Practice is primary once demonstrated. Revisiting a demonstrated step keeps that preference. Practice starts the current step, arms its recording or playback when needed, and supplies a count-in for timed exercises. Results remain visible until Practice Again or Next. Next can bypass a demonstration or failed attempt.
+| Category | Entries |
+| --- | --- |
+| Instruments | Honk, Looper, Metronome |
+| Chords | Group 1: C3/G3/C4; Group 2: C3/F3/G3; Group 3: Bb2/C3/G3; Group 4: G2/C3/C4 |
+| Scales | C Major; Jog Study: C4/Eb4/E4/F4/G4/Bb4/C5 |
+| Presets | Quiet; Melody |
 
-Only fresh learner-origin input earns musical practice credit. Outcomes distinguish **passed**, **practiced**, **assisted** and **skipped**. Setup has a completion check, without a music score. A manual Spawn preview earns no completion; confirming the requested placement can pass the learner's current attempt. Setup provided by Prepare or Demonstrate remains assisted. Demonstrations and full simulation retain automatic placement through the existing creation/control paths and visible virtual controller motions; musical demos use real squeeze rays and stick collisions. Existing valid instruments, placement and routing are reused. A recording demonstration restores the previous takes afterward; **Record Backing** and **Record Percussion** explicitly create/replace only the selected take through the conductor. They show progress and can be stopped.
+Existing recipe IDs remain available internally for saved scenes. Stick equipment still uses Grip in empty space. Percussion uses an ordinary Honk at any pitch.
 
-Next prepares missing prerequisites explicitly. It validates actual pitch/contact/tempo stability, reuses valid roles, repairs missing voices, finds clear placement space within reach, and connects available sockets. A missing recording leaves the current step visible with the appropriate recording action. Completing that real recording resumes the pending navigation. Cancellation, insufficient space, disconnected targets or missing assets expose a recovery message and Prepare/Practice actions. Practice never rewinds earlier checkpoints after a setup change.
+Only committed placements bind roles. The first ordinary Looper becomes Chord Looper and the next becomes Percussion Looper. Cancelled previews consume neither role. A replacement fills the missing role while the survivor keeps its identity. Chord and melody roles follow their actual recipe, regardless of the current step. An ordinary standalone Honk becomes the percussion target when its setup is relevant.
 
-Yellow identifies the target. During timed work, green shrinks toward onset; yellow opens at onset, stays expanded through a sustained note and shrinks at release. Percussion uses preparation, a short strike pulse and withdrawal. These rings use the same score and metronome anchor as the conductor and run per frame. Untimed practice has no beat deadline. Rings do not receive raycasts; note and chord names stay on the panel. Static text and buttons update only when changed, independently of the small beat-status texture and per-frame rings.
+Composition chords placed from the radial menu during the lesson enter the existing locked group mode. Every member gets the normal locked appearance. Grab any member to move the chord; only the squeeze target sounds it. A later user unlock is respected. Free-play spawning, individual Honks, scales, Loopers and Metronomes retain normal lock defaults.
 
-Musical results show 0–100 components for targets, timing, hold/release and required bends. Weights are 45%, 25%, 20%, 10%, renormalized when a component does not apply. Missing and extra musical events reduce the score, including a percussion tap during a note exercise. Timing uses a 0.35-beat reference tolerance (262.5 ms at 80 BPM); hold/release uses 0.5 beat (375 ms). Accuracy is 100% inside 35% of the reference tolerance and falls linearly to zero at twice the tolerance. Passing requires every expected target, no extra events, total ≥70, timing ≥60, hold/release ≥70 and bend ≥70 when applicable. Pitch tolerance is 35 cents; the Eb→C glide must settle within 50 cents of C for 150 ms. Setup and untimed attempts have explicit Finish Attempt plus bounded recovery (30 and 20 seconds respectively).
+Every active lesson has exactly six controls, with stable positions and labels: **Previous Step, Next Step, Demonstrate, Practice, Recenter, Exit**. Demonstrate and Practice toggle their own cancellation using an active appearance. Scores and recovery advice are text. The same Practice button retries a result. The larger desktop text scrolls within the fixed controls; the XR panel reflows complete text into separate instruction and feedback areas.
 
-The final note or strike may release up to **0.9 beat / 675 ms** past the endpoint before assessment forces a result. A still-held gesture cannot stall forever. Real recording stops in the written final breath once gestures are released; grading remains separate and waits for the endpoint/grace. A release that makes the captured take exceed 16 beats receives a timing/recording recovery result, without trimming or changing events. Recorded-take checks bind to actual track IDs and the take’s genuine capture evidence, even for explicitly assisted recordings. That evidence does not become learner credit.
+Placement, wiring, tempo, timbre and stick setup are observed automatically. Demonstrate and Practice are disabled there. A valid current setup shows completion feedback and enables Next; the learner chooses when to continue. Deleted, retuned or disconnected objects invalidate the affected setup. Connections use any compatible sockets. Next never creates, connects or repairs anything.
 
-Navigation, retry, tab hiding, demo cancellation, exit and XR transitions release owned input, cancel previews/count-ins/cues and preserve completed takes. A delayed musical demonstration frame (>250 ms) stops safely and offers a fresh demonstration. Simulation retains Pause/Resume with a fresh count-in. Practice results include a brief panel completion pulse; no feedback audio is added to recordings.
+Musical exercises and recordings can be skipped. Missing recordings do not block Next or trigger automatic backing generation. Empty playback steps say “No recording yet; you can skip this step”. Melody practice and demonstrations use the running Metronome with zero, one or both available backing parts. Only an action missing its own required physical targets, clock, route or recording is disabled.
 
-`RuntimePersistencePolicy` blocks lesson saves. Exit and leaving XR remove lesson objects and restore the inactive free-play snapshot through the normal restorer. Progress stays in memory. Manual tutorial Spawn requires an initiating XR controller; a desktop click gives that instruction without substituting a virtual hand. Demonstrate, explicit Prepare and the complete simulation remain desktop accessible.
+Demonstrate uses real conductor rays and stick collisions on the existing scene. It grants no learner credit or navigation. Completion, cancellation and navigation restore the prior checkpoint, takes, instrument settings and stopped/paused/playing transport state; active playback resumes from its saved source position through the normal next-beat scheduler. Temporary example recordings are discarded. Only the separately launched full simulation constructs its setup automatically.
+
+Practice starts the current musical exercise, arms its intended recording or playback when needed, and supplies a count-in. Only fresh learner input counts. Results remain until Practice or Next. Successful intentional recordings persist; failed or cancelled recording attempts restore the previous takes. Outcomes distinguish passed, practiced, assisted and skipped work.
+
+One green billboard belongs to each of the four chord roles, the Metronome and the two Looper roles. Cached visible body bounds are combined in world coordinates, including all group members. Native note/BPM text is accounted for separately. The billboard’s bottom clears the highest visual by the configurable margin in `TutorialLabels.js`; the result is converted to its parent coordinates. Transform, morph, retuning and text changes update bounds without repeated geometry traversal. Billboards cannot receive rays.
+
+All tutorial Honks retain their native note text. A shared scale is assigned from the known base, so repeated refreshes do not accumulate resizing. Font arrival and retuning create the same label style. This changes neither pitches nor chord spacing.
+
+Yellow identifies the target. During timed work, green shrinks toward onset; yellow opens at onset, stays expanded through a sustained note and shrinks at release. Percussion uses preparation, a short strike pulse and withdrawal. These rings use the same score and metronome anchor as the conductor and run per frame. Untimed practice has no beat deadline. Rings and billboards do not receive raycasts. Static text and buttons update only when changed, independently of the small beat-status texture and per-frame rings.
+
+Musical results retain 0–100 components for targets, timing, hold/release and required bends. Weights are 45%, 25%, 20%, 10%, renormalized when a component does not apply. Missing and extra events reduce the score. Passing requires every expected target, no extra events, total ≥70, timing ≥60, hold/release ≥70 and bend ≥70 when applicable. The scoring module retains its existing tolerances. Untimed exercises stop after the first completed event or the 20-second recovery bound.
+
+The final event may release up to **0.9 beat / 675 ms** past the endpoint before assessment forces a result. Real recording stops in the written final breath once gestures are released; grading waits for the endpoint/grace. A take longer than 16 beats receives recovery feedback without trimming its events. Take checks use actual track IDs and genuine capture evidence.
+
+Navigation, retry, tab hiding, cancellation, Exit and XR transitions release owned input and cancel previews/count-ins/cues. Completed recordings survive lesson navigation. A delayed musical demonstration frame (>250 ms) stops safely; full simulation can resume with Demonstrate and a fresh count-in. No feedback audio enters recordings.
+
+`RuntimePersistencePolicy` blocks lesson saves. Exit and leaving XR remove lesson objects and restore the inactive free-play snapshot. Progress stays in memory. Desktop lesson controls are available, while manual placement requires normal controller input; full simulation also works from desktop.
 
 ## Musical definition
 
@@ -88,8 +109,8 @@ The score and roles live in `composition.js`; `lessonSteps.js` defines the route
 
 Run `npm run check`, `npm test`, or `npm run verify`. For full browser validation, open the app in a dedicated Chrome profile with `--remote-debugging-port=9225`, then run `npm run test:tutorial:browser`. Override `TUTORIAL_CDP_URL` / `TUTORIAL_APP_URL` if needed. The runner reloads the page, uses real time/assets/input/collisions/Web Audio, prints milestones and writes `/tmp/face-orchestra-tutorial-validation.json`. The profile’s original storage is restored after testing.
 
-This usability update started from clean branch `Tutorial` at `51bf57bac1a7813625b6b5a3eebc7d3fd09d73d9`, containing the last reviewed tutorial. Baseline verification: 434/435 tests passed. The existing Metronome handle test expects −90° while the configuration is −80°; this work leaves that configuration unchanged.
+This radial-menu update started from clean branch `Tutorial` at `ef47265`, containing the latest tutorial. The existing Metronome handle test expects −90° while configuration is −80°; this work leaves that configuration unchanged.
 
-See [tutorial-usability-validation.md](tutorial-usability-validation.md) for the current test evidence, performance comparison and remaining checks. The prior transport/audio report remains in [tutorial-validation.json](tutorial-validation.json).
+See [tutorial-radial-validation.md](tutorial-radial-validation.md) for current test evidence and remaining checks. The usability and Spawn reports describe superseded interfaces. The prior transport/audio report remains in [tutorial-validation.json](tutorial-validation.json).
 
 **No headset or acoustic listening test was performed.** Automated audio signal measurements do not establish perceived balance, spatial comfort or hardware-controller ergonomics. The manual XR checklist remains unperformed unless separately recorded.

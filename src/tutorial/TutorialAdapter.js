@@ -6,6 +6,8 @@ import { getHonkFrequency } from '../audio/honk/pitch.js';
 import { MAX_PITCH_BEND_SEMITONES, BEND_SENSITIVITY } from '../config/honk.js';
 import { resolveTutorialRoutes, connectTutorialClock, connectTutorialHonk } from './TutorialRoutes.js';
 import { TutorialStrikeTargets } from './TutorialStrikeTargets.js';
+import { committedRoleBindings } from './TutorialRoleBindings.js';
+import { TutorialLabels } from './TutorialLabels.js';
 
 export class TutorialAdapter {
   constructor(runtime, emit) {
@@ -17,6 +19,7 @@ export class TutorialAdapter {
     this.anchor = new THREE.Vector3(); this.scratch = new THREE.Vector3(); this.ray = new THREE.Raycaster();
     this.layoutRotation=new THREE.Quaternion();this.forward=new THREE.Vector3(0,0,-1);
     this.labels = new Map(); this.strikeTargets = new Map(); this.initialized = false;
+    this.labelPresentation=new TutorialLabels(this);this.ordinaryHonks=new Set();
     this.bodyTargets=new TutorialStrikeTargets(this);this.stickBounds=new WeakMap();this.stickBox=new THREE.Box3();this.stickOffset=new THREE.Vector3();
     this.focusRole = null;
     this.focusRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.09, 48),
@@ -60,6 +63,15 @@ export class TutorialAdapter {
   ids(role) { return this.roles.get(role) || []; }
   members(role) { return this.ids(role).map(id=>this.r.instrumentRegistry.get(id)).filter(Boolean); }
   bindPreview(preview, entry, controller) {
+    preview.tutorialEntry=entry;
+    if(this.r.tutorial?.session?.mode==='practice'){
+      for(const h of preview.instruments){
+        if(h.kind==='metronome')this.r.setInstrumentBaseScale(h,.75);
+        if(h.kind==='looper')this.r.setInstrumentBaseScale(h,.65);
+        this.labelPresentation.styleNote(h);
+      }
+      return;
+    }
     const preset = TUTORIAL_PRESETS.find(p=>p.id === entry.id);
     const role = preset?.role || TUTORIAL_LOOPERS.find(l=>l.catalogId === entry.id)?.role || (entry.id === 'metronome' ? 'metronome' : null);
     if (!role) return;
@@ -68,7 +80,7 @@ export class TutorialAdapter {
     for (const h of preview.instruments) {
       if (h.kind === 'metronome') this.r.setInstrumentBaseScale(h, 0.75);
       if (h.kind === 'looper') this.r.setInstrumentBaseScale(h, 0.65);
-      if (h.noteLabelGroup) h.noteLabelGroup.visible = false;
+      this.labelPresentation.styleNote(h);
     }
     this.roles.set(role,ids); this.bindings.set(role,{source,entryId:entry.id});
     if (role === 'melody') Object.keys(PITCHES).forEach((pitch,i)=>{
@@ -77,30 +89,33 @@ export class TutorialAdapter {
     this.snapshotAt = -Infinity;
   }
   placed(instruments,preview) {
-    const tutorialSpawn=preview?.tutorialSpawn;
-    if(preview)delete preview.tutorialSpawn;
-    if(tutorialSpawn?.lockChord){
-      // Capture placed world transforms through the existing lock service.
-      // Its creation event applies the normal locked texture to every member.
-      this.r.honkLockService.lockMembers(instruments.map(h=>h.id));
-      this.showChordNotes(instruments);
+    const entry=preview?.tutorialEntry;
+    if(preview)delete preview.tutorialEntry;
+    if(this.r.tutorial?.session?.mode==='practice'&&entry){
+      this.bindCommitted(entry.id,instruments);
+      if(entry.id==='honk')for(const h of instruments)this.ordinaryHonks.add(h.id);
+      if(C.backing.some(group=>group.catalogId===entry.id))this.r.honkLockService.lockMembers(instruments.map(h=>h.id));
     }
     for (const h of instruments) {
+      this.labelPresentation.styleNote(h);
       const role = this.roleForId(h.id);
       if (role) this.addLabel(h,role);
     }
     this.snapshotAt = -Infinity;
   }
-  showChordNotes(instruments) {
-    // Native labels are wider than the close tutorial chord spacing. Fit them
-    // into that spacing without changing pitches, geometry or member positions.
-    const spacing=Math.min(...instruments.slice(1).map((h,i)=>h.root.position.distanceTo(instruments[i].root.position)));
-    const widest=Math.max(...instruments.map(h=>{
-      const bounds=h.noteLabelMesh?.geometry.boundingBox;
-      return bounds&&h.noteLabelGroup?(bounds.max.x-bounds.min.x)*Math.abs(h.root.scale.x*h.noteLabelGroup.scale.x):0;
-    }));
-    const fit=widest>0&&Number.isFinite(spacing)?Math.min(1,spacing*.8/widest):1;
-    for(const h of instruments)if(h.noteLabelGroup){h.noteLabelGroup.visible=true;h.noteLabelGroup.scale.multiplyScalar(fit);}
+  bindCommitted(entryId,instruments){
+    const assignments=committedRoleBindings(entryId,instruments,{get:id=>this.r.instrumentRegistry.get(id),ids:role=>this.ids(role),step:this.r.tutorial?.session?.step});
+    for(const binding of assignments){this.roles.set(binding.role,binding.ids);this.bindings.set(binding.role,{source:'learner',entryId});}
+    this.snapshotAt=-Infinity;
+    return assignments;
+  }
+  bindOrdinaryPercussion(){
+    if(this.r.tutorial?.session?.mode!=='practice'||this.r.tutorial.session.step?.role!=='percussion'||this.get('percussion'))return;
+    for(const id of this.ordinaryHonks){
+      const h=this.r.instrumentRegistry.get(id);
+      if(!h){this.ordinaryHonks.delete(id);continue;}
+      if(!h.pendingPlacement){this.bindCommitted('honk',[h]);break;}
+    }
   }
   roleForId(id) {
     for (const [role,ids] of this.roles) {
@@ -110,21 +125,7 @@ export class TutorialAdapter {
     return null;
   }
   addLabel(h,role) {
-    if(h.kind==='honk')return;
-    if (this.labels.has(h.id) || (role.startsWith('group-') && this.ids(role)[0] !== h.id)) return;
-    const canvas = document.createElement('canvas'); canvas.width=512;canvas.height=80;
-    const ctx=canvas.getContext('2d');ctx.fillStyle='#0c201f';ctx.fillRect(0,0,512,80);
-    ctx.font='bold 46px sans-serif';ctx.fillStyle='#f2eee3';ctx.textAlign='center';ctx.textBaseline='middle';
-    const pitch=role.replace('melody-','');
-    const group=C.backing.find(g=>g.role===role);
-    const text = PITCHES[pitch] ? `${PITCHES[pitch].syllable} = ${pitch}` : group ? `${group.label}: ${group.notes}` : TUTORIAL_LOOPERS.find(l=>l.role===role)?.label || ({metronome:'Metronome',percussion:'Percussion Honk'}[role] || role);
-    if(group)ctx.font='bold 34px sans-serif';
-    ctx.fillText(text,256,40);
-    const texture=new THREE.CanvasTexture(canvas);
-    const label=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false}));
-    label.userData.isNoteLabel=true;label.scale.set(group?0.52:role.endsWith('Looper')||role==='percussion'?0.36:0.28,0.056,1);
-    label.position.copy(h.root.position);label.userData.labelOffset=role==='metronome'?0.27:0.17;label.position.y += label.userData.labelOffset;
-    this.r.scene.add(label);this.labels.set(h.id,label);
+    this.labelPresentation.add(role);
   }
   positionFor(role) {
     const p=new THREE.Vector3();
@@ -339,11 +340,7 @@ export class TutorialAdapter {
         this.emit({...e,withdrawn:true,endMs:now});this.pendingStrikes.splice(this.pendingStrikes.indexOf(e),1);
       }
     }
-    for(const [id,label] of this.labels) {
-      const h=this.r.instrumentRegistry.get(id);
-      if(!h) {label.removeFromParent();label.material.map.dispose();label.material.dispose();this.labels.delete(id);}
-      else {label.position.copy(h.root.position);label.position.y+=label.userData.labelOffset;}
-    }
+    this.bindOrdinaryPercussion();this.labelPresentation.update();
   }
   midi(h) {
     const s=h.getLivePerformanceState();
@@ -358,8 +355,8 @@ export class TutorialAdapter {
         const hs=ids.map(id=>this.r.instrumentRegistry.get(id));
         const group=C.backing.find(g=>g.role===role);
         const preset=TUTORIAL_PRESETS.find(p=>p.role===role);
-        const pitches=group?.midis || preset?.midis || (role.startsWith('melody-') ? [PITCHES[role.slice(7)]?.midi] : []);
-        const ready=hs.every(h=>h && !h.disposed && h.root.visible && (h.kind!=='honk'||h.isPlayable()));
+        const pitches=role==='percussion'?[]:group?.midis || preset?.midis || (role.startsWith('melody-') ? [PITCHES[role.slice(7)]?.midi] : []);
+        const ready=hs.length>0&&hs.every(h=>h && !h.disposed && h.root.visible && (h.kind!=='honk'||h.isPlayable()));
         const midis=hs.filter(h=>h?.kind==='honk').map(h=>this.midi(h));
         const exact=ready && hs.every(h=>h.kind!=='honk' || sameMembers([...this.r.honkContactGraph.getConnectedComponent(h.id)],group ? ids : [h.id]));
         if(!exact) this.membershipSince.delete(role);
@@ -395,7 +392,7 @@ export class TutorialAdapter {
       const startBeat=h?.looperData.clockPlaybackStartBeatPosition;
       const source=h?.looperController.getAbsoluteSourcePosition(h,now);
       loopers[role]={id:h?.id,recording,recordArmed:Boolean(h?.transport.recordArmed),playing:Boolean(h?.transport.playing),
-        playArmed:Boolean(h?.looperData.playArmed),gapBeats:h?.looperData.gapBeats,timeline:this.takes[role],
+        playArmed:Boolean(h?.looperData.playArmed),hasRecording:Boolean(h?.timeline.hasRecording()),gapBeats:h?.looperData.gapBeats,timeline:this.takes[role],
         clockWired:Boolean(routes.clocks[role]&&(role!=='percussionLooper'||routes.percussion.metronome)),
         startBeat,phase:Number.isFinite(source)&&h?.timeline.durationMs ? ((source%h.timeline.durationMs)+h.timeline.durationMs)%h.timeline.durationMs/h.timeline.durationMs : null,
         playbackObserved:role==='chordLooper'?this.playbackVoicesObserved:Boolean(h?.looperData.audioScheduling.percussionTimes?.some(time=>time<=this.r.audioSystem.audioContextService.context?.currentTime)),
@@ -408,12 +405,20 @@ export class TutorialAdapter {
       anyStickActive:sticks.some(s=>s.equipped),stickActive:simActive || Boolean(stickController),stickOrigin:simActive ? this.virtuals[1].userData.tutorialOrigin : 'learner',
       audioRunning:this.r.audioSystem.audioContextService.context?.state==='running'};
   }
-  nextBoundary(now, beats=1, countIn=4) {
-    const metro=this.get('metronome'), looper=this.get('chordLooper');
+  startAvailableBacking(now,{excludeRole=null}={}){
+    const routes=resolveTutorialRoutes(this);
+    const roles=TUTORIAL_LOOPERS.map(l=>l.role).filter(role=>role!==excludeRole&&this.get(role)?.timeline.hasRecording()&&routes.clocks[role]);
+    if(roles.length===2)this.command('start-all',now,'demonstration');
+    else if(roles.length===1)this.r.pressLooperButton(this.get(roles[0]),'play',null,now);
+    return roles;
+  }
+  nextBoundary(now, beats=1, countIn=4,backingRole=null) {
+    const metro=this.get('metronome'), looper=this.get(backingRole||'chordLooper');
     const timing=metro?.getBeatTiming(now);
     if(!metro?.playing || !Number.isFinite(timing?.beatOriginMs)) return null;
-    const base=beats===16 && Number.isFinite(looper?.looperData.clockPlaybackStartBeatPosition)
-      ? timing.beatOriginMs + looper.looperData.clockPlaybackStartBeatPosition*timing.beatIntervalMs : timing.beatOriginMs;
+    const startBeat=looper?.looperData.pendingLaunch?.targetBeat??looper?.looperData.clockPlaybackStartBeatPosition;
+    const base=beats===16 && Number.isFinite(startBeat)
+      ? timing.beatOriginMs + startBeat*timing.beatIntervalMs : timing.beatOriginMs;
     const interval=timing.beatIntervalMs;
     return base+Math.ceil((now+countIn*interval-base)/(beats*interval))*beats*interval;
   }
@@ -428,10 +433,11 @@ export class TutorialAdapter {
   releaseVirtuals() {
     for(const v of this.virtuals) { this.input(v,'trigger',false);this.input(v,'grip',false);this.park(v); }
   }
-  releaseAll() {
+  releaseAll({preserveSticks=false}={}) {
     for(const controller of this.r.controllers) {
       const heldPhysicalTrigger=!controller.userData.virtualTutorial && this.r.controllerStates.get(controller)?.trigger;
-      this.input(controller,'trigger',false);this.input(controller,'grip',false);
+      this.input(controller,'trigger',false);
+      if(!preserveSticks||controller.userData.virtualTutorial||!this.r.isControllerStickActive(controller))this.input(controller,'grip',false);
       const state=this.r.controllerStates.get(controller);this.r.clearControllerTriggerInteraction(state);
       if(state) {state.tutorialPanelCapture=false;state.suppressTriggerUntilRelease=Boolean(heldPhysicalTrigger);}
       this.r.gripTransformSystem.release(controller);this.r.closeRadialMenu(controller);
@@ -445,7 +451,7 @@ export class TutorialAdapter {
     this.releaseAll();this.stopSound();this.r.deletePendingSpawnPlacement();
     for(const h of [...this.r.instrumentRegistry.values()]) this.r.deleteInstrument(h);
     this.r.honkContactSystem.reset();this.r.stickCollisionSystem.motionByStickId.clear();
-    for(const label of this.labels.values()) {label.removeFromParent();label.material.map.dispose();label.material.dispose();}
+    this.labelPresentation.clear();this.ordinaryHonks.clear();
     this.labels.clear();this.roles.clear();this.bindings.clear();this.membershipSince.clear();this.strikeTargets.clear();
     this.bodyTargets.clear();this.stickBounds=new WeakMap();
     this.tempoSince=null;this.snapshotCache=null;this.takes={};this.takeState={};this.takeRoutes={};this.takeEvidence={};this.startAllRequest=null;
@@ -461,6 +467,6 @@ export class TutorialAdapter {
       this.r.controllerStates.delete(v);v.removeFromParent();v.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
     }
     this.virtuals=[];
-    for(const label of this.labels.values()) {label.removeFromParent();label.material.map.dispose();label.material.dispose();}this.labels.clear();
+    this.labelPresentation.clear();this.ordinaryHonks.clear();
   }
 }
