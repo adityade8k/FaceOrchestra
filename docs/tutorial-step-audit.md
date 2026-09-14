@@ -4,6 +4,8 @@ All 49 steps have fixed Previous / Next / Demonstrate / Practice controls. Previ
 
 Practice results persist with Practice Again / Next. Every active attempt also has Finish Attempt. Every demonstration has Stop Demonstration and a bounded watchdog. Navigation, retry, cancellation, tab hiding and exit release owned gestures, discard stale evidence and cancel previews/cues. Completed recordings survive navigation and cancelled/failed recording attempts. Only explicitly requested successful recordings replace a take.
 
+On placement steps, **Spawn** creates a manual preview on the initiating controller. Release the clicking Trigger, then press again to place; Grip cancels and re-enables Spawn. Previewing does not complete an attempt. Tutorial chord Spawn locks every member through the existing group service at placement, retaining native notes and respecting later user unlocks. Demonstrations and explicit prerequisite assistance retain automatic placement.
+
 | Step | Prerequisites | Demonstration | Practice evidence | Completion / recovery bound |
 | --- | --- | --- | --- | --- |
 | 1. intro | None | Begin command | Practice acknowledges the study | Completion check; 30 s recovery |

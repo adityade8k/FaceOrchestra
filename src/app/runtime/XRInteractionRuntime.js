@@ -182,6 +182,9 @@ export const XRInteractionRuntimeMethods = {
       }
     },
     handleTriggerEndIntent(controller) {
+      if (this.pendingSpawnPlacement?.controller === controller) {
+        this.pendingSpawnPlacement.waitForTriggerRelease = false;
+      }
       if (this.tutorial?.releasePanelTrigger(controller)) return;
       if (this.pendingSpawnPlacement) {
         return;

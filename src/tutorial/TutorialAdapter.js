@@ -76,12 +76,31 @@ export class TutorialAdapter {
     });
     this.snapshotAt = -Infinity;
   }
-  placed(instruments) {
+  placed(instruments,preview) {
+    const tutorialSpawn=preview?.tutorialSpawn;
+    if(preview)delete preview.tutorialSpawn;
+    if(tutorialSpawn?.lockChord){
+      // Capture placed world transforms through the existing lock service.
+      // Its creation event applies the normal locked texture to every member.
+      this.r.honkLockService.lockMembers(instruments.map(h=>h.id));
+      this.showChordNotes(instruments);
+    }
     for (const h of instruments) {
       const role = this.roleForId(h.id);
       if (role) this.addLabel(h,role);
     }
     this.snapshotAt = -Infinity;
+  }
+  showChordNotes(instruments) {
+    // Native labels are wider than the close tutorial chord spacing. Fit them
+    // into that spacing without changing pitches, geometry or member positions.
+    const spacing=Math.min(...instruments.slice(1).map((h,i)=>h.root.position.distanceTo(instruments[i].root.position)));
+    const widest=Math.max(...instruments.map(h=>{
+      const bounds=h.noteLabelMesh?.geometry.boundingBox;
+      return bounds&&h.noteLabelGroup?(bounds.max.x-bounds.min.x)*Math.abs(h.root.scale.x*h.noteLabelGroup.scale.x):0;
+    }));
+    const fit=widest>0&&Number.isFinite(spacing)?Math.min(1,spacing*.8/widest):1;
+    for(const h of instruments)if(h.noteLabelGroup){h.noteLabelGroup.visible=true;h.noteLabelGroup.scale.multiplyScalar(fit);}
   }
   roleForId(id) {
     for (const [role,ids] of this.roles) {

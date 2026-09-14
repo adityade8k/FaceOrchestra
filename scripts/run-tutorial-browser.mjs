@@ -20,10 +20,10 @@ ws.onmessage=({data})=>{
   } else if(message.method==='Runtime.bindingCalled'&&message.params.name==='tutorialTestProgress') {
     const progress=JSON.parse(message.params.payload);
     console.log(`${progress.seconds}s ${progress.step || 'performance complete'}`);
-    if(progress.step==='performance') captures.push((async()=>{
+    if(['performance','tutorial-spawn'].includes(progress.step)) captures.push((async()=>{
       await new Promise(resolve=>setTimeout(resolve,600));
       const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
-      const path='/tmp/face-orchestra-two-loopers.png';writeFileSync(path,Buffer.from(shot.data,'base64'));return path;
+      const path=progress.step==='tutorial-spawn'?'/tmp/tutorial-spawn-locked-chord.png':'/tmp/face-orchestra-two-loopers.png';writeFileSync(path,Buffer.from(shot.data,'base64'));return path;
     })());
   }
 };
@@ -34,7 +34,7 @@ try {
   await send('Page.reload',{ignoreCache:true});
   await new Promise(resolve=>setTimeout(resolve,1500));
   const result=await send('Runtime.evaluate',{
-    expression:process.env.TUTORIAL_TEST==='usability'?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-tutorial-usability-browser.mjs')).validateStandalone(app);})()`:`(async()=>{
+    expression:['usability','spawn'].includes(process.env.TUTORIAL_TEST)?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-tutorial-${process.env.TUTORIAL_TEST}-browser.mjs')).validateStandalone(app);})()`:`(async()=>{
       const {app}=await import('/src/main.js');
       const {validate}=await import('/scripts/validate-tutorial-browser.mjs');
       const report=await validate(app,{onProgress:p=>tutorialTestProgress(JSON.stringify(p))});

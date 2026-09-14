@@ -2,7 +2,7 @@ import { TutorialSession } from './TutorialSession.js';
 import { CompositionConductor } from './CompositionConductor.js';
 import { LESSON_STEPS } from './lessonSteps.js';
 import { TutorialPreparation, requiredRecordings, isSetupStep } from './TutorialPreparation.js';
-import { TUTORIAL_LOOPERS } from './composition.js';
+import { COMPOSITION, TUTORIAL_LOOPERS } from './composition.js';
 import { recordingFitsRoutes } from './TutorialRoutes.js';
 
 // Asynchronous scene preparation is separate from pure attempts and frame cues.
@@ -14,6 +14,7 @@ export class TutorialLessonFlow {
     this.a.snapshotAt=-Infinity;
   }
   cancelOutgoing({keepResult=false}={}) {
+    this.spawnRequest=null;
     this.generation++;this.preparing=false;
     this.stopDemo(false);this.restore(this.practiceBackup);this.practiceBackup=null;
     this.a.releaseAll();this.t.r.deletePendingSpawnPlacement();this.t.cues.reset();
@@ -122,7 +123,42 @@ export class TutorialLessonFlow {
       this.t.session.finishResult({ok:false,message},performance.now());this.finishPractice();
     }else this.t.uiFeedback=message;
   }
-  async action(id){
+  spawnUnavailable() {
+    const s=this.t.session;
+    if(!s||s.mode!=='practice'||s.step?.type!=='spawn')return 'Choose a placement step first.';
+    if(this.t.r.pendingSpawnPlacement)return 'Place with Trigger or cancel with Grip first.';
+    if(this.spawnRequest)return 'Creating the placement preview.';
+    if(this.preparing||this.t.demo)return 'Finish or stop the current demonstration or preparation first.';
+    const members=this.a.members(s.step.role);
+    if(members.length&&members.every(h=>!h.pendingPlacement))return 'Already placed. Choose Practice, or move the existing instrument.';
+    return '';
+  }
+  async spawn(controller) {
+    const unavailable=this.spawnUnavailable();
+    if(unavailable){this.t.uiFeedback=unavailable;return;}
+    if(!controller||controller.userData.virtualTutorial||!this.t.r.controllerStates.has(controller)){
+      this.t.uiFeedback='Use Spawn with either controller in XR, then position with that hand.';return;
+    }
+    const session=this.t.session,step=session.step,generation=this.generation;
+    const request={};this.spawnRequest=request;this.t.render(performance.now());
+    try {
+      await this.t.r.audioSystem.ensureAudio();
+      if(this.spawnRequest!==request||generation!==this.generation||this.t.session!==session||session.step!==step||this.preparing||this.t.demo||this.t.r.pendingSpawnPlacement)return;
+      // Manual placement belongs to the current attempt. Keep its evidence and
+      // the learner's controller pose; prerequisite assistance remains explicit.
+      this.a.select(step,controller,'learner');
+      const preview=this.t.r.pendingSpawnPlacement;
+      if(!preview||preview.controller!==controller)return;
+      preview.waitForTriggerRelease=Boolean(this.t.r.controllerStates.get(controller)?.trigger);
+      preview.tutorialSpawn={stepId:step.id,lockChord:COMPOSITION.backing.some(group=>group.catalogId===step.catalogId)};
+      if(preview.tutorialSpawn.lockChord)this.a.showChordNotes(preview.instruments);
+      this.t.uiFeedback='Position with this hand. Release Trigger, then press again to place. Grip cancels.';
+    } finally {
+      if(this.spawnRequest===request)this.spawnRequest=null;
+      this.t.render(performance.now());
+    }
+  }
+  async action(id,controller=null){
     if(id==='previous-step')return this.navigate(-1);
     if(id==='next-step')return this.navigate(1);
     if(id==='step-practice'||id==='practice-again')return this.practice();
@@ -132,12 +168,7 @@ export class TutorialLessonFlow {
     if(id==='prepare-step')return this.prepare(this.pending?.step||this.t.session.step,{includeCurrent:true,resume:this.pending});
     if(id==='record-backing')return this.demonstrate({recordRole:'chordLooper'});
     if(id==='record-percussion')return this.demonstrate({recordRole:'percussionLooper'});
-    if(id==='spawn-step'){
-      this.cancelOutgoing();if(await this.prepare(this.t.session.step,{recordings:false})){
-        try{await this.preparation.ensureRole(this.t.session.step);this.t.session.assisted.add(this.t.session.step.id);this.t.uiFeedback='Instrument ready.';}catch(error){this.t.uiFeedback=error.message;}
-      }
-      this.t.render(performance.now());return;
-    }
+    if(id==='spawn-step')return this.spawn(controller);
     if(id==='finish-attempt'){this.t.session.finishAttempt(this.a.snapshot(performance.now()),performance.now());this.finishPractice();}
   }
 }

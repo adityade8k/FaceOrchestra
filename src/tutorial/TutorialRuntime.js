@@ -43,15 +43,31 @@ export class TutorialRuntime {
   }
   observeStrike(event,context,recordedCount) {if(this.session)this.adapter.observeStrike(event,context,recordedCount);}
   onPreview(preview,entry,controller) {if(this.session)this.adapter.bindPreview(preview,entry,controller);}
-  onPlaced(instruments) {if(this.session)this.adapter.placed(instruments);}
+  onPlaced(instruments,preview) {
+    if(!this.session)return;
+    const tutorialSpawn=preview?.tutorialSpawn;
+    this.adapter.placed(instruments,preview);
+    if(tutorialSpawn)this.uiFeedback='Placed. Grab to move it, or continue with Practice.';
+  }
+  onSpawnCancelled(preview) {
+    if(!this.session||!preview?.tutorialSpawn)return;
+    this.adapter.snapshotAt=-Infinity;
+    this.uiFeedback='Placement cancelled. Choose Spawn to try again.';this.lastDraw=-Infinity;
+  }
   async action(id, controller=null) {
     if(this.busy||this.disposed)return;
+    // Reserve manual Spawn before the audio await so concurrent clicks cannot
+    // replace a preview, and navigation can invalidate an unfinished request.
+    if(id==='spawn-step'){
+      try{await this.flow.action(id,controller);}catch(error){this.flow.fail(error.message);}
+      this.render(performance.now());return;
+    }
     // Called directly by an actual browser click or XR trigger: respect autoplay.
     try { await this.r.audioSystem.ensureAudio(); }
     catch {this.uiFeedback='Audio could not start. Enable audio for this site, then click this action again.';this.render(performance.now());return;}
     const now=performance.now();
     if(['previous-step','next-step','step-demo','step-practice','practice-again','stop-demo','prepare-step','cancel-preparation','record-backing','record-percussion','spawn-step','finish-attempt'].includes(id)) {
-      try{await this.flow.action(id);}catch(error){this.flow.fail(error.message);}this.render(performance.now());return;
+      try{await this.flow.action(id,controller);}catch(error){this.flow.fail(error.message);}this.render(performance.now());return;
     }
     if(id==='tutorial'){this.screen='tutorial';this.render(now);return;}
     if(id==='back'){this.screen='launch';this.render(now);return;}
@@ -249,8 +265,9 @@ export class TutorialRuntime {
         if(this.demo)actions.push(b('stop-demo','Stop Demonstration'));
         else if(this.flow.preparing)actions.push(b('cancel-preparation','Cancel Preparation'));
         else {
-          if(s.step.type==='spawn')actions.push(b('spawn-step','Spawn'));
-          if(this.r.pendingSpawnPlacement)actions.push(b('place','Place preview'),b('cancel','Cancel preview'));
+          if(s.step.type==='spawn'){
+            const reason=this.flow.spawnUnavailable();actions.push({...b('spawn-step','Spawn',Boolean(reason)),reason});
+          }
           if(s.step.action&&!['record','ack'].includes(s.step.type))actions.push(b(s.step.action,s.step.actionLabel||s.step.action));
           const missing=this.flow.pending?.missing||[];
           if(missing.includes('chordLooper')||s.step.looperRole==='chordLooper'&&s.step.type==='record')actions.push(b('record-backing','Record Backing'));

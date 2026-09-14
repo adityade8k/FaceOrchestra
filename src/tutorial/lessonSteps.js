@@ -9,11 +9,11 @@ function add(id, type, title, instruction, options = {}) {
 add('intro','ack','An original Jog-inspired study',
   'Sa = C. G = E, g = Eb, n = Bb. Build a 16-beat backing, then play the melody and descending g → S glides.', { action: 'begin', actionLabel: 'Begin' });
 add('metronome','spawn','Place a Metronome','One shared clock anchors the 16-beat cycle. Keep it within reach of your stick hand.', { role:'metronome', kind:'metronome', catalogId:'metronome' });
-for (const l of TUTORIAL_LOOPERS) add(l.role,'spawn',`Place ${l.label}`,`Select ${l.label}. Place it beside the other instruments with room for its cables and buttons.`, {role:l.role,kind:'looper',catalogId:l.catalogId});
+for (const l of TUTORIAL_LOOPERS) add(l.role,'spawn',`Place ${l.label}`,`Spawn ${l.label}. Place it beside the other instruments with room for its cables and buttons.`, {role:l.role,kind:'looper',catalogId:l.catalogId});
 for (const l of TUTORIAL_LOOPERS) add(`clock-${l.role}`,'clock-wire',`Connect ${l.label}`,`Give ${l.label} the shared pulse. Use any free Metronome output and compatible Looper socket; each Looper needs its own output.`,{looperRole:l.role,action:`clock-${l.role}`,actionLabel:`Connect ${l.label}`});
 add('tempo','tempo','Set 80 BPM and start','Set the Metronome to 80 BPM and press Play. Set both Looper Gap controls to zero. Keep the click audible for this lesson.',{action:'tempo',actionLabel:'80 BPM · Start · Both Gap 0'});
 for (const group of C.backing) {
-  add(`spawn-${group.role}`,'spawn',`Place ${group.label}`,`${group.notes}. Keep these three voices touching and separate from the other groups.`, { role:group.role, kind:'honk', catalogId:group.catalogId });
+  add(`spawn-${group.role}`,'spawn',`Place ${group.label}`,`${group.notes}. Spawn, then place apart from the other groups. The three voices lock together; grab any member to move the chord.`, { role:group.role, kind:'honk', catalogId:group.catalogId });
   add(`wire-${group.role}`,'wire',`Wire ${group.label}`,`Connect any member of ${group.label} to a free Chord Looper socket. Its touching partners join the chord. Use one route for this group.`, { role:group.role, action:`wire-${group.role}`, actionLabel:`Connect ${group.label}` });
 }
 for (const vowel of ['E','O']) add(`audition-${vowel}`,'note',`Audition the ${vowel} vowel`,
@@ -36,7 +36,7 @@ add('finalize-percussion','finalize','Inspect the percussion take','Twelve clear
 add('playback-percussion','playback','Listen to Percussion Looper alone','Play Percussion stops the chord playback for this check. Listen for one full cycle of all three percussion sounds.',{looperRole:'percussionLooper',action:'play-percussionLooper',actionLabel:'Play Percussion'});
 add('start-all','start-all','Start both parts together','Separate Play presses share tempo but can start different points in the phrase. Start All restarts both recording origins on one shared next beat. Existing playback continues until that beat.',{action:'start-all',actionLabel:'Start All'});
 add('unequip','unequip','Put away the stick','Release Grip to unequip the stick before melody practice. Both hands can now squeeze again.');
-add('melody','spawn','Place the seven melody Honks','Select the melody row and place it apart from the backing. Each Honk must be independent: C4, Eb4, E4, F4, G4, Bb4, C5. These include both Ga variants and upper Sa.',{role:'melody',kind:'honk',catalogId:'jog-melody'});
+add('melody','spawn','Place the seven melody Honks','Spawn the melody row and place it apart from the backing. Each Honk must be independent: C4, Eb4, E4, F4, G4, Bb4, C5. These include both Ga variants and upper Sa.',{role:'melody',kind:'honk',catalogId:'jog-melody'});
 for (const [pitch,p] of Object.entries(PITCHES)) add(`learn-${pitch}`,'note',`${p.syllable} — ${pitch} · ${p.name}`,
   `Play ${pitch} at the yellow ring. Hold at least half a second, then release. Take your time.`,{role:`melody-${pitch}`,midis:[p.midi],minimumMs:450});
 add('learn-bend','note','One voice: g → S','Squeeze Eb4. Hold level briefly, roll your wrist downward to lower the pitch three semitones, and settle on C before release. Keep one continuously held voice. Take about 2¼ seconds.',{role:'melody-Eb4',midis:[63],minimumMs:1500,bend:DESCENDING_BEND});

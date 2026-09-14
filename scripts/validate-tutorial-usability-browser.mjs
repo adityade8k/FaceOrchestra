@@ -22,7 +22,7 @@ export async function validateLearnerFlow(app,{click,wait,check,onProgress,realT
   check(!r.pendingSpawnPlacement&&!t.demo&&counts()===0,'Navigation cancels pending placement and demonstration');
   await next();await demo();check(counts()===1,'One demonstrated Metronome');
   await click('step-practice');await result();check(t.session.outcomes.get('metronome').status==='assisted','Assisted setup is distinct from a learner pass');
-  const firstMetro=a.get('metronome').id;await click('spawn-step');check(counts()===1&&a.get('metronome').id===firstMetro,'Spawn is idempotent');await next();
+  const firstMetro=a.get('metronome').id;check(t.panel.buttonNodes.get('spawn-step').disabled,'Spawn is unavailable for an existing role');await t.action('spawn-step',controller);check(counts()===1&&a.get('metronome').id===firstMetro,'Spawn is idempotent');await next();
   const demonstratedTypes=new Set(['spawn']);
   while(t.session.step.id!=='audition-E') {
     const step=t.session.step,index=t.session.index;

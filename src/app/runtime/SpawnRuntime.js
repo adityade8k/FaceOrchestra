@@ -214,7 +214,7 @@ export const SpawnRuntimeMethods = {
     },
     handlePendingSpawnScaleThumbstick(controller, direction) {
       const pending = this.pendingSpawnPlacement;
-      if (!pending || controller !== pending.controller || controller.userData.handedness !== "right") {
+      if (!pending || controller !== pending.controller) {
         return;
       }
   
@@ -224,14 +224,14 @@ export const SpawnRuntimeMethods = {
     },
     handlePendingSpawnDistanceThumbstick(controller, direction) {
       const pending = this.pendingSpawnPlacement;
-      if (!pending || controller !== pending.controller || controller.userData.handedness !== "right") {
+      if (!pending || controller !== pending.controller) {
         return;
       }
       this.spawnPlacementController.distance(controller, direction);
     },
     placePendingSpawnPlacement(controller) {
       const pending = this.pendingSpawnPlacement;
-      if (!pending || controller !== pending.controller) {
+      if (!pending || controller !== pending.controller || pending.waitForTriggerRelease) {
         return;
       }
   
@@ -275,6 +275,7 @@ export const SpawnRuntimeMethods = {
         const instrument = this.instrumentRegistry.get(instrumentId);
         if (instrument) this.deleteInstrument(instrument);
       });
+      this.tutorial?.onSpawnCancelled(pending);
     },
     applyPendingSpawnVisuals(state) {
       applyPendingSpawnVisualsToState(state, {
