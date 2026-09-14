@@ -64,7 +64,7 @@ Trigger and Grip work on either hand. Right A and left Y open the menu on that h
 | Hold **Grip** on an instrument | Move and rotate it with that controller. |
 | Thumbstick left/right on the gripping hand | Scale the current instrument or locked Honk group down/up in steps. |
 | **Grip + Right A / Left Y** | Duplicate the unlocked Honk or Looper being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated. |
-| **Right B** | Lock or unlock the pointed Honk formation, Looper, or Metronome. |
+| **Right B** | Lock or unlock the pointed Honk formation, Looper, or Metronome. During Practice, separate melody and percussion Honks can also be locked or unlocked. |
 | **Left X** | Delete the pointed instrument and clean up its audio and connections. |
 | Hold **Grip** where no transform target is pointed at | Equip the Stick; release Grip to put it away. |
 

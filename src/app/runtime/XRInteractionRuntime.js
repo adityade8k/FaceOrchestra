@@ -35,8 +35,14 @@ export const XRInteractionRuntimeMethods = {
       if (instrumentState.kind === "honk") {
         if (this.honkLockService.getGroupForMember(instrumentState.id)) {
           this.unlockHonkFormation(instrumentState);
-        } else {
-          this.lockConnectedChordStates(instrumentState);
+        } else if (instrumentState.locked) {
+          instrumentState.locked = false;
+          this.updateLockVisual(instrumentState);
+        } else if (!this.lockConnectedChordStates(instrumentState) && this.sessionMode === "practice") {
+          // Separate melody/percussion Honks have no contact formation. They
+          // still use the normal editing lock while the learner practices.
+          instrumentState.locked = true;
+          this.updateLockVisual(instrumentState);
         }
       } else if (instrumentState.kind === "looper" || instrumentState.kind === "metronome") {
         instrumentState.locked = !instrumentState.locked;

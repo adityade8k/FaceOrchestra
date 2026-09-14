@@ -151,6 +151,7 @@ export async function validateLearnerFlow(app) {
     pose('group-1',controllers[1]);send(controllers[1],'secondary',true);send(controllers[1],'secondary',false);away(controllers[1]);await delay(250);
     check(a.members('group-1').every(h=>!h.locked),'Intentional unlock persists through tutorial updates');
     pose('group-1',controllers[1]);send(controllers[1],'secondary',true);send(controllers[1],'secondary',false);away(controllers[1]);await delay(200);
+    check(a.members('group-1').every(h=>h.locked&&h.lockedTextureApplied),'Right B relocks the whole tutorial chord');
     const checkpoint={index:t.session.index,phase:t.session.phase,result:t.session.result,checkpoints:t.session.checkpoints.size};
     const settings=JSON.stringify(a.members('group-1').map(h=>h.serialize().performanceDefaults));
     await click('step-demo');const demo=t.demo;check(Boolean(demo),'Current musical demonstration starts');
@@ -169,6 +170,10 @@ export async function validateLearnerFlow(app) {
     await next();
     const percussion=await spawn('honk','percussion',controllers[1]);
     check(percussion[0]===a.get('percussion')&&a.midi(percussion[0])!==48,'Ordinary Honk at another pitch is accepted for percussion');
+    for(const locked of [true,false]){
+      pose('percussion',controllers[1]);send(controllers[1],'secondary',true);send(controllers[1],'secondary',false);away(controllers[1]);await delay(100);
+      check(percussion[0].locked===locked&&percussion[0].lockedTextureApplied===locked,'Right B toggles the separate percussion Honk');
+    }
     await setupReady();await next();r.connectLooperTrackToHonk(drums,6,percussion[0].id);
     await setupReady();await next();
     away(controllers[1]);send(controllers[1],'grip',true);await setupReady();await next();
@@ -184,8 +189,21 @@ export async function validateLearnerFlow(app) {
     check(a.members('melody').length===7&&a.members('melody').every(h=>!h.locked),'Jog Study has seven separate unlocked melody notes');
     check(['record-chords','record-percussion'].every(id=>t.session.outcomes.get(id).status==='skipped'),'Both skipped recordings are honestly marked skipped');
     check(!chords.timeline.hasRecording()&&!drums.timeline.hasRecording(),'Navigation generated no backing recordings');
-    await click('step-practice');await hold('melody-C4');await result();
+    const melody=a.get('melody-C4'),melodyNotes=a.members('melody').map(h=>h.noteLabelTextValue);
+    await click('step-practice');
+    for(const locked of [true,false,true]){
+      pose('melody-C4',controllers[1]);send(controllers[1],'secondary',true);send(controllers[1],'secondary',false);away(controllers[1]);await delay(100);
+      check(t.session.phase==='practicing'&&melody.locked===locked&&melody.lockedTextureApplied===locked,'Right B toggles an individual melody Honk during active Practice');
+      check(a.members('melody').filter(h=>h!==melody).every(h=>!h.locked),'Locking one melody Honk leaves its neighbours independent');
+      check(JSON.stringify(a.members('melody').map(h=>h.noteLabelTextValue))===JSON.stringify(melodyNotes)&&melody.noteLabelGroup.visible,'Lock toggles preserve visible pitch text');
+    }
+    await hold('melody-C4');await result();
     check(t.session.result.ok,'Melody note practice succeeds without backing');
+    check(melody.locked,'Practice results retain the learner lock');
+    await click('step-practice');check(melody.locked,'Practice retry retains the learner lock');
+    pose('melody-C4',controllers[1]);send(controllers[1],'secondary',true);send(controllers[1],'secondary',false);away(controllers[1]);
+    await click('step-practice');await delay(150);
+    check(!melody.locked&&!melody.lockedTextureApplied,'Practice cancellation retains the learner unlock');
     await go('phrase-A');await click('step-practice');
     check(t.session.anchorMs>performance.now()&&t.session.anchorMs-performance.now()<4500,'No-backing phrase gets a finite Metronome count-in');
     await wait(()=>performance.now()>t.session.anchorMs+100,'no-backing phrase starts');
