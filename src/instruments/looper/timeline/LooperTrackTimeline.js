@@ -275,7 +275,7 @@ export class LooperTrackTimeline {
     const support = [];
     for (const [field, events] of this.fieldEvents) {
       const previous = events[upperBoundByTime(events, offsetMs) - 1];
-      if (!offsetMs || previous?.timeMs === offsetMs) continue;
+      if (!offsetMs || !previous || previous.timeMs === offsetMs) continue;
       const value = field === "vowel" ? this.sampleStepField(field, offsetMs) : this.sampleNumericField(field, offsetMs);
       if (value !== undefined) support.push({field, value, interpolation: previous?.interpolation || "linear"});
     }

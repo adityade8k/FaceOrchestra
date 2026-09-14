@@ -427,6 +427,7 @@ export const SpawnRuntimeMethods = {
   
       this.setLooperControlValue(targetState, "volume", sourceData.volumeControlValue);
       this.setLooperControlValue(targetState, "gap", sourceData.gapControlValue);
+      this.setLooperControlValue(targetState, "recordLength", sourceData.recordLengthControlValue ?? 1);
       this.updateLooperVisuals(targetState);
     },
     spawnInstrumentInFrontOfCamera() {

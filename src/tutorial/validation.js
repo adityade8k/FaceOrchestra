@@ -1,4 +1,4 @@
-import { COMPOSITION as C, TOLERANCES as T, performanceEvents } from './composition.js';
+import { COMPOSITION as C, TOLERANCES as T, performanceEvents, DESCENDING_BEND } from './composition.js';
 const pass = () => ({ ok: true, message: 'Validated.' });
 const fail = message => ({ ok: false, message });
 export function sameMembers(a = [], b = []) {
@@ -9,24 +9,25 @@ export function pitchesMatch(actual = [], expected = []) {
   return actual.length === expected.length && [...actual].sort((a,b)=>a-b).every((v,i) =>
     Math.abs(v - [...expected].sort((a,b)=>a-b)[i]) * 100 <= T.pitchCents);
 }
-export function validateBend(event) {
+export function validateBend(event, curve = DESCENDING_BEND) {
   const samples = event.bendSamples || [];
+  const initial=curve[0].semitones,endpoint=curve.at(-1).semitones,direction=Math.sign(endpoint-initial);
   if (!event.released || samples.length < 3) return fail('Hold one Eb voice through the glide, then release.');
   const duration = event.endMs - event.startMs;
   const opening = samples.filter(s => s.offsetMs < duration * 0.15);
-  if (!opening.length || opening.some(s => Math.abs(s.semitones) > 0.5)) return fail('Begin the held voice on Eb with a level wrist.');
-  if (samples.some(s => s.semitones > 0.75)) return fail('Roll downward from Eb toward C.');
+  if (!opening.length || opening.some(s => Math.abs(s.semitones-initial) > 0.5)) return fail('Begin the held voice on Eb with a level wrist.');
+  if (samples.some(s => (s.semitones-initial)*direction < -0.75)) return fail('Roll toward the target pitch shown by the wrist guide.');
   let settledSince = null, bestSettle = 0;
   for (const s of samples) {
-    if (Math.abs(s.semitones + 3) * 100 <= T.bendEndpointCents) {
+    if (Math.abs(s.semitones-endpoint) * 100 <= T.bendEndpointCents) {
       settledSince ??= s.offsetMs;
       bestSettle = Math.max(bestSettle, s.offsetMs - settledSince);
     } else settledSince = null;
   }
   const last = samples.at(-1);
-  if (bestSettle < T.bendSettleMs || Math.abs(last.semitones + 3) * 100 > T.bendEndpointCents)
+  if (bestSettle < T.bendSettleMs || Math.abs(last.semitones-endpoint) * 100 > T.bendEndpointCents)
     return fail('Settle on C (three semitones down) for at least 150 ms before releasing.');
-  if (!samples.some(s => s.semitones < -0.5 && s.semitones > -2.5)) return fail('Glide continuously; do not jump straight to C.');
+  if (!samples.some(s => (s.semitones-initial)*direction > 0.5 && (endpoint-s.semitones)*direction > 0.5)) return fail('Glide continuously; do not jump straight to the endpoint.');
   return pass();
 }
 export function validateNote(event, expected, { timed = false, durationBeats=T.durationBeats } = {}) {
@@ -37,7 +38,7 @@ export function validateNote(event, expected, { timed = false, durationBeats=T.d
   if (expected.vowel && event.vowel !== expected.vowel) return fail(`Choose the ${expected.vowel} vowel before squeezing.`);
   if (event.endMs - event.startMs < (expected.minimumMs || 0)) return fail('Hold a little longer, then release.');
   if (timed && Math.abs(event.durationBeats - expected.beats) > durationBeats) return fail(`Hold ${expected.role} for ${expected.beats} beats, then release.`);
-  if (expected.bend) return validateBend(event);
+  if (expected.bend) return validateBend(event, expected.bend);
   if (event.maxAbsBend > 0.5) return fail('Keep your wrist level for this note.');
   return pass();
 }
@@ -81,8 +82,10 @@ export function validateTake(timeline, evidence, role, routes = {}, tolerances =
   // Live evidence keeps its original count-in coordinates. Only the stored
   // timeline is normalized; adding its actual first onset back cannot improve
   // an early/late performance's score. Older schemas retain the clock offset.
+  const observedFirstBeat = Math.min(...evidence.filter(e=>e.kind===(chords?'note':'strike')).map(e=>e.beat));
+  const storedFirstMs = Math.min(...(timeline.tracks || []).flatMap(t=>t.events.filter(e=>['squeezeStart','drumHit'].includes(e.type)).map(e=>e.timeMs)));
   const firstBeat = timeline.schemaVersion >= 7
-    ? Math.min(...evidence.filter(e=>e.kind===(chords?'note':'strike')).map(e=>e.beat)) : 0;
+    ? observedFirstBeat - (timeline.lengthMode === 'fixed-window' ? storedFirstMs / timeline.beatIntervalMs : 0) : 0;
   const gates = [], drums = [];
   for (const track of timeline.tracks || []) {
     let open = null;
@@ -116,6 +119,8 @@ export function validateSetup(step, snapshot, origin) {
     if (!role?.ready || !role.placed || role.kind !== step.kind) return fail('Place the requested instrument; a preview does not count.');
     if (!role.correctPitch) return fail('The bound instrument was retuned. Restore its requested pitches.');
     if (!role.contactExact || role.stableMs < T.contactStableMs) return fail('Keep each chord touching internally and separate from all other groups.');
+  } else if (step.type === 'record-length') {
+    if (snapshot.loopers?.[step.looperRole]?.recordBeats !== 16) return fail('Set the right handle to 16 beats. Recording stops automatically.');
   } else if (step.type === 'clock-wire') {
     if (!snapshot.loopers?.[step.looperRole]?.clockWired) return fail(`Connect the Metronome to ${step.looperRole} using an available output and compatible socket.`);
   } else if (step.type === 'wire') {

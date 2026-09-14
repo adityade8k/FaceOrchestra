@@ -23,7 +23,7 @@ export function createHarness({ connected, trackCount = 8 }) {
     releaseActionVoice: (id, honk, options) => calls.push({kind:"release", id, ...options}),
     playStickPercussion: (type, options) => calls.push({kind:"drum", type, ...options}),
     cancelLooperPercussion: () => calls.push({kind:"cancelDrums"}),
-    getTimingForLooper: () => ({ ...clock }),
+    getTimingForLooper: (_id, now) => ({ ...clock, beatPosition:(now - clock.beatOriginMs) / clock.beatIntervalMs }),
     captureActionByHonkId: (honkId) => ({ ...inputs[Number(honkId.split("-").at(-1))] }),
     updateVisuals() {},
     ensureAudio() {},
@@ -52,4 +52,3 @@ export function setHonk(harness, trackIndex, now, squeeze) {
   if (harness.clock.connected) harness.clock.beatPosition = now / BEAT_INTERVAL_MS;
   harness.controller.updateRecordings([harness.looper], now);
 }
-

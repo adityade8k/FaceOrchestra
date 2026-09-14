@@ -1,7 +1,7 @@
 import { resetActionState } from "./actionState.js";
 import { LooperTrackTimeline } from "./LooperTrackTimeline.js";
 
-export const LOOPER_TIMELINE_SCHEMA_VERSION = 7;
+export const LOOPER_TIMELINE_SCHEMA_VERSION = 8;
 export const LooperTimingMode = Object.freeze({
   Ordinary: "ordinary",
   Metronome: "metronome",
@@ -22,6 +22,9 @@ export class LooperTimeline {
     this.startedAtMs = 0;
     this.onsetOffsetMs = 0;
     this.recording = false;
+    this.lengthMode = 'content-trimmed';
+    this.fixedWindowBeats = null;
+    this.recordingClock = null;
     this.firstOnsetElapsedMs = null;
     this.recordingBeatOriginMs = null;
     this.tracks = new Map();
@@ -56,10 +59,14 @@ export class LooperTimeline {
     this.pruneInactiveTracks();
     this.finalizeDuration(minDurationMs);
     this.sortTracks();
+    this.recordingClock = null;
     return this.hasRecording();
   }
 
   clearRecording() {
+    this.lengthMode = 'content-trimmed';
+    this.fixedWindowBeats = null;
+    this.recordingClock = null;
     this.durationMs = 0;
     this.contentEndMs = 0;
     this.recordedDurationMs = 0;
@@ -97,6 +104,7 @@ export class LooperTimeline {
   }
 
   getElapsedMs(now) {
+    if (this.recordingClock) return Math.max(this.recordingClock(now), 0);
     return Math.max(now - this.startedAtMs, 0);
   }
 
@@ -275,6 +283,13 @@ export class LooperTimeline {
   }
 
   finalizeDuration(minDurationMs = 1) {
+    if (this.lengthMode === 'fixed-window') {
+      this.contentEndMs = Math.min(this.getContentEndMs(), this.fixedWindowBeats * this.sourceBeatIntervalMs);
+      this.recordedDurationMs = this.getMusicalOnsetTimes().length ? this.fixedWindowBeats * this.sourceBeatIntervalMs : 0;
+      this.durationMs = this.recordedDurationMs > 0
+        ? this.recordedDurationMs + this.gapBeats * this.sourceBeatIntervalMs : 0;
+      return;
+    }
     // One shared musical origin, independent of clock phase and selected Gap.
     if (!this.recording) this.normalizeToFirstAction();
     this.contentEndMs = this.getContentEndMs();
@@ -329,6 +344,7 @@ export class LooperTimeline {
   }
 
   normalizeToFirstAction() {
+    if (this.lengthMode === 'fixed-window') return;
     const firstActionMs = this.getFirstActionMs();
     if (!Number.isFinite(firstActionMs)) {
       this.tracks.clear();
@@ -373,6 +389,8 @@ export class LooperTimeline {
     this.sortTracks();
     return {
       schemaVersion: LOOPER_TIMELINE_SCHEMA_VERSION,
+      lengthMode: this.lengthMode,
+      fixedWindowBeats: this.fixedWindowBeats,
       onsetOffsetMs: this.onsetOffsetMs,
       durationMs: this.durationMs,
       contentEndMs: this.contentEndMs,
@@ -408,6 +426,10 @@ export class LooperTimeline {
     // Only explicit metadata or a legacy external-clock take is a reliable source tempo.
     timeline.sourceBeatIntervalMs = serialized.sourceBeatIntervalMs > 0 ? serialized.sourceBeatIntervalMs
       : serialized.timingMode === LooperTimingMode.Metronome ? timeline.beatIntervalMs : 0;
+    if (serialized.lengthMode === 'fixed-window' && [2,4,8,16].includes(serialized.fixedWindowBeats) && timeline.sourceBeatIntervalMs > 0) {
+      timeline.lengthMode = 'fixed-window';
+      timeline.fixedWindowBeats = serialized.fixedWindowBeats;
+    }
     timeline.beatAnalysis = serialized.beatAnalysis && typeof serialized.beatAnalysis === "object"
       ? { ...serialized.beatAnalysis }
       : null;

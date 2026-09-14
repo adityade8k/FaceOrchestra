@@ -164,6 +164,8 @@ export async function validateLearnerFlow(app) {
     await click('step-practice');await hold('group-1');await result();
     check(t.session.result.ok&&t.session.result.score===100,'Practice works without a demonstration and retains honest scoring');
     await next();await next();
+    check(t.session.step.id==='length-chords','Chord length checkpoint reached');
+    await setupReady();check(chords.looperData.recordBeats===16,'Default chord selector passes at 16 without movement');await next();
     check(t.session.step.id==='record-chords','First recording reached');
     await next();await next();
     check(t.panel.model.feedback==='No recording yet; you can skip this step','Empty chord playback explains skip');

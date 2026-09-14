@@ -431,6 +431,11 @@ export class RuntimeHost {
       updateWireForTrack: (looper, track) => this.updateLooperWireForTrack(looper, track),
       disposeWireMesh: (wire) => this.disposeWireMesh(wire),
       updateVisuals: (looper) => this.updateLooperVisuals(looper),
+      getLoopers: () => this.instrumentRegistry.getByKind('looper'),
+      onAutomaticRecordingStop: (looper, now) => {
+        this.triggerLooperButtonMorph(looper, 'stop', now);
+        this.tutorial?.flow.rememberAutomaticCompletion(looper);
+      },
     };
   }
 

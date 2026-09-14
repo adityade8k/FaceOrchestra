@@ -8,7 +8,7 @@ import { LooperTrack } from "../../../src/instruments/looper/LooperTrack.js";
 import { LooperActionEventType } from "../../../src/instruments/looper/timeline/LooperActionEvent.js";
 import { LooperTimingMode, LooperTimeline } from "../../../src/instruments/looper/timeline/LooperTimeline.js";
 
-test("connected Record waits for the first sound and starts at that sound", () => {
+test("connected Record waits for the first sound and retains its offset after the preceding beat", () => {
   const clock = timing({ beatPosition: 0.5, ordinal: 0, lastBeatMs: 1000 });
   const input = { squeeze: 0, musicalOnset: false };
   const recording = createLooper("recording", clock, {
@@ -29,11 +29,11 @@ test("connected Record waits for the first sound and starts at that sound", () =
   recording.controller.updateRecordings([recording.looper], 1710);
   assert.equal(recording.data.recordArmed, false);
   assert.equal(recording.data.recording, true);
-  assert.equal(recording.data.timeline.startedAtMs, 1710);
+  assert.equal(recording.data.timeline.startedAtMs, 1500);
   input.squeeze = 1;
   Object.assign(clock, timing({ beatPosition: 1.44, ordinal: 1, lastBeatMs: 1500 }));
   recording.controller.updateRecordings([recording.looper], 1720);
-  assert.equal(recording.data.timeline.getTrack("track-0").events[0].timeMs, 10);
+  assert.equal(recording.data.timeline.getTrack("track-0").events[0].timeMs, 220);
 });
 
 test("connected Play remains armed until the next clock beat", () => {

@@ -27,9 +27,10 @@ ws.onmessage=({data})=>{
     })());
   }
 };
+ws.onclose=event=>{for(const pending of requests.values())pending.reject(new Error(`Chrome test connection closed (${event.code}): ${event.reason}`));requests.clear();};
 await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject;});
 try {
-  await send('Page.enable');await send('Runtime.enable');
+  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});
   await send('Runtime.addBinding',{name:'tutorialTestProgress'});
   await send('Page.reload',{ignoreCache:true});
   await new Promise(resolve=>setTimeout(resolve,1500));

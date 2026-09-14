@@ -1,3 +1,4 @@
+import { recordingGuidance } from './recordingGuidance.js';
 import * as THREE from 'three';
 import { TutorialAdapter } from './TutorialAdapter.js';
 import { TutorialSession } from './TutorialSession.js';
@@ -116,7 +117,6 @@ export class TutorialRuntime {
     const step=this.session?.step;
     if(!step)return;
     const recording=['record','finalize'].includes(step.type);
-    if(recording)this.adapter.get(step.looperRole)?.clearRecording();
     this.session.retry(now,{recording});
     if(['performance','phrase'].includes(step.type) && !this.adapter.get('metronome')?.playing) this.adapter.command('tempo',now,this.session.origin);
     if(this.conductor){this.conductor.stepId=null;this.conductor.lastNow=now;this.conductor.paused=false;}
@@ -142,7 +142,7 @@ export class TutorialRuntime {
   afterFrame(now) {
     if(!this.ready||this.busy||this.disposed)return;
     if(this.session) {
-      this.adapter.observe(now);this.adapter.finishCapture(this.demo?.session||this.session,now);const snapshot=this.adapter.snapshot(now);
+      this.adapter.observe(now);const snapshot=this.adapter.snapshot(now);
       if(this.session.mode==='simulation')Object.assign(this.adapter.takeEvidence,this.session.takeEvidence);
       if(snapshot.aligned) this.alignmentEvidence={atMs:now,loopers:snapshot.loopers.chordLooper.startBeat,phaseDifference:Math.abs(snapshot.loopers.chordLooper.phase-snapshot.loopers.percussionLooper.phase)};
       if(this.demo) {
@@ -156,8 +156,7 @@ export class TutorialRuntime {
         this.session.update(snapshot,now);
         if(this.session.pendingAssessment){
           const {reason}=this.session.pendingAssessment;
-          const finalized=this.flow.finalizeCapture(this.session,now)||this.adapter.snapshot(now);
-          this.session.finishAttempt(finalized,now,reason);
+          this.session.finishAttempt(snapshot,now,reason);
         }
         if(previousPhase!=='results'&&this.session.phase==='results')this.flow.finishPractice();
         if(this.session.step?.id!==previous) {
@@ -234,7 +233,7 @@ export class TutorialRuntime {
       ];
       let target='';
       if(shown.step?.timed&&shown.anchorMs!==null&&(activeDemo||s.phase!=='results')){
-        const beat=(now-shown.anchorMs)/shown.beatMs;
+        const beat=shown.beatAt(now);
         if(beat<0)target='Count in: '+Math.ceil(-beat);
         else{
           target='Beat '+Math.min(shown.step.beats,Math.floor(beat)+1)+' / '+shown.step.beats;
@@ -243,6 +242,11 @@ export class TutorialRuntime {
           else if(note?.role)target+='\n'+(C.backing.find(g=>g.role===note.role)?.label||({percussion:'Honk · boink',metronome:'Metronome · wood',percussionLooper:'Looper · hihat'}[note.role])||note.role);
         }
       }
+      if(shown.step?.type==='record') {
+        const progress=this.adapter.get(shown.step.looperRole)?.looperController.getRecordingProgress(this.adapter.get(shown.step.looperRole),now);
+        target=recordingGuidance(progress,shown.anchorMs===null?null:shown.beatAt(now))||target;
+      }
+      if(this.cues.bendInstruction)target+=(target?'\n':'')+this.cues.bendInstruction;
       this.panel.setTransport(target);
       let feedback=simulation?(this.conductor?.paused?'Simulation paused. Press Demonstrate to resume.':'Full simulation running. Press Demonstrate to pause.'):
         setup?.message||this.uiFeedback||s.feedback||reason||'Demonstrate or Practice. Next Step skips this exercise.';

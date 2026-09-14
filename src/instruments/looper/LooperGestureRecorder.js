@@ -201,12 +201,15 @@ export class LooperGestureRecorder {
       : value > LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD;
   }
 
-  stop(timeline, tracks, now, minDurationMs, captureActionByHonkId = null, timing = null) {
+  stop(timeline, tracks, now, minDurationMs, captureActionByHonkId = null, timing = null, { endpointMs = null } = {}) {
     if (!timeline?.recording) return timeline?.hasRecording?.() || false;
     if (typeof captureActionByHonkId === "function") {
-      for (const track of tracks) this.updateTrack(timeline, track, now, captureActionByHonkId);
+      for (const track of tracks) {
+        if (endpointMs === null) this.updateTrack(timeline, track, now, captureActionByHonkId);
+        else this.sampleEndpoint(timeline, track, now, endpointMs, captureActionByHonkId);
+      }
     }
-    const elapsedMs = timeline.getElapsedMs(now);
+    const elapsedMs = endpointMs ?? timeline.getElapsedMs(now);
     for (const track of tracks) {
       this.releaseTrackActions(timeline, track, elapsedMs, {
         synthetic: true,
@@ -217,6 +220,29 @@ export class LooperGestureRecorder {
     const hasRecording = timeline.stopRecording(now, minDurationMs, timing);
     for (const track of tracks) track.active = Boolean(timeline.getTrack(track.trackId)?.active);
     return hasRecording;
+  }
+
+  sampleEndpoint(timeline, track, now, endpointMs, captureActionByHonkId) {
+    const state = track.recorderState;
+    // A late observation may already contain the NEXT attack. Never capture a
+    // new gate here, or change the player's live gesture to close a stored gate.
+    if (!state?.squeezeGateActive) return;
+    const captured = this.captureTrackAction(track, captureActionByHonkId);
+    const action = normalizeActionState(captured);
+    const observedMs = timeline.getElapsedMs(now);
+    const fraction = clamp((endpointMs - state.lastObservedAtMs) / Math.max(observedMs - state.lastObservedAtMs, 1e-9), 0, 1);
+    const values = createActionState();
+    for (const field of NUMERIC_FIELDS) {
+      if (!state.activeFields.has(field)) continue;
+      const previous = state.lastObserved[field];
+      if (previous === undefined) continue;
+      // A released live voice can already have reset its bend; retain the last
+      // held expression in that case. Otherwise interpolate to the boundary.
+      const next = captured && this.resolveGateState(state, captured, action) ? action[field] ?? previous : previous;
+      values[field] = previous + (next - previous) * fraction;
+    }
+    timeline.addActionEvent(track.trackId, {nodeId:track.nodeId, trackIndex:track.index,
+      type:LooperActionEventType.GestureSnapshot, timeMs:endpointMs, values, interpolation:'linear'});
   }
 
   releaseTrackActions(

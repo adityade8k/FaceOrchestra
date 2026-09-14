@@ -345,6 +345,7 @@ export const LooperConnectionRuntimeMethods = {
       for (const [control, value] of [
         ["volume", data.volumeControlValue],
         ["gap", data.gapControlValue],
+        ["recordLength", data.recordLengthControlValue],
       ]) {
         this.applyLooperControlMorphValue(looperState, control, value);
         const sphere = looperState.hitTargets[getLooperControlName(control)];

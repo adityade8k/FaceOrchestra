@@ -214,6 +214,7 @@ export const InstrumentAssetRuntimeMethods = {
     state.root.getWorldQuaternion(state.looperData.lastQuaternion);
     state.setControl("volume", LOOPER_CONTROL_DEFAULT_VALUES.volume);
     state.setControl("gap", LOOPER_CONTROL_DEFAULT_VALUES.gap);
+    state.setControl("recordLength", LOOPER_CONTROL_DEFAULT_VALUES.recordLength);
     this.updateLooperVisuals(state);
   },
 

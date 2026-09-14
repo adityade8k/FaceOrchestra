@@ -7,6 +7,7 @@ export class CompositionConductor {
     this.adapter=adapter;this.session=session;this.origin=origin;this.demonstration=demonstration;
     this.running=true;this.paused=false;this.lastNow=null;this.stepId=null;this.stepAt=0;
     this.actions=new Set();this.noteId=null;this.finished=false;this.elapsedMs=0;this.startedAt=null;
+    session.musicalClock=time=>adapter.get('metronome')?.getBeatTiming(time);
   }
   once(key, fn) { if(this.actions.has(key))return;fn();this.actions.add(key); }
   update(now) {
@@ -16,7 +17,7 @@ export class CompositionConductor {
     if(this.session.complete) {this.stop();this.finished=true;return;}
     if(this.session.failed) {this.adapter.releaseVirtuals();return;}
     const step=this.session.step;
-    if(this.demonstration&&['ack','spawn','clock-wire','wire','tempo','timbre','stick','unequip'].includes(step.type))return;
+    if(this.demonstration&&['ack','spawn','clock-wire','wire','tempo','record-length','timbre','stick','unequip'].includes(step.type))return;
     if(this.stepId!==`${step.id}:${this.session.attempt}`) {
       this.adapter.squeeze(null,false,0,now);
       this.stepId=`${step.id}:${this.session.attempt}`;this.stepAt=now;this.actions.clear();this.noteId=null;
@@ -26,7 +27,7 @@ export class CompositionConductor {
       if(elapsed>=150) this.once('select',()=>this.adapter.select(step,this.adapter.virtuals[0],this.origin));
       if(this.demonstration&&elapsed>=600) this.once('space',()=>this.adapter.makePlacementSpace?.());
       if(elapsed>=900) this.once('place',()=>this.adapter.place());
-    } else if(['ack','clock-wire','wire','tempo','timbre','finalize','playback','start-all'].includes(step.type)) {
+    } else if(['ack','clock-wire','wire','tempo','record-length','timbre','finalize','playback','start-all'].includes(step.type)) {
       if(elapsed>=(step.type==='finalize'?0:300)) this.once('action',()=>this.adapter.command(step.action,now,this.origin));
       if(step.type==='playback') this.adapter.releaseVirtuals();
     } else if(step.type==='note') {
@@ -54,7 +55,7 @@ export class CompositionConductor {
         if(anchor!==null) this.session.startCountIn(anchor,this.adapter.get('metronome').getBeatTiming(now).beatIntervalMs);
       }
       if(this.session.anchorMs===null) return;
-      const beat=(now-this.session.anchorMs)/this.session.beatMs;
+      const beat=this.session.beatAt(now);
       const needsStick=(step.type==='record' && step.looperRole==='percussionLooper') || step.type==='drums';
       if(needsStick) this.once('equip',()=>this.adapter.equip(true,this.origin));
       const events=expectedForStep(step);
@@ -69,7 +70,7 @@ export class CompositionConductor {
       if(needsStick) this.strike(C.percussion,beat);
       if(step.type==='performance' && beat>=95) this.once('final-rest',()=>{this.adapter.releaseVirtuals();this.adapter.stopSound();});
     }
-    if(this.demonstration&&['spawn','clock-wire','wire','tempo','timbre','finalize','playback','start-all'].includes(step.type))this.adapter.showSetup?.(step,elapsed);
+    if(this.demonstration&&['spawn','clock-wire','wire','tempo','record-length','timbre','finalize','playback','start-all'].includes(step.type))this.adapter.showSetup?.(step,elapsed);
   }
   strike(pattern,beat) {
     const hit=pattern.find(e=>beat>=e.beat-0.3 && beat<e.beat+0.32);

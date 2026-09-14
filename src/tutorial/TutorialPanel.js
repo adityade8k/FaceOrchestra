@@ -67,7 +67,9 @@ export class TutorialPanel {
   setTransport(text=''){
     if(this.transportText===text)return;this.transportText=text;this.setText(this.nodes.target,text);
     const ctx=this.statusCanvas.getContext('2d');ctx.clearRect(0,0,1072,108);
-    drawText(ctx,text,{x:0,y:0,w:1072,h:108,font:38},{color:'#ffd591'});this.statusTexture.needsUpdate=true;
+    const color=text.includes('Ending soon')?'#ff996c':'#ffd591';
+    this.nodes.target.style.color=color;
+    drawText(ctx,text,{x:0,y:0,w:1072,h:108,font:38},{color});this.statusTexture.needsUpdate=true;
   }
   completeEffect(now,ok){this.effectAt=now;this.effect.material.color.setHex(ok?0x83dfbd:0xffcf83);this.dom.classList.remove('tutorial-complete');void this.dom.offsetWidth;this.dom.classList.add('tutorial-complete');}
   animate(now){const phase=(now-(this.effectAt??-Infinity))/850;this.effect.material.opacity=phase<1?Math.sin(Math.max(phase,0)*Math.PI)*.95:0;}

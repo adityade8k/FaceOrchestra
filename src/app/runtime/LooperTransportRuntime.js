@@ -110,7 +110,9 @@ export const LooperTransportRuntimeMethods = {
         this.triggerLooperButtonMorph(looperState, "stop", performance.now(), morphName);
         this.setLooperButtonMorph(looperState, "record", 0);
         this.setLooperButtonMorph(looperState, "play", 0);
-        if (wasIdle) {
+        const justCompleted = looperState.looperData.recordingCompletion?.automatic &&
+          now - looperState.looperData.recordingCompletion.observedAtMs <= LOOPER_MORPH_SETTINGS.buttonPressDurationMs;
+        if (wasIdle && !justCompleted) {
           this.clearRecording(looperState);
         } else {
           this.stopRecording(looperState, now);
@@ -156,7 +158,11 @@ export const LooperTransportRuntimeMethods = {
         currentControllerPosition,
       );
       if (nextValue === null) return;
-      this.setLooperControlValue(looperState, interaction.control, nextValue, true, interaction.morphTargets);
+      const previous = this.getLooperControlValue(looperState, interaction.control);
+      const applied = this.setLooperControlValue(looperState, interaction.control, nextValue, true, interaction.morphTargets);
+      if (interaction.control === 'recordLength' && applied !== previous) {
+        this.hapticsService?.pulse(this.getControllerGamepad(controller), {intensity:0.35, durationMs:18})?.catch?.(() => {});
+      }
     },
     getControllerLocalPosition(controller, instrumentState) {
       controller.updateMatrixWorld(true);
@@ -254,6 +260,7 @@ export const LooperTransportRuntimeMethods = {
       if (control === "gap") {
         return data.gapControlValue;
       }
+      if (control === 'recordLength') return data.recordLengthControlValue;
       return data.volumeControlValue;
     },
     setLooperControlValue(looperState, control, value, updateSphere = true, morphTargetsOverride = null) {

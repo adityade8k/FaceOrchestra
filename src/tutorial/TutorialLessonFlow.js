@@ -23,6 +23,11 @@ export class TutorialLessonFlow {
   rememberDemoCommand(role){
     const demo=this.t.demo;if(demo&&role)demo.expectedTakes[role]=this.takeStamp(this.a.get(role));
   }
+  rememberAutomaticCompletion(h){
+    const demo=this.t.demo;if(!demo)return;
+    const role=TUTORIAL_LOOPERS.find(({role})=>this.a.get(role)===h)?.role;
+    if(role&&demo.expectedTakes[role]===`${h.id}:${h.looperData.takeRevision-1}:${h.looperData.activityRevision}`)this.rememberDemoCommand(role);
+  }
   finalizeCapture(session,now=performance.now()){
     const h=this.a.get(session?.step?.looperRole);
     if(session?.step?.type!=='record'||!h)return;
@@ -89,6 +94,7 @@ export class TutorialLessonFlow {
     const updatedReason=this.unavailable();if(updatedReason){this.t.uiFeedback=updatedReason;return;}
     this.a.releaseAll({preserveSticks:true});const step=s.step,now=performance.now();
     s.startAttempt(now);
+    s.musicalClock=time=>this.a.get('metronome')?.getBeatTiming(time);
     try{
       if(['playback','start-all','finalize','record'].includes(step.type)&&step.action){
         this.a.command(step.action,now,'learner');
@@ -114,7 +120,7 @@ export class TutorialLessonFlow {
         this.a.takeEvidence[s.step.looperRole]=s.takeEvidence[s.step.looperRole];
       }
       this.practiceCapture=null;for(const role of this.ownedPlayback)this.a.get(role)?.stop();this.ownedPlayback.clear();
-      this.a.releaseAll({preserveSticks:true});this.t.cues.reset();
+      if(s.step.type!=='record')this.a.releaseAll({preserveSticks:true});this.t.cues.reset();
     }
     this.t.uiFeedback='';this.t.panel.completeEffect(performance.now(),s.result?.ok);
   }

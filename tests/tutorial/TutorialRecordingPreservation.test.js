@@ -19,7 +19,7 @@ function fixture(){
   const a={takeRoutes:{},takeEvidence:{},snapshotAt:0,
     get:role=>captures[role]?.looper,
     snapshot:()=>({roles:ready,bpm:80,clockPlaying:true,wires:Object.fromEntries(C.backing.map(g=>[g.role,true])),
-      loopers:Object.fromEntries(Object.entries(captures).map(([role,h])=>[role,{id:role,clockWired:true,gapBeats:0,
+      loopers:Object.fromEntries(Object.entries(captures).map(([role,h])=>[role,{id:role,clockWired:true,gapBeats:0,recordBeats:16,
         recording:h.looper.transport.recording,recordArmed:h.looper.transport.recordArmed,timeline:h.timeline.hasRecording()?h.timeline.toJSON():null}]))}),
     command(action,now){
       const role=action.endsWith('chordLooper')?'chordLooper':'percussionLooper',h=captures[role];

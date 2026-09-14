@@ -251,7 +251,7 @@ test("schema-v4 gate recordings migrate without turning held notes into ramps", 
   const snapshot = createActionState();
 
   assert.equal(restored.sampleTrack(restored.getTrack("track-0"), 250, snapshot).squeeze, 1);
-  assert.equal(restored.toJSON().schemaVersion, 7);
+  assert.equal(restored.toJSON().schemaVersion, 8);
 });
 
 test("a single strike uses its complete finite percussion envelope", () => {

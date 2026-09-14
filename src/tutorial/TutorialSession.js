@@ -33,7 +33,13 @@ export class TutorialSession {
   startCountIn(anchorMs, beatMs = C.beatMs) {
     if (!this.step?.timed || this.failed) return false;
     this.anchorMs = anchorMs; this.beatMs = beatMs; this.evidence = []; this.phrasesPassed = []; this.revision++;
+    this.anchorBeat = this.musicalClock?.(anchorMs)?.beatPosition ?? null;
     return true;
+  }
+  beatAt(now) {
+    const timing=this.musicalClock?.(now);
+    return Number.isFinite(this.anchorBeat)&&Number.isFinite(timing?.beatPosition)
+      ? timing.beatPosition-this.anchorBeat : (now-this.anchorMs)/this.beatMs;
   }
   advance(now) {
     if(this.mode==='practice'){this.finishResult({ok:true,message:'Setup ready.',assisted:this.assisted.has(this.step.id)},now);return;}
@@ -150,17 +156,16 @@ export class TutorialSession {
     } else if (step.type === 'playback' || step.type === 'start-all') {
       const quiet = snapshot.liveGestures === 0 && !snapshot.anyStickContact;
       const owner=snapshot.loopers?.[step.looperRole];
-      const other=snapshot.loopers?.[step.looperRole==='chordLooper'?'percussionLooper':'chordLooper'];
       const command=this.evidence.some(e=>e.kind==='command'&&e.action===step.action);
       const valid=step.type==='start-all' ? command && snapshot.startAllRequest?.ok && snapshot.aligned &&
         snapshot.loopers.chordLooper.startBeat===snapshot.startAllRequest.targetBeat &&
         snapshot.loopers.chordLooper.playbackObserved && snapshot.loopers.percussionLooper.playbackObserved
-        : owner?.playing && !owner.playArmed && !other?.playing && owner.playbackObserved;
+        : owner?.playing && !owner.playArmed && owner.playbackObserved;
       if (!quiet || !valid || !snapshot.audioRunning) this.playbackSince = null;
       else this.playbackSince ??= now;
       result.ok = this.playbackSince !== null && now - this.playbackSince >= 16*C.beatMs;
     } else if (step.timed && this.anchorMs !== null && now >= this.anchorMs) {
-      const beat = (now-this.anchorMs)/this.beatMs;
+      const beat = this.beatAt(now);
       const notes = expectedForStep(step);
       const musical = this.evidence.filter(e=>e.kind==='note' || e.kind==='strike');
       if (step.type === 'performance') {
@@ -173,6 +178,7 @@ export class TutorialSession {
           this.phrasesPassed.push(C.order[i]); this.revision++;
         }
       }
+      if (step.type === 'record' && (snapshot.loopers?.[step.looperRole]?.recording || snapshot.loopers?.[step.looperRole]?.recordArmed)) return;
       if (beat >= step.beats && (!(snapshot.liveGestures||snapshot.anyStickContact)||beat>=step.beats+P.releaseGraceBeats)) {
         if (step.type === 'drums' || (step.type==='record' && step.looperRole==='percussionLooper')) result = validateSequence(C.percussion,musical,{kind:'strike'});
         else {
@@ -218,7 +224,11 @@ export class TutorialSession {
     }
     if(step.timed){
       if(this.anchorMs===null){if(elapsed>10000)this.finishResult({ok:false,message:'Start the Metronome at 80 BPM, then press Practice.'},now);return;}
-      const beat=(now-this.anchorMs)/this.beatMs;
+      const beat=this.beatAt(now);
+      const progress=snapshot.loopers?.[step.looperRole]?.recordingProgress;
+      if(step.type==='record'&&progress?.state==='complete'&&!progress.automatic) {
+        this.finishAttempt(snapshot,now,`Stopped early: ${Number(progress.beats.toFixed(2))} beats saved.`);return;
+      }
       if(beat<step.beats)return;
       if((snapshot.liveGestures||snapshot.anyStickContact)&&beat<step.beats+P.releaseGraceBeats)return;
       this.finishAttempt(snapshot,now,beat>=step.beats+P.releaseGraceBeats&&(snapshot.liveGestures||snapshot.anyStickContact)?'Release the held target before trying again.':'');return;
@@ -236,8 +246,7 @@ export class TutorialSession {
     }
     if(['playback','start-all'].includes(step.type)){
       const owner=snapshot.loopers?.[step.looperRole];
-      const other=snapshot.loopers?.[step.looperRole==='chordLooper'?'percussionLooper':'chordLooper'];
-      const playing=step.type==='start-all'?snapshot.aligned&&snapshot.startAllRequest?.ok&&snapshot.loopers.chordLooper.playbackObserved&&snapshot.loopers.percussionLooper.playbackObserved:owner?.playing&&!owner.playArmed&&!other?.playing&&owner.playbackObserved;
+      const playing=step.type==='start-all'?snapshot.aligned&&snapshot.startAllRequest?.ok&&snapshot.loopers.chordLooper.playbackObserved&&snapshot.loopers.percussionLooper.playbackObserved:owner?.playing&&!owner.playArmed&&owner.playbackObserved;
       if(playing&&snapshot.audioRunning&&!snapshot.liveGestures&&!snapshot.anyStickContact){this.playbackSince??=now;if(now-this.playbackSince>=C.loopBeats*C.beatMs)result={ok:true,message:step.type==='start-all'?'Both parts launched together on the same beat.':'One complete backing cycle heard.'};}
       else this.playbackSince=null;
     }

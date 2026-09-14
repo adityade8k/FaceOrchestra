@@ -101,14 +101,15 @@ Point at a touching member and press Right B to lock the complete connected comp
 
 ## Record with a Looper
 
-Each Looper has eight track nodes, four transport buttons, and two controls:
+Each Looper has eight track nodes, four transport buttons, and three controls:
 
-- **Record** starts or arms capture.
+- **Record** arms capture and latches the selected recording length. Silent waiting consumes no beats.
 - **Stop** finishes recording or stops playback. Pressing Stop again while fully idle clears the recording.
-- **Play** restarts the recording origin on the strictly next beat, using the connected Metronome or the silent internal 70 BPM clock. Pressing exactly on a beat selects the following beat. Recorded offsets and expression remain intact.
+- **Play** restarts every eligible recorded Looper connected to the same Metronome on one shared next beat. Unconnected Loopers play independently on their silent internal 70 BPM clock. Pressing exactly on a beat selects the following beat. Recorded offsets and expression remain intact.
 - **Pause** pauses immediately when unconnected, or on the next clock beat when clocked.
-- **Volume** controls Looper playback level.
-- **Gap** chooses 0, 1, 2, 3, or 4 extra whole beats between repetitions. A new Looper starts at Gap 0 with the right-hand Gap handle at its bottom endpoint.
+- **Volume** is the left handle and controls Looper playback level.
+- **Gap** chooses 0, 1, 2, 3, or 4 extra whole beats between repetitions. A new Looper starts at Gap 0 with the bottom Gap handle at its down endpoint.
+- **Recording length** is the right handle: 2, 4, 8 or 16 beats, bottom to top. New and legacy Loopers default to 16 at the top. The label shows the next take’s setting; changing it never changes a stored take.
 
 ### Connect tracks
 
@@ -118,20 +119,15 @@ To disconnect a Honk from Loopers, Grip the connected Honk and shake it through 
 
 ### Record and finish a phrase
 
-Record arms until the first Honk attack or Stick strike, then uses that actual onset as the recording origin. An unconnected Looper records against a known 70 BPM internal grid; a connected Looper uses its running Metronome. All subsequent events keep their timing relative to the first sound. A paused connected Metronome must be started before recording or playback.
+Record waits for the first Honk attack or Stick strike. The beat at or immediately before that sound becomes beat 1, and the first sound keeps its exact offset. For example, at 60 BPM a first sound at 10.25 seconds with 4 selected beats records the 10.00–14.00 window. Connected Loopers use their running Metronome; disconnected Loopers use the 70 BPM clock. Tempo changes retain continuous beat phase.
 
-Stop always remains under the musician’s control. Recording does not automatically stop after the final note, so you may wait and play another note whenever you choose.
+Recording stops automatically at the selected endpoint and animates Stop. A completed take keeps the entire 2/4/8/16-beat window, including leading, interior and final rests. Held recorded gates close at the boundary, preserving final expression. The player’s live gesture continues. Natural releases and percussion tails may sound beyond the logical boundary without extending it.
 
-When you do press Stop:
+Manual Stop before the endpoint is a shortened-take override. It captures the final held expression and closes the recorded gate, trims waiting before the first and after the final completed event, and preserves interior rests and complete percussion envelopes. Silent cancellation while still armed retains the prior take. An idle Stop after the completion animation clears the take.
 
-- Stop ends capture but does not add trailing silence.
-- The base loop boundary is the final full note/release or finite percussion envelope endpoint.
-- The first note is at source time zero on every repetition.
-- Gap 0 adds no extra beat. Gap 1–4 adds exactly that many whole beats.
-- Waiting silently one second or twenty seconds before Stop does not change the finished rhythm.
-- A held final Honk is safely released at Stop; its held duration is preserved. Normal releases can also extend the phrase beyond the final onset.
+At Gap 0, completed takes repeat at their selected beat length from a common absolute origin: 2/4/8/16-beat takes meet again every 16 beats. Gap adds its explicit 0–4 beats; shortened takes and nonzero gaps keep their own cycle lengths. Empty or recording Loopers are excluded from linked Play, which leaves existing playback sounding until the restart boundary. Stop and Pause act on their own Looper.
 
-Recordings start at their first actual sound and end at their final full note/release or percussion envelope. One shared offset normalizes all tracks; interior rests, bends and expression stay intact. Gap 0 adds no beat rounding or waiting before/after the performance. Changing Gap adds only its explicit beats. Learner takes survive Practice results and navigation regardless of score. Recorded attacks, releases, bends, vowels, nose/ear motion, and percussion keep their relative source timestamps. Playback scales them together with tempo. For example, a 15.7-beat take recorded at 80 BPM lasts 11.775 seconds at 80 and about 13.457 seconds at internal 70 BPM. Start All shares the initial next-beat launch; unequal loop lengths can drift apart at subsequent wraps. The label shows `70 BPM · Internal` when disconnected. No extra Metronome or click is created. Legacy recordings without a reliable source tempo retain their native millisecond timing; see [compatibility policy](docs/tutorial.md#clocks-and-compatibility).
+Save/load preserves the selector separately from the take, and stores explicit fixed-window versus content-trimmed timing. Learner takes survive Practice results and navigation regardless of score. Playback scales the recorded attacks, releases and expression together with tempo. Legacy recordings retain the existing migration policy and receive only the new 16-beat selector default; see [compatibility policy](docs/tutorial.md#clocks-and-compatibility).
 
 ### Record Stick hits
 
@@ -175,7 +171,7 @@ Face Orchestra saves once when you exit immersive XR. If a Looper is still recor
 - Honks, Loopers, and Metronomes with stable IDs, transforms, and scales;
 - Honk tuning, note defaults, ears, nose, and vowel;
 - locked Honk groups and Looper locked appearance;
-- Looper timelines, Volume, Gap, Honk track assignments, and wires;
+- Looper timelines, recording length, Volume, Gap, Honk track assignments, and wires;
 - Metronome BPM, Volume, target connections, and wires;
 - the preferred Stick type.
 
@@ -198,7 +194,7 @@ localStorage.removeItem("face-orchestra:scene:v3");
 - **A opens no menu:** release Grip, finish or cancel any active placement, and remember the menu is bound to the right-hand primary button. Pull toward the headset while holding A to enter the item ring.
 - **A preview will not place:** use Trigger; Grip cancels it. The right thumbstick changes preview scale.
 - **Cannot transform an object:** aim at its body transform target and hold Grip. If no target is selected, Grip intentionally equips the Stick.
-- **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Stop-time waiting should never become a loop gap; use the XR regression checklist if it does.
+- **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Completed automatic takes retain all selected beats; manual Stop before the endpoint trims idle waiting.
 - **Looper is disconnected:** it uses the stable internal 70 BPM grid. Reconnect its Metronome cable to follow the lesson’s 80 BPM clock.
 - **Saved scene did not update:** saving occurs on immersive XR exit, not on each edit. Exit XR cleanly and inspect browser storage for `face-orchestra:scene:v3`.
 - **Metronome appearance changes after Right B:** that is a regression. Its map identity should remain authored through repeated lock/unlock; follow the Metronome section of the XR checklist.

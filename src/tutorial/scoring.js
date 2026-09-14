@@ -29,7 +29,7 @@ export function scoreAttempt(step,events,{timed=Boolean(step.timed),reason=''}={
     const heldMs=(e.endMs||0)-e.startMs;
     const holdError=kind==='strike'?e.withdrawn?0:Infinity:timed?Math.abs((e.durationBeats??0)-target.beats):Math.max(0,(target.minimumMs||T.minimumNoteMs)-heldMs)/C.beatMs;
     holds+=accuracy(holdError,PRACTICE_TOLERANCES.holdBeats);
-    if(target.bend)bends+=validateBend(e).ok?1:0;
+    if(target.bend)bends+=validateBend(e,target.bend).ok?1:0;
     details.push({expected:target.role,beat:target.beat,heard:e.role,correct:Boolean(voiced),heardBeat:e.beat,
       expectedHold:timed?target.beats:target.minimumMs,heardHold:timed?e.durationBeats:heldMs,
       onsetErrorBeats:timed?Number(onsetError.toFixed(3)):null,holdErrorBeats:Number(holdError.toFixed(3))});

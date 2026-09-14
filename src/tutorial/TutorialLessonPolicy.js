@@ -3,7 +3,7 @@ import { scoreForStep } from './scoring.js';
 import { validateSetup } from './validation.js';
 
 export const LESSON_CONTROL_IDS=Object.freeze(['previous-step','next-step','step-demo','step-practice','recenter','exit']);
-export const isSetupStep=step=>Boolean(step&&['ack','spawn','clock-wire','wire','tempo','timbre','stick','unequip'].includes(step.type));
+export const isSetupStep=step=>Boolean(step&&['ack','spawn','clock-wire','wire','tempo','timbre','stick','unequip','record-length'].includes(step.type));
 export const roleName=role=>C.backing.find(group=>group.role===role)?.label||({metronome:'Metronome',chordLooper:'Chord Looper',percussionLooper:'Percussion Looper',percussion:'percussion Honk',melody:'Jog Study'}[role])||role?.replace('melody-','')||'instrument';
 
 export function setupStatus(step,snapshot) {
@@ -47,6 +47,7 @@ export function musicUnavailable(step,snapshot) {
     if(!owner?.id)return `Place ${roleName(step.looperRole)} using Instruments → Looper.`;
     if(!owner.clockWired)return `Connect ${roleName(step.looperRole)} to the Metronome.`;
     if(owner.gapBeats!==0)return `Set ${roleName(step.looperRole)} Gap to zero.`;
+    if(owner.recordBeats!==16)return `Set ${roleName(step.looperRole)} right handle to 16 beats.`;
     const inputs=step.looperRole==='chordLooper'?C.backing.map(group=>group.role):['percussion'];
     for(const role of inputs)if(!snapshot.wires?.[role])return `Connect ${roleName(role)} to ${roleName(step.looperRole)}.`;
   }

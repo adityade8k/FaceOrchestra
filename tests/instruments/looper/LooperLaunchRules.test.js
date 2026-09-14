@@ -59,10 +59,10 @@ test('Start All shares launch and source tempo without forcing unequal fractiona
     assert.equal(JSON.stringify(l.timeline.toJSON()),saved[i]);l.looperController.stopPlayback(l);
   }
 });
-test('Start All validates the batch before mutation and shares request time, launch and phase through BPM changes',()=>{
+test('Linked Play excludes a recorder and shares request time, launch and phase through BPM changes',()=>{
   const h=fixture();h.set(749.999);
   h.b.looperData.transport.record();
-  assert.equal(LooperController.startAll([h.a,h.b],749.999).ok,false);assert.equal(h.a.looperData.pendingLaunch,null);
+  assert.equal(LooperController.startAll([h.a,h.b],749.999).ok,true);assert.equal(h.b.looperData.pendingLaunch,null);h.a.looperController.stopPlayback(h.a);
   h.b.looperData.transport.stop();h.times.length=0;
   const request=LooperController.startAll([h.a,h.b],749.999);h.quiet();
   assert.equal(request.targetBeat,1);assert.ok(h.times.every(t=>t===749.999));
@@ -132,11 +132,11 @@ test('Resume retains paused source phase on the next beat while Play restarts fr
   close(h.a.looperData.playbackEngine.elapsedMs,0);h.a.looperController.stopPlayback(h.a);
 });
 
-test('Start All replaces an already-prepared individual launch with the batch audio anchor',()=>{
+test('Start All shares an already-prepared launch anchor without duplicate scheduling',()=>{
   const h=fixture();h.set(690);h.a.looperController.startPlayback(h.a,690);h.quiet();
   const oldAnchor=h.a.looperData.pendingLaunch.audioAnchor;assert.equal(h.a.looperData.pendingLaunch.prepared,true);
   h.set(710);assert.equal(LooperController.startAll([h.a,h.b],710).ok,true);h.quiet();
-  assert.notEqual(h.a.looperData.pendingLaunch.audioAnchor,oldAnchor);
+  assert.equal(h.a.looperData.pendingLaunch.audioAnchor,oldAnchor);
   assert.equal(h.a.looperData.pendingLaunch.audioAnchor,h.b.looperData.pendingLaunch.audioAnchor);
   h.run(750);close(h.a.looperData.launchHistory.at(-1).audioOriginTime,h.b.looperData.launchHistory.at(-1).audioOriginTime);
   for(const l of [h.a,h.b]){l.looperController.stopPlayback(l);assert.equal(l.looperController.applier.retiringGenerations.size,0);}

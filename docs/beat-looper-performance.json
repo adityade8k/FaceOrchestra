@@ -1,0 +1,222 @@
+{
+  "root": "/Users/adityade/Documents/ITP/Sem2/Code of Music/Finals/FaceOrchestra",
+  "repetitions": 5,
+  "rows": [
+    {
+      "seconds": 10,
+      "tracks": 1,
+      "componentSize": 1,
+      "cpuMsPerSecond": 0.5722084999999879,
+      "operationsOverTwoSeconds": {
+        "start": 4,
+        "update": 116,
+        "release": 4,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 188,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 10,
+      "tracks": 1,
+      "componentSize": 8,
+      "cpuMsPerSecond": 0.7007934999999996,
+      "operationsOverTwoSeconds": {
+        "start": 32,
+        "update": 928,
+        "release": 32,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 188,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 10,
+      "tracks": 8,
+      "componentSize": 1,
+      "cpuMsPerSecond": 2.0630235000000425,
+      "operationsOverTwoSeconds": {
+        "start": 32,
+        "update": 928,
+        "release": 32,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 1504,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 10,
+      "tracks": 8,
+      "componentSize": 8,
+      "cpuMsPerSecond": 3.7924545000000762,
+      "operationsOverTwoSeconds": {
+        "start": 256,
+        "update": 7424,
+        "release": 256,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 1504,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 60,
+      "tracks": 1,
+      "componentSize": 1,
+      "cpuMsPerSecond": 0.25683850000002906,
+      "operationsOverTwoSeconds": {
+        "start": 4,
+        "update": 116,
+        "release": 4,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 188,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 60,
+      "tracks": 1,
+      "componentSize": 8,
+      "cpuMsPerSecond": 0.4409145000000052,
+      "operationsOverTwoSeconds": {
+        "start": 32,
+        "update": 928,
+        "release": 32,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 188,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 60,
+      "tracks": 8,
+      "componentSize": 1,
+      "cpuMsPerSecond": 1.8039800000002515,
+      "operationsOverTwoSeconds": {
+        "start": 32,
+        "update": 928,
+        "release": 32,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 1504,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 60,
+      "tracks": 8,
+      "componentSize": 8,
+      "cpuMsPerSecond": 4.396394500000156,
+      "operationsOverTwoSeconds": {
+        "start": 256,
+        "update": 7424,
+        "release": 256,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 1504,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 120,
+      "tracks": 1,
+      "componentSize": 1,
+      "cpuMsPerSecond": 0.2316945000000601,
+      "operationsOverTwoSeconds": {
+        "start": 4,
+        "update": 116,
+        "release": 4,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 188,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 120,
+      "tracks": 1,
+      "componentSize": 8,
+      "cpuMsPerSecond": 0.45170550000011644,
+      "operationsOverTwoSeconds": {
+        "start": 32,
+        "update": 928,
+        "release": 32,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 188,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 120,
+      "tracks": 8,
+      "componentSize": 1,
+      "cpuMsPerSecond": 1.8101885000001516,
+      "operationsOverTwoSeconds": {
+        "start": 32,
+        "update": 928,
+        "release": 32,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 1504,
+        "ranges": 80
+      }
+    },
+    {
+      "seconds": 120,
+      "tracks": 8,
+      "componentSize": 8,
+      "cpuMsPerSecond": 3.696975000001089,
+      "operationsOverTwoSeconds": {
+        "start": 256,
+        "update": 7424,
+        "release": 256,
+        "cancel": 0,
+        "drum": 0,
+        "graph": 0,
+        "entries": 1504,
+        "ranges": 80
+      }
+    }
+  ],
+  "burst": {
+    "joinMs": 0.40687500000012733,
+    "splitMs": 0.0595419999999649,
+    "join": {
+      "start": 64,
+      "update": 768,
+      "release": 0,
+      "cancel": 0,
+      "drum": 0,
+      "graph": 8,
+      "entries": 96,
+      "ranges": 8
+    },
+    "split": {
+      "start": 0,
+      "update": 0,
+      "release": 0,
+      "cancel": 64,
+      "drum": 0,
+      "graph": 8,
+      "entries": 0,
+      "ranges": 0
+    }
+  }
+}

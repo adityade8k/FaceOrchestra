@@ -208,8 +208,11 @@ export class TutorialAdapter {
       for (const group of C.backing) for (const h of this.members(group.role)) { h.setVowel(C.backingVowel);h.setNose(C.backingNose); }
       if (chords) this.r.setLooperControlValue(chords,'volume',-0.55);
     } else if (action==='start-all') {
-      this.startAllRequest=LooperController.startAll([chords,percussion],now);
+      this.startAllRequest=LooperController.startAll(this.r.instrumentRegistry.getByKind('looper'),now,{metronomeId:metro?.id});
       this.r.showRuntimeFeedback(this.startAllRequest.message);
+    } else if (action.startsWith('record-length-')) {
+      const looper=this.get(action.slice('record-length-'.length));
+      if(looper)this.r.setLooperControlValue(looper,'recordLength',1);
     } else {
       const match=/^(record|stop-record|play)-(chordLooper|percussionLooper)$/.exec(action);
       if(match) {
@@ -221,7 +224,6 @@ export class TutorialAdapter {
           this.r.pressLooperButton(looper,'record',null,now);
         } else if(looper && match[1]==='stop-record'&&(looper.transport.recording||looper.transport.recordArmed)) this.r.pressLooperButton(looper,'stop',null,now);
         else if(looper && match[1]==='play') {
-          (match[2]==='chordLooper'?percussion:chords)?.stop();
           this.r.pressLooperButton(looper,'play',null,now);
         }
       }
@@ -403,6 +405,7 @@ export class TutorialAdapter {
       const startBeat=h?.looperData.clockPlaybackStartBeatPosition;
       const source=h?.looperController.getAbsoluteSourcePosition(h,now);
       loopers[role]={id:h?.id,recording,recordArmed:Boolean(h?.transport.recordArmed),playing:Boolean(h?.transport.playing),
+        recordBeats:h?.looperData.recordBeats,recordingProgress:h?.looperController.getRecordingProgress(h,now),
         playArmed:Boolean(h?.looperData.playArmed),hasRecording:Boolean(h?.timeline.hasRecording()),gapBeats:h?.looperData.gapBeats,timeline:this.takes[role],
         clockWired:Boolean(routes.clocks[role]&&(role!=='percussionLooper'||routes.percussion.metronome)),
         startBeat,phase:Number.isFinite(source)&&h?.timeline.durationMs ? ((source%h.timeline.durationMs)+h.timeline.durationMs)%h.timeline.durationMs/h.timeline.durationMs : null,
@@ -435,14 +438,6 @@ export class TutorialAdapter {
     return base+Math.ceil((now+countIn*interval-base)/interval)*interval;
   }
 
-  finishCapture(session,now){
-    const step=session?.step,looper=this.get(step?.looperRole);
-    if(step?.type!=='record'||session.anchorMs===null||session.mode==='practice'&&session.phase!=='practicing'||!looper?.transport.recording)return;
-    // Stop during the written final breath once real gestures have released.
-    // Assessment remains at the endpoint (with grace); no recorded event is moved.
-    if(now>=session.anchorMs+(step.beats-.25)*session.beatMs&&this.gestures.size===0&&
-      !this.r.instrumentRegistry.getByKind('stick').some(s=>s.contactTargetIds.size))this.command(`stop-record-${step.looperRole}`,now,session.origin);
-  }
   releaseVirtuals() {
     for(const v of this.virtuals) { this.input(v,'trigger',false);this.input(v,'grip',false);this.park(v); }
   }

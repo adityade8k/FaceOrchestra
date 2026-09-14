@@ -6,7 +6,7 @@ import {getPercussionDurationMs} from '../../../src/audio/percussion/percussionP
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 
 for(const connected of [true,false])test(`delayed Stop preserves full final bend, release and interior rests (${connected?'connected':'internal'})`,()=>{
-  const takes=[0,2000,10000].map(wait=>{
+  const takes=[0,2000,5000].map(wait=>{
     const h=createHarness({connected,trackCount:2});
     h.controller.startRecording(h.looper,0);
     setHonk(h,0,137,1);setHonk(h,1,237,1);
@@ -96,7 +96,7 @@ test('a same-frame gate keeps a finite, stable cycle across save/load',()=>{
 
 for(const type of ['boink','hihat','metronomeWood'])test(`a single ${type} keeps its natural tail with duplicate-free fractional wraps`,()=>{
   const h=createHarness({connected:true,trackCount:1});h.controller.startRecording(h.looper,0);
-  h.controller.recordSelfDrumHit(h.looper,type,333);h.controller.stopRecording(h.looper,10333);
+  h.controller.recordSelfDrumHit(h.looper,type,333);h.controller.stopRecording(h.looper,7333);
   const duration=getPercussionDurationMs(type);close(h.timeline.durationMs,duration);
   assert.deepEqual(h.timeline.getMusicalOnsetTimes(),[0]);h.calls.length=0;
   // Successive scheduler windows share endpoints, including exact wraps.

@@ -76,6 +76,7 @@ export const LOOPER_DEBUG_COLORS = {
   playing: 0xf7d04a,
   controlVolume: 0x9e8cff,
   controlGap: 0x5ac8fa,
+  controlRecordLength: 0xf0a23c,
 };
 
 export const LOOPER_MORPH_TARGET_NAMES = {
@@ -83,6 +84,8 @@ export const LOOPER_MORPH_TARGET_NAMES = {
   buttonStop: "button_stop_recording",
   buttonPlay: "button_play",
   buttonPause: "button_pause",
+  bottomHandleDown: "bottom_handle_down",
+  bottomHandleUp: "bottom_handle_up",
   rightHandleDown: "Right_handle_down",
   rightHandleUp: "right_handle_up",
   leftHandleUp: "Left_handle_up",
@@ -103,6 +106,10 @@ export const LOOPER_CONTROL_MORPH_TARGETS = {
     up: LOOPER_MORPH_TARGET_NAMES.leftHandleUp,
   },
   gap: {
+    down: LOOPER_MORPH_TARGET_NAMES.bottomHandleDown,
+    up: LOOPER_MORPH_TARGET_NAMES.bottomHandleUp,
+  },
+  recordLength: {
     down: LOOPER_MORPH_TARGET_NAMES.rightHandleDown,
     up: LOOPER_MORPH_TARGET_NAMES.rightHandleUp,
   },
@@ -111,7 +118,10 @@ export const LOOPER_CONTROL_MORPH_TARGETS = {
 export const LOOPER_CONTROL_DEFAULT_VALUES = Object.freeze({
   volume: 0,
   gap: -1,
+  recordLength: 1,
 });
+
+export const LOOPER_RECORD_BEATS = Object.freeze([2, 4, 8, 16]);
 
 export const LOOPER_MORPH_SETTINGS = {
   buttonPressDurationMs: 140,
@@ -195,6 +205,10 @@ export const LOOPER_COLLIDER_TRANSFORM_DEFAULTS = {
 };
 
 export const LOOPER_CONTROL_COLLIDERS = Object.freeze({
+  recordLength: Object.freeze({
+    colliderColor: LOOPER_DEBUG_COLORS.controlRecordLength,
+    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.recordLength,
+  }),
   volume: Object.freeze({
     colliderColor: LOOPER_DEBUG_COLORS.controlVolume,
     morphTargets: LOOPER_CONTROL_MORPH_TARGETS.volume,

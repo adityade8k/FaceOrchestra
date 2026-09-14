@@ -14,12 +14,12 @@ import {
   getLooperControlValueFromDrag,
 } from "../../../src/instruments/looper/view/looperControlPresentation.js";
 
-test("Gap keeps its exact morph binding and defaults to the physical down endpoint", () => {
-  assert.deepEqual(LOOPER_CONTROL_DEFAULT_VALUES, { volume: 0, gap: -1 });
-  assert.deepEqual(Object.keys(LOOPER_CONTROL_COLLIDERS).sort(), ["gap", "volume"]);
+test("Gap restores the bottom morph binding and defaults to the physical down endpoint", () => {
+  assert.deepEqual(LOOPER_CONTROL_DEFAULT_VALUES, { volume: 0, gap: -1, recordLength:1 });
+  assert.deepEqual(Object.keys(LOOPER_CONTROL_COLLIDERS).sort(), ["gap", "recordLength", "volume"]);
   assert.deepEqual(LOOPER_CONTROL_MORPH_TARGETS.gap, {
-    down: "Right_handle_down",
-    up: "right_handle_up",
+    down: "bottom_handle_down",
+    up: "bottom_handle_up",
   });
 
   const controlPath = {
@@ -96,7 +96,7 @@ test("Looper morph weights remain unchanged for endpoints and intermediate value
   ]) assert.deepEqual(getLooperControlMorphWeights(value), expected);
 });
 
-test("Looper durable state exposes only Volume and Gap controls", () => {
+test("Looper durable state exposes Volume, Gap and recording length controls", () => {
   const controller = new LooperController();
   const looper = { id: "looper-gap", root: { visible: true }, hitTargets: {} };
   looper.looperData = controller.createStateData(looper, { trackCount: 1 });
@@ -104,7 +104,7 @@ test("Looper durable state exposes only Volume and Gap controls", () => {
   assert.equal(looper.looperData.gapControlValue, -1);
   assert.deepEqual(
     Object.keys(looper.looperData).filter((key) => key.endsWith("ControlValue")).sort(),
-    ["gapControlValue", "volumeControlValue"],
+    ["gapControlValue", "recordLengthControlValue", "volumeControlValue"],
   );
   assert.equal(controller.setControlValue(looper, "tempo", 1), null);
 
@@ -113,5 +113,5 @@ test("Looper durable state exposes only Volume and Gap controls", () => {
     timeline: {},
   });
   assert.equal(looper.looperData.gapControlValue, 0.5);
-  assert.deepEqual(controller.serializeState(looper).controls, { volume: 0.25, gap: 0.5 });
+  assert.deepEqual(controller.serializeState(looper).controls, { volume: 0.25, gap: 0.5, recordBeats:16 });
 });

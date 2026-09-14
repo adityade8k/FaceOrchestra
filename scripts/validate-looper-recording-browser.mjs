@@ -77,7 +77,8 @@ export async function validateRecordingPreservation(app,controller){
       const saved=json(chords);
       check(JSON.stringify(a.snapshot(performance.now()).loopers.chordLooper.timeline)===saved,'Cached tutorial take reflects the finalized physical take');
       const track=chords.timeline.getActiveTracks()[0],end=track.gateEvents.at(-1).timeMs;
-      check(end===chords.timeline.durationMs&&end>450&&end<900,'Gap 0 ends at the actual short hold release');
+      check(chords.timeline.lengthMode==='fixed-window'&&chords.timeline.fixedWindowBeats===16&&chords.timeline.durationMs===16*chords.timeline.sourceBeatIntervalMs,'Automatic take retains the complete 16-beat window');
+      check(end<1500,'Incomplete learner hold remains short inside the full window');
       report.takes.push({prior,score:t.session.result.score,timeline:chords.timeline.toJSON()});
       await play(prior?'prior take replaced':'initial empty take');
       await click('next-step');check(json(chords)===saved,'Next preserves the low-scoring take');
@@ -94,9 +95,10 @@ export async function validateRecordingPreservation(app,controller){
       globalThis.tutorialTestProgress?.(JSON.stringify({step:"manual delayed Stop "+waitAfter,seconds:Math.round(performance.now()/1000)}));
       await button(chords,'record');await perform('group-1');
       const start=chords.timeline.startedAtMs;
+      const firstOnset=chords.timeline.getMusicalOnsetTimes()[0];
       const beforeStop=chords.timeline.getActiveTracks()[0].events.filter(e=>e.type==='squeezeEnd').at(-1)?.timeMs;
       await delay(waitAfter);await button(chords,'stop');
-      check(Math.abs(chords.timeline.durationMs-beforeStop)<1,'Manual delayed Stop keeps the actual release endpoint ('+waitAfter+' ms)');
+      check(Math.abs(chords.timeline.durationMs-(beforeStop-firstOnset))<1,'Manual delayed Stop keeps the actual release endpoint ('+waitAfter+' ms)');
       check(chords.timeline.getMusicalOnsetTimes()[0]===0,'Manual take begins on its actual onset');
       report.takes.push({manual:true,waitAfter,start,timeline:chords.timeline.toJSON()});
     }
@@ -124,8 +126,9 @@ export async function validateStandalone(app){
   const setup=await (await import('./validate-tutorial-radial-browser.mjs')).validateLearnerFlow(app);
   try{
     const recordings=await validateRecordingPreservation(app,setup.controller);
+    const beatFeatures=await (await import('./validate-beat-window-browser.mjs')).validateBeatFeatures(app,setup.controller);
     const freePlayTransition=await validateFreePlayRecording(app);
-    return {radial:setup.checks,recordings,freePlayTransition};
+    return {radial:setup.checks,recordings,beatFeatures,freePlayTransition};
   }
   finally{setup.restoreControllers();await app.runtime.tutorial.enterPlay();}
 }

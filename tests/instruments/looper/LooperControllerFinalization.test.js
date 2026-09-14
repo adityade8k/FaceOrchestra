@@ -11,7 +11,7 @@ const BEAT_INTERVAL_MS = 500;
 test("off-beat recording retains interior rests with the same content cycle after delayed Stop", () => {
   const immediate = recordHonkPhrase({ stopMs: 1900 });
   const delayed = recordHonkPhrase({ stopMs: 3900 });
-  const muchLater = recordHonkPhrase({ stopMs: 11_900 });
+  const muchLater = recordHonkPhrase({ stopMs: 7_900 });
 
   for (const recording of [immediate, delayed, muchLater]) {
     assert.equal(recording.timeline.recordedDurationMs, 1800);
@@ -197,7 +197,7 @@ function createHarness({ connected, trackCount = 8 }) {
     beatPosition: connected ? 0 : null,
   };
   const adapter = {
-    getTimingForLooper: () => ({ ...clock }),
+    getTimingForLooper: (_id,now) => ({ ...clock,beatPosition:(now-clock.beatOriginMs)/clock.beatIntervalMs }),
     captureActionByHonkId: (honkId) => ({ ...inputs[Number(honkId.split("-").at(-1))] }),
     updateVisuals() {},
     ensureAudio() {},
