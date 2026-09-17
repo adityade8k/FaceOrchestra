@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kuch To Hua Hai · Honk Orchestra</title>
+    <link rel="stylesheet" href="./src/composition/composition.css" />
+    <script type="importmap">
+      { "imports": {
+        "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+      } }
+    </script>
+  </head>
+  <body>
+    <header>
+      <a class="back" href="./index.html">← Honk Orchestra / XR</a>
+      <p class="eyebrow">A composition for eleven honks</p>
+      <h1>Kuch To Hua Hai</h1>
+      <p class="subtitle">One melody. Fourteen phrases. A little room to breathe.</p>
+    </header>
+    <main id="stage" aria-label="Honk instruments arranged from G3 to B4"></main>
+    <section class="transport" aria-label="Composition playback">
+      <div class="phrase-line"><span id="section-name">Opening</span><span id="phrase-count">01 / 14</span></div>
+      <p id="phrase-label">Kuch To Hua Hai / Kuch Ho Gayaa Hai</p>
+      <progress id="progress" max="224" value="0" aria-label="Song progress"></progress>
+      <div class="controls">
+        <button id="play" class="primary" disabled>Play</button>
+        <button id="stop" disabled>Stop</button>
+        <button id="restart" disabled>Restart</button>
+        <span id="playback-status" role="status" aria-live="polite">Loading the honks…</span>
+      </div>
+      <div id="note-keys" aria-label="Hold a pitch to try a Honk while stopped"></div>
+      <p class="timing-note">96 BPM · First-pass rhythm · Hold a pitch below to try its Honk.</p>
+    </section>
+    <script type="module" src="./src/composition/main.js"></script>
+  </body>
+</html>

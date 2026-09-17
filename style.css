@@ -37,6 +37,13 @@ canvas {
   display: block;
 }
 
+.composition-link {
+  display: block;
+  color: #f3c677;
+  font-size: 14px;
+  margin: 12px 0;
+}
+
 #status span {
   margin-top: 4px;
   color: rgba(244, 239, 232, 0.78);

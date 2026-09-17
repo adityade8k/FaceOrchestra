@@ -55,8 +55,7 @@ export class HonkVoice {
     this.output.connect(this.destination);
   }
 
-  start() {
-    const now = this.context.currentTime;
+  start(now = this.context.currentTime) {
     this.source.start(now);
     this.vibrato.start(now);
   }
@@ -124,8 +123,9 @@ export class HonkVoice {
     pitchBendSemitones = null,
     pitchSnap = null,
     activeVoiceCount = 1,
+    atTime = this.context.currentTime,
   }) {
-    const now = this.context.currentTime;
+    const now = atTime;
     const frequency = getHonkFrequency({ leftEar, rightEar, pitchSnap });
     if (pitchBendSemitones !== null) {
       this.pitchBendSemitones = pitchBendSemitones;
@@ -145,6 +145,39 @@ export class HonkVoice {
     this.source.detune.setTargetAtTime(detune, now, 0.045);
     this.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);
     this.master.gain.setTargetAtTime(gain, now, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
+    return gain;
+  }
+
+  // A finite score can enqueue its entire performance on the Web Audio clock.
+  // Each attack owns a voice, so repeated pitches retain independent release tails.
+  scheduleNote({ startTime, duration, ...performance }, onEnded) {
+    this.scheduledStart = startTime;
+    this.source.frequency.setValueAtTime(getHonkFrequency(performance), startTime);
+    this.master.gain.setValueAtTime(0.0001, startTime);
+    const targetGain = this.update({ ...performance, atTime: startTime });
+    const gainAtRelease = targetGain + (0.0001 - targetGain) *
+      Math.exp(-duration / HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
+    this.start(startTime);
+    return this.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded, {
+      atTime: startTime + duration,
+      gainAtRelease,
+    });
+  }
+
+  cancelScheduledNote() {
+    if (this.disconnected || this.scheduledStart === undefined) return;
+    const now = this.context.currentTime;
+    // Muting the output also cancels attacks that have not started yet. For a
+    // sounding note, preserve the existing envelope and fade the output gently.
+    const future = now < this.scheduledStart;
+    this.output.gain.cancelScheduledValues(now);
+    this.output.gain.setValueAtTime(future ? 0 : this.output.gain.value, now);
+    const silentAt = now + (future ? 0 : HONK_RELEASE_SETTINGS.liveFadeSeconds);
+    this.output.gain.linearRampToValueAtTime(0, silentAt);
+    const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
+    this.source.stop(stopAt);
+    this.vibrato.stop(stopAt);
+    this.releaseState = { releaseStart: now, silentAt, stopAt };
   }
 
   release(fadeSeconds = HONK_RELEASE_SETTINGS.liveFadeSeconds, onEnded, options = {}) {
@@ -152,7 +185,7 @@ export class HonkVoice {
       return this.releaseState;
     }
 
-    const now = this.context.currentTime;
+    const now = options.atTime ?? this.context.currentTime;
     const requestedFade = Number.isFinite(fadeSeconds)
       ? fadeSeconds
       : HONK_RELEASE_SETTINGS.liveFadeSeconds;
@@ -189,7 +222,7 @@ export class HonkVoice {
     if (options?.origin === HONK_RELEASE_ORIGINS.controller) {
       this.scheduleControllerRelease(now, silentAt);
     } else {
-      this.scheduleDefaultRelease(now, silentAt);
+      this.scheduleDefaultRelease(now, silentAt, options.gainAtRelease);
     }
     this.source.onended = handleSourceEnded;
 
@@ -231,8 +264,11 @@ export class HonkVoice {
     this.output.gain.linearRampToValueAtTime(0, silentAt);
   }
 
-  scheduleDefaultRelease(now, silentAt) {
-    if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
+  scheduleDefaultRelease(now, silentAt, gainAtRelease) {
+    if (Number.isFinite(gainAtRelease)) {
+      this.master.gain.cancelScheduledValues(now);
+      this.master.gain.setValueAtTime(gainAtRelease, now);
+    } else if (typeof this.master.gain.cancelAndHoldAtTime === "function") {
       this.master.gain.cancelAndHoldAtTime(now);
     } else {
       const currentGain = Number.isFinite(this.master.gain.value)

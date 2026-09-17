@@ -5,6 +5,34 @@ import { HonkVoiceService } from "../../src/audio/honk/HonkVoiceService.js";
 import { HONK_RELEASE_ORIGINS } from "../../src/audio/honk/HonkReleaseProfile.js";
 import { HONK_RELEASE_SETTINGS } from "../../src/config/audio.js";
 
+test("scheduled repeated notes own independent voices and do not replace a manual voice", async () => {
+  const created = [];
+  const service = new HonkVoiceService({
+    ensureAudio: async () => ({}), getDestination: () => null,
+    createVoice: () => {
+      const voice = {
+        start() {},
+        scheduleNote(options, onEnded) { this.options = options; this.onEnded = onEnded; },
+        cancelScheduledNote() { this.cancelled = true; },
+      };
+      created.push(voice);
+      return voice;
+    },
+  });
+  await service.startVoice("manual");
+  service.scheduleVoice("note-1", { context: {}, startTime: 2, duration: .3, vowel: "A" });
+  service.scheduleVoice("note-2", { context: {}, startTime: 2.35, duration: .3, vowel: "A" });
+  assert.equal(created.length, 3);
+  assert.equal(service.voices.get("manual"), created[0]);
+  assert.equal(service.scheduledVoices.size, 2);
+  created[1].onEnded();
+  assert.equal(service.scheduledVoices.get("note-2"), created[2]);
+  service.cancelScheduledVoice("note-2");
+  assert.equal(created[2].cancelled, true);
+  assert.equal(service.voices.get("manual"), created[0]);
+  assert.equal(service.scheduledVoices.size, 0);
+});
+
 test("release cancels a voice whose audio context is still starting", async () => {
   let finishAudioStart;
   const service = new HonkVoiceService({

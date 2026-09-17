@@ -15,6 +15,33 @@ export class HonkVoiceService {
     this.startingVoices = new Set();
     this.startTokens = new Map();
     this.currentVowel = "A";
+    this.scheduledVoices = new Map();
+  }
+
+  scheduleVoice(voiceId, { context, startTime, duration, onEnded, ...performance }) {
+    if (this.scheduledVoices.has(voiceId)) throw new Error(`Voice already scheduled: ${voiceId}`);
+    const voice = this.createVoice({
+      context,
+      destination: this.getDestination(context),
+      vowel: performance.vowel,
+    });
+    this.scheduledVoices.set(voiceId, voice);
+    try {
+      return voice.scheduleNote({ startTime, duration, ...performance }, () => {
+        if (this.scheduledVoices.get(voiceId) === voice) this.scheduledVoices.delete(voiceId);
+        onEnded?.();
+      });
+    } catch (error) {
+      this.scheduledVoices.delete(voiceId);
+      voice.disconnect();
+      throw error;
+    }
+  }
+
+  cancelScheduledVoice(voiceId) {
+    const voice = this.scheduledVoices.get(voiceId);
+    this.scheduledVoices.delete(voiceId);
+    voice?.cancelScheduledNote();
   }
 
   async startVoice(voiceId = "main") {
@@ -80,6 +107,7 @@ export class HonkVoiceService {
   }
 
   releaseAll() {
+    for (const voiceId of this.scheduledVoices.keys()) this.cancelScheduledVoice(voiceId);
     const voiceIds = new Set([...this.voices.keys(), ...this.startingVoices]);
     for (const voiceId of voiceIds) {
       this.releaseVoice(voiceId);

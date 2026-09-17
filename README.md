@@ -23,7 +23,17 @@ For a desktop boot and asset check:
 npm run dev
 ```
 
-Open <http://localhost:5173>. The desktop view can confirm that the scene, assets, lighting, saved scene, and resize handling load. Performing and placing instruments require XR controllers.
+Open <http://localhost:5173>. Choose **Play “Kuch To Hua Hai” on desktop** for the composition, or enter XR to place and perform instruments with controllers.
+
+### Desktop composition: Kuch To Hua Hai
+
+Open <http://localhost:5173/composition.html> and click **Play**. Eleven existing Honk instruments perform all 14 supplied phrases, once, in pitch order across two rows (left to right, then the lower row). The active Honk squeezes and lights up; the current phrase and song progress appear below. No headset, controller, Looper, Metronome, accompaniment, or clicks are involved.
+
+**Stop** cancels the performance and resets its animation. **Restart** releases the previous performance and starts at the first note. Play is disabled while starting or playing. Once stopped or finished, hold a pitch button with the pointer, Space, or Enter to try its Honk manually. Leaving the page stops playback.
+
+The rhythm is a musical first pass, not an exact transcription. Edit [kuchToHuaHaiScore.js](src/composition/kuchToHuaHaiScore.js) to change `tempoBpm` (default 96) or any `[pitch, local start beat, duration in beats]` tuple. Each phrase declares its absolute `startBeat`, length and lyrical boundary. Gaps between notes and phrases are rests. The exported `events` carry absolute `startBeat`, `durationBeats`, `pitch` and `phraseId`. Compact runs have shorter durations, the ellipsis-marked E notes sustain, and each repeated note remains a separate attack. Lowercase g/a/a# are G3/A3/Bb3; uppercase notes use octave 4, including F#4.
+
+The finite score schedules all 201 attacks and releases on the existing Web Audio clock, using the ordinary Honk oscillator, formants, gain smoothing, master bus and release envelope. Each attack gets an independent voice so its previous release can finish. Visuals sample the audio output clock and apply the existing Honk squeeze morph through a composition automation layer. Stop/Restart invalidate pending audio-unlock work and cancel only composition voices. The separate desktop scene does not load or save the XR scene.
 
 ### Start HTTPS for a headset
 
@@ -188,7 +198,7 @@ localStorage.removeItem("face-orchestra:scene:v3");
 
 ## Troubleshooting
 
-- **No Enter AR/VR button:** use a WebXR-capable browser. Desktop browsers without `navigator.xr` can only show the fallback scene.
+- **No Enter AR/VR button:** use a WebXR-capable browser for XR. The desktop composition works without `navigator.xr`; follow the desktop composition link.
 - **Headset refuses XR over the LAN:** use `https://`, confirm the headset trusts the certificate authority, and open port `8443` on the computer firewall.
 - **Blank model or missing note labels:** confirm the headset has internet access and check the console for failed GLB, texture, Three.js CDN, or font requests.
 - **No sound:** interact once to allow the browser to start Web Audio, raise the relevant Honk/Looper/Metronome volume, and confirm the headset is not muted.

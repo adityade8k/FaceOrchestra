@@ -34,7 +34,22 @@ export class AudioSystem {
   }
 
   updateVoice(voiceId, performanceState = {}, tuning = {}, { gain = HONK_MASTER_GAIN } = {}) {
-    this.honkVoices.updateVoice(voiceId, {
+    this.honkVoices.updateVoice(voiceId, this.getVoicePerformance(performanceState, tuning, gain));
+  }
+
+  scheduleHonkNote(voiceId, performanceState, tuning, { context, startTime, duration, onEnded }) {
+    return this.honkVoices.scheduleVoice(voiceId, {
+      ...this.getVoicePerformance(performanceState, tuning, HONK_MASTER_GAIN),
+      context, startTime, duration, onEnded,
+    });
+  }
+
+  cancelScheduledHonk(voiceId) {
+    this.honkVoices.cancelScheduledVoice(voiceId);
+  }
+
+  getVoicePerformance(performanceState = {}, tuning = {}, gain = HONK_MASTER_GAIN) {
+    return {
       hornAmount: performanceState.squeeze ?? 0,
       masterGain: gain,
       leftEar: performanceState.earLeft ?? tuning.pitchControl ?? 0,
@@ -45,7 +60,7 @@ export class AudioSystem {
         : "A",
       pitchBendSemitones: (performanceState.bend ?? 0) * MAX_PITCH_BEND_SEMITONES,
       pitchSnap: tuning.pitchSnap || null,
-    });
+    };
   }
 
   setVoiceVowel(voiceId, vowel) {

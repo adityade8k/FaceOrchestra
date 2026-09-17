@@ -245,6 +245,55 @@ test("a source-stop error waits through the silent point before fallback cleanup
   assert.equal(completionCount, 1);
 });
 
+test("scheduled Honk attacks and releases use absolute audio times and the existing envelope", () => {
+  const context = createAudioContext({ currentTime: 1 });
+  const voice = new HonkVoice({ context });
+  voice.scheduleNote({ startTime: 4, duration: .4, leftEar: -1, rightEar: 0, hornAmount: 1 });
+  assert.deepEqual(voice.source.startCalls, [4]);
+  assert.deepEqual(voice.vibrato.startCalls, [4]);
+  assert.ok(Math.abs(lastEventOfType(voice.source.frequency, "setValueAtTime").value - 261.626) < .01);
+  assert.equal(lastEventOfType(voice.master.gain, "setTargetAtTime").time, 4);
+  assert.equal(lastEventOfType(voice.master.gain, "setTargetAtTime").timeConstant, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
+  assert.equal(voice.releaseState.releaseStart, 4.4);
+  assert.equal(voice.releaseState.silentAt, 4.4 + HONK_RELEASE_SETTINGS.liveFadeSeconds);
+  assert.deepEqual(voice.source.stopCalls, [voice.releaseState.stopAt]);
+  assert.equal(lastEventOfType(voice.master.gain, "linearRampToValueAtTime").value, 0);
+});
+
+test("scheduled release fallback has a known future gain, including without cancelAndHold", () => {
+  const voice = new HonkVoice({ context: createAudioContext({ supportsCancelAndHold: false }) });
+  voice.scheduleNote({ startTime: 3, duration: .1, leftEar: 0, rightEar: 0, hornAmount: 1 });
+  const releaseGain = lastEventOfType(voice.master.gain, "setValueAtTime");
+  assert.equal(releaseGain.time, 3.1);
+  assert.ok(releaseGain.value > .39 && releaseGain.value < VOICE_GAIN_SETTINGS.baseGain);
+});
+
+test("cancelling future notes mutes them before start and advances their scheduled stop", () => {
+  const context = createAudioContext({ currentTime: 1 });
+  const voice = new HonkVoice({ context });
+  let ended = 0;
+  voice.scheduleNote({ startTime: 30, duration: 1, leftEar: 0, rightEar: 0, hornAmount: 1 }, () => ended++);
+  voice.cancelScheduledNote();
+  assert.equal(lastEventOfType(voice.output.gain, "setValueAtTime").value, 0);
+  assert.equal(voice.source.stopCalls.at(-1), 1 + HONK_RELEASE_SETTINGS.stopPaddingSeconds);
+  voice.source.onended();
+  voice.source.onended();
+  assert.equal(ended, 1);
+  assert.equal(voice.disconnected, true);
+});
+
+test("Stop fades an already sounding scheduled note, overriding its distant release", () => {
+  const context = createAudioContext({ currentTime: 1 });
+  const voice = new HonkVoice({ context });
+  voice.scheduleNote({ startTime: 2, duration: 8, leftEar: 0, rightEar: 0, hornAmount: 1 });
+  context.currentTime = 3;
+  voice.cancelScheduledNote();
+  const fade = lastEventOfType(voice.output.gain, "linearRampToValueAtTime");
+  assert.equal(fade.time, 3 + HONK_RELEASE_SETTINGS.liveFadeSeconds);
+  assert.equal(fade.value, 0);
+  assert.ok(voice.source.stopCalls.at(-1) < 3.2);
+});
+
 function createAudioContext({
   currentTime = 0,
   supportsCancelAndHold = true,
