@@ -65,3 +65,11 @@ canvas {
 .tutorial-actions button:hover, .tutorial-actions button:focus-visible { background: #497b66; outline: 2px solid #b4ecd3; }
 .tutorial-actions button:disabled { opacity: .4; cursor: default; }
 @media(max-width: 650px) { .tutorial-panel { left: 12px; top: 76px; width: calc(100vw - 24px); padding: 16px; height: calc(100dvh - 100px); } }
+/* Desktop counterparts of the lesson's ordinary squeeze and stick gestures. */
+.kuch-keyboard { position: fixed; bottom: 16px; left: max(360px, 28vw); right: 16px; z-index: 20; padding: 12px; border-radius: 14px; background: #102321ed; color: #fff4dd; }
+.kuch-keyboard[hidden] { display: none; }
+.kuch-keyboard p { margin: 0 0 8px; font: 13px/1.4 sans-serif; }
+.kuch-keyboard button { margin: 3px; padding: 9px 12px; border: 1px solid #638879; border-radius: 7px; background: #2e5149; color: #fff4dd; touch-action: none; }
+.kuch-keyboard button[data-active="true"] { background: #756035; outline: 2px solid #ffd591; }
+.kuch-keyboard button:disabled { opacity: .6; }
+@media (max-width: 700px) { .kuch-keyboard { left: 12px; right: 12px; bottom: 8px; } .kuch-keyboard button { padding: 6px; } }

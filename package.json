@@ -9,6 +9,7 @@
     "test": "node --test",
     "check": "node scripts/verify-imports.mjs",
     "verify": "npm run check && npm test",
-    "test:tutorial:browser": "node scripts/run-tutorial-browser.mjs"
+    "test:tutorial:browser": "node scripts/run-tutorial-browser.mjs",
+    "test:kuch:browser": "TUTORIAL_TEST=kuch node scripts/run-tutorial-browser.mjs"
   }
 }

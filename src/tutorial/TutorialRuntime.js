@@ -9,6 +9,7 @@ import { scoreForStep } from './scoring.js';
 import { TutorialLessonFlow } from './TutorialLessonFlow.js';
 import { TutorialTimingCues } from './TutorialTimingCues.js';
 import { LESSON_CONTROL_IDS, setupStatus } from './TutorialLessonPolicy.js';
+import { KuchTutorial } from './kuch/KuchTutorial.js';
 
 export class TutorialRuntime {
   constructor(runtime) {
@@ -20,6 +21,7 @@ export class TutorialRuntime {
     this.report=null;this.practiceProgress=null;this.simulationProgress=null;this.uiFeedback='';
     this.pendingXRPlacementFrames=0;
     this.onVisibility=()=>{if(document.hidden){
+      this.kuch?.cancel('Tab hidden. Choose an action for a fresh count-in.');
       this.conductor?.pause('Tab hidden. Resume restarts the current action.');
       if(this.session?.mode==='practice')this.flow.cancelOutgoing({keepResult:this.session.phase==='results'});
       this.uiFeedback='Tab hidden. Choose Practice or Demonstrate again.';this.adapter.releaseAll();this.cues.reset();
@@ -33,6 +35,7 @@ export class TutorialRuntime {
     document.addEventListener('visibilitychange',this.onVisibility);this.render(performance.now());
   }
   accept(event) {
+    if(this.kuch){this.kuch.accept(event);return;}
     this.session?.accept(event);this.demo?.session.accept(event);
     if(this.session && ['note','strike'].includes(event.kind)) {
       this.diagnostics.push({id:event.id,kind:event.kind,role:event.role,origin:event.origin,
@@ -42,12 +45,16 @@ export class TutorialRuntime {
       if(this.diagnostics.length>256)this.diagnostics.shift();
     }
   }
-  observeStrike(event,context,recordedCount) {if(this.session)this.adapter.observeStrike(event,context,recordedCount);}
+  observeStrike(event,context,recordedCount) {if(this.session||this.kuch)this.adapter.observeStrike(event,context,recordedCount);}
   onPreview(preview,entry,controller) {if(this.session)this.adapter.bindPreview(preview,entry,controller);}
   onPlaced(instruments,preview) {if(this.session)this.adapter.placed(instruments,preview);}
   onSpawnCancelled() {this.adapter.snapshotAt=-Infinity;this.lastDraw=-Infinity;}
   async action(id,controller=null) {
     if(this.busy||this.disposed)return;
+    if(this.kuch){
+      try{await this.kuch.action(id);}catch(error){this.kuch?.cancel(error.message);}
+      this.render(performance.now());return;
+    }
     if(this.session){
       // No hidden Spawn, Prepare, connection or backing-generation routes.
       if(!LESSON_CONTROL_IDS.includes(id))return;
@@ -63,6 +70,12 @@ export class TutorialRuntime {
       this.render(performance.now());return;
     }
     if(id==='tutorial'){this.screen='tutorial';this.render(performance.now());return;}
+    if(id==='jog'||id==='kuch'){this.screen=id;this.uiFeedback='';this.render(performance.now());return;}
+    if(id==='kuch-practice'||id==='kuch-simulate'){
+      try{await this.r.audioSystem.ensureAudio();await this.enterKuch(id==='kuch-simulate');}
+      catch(error){this.uiFeedback=error.message;this.render(performance.now());}
+      return;
+    }
     if(id==='back'){this.screen='launch';this.render(performance.now());return;}
     if(id==='play'){await this.enterPlay();return;}
     if(id==='practice'||id==='simulate'){
@@ -86,8 +99,21 @@ export class TutorialRuntime {
       this.render(performance.now());
     } finally {this.busy=false;}
   }
+  async enterKuch(simulate=false) {
+    this.flow.cancelOutgoing();this.busy=true;this.r.sessionMode='transition';
+    try{
+      if(!this.freePlayScene)this.freePlayScene=this.r.sceneSerializer.serialize();
+      this.conductor?.stop();this.conductor=null;this.stopDemo();this.adapter.clear();this.session=null;
+      this.kuch=new KuchTutorial(this);this.r.sessionMode=simulate?'simulation':'practice';
+      this.kuch.setup();this.screen='lesson';this.uiFeedback='';this.panel.recenter(this.r.getUserCamera(),true);
+      if(simulate)this.kuch.start(this.kuch.step,false,{full:true});
+      this.render(performance.now());
+    }catch(error){this.kuch?.dispose();this.kuch=null;await this.enterPlay();throw error;}
+    finally{this.busy=false;}
+  }
   async enterPlay() {
     this.flow.cancelOutgoing();
+    this.kuch?.dispose();this.kuch=null;
     const firstPlay=!this.freePlayScene&&!this.session;
     this.busy=true;this.r.sessionMode='transition';
     try {
@@ -130,6 +156,11 @@ export class TutorialRuntime {
   }
   beforeFrame(now) {
     if(!this.ready||this.busy||this.disposed)return;
+    if(this.kuch){
+      if(this.pendingXRPlacementFrames>0){this.panel.recenter(this.r.getUserCamera(),true);this.pendingXRPlacementFrames--;}
+      try{this.kuch.update(now);}catch(error){this.kuch.cancel(error.message);console.error('Kuch tutorial:',error);}
+      return;
+    }
     if(this.pendingXRPlacementFrames>0) {this.panel.recenter(this.r.getUserCamera(),Boolean(this.session));this.pendingXRPlacementFrames--;}
     if(this.demo&&!this.flow.demoOwnsTakes(this.demo))this.flow.stopDemo(false,'Example stopped because an instrument changed. Your current take is kept.');
     try {this.conductor?.update(now);this.demo?.conductor.update(now);}
@@ -141,6 +172,12 @@ export class TutorialRuntime {
   }
   afterFrame(now) {
     if(!this.ready||this.busy||this.disposed)return;
+    if(this.kuch){
+      this.kuch.afterFrame(now);this.panel.animate?.(now);
+      if(now-this.lastDraw>=100){this.render(now);this.lastDraw=now;}
+      if(this.panel.xr){const hit=this.r.controllers.filter(c=>!c.userData.virtualTutorial).map(c=>this.panelHit(c)).find(h=>h?.object.userData.action);this.panel.hover(hit?.object);}
+      return;
+    }
     if(this.session) {
       this.adapter.observe(now);const snapshot=this.adapter.snapshot(now);
       if(this.session.mode==='simulation')Object.assign(this.adapter.takeEvidence,this.session.takeEvidence);
@@ -184,7 +221,7 @@ export class TutorialRuntime {
       this.panel.hover(hit?.object);
     }
   }
-  blocksController(controller) {return Boolean(this.busy || ((this.session?.mode==='simulation'||this.demo)&&!controller.userData.virtualTutorial));}
+  blocksController(controller) {return Boolean(this.busy || ((this.session?.mode==='simulation'||this.demo||this.kuch?.demonstrating)&&!controller.userData.virtualTutorial));}
   panelHit(controller) {
     if(!this.panel?.group.visible)return null;
     controller.getWorldPosition(this.position);controller.getWorldQuaternion(this.quaternion);
@@ -208,14 +245,17 @@ export class TutorialRuntime {
     state.tutorialPanelCapture=false;state.suppressTriggerUntilRelease=false;this.r.releaseRaySqueeze(state);return true;
   }
   onXRStart() {this.pendingXRPlacementFrames=4;if(this.r.sessionMode==='play')this.r.spawnDefaultInstrumentPreview();this.r.hideInstructionPanel();this.r.instructionPanelClosed=true;this.panel?.setXR(true,this.r.getUserCamera());this.panel?.recenter(this.r.getUserCamera(),Boolean(this.session));}
-  onXREnd() {this.pendingXRPlacementFrames=0;this.conductor?.stop();this.flow.cancelOutgoing();this.adapter.releaseAll();this.panel?.setXR(false);if(this.session)this.enterPlay().catch(error=>console.error(error));}
+  onXREnd() {this.pendingXRPlacementFrames=0;this.conductor?.stop();this.flow.cancelOutgoing();this.adapter.releaseAll();this.panel?.setXR(false);if(this.session||this.kuch)this.enterPlay().catch(error=>console.error(error));}
   render(now) {
     if(!this.panel)return;
+    if(this.kuch){this.panel.render(this.kuch.model(now));return;}
     const button=(id,label,disabled=false,extra={})=>({id,label,disabled,...extra});
     let model;
     if(!this.session){
-      if(this.screen==='launch')model={title:'Honk Orchestra',instruction:'Play freely, or build and perform the Jog Study.',actions:[button('play','Play'),button('tutorial','Tutorial')]};
-      else if(this.screen==='tutorial')model={title:C.title,instruction:'Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.',feedback:'Full simulation builds and performs the composition automatically; allow several minutes.',actions:[button('practice','Start Lesson'),button('simulate','Full Simulation'),button('back','Back')]};
+      if(this.screen==='launch')model={title:'Honk Orchestra',instruction:'Play freely, or learn a piece with a guided tutorial.',actions:[button('play','Play'),button('tutorial','Tutorials')]};
+      else if(this.screen==='tutorial')model={title:'Choose a study',instruction:'Listen to an example, practice each part, then perform with recorded backing.',actions:[button('jog','Rag Jog Study'),button('kuch','Kuch To Hua Hai'),button('back','Back')]};
+      else if(this.screen==='jog')model={title:C.title,instruction:'Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.',feedback:'Full simulation builds and performs the composition automatically; allow several minutes.',actions:[button('practice','Start Lesson'),button('simulate','Full Simulation'),button('tutorial','All Tutorials')]};
+      else if(this.screen==='kuch')model={title:'Kuch To Hua Hai',instruction:'Learn two chord patterns, a stick groove, and three melody verses. The ensemble is prepared for you. Record two backing loopers, then play the melody live.',feedback:'92 BPM · 4/4 · Eight-beat verse breaks. Full simulation records the backing, then performs the song once (about two minutes). Your free-play scene returns on Exit.',actions:[button('kuch-practice','Start Lesson'),button('kuch-simulate','Full Simulation'),button('tutorial','All Tutorials')]};
       else model={title:'Free play',instruction:'Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.',actions:[button('tutorial','Tutorial')]};
       if(this.uiFeedback)model.feedback=this.uiFeedback;
       this.panel.setTransport('');
@@ -276,6 +316,7 @@ export class TutorialRuntime {
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.conductor?.stop();this.stopDemo();
+    this.kuch?.dispose();this.kuch=null;
     this.flow.cancelOutgoing();document.removeEventListener('visibilitychange',this.onVisibility);this.cues.dispose();this.adapter.dispose();this.panel?.dispose();
   }
 }

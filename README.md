@@ -207,4 +207,4 @@ npm test
 npm run verify
 ```
 
-The opening **Tutorial** panel teaches and simulates the original **VIRAG 2 — JOG STUDY** composition. See [desktop simulation, headset controls, architecture and verification](docs/tutorial.md).
+The opening **Tutorials** chooser includes **Rag Jog Study** (VIRAG 2) and **Kuch To Hua Hai**. Both offer demonstrations and practice in the main app. See [Jog controls and verification](docs/tutorial.md) and [Kuch To Hua Hai lesson](docs/kuch-tutorial.md).

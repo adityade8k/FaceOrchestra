@@ -30,12 +30,13 @@ ws.onmessage=({data})=>{
 ws.onclose=event=>{for(const pending of requests.values())pending.reject(new Error(`Chrome test connection closed (${event.code}): ${event.reason}`));requests.clear();};
 await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject;});
 try {
+  if(process.env.TUTORIAL_TEST==='kuch'){await send('Emulation.setFocusEmulationEnabled',{enabled:true});await send('Page.bringToFront');}
   await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setCacheDisabled',{cacheDisabled:true});
   await send('Runtime.addBinding',{name:'tutorialTestProgress'});
   await send('Page.reload',{ignoreCache:true});
   await new Promise(resolve=>setTimeout(resolve,1500));
   const result=await send('Runtime.evaluate',{
-    expression:process.env.TUTORIAL_TEST==='recording'?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-looper-recording-browser.mjs')).validateStandalone(app);})()`:['usability','spawn','radial'].includes(process.env.TUTORIAL_TEST)?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-tutorial-radial-browser.mjs')).validateStandalone(app);})()`:`(async()=>{
+    expression:process.env.TUTORIAL_TEST==='kuch'?`(async()=>{const {app}=await import('/src/main.js');const start=performance.now();return (await import('/scripts/validate-kuch-browser.mjs')).validate(app,{onProgress:step=>tutorialTestProgress(JSON.stringify({step,seconds:Math.round((performance.now()-start)/1000)}))});})()`:process.env.TUTORIAL_TEST==='recording'?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-looper-recording-browser.mjs')).validateStandalone(app);})()`:['usability','spawn','radial'].includes(process.env.TUTORIAL_TEST)?`(async()=>{const {app}=await import('/src/main.js');return (await import('/scripts/validate-tutorial-radial-browser.mjs')).validateStandalone(app);})()`:`(async()=>{
       const {app}=await import('/src/main.js');
       const {validate}=await import('/scripts/validate-tutorial-browser.mjs');
       const report=await validate(app,{onProgress:p=>tutorialTestProgress(JSON.stringify(p))});
