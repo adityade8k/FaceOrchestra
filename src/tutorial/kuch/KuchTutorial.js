@@ -127,7 +127,8 @@ export class KuchTutorial {
     }
     if(this.phase.kind==='drums'&&!this.phase.learner)this.a.equip(true,'demonstration');
     if(['melody','performance'].includes(this.phase.kind)&&this.ready()){
-      this.restore('chordLooper',this.banks.D);this.activeBank='D';
+      this.activeBank=(this.phase.backingChanges||BANK_CHANGES)[0][1];
+      this.restore('chordLooper',this.banks[this.activeBank]);
       for(const role of ['chordLooper','percussionLooper']){
         const h=this.a.get(role);h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{targetBeat:this.anchorBeat});
       }
@@ -158,10 +159,9 @@ export class KuchTutorial {
     if(this.lastNow!==null&&this.lastNow>=this.anchor&&now-this.lastNow>500){this.cancel('Playback paused after a delayed frame. Restart for a fresh count-in.');return;}
     this.lastNow=now;const p=this.phase,beat=(now-this.anchor)/BEAT_MS;
     if(['melody','performance'].includes(p.kind)&&this.ready()&&beat>=0&&beat<p.beats){
-      const bank=BANK_CHANGES.filter(([at])=>at<=beat).at(-1)?.[1];
+      const [at,bank]=(p.backingChanges||BANK_CHANGES).filter(([at])=>at<=beat).at(-1)||[];
       if(bank&&bank!==this.activeBank){
         this.restore('chordLooper',this.banks[bank]);const h=this.a.get('chordLooper');
-        const at=BANK_CHANGES.filter(([at])=>at<=beat).at(-1)[0];
         h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{targetBeat:this.anchorBeat+at});this.activeBank=bank;
       }
     }
@@ -221,9 +221,10 @@ export class KuchTutorial {
   model(now) {
     const p=this.phase||this.step,beat=this.phase?(now-this.anchor)/BEAT_MS:null;
     const target=p.events.find(e=>beat!==null&&e.beat+e.beats>beat);
-    const rest=p.kind==='performance'&&beat!==null?[40,88].find(start=>beat>=start&&beat<start+8):undefined;
+    const sourceBeat=beat+(p.sourceStart||0);
+    const rest=['melody','performance'].includes(p.kind)&&beat!==null?[40,88].find(start=>sourceBeat>=start&&sourceBeat<start+8):undefined;
     this.host.panel.setTransport(beat===null?'92 BPM · 4/4':beat<-4?'Ready for count-in…':beat<0?`Count in: ${Math.ceil(-beat)}`:
-      rest!==undefined?`Interlude · ${Math.floor(beat-rest)+1} / 8 beats`:
+      rest!==undefined?`Interlude · ${Math.floor(sourceBeat-rest)+1} / 8 beats`:
       `Beat ${Math.min(p.beats,Math.floor(beat)+1)} / ${p.beats}${target?' · '+(target.midi?noteName(target.midi):target.sound||target.role)+(p.kind==='drums'?' · tap':' · hold '+target.beats.toFixed(2)+' beats'):''}`);
     const button=(id,label,disabled=false)=>({id,label,disabled});
     return {visible:true,title:p.title,instruction:p.instruction,progress:`KUCH TO HUA HAI · ${STEPS.findIndex(s=>s.id===p.id)+1}/${STEPS.length}${this.phase?this.phase.learner?' · Practice':' · Demonstration':''}`,

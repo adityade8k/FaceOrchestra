@@ -25,6 +25,15 @@ export const DRUMS = notes('Drumset').filter(n=>n.beat>=24&&n.beat<40).map((n,i)
   role:n.midi===36?'percussion':'percussionLooper',sound:n.midi===36?'boink':'hihat',
 }));
 export const BANK_CHANGES = [[0,'D'],[16,'change'],[32,'D'],[64,'change'],[80,'D'],[112,'change'],[128,'D']];
+// Cut on phrase/loop boundaries without splitting notes. The interlude after
+// part 3 belongs to the joined performance, rather than the end of that drill.
+export const MELODY_PARTS = [[0,32],[32,64],[64,88],[96,136]].map(([start,end],i)=>({
+  id:`melody-${i+1}`,title:`${i+4} · Melody, part ${i+1}`,kind:'melody',sourceStart:start,beats:end-start,
+  events:MELODY.filter(n=>n.beat>=start&&n.beat<end).map(n=>({...n,beat:n.beat-start})),
+  backingChanges:[[0,BANK_CHANGES.filter(([beat])=>beat<=start).at(-1)[1]],
+    ...BANK_CHANGES.filter(([beat])=>beat>start&&beat<end).map(([beat,bank])=>[beat-start,bank])],
+  instruction:`Learn part ${i+1} of four. Follow the highlighted pitch, squeeze the bottom sphere, hold, then release. Keep your wrist neutral. Demonstrate plays this part; Practice lets you try it with your recorded backing.`,
+}));
 export const STEPS = [
   {id:'D',title:'1 · D major accompaniment',beats:16,kind:'chords',bank:'D',events:CHORDS.D,
     instruction:'Squeeze the D cluster together. Each bar attacks on 1, the last sixteenth before 2, and the last sixteenth before 4. Release between attacks. Practice records four bars into the chord looper.'},
@@ -32,11 +41,9 @@ export const STEPS = [
     instruction:'Follow the C cluster, then return to D in the second bar. This is the alternate four-bar accompaniment. Practice keeps this take separately and reuses the same chord looper.'},
   {id:'drums',title:'3 · Stick groove',beats:16,kind:'drums',events:DRUMS,
     instruction:'Grip in empty space to equip a stick. Strike the percussion Honk for boink and the percussion looper body for hihat. Pull the stick clear after every hit. Practice records four bars into the second looper.'},
-  ...[0,48,96].map((start,i)=>({id:`verse-${i}`,title:`${i+4} · Melody, verse ${i+1}`,kind:'melody',beats:40,
-    events:MELODY.filter(n=>n.beat>=start&&n.beat<start+40).map(n=>({...n,beat:n.beat-start})),
-    instruction:'Follow the highlighted pitch. Squeeze the bottom sphere, hold for the shown duration, then release. Keep your wrist neutral. The melody stays live; your recorded backing joins when both loops are ready.'})),
-  {id:'performance',title:'7 · Perform Kuch To Hua Hai',kind:'performance',beats:PERFORMANCE_BEATS,events:MELODY,
-    instruction:'Play all three verses over your two recorded loopers. The two interludes are eight beats each. The chord take changes on the shared beat grid, and both loops stop together after the final phrase.'},
+  ...MELODY_PARTS,
+  {id:'performance',title:'8 · All together — Kuch To Hua Hai',kind:'performance',beats:PERFORMANCE_BEATS,events:MELODY,
+    instruction:'Join all four melody parts into one complete performance over your two recorded loopers. Keep the eight-beat interludes between verses. The chord pattern changes with the song, and both loops stop after the final phrase.'},
 ];
 
 // Only observed learner gestures count. Demonstrations never award practice credit.

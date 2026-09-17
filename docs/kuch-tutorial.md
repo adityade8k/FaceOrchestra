@@ -1,6 +1,8 @@
 # Kuch To Hua Hai
 
-Open **Tutorials → Kuch To Hua Hai** in the main app. **Start Lesson** prepares the instruments and presents seven exercises: D-major accompaniment, C-to-D accompaniment, stick groove, three melody verses, and the complete performance. **Full Simulation** records both chord patterns and the percussion groove through the normal controller/contact and looper recording systems, then plays the melody once.
+Open **Tutorials → Kuch To Hua Hai** in the main app. **Start Lesson** prepares the instruments and presents eight exercises: D-major accompaniment, C-to-D accompaniment, stick groove, four separate melody lessons, and **All together** for the complete performance. **Full Simulation** records both chord patterns and the percussion groove through the normal controller/contact and looper recording systems, then plays the melody once.
+
+The four melody lessons contain 32, 32, 24 and 40 beats respectively. Each has its own Demonstrate and Practice actions, begins between phrases, and uses the harmony from that position in the song. Part 3 finishes before the following interlude; All together restores that eight-beat break and joins every melody note in order.
 
 The clock is the app's metronome at 92 BPM with a quiet audible tick and four-beat count-ins. Both backing loopers record fixed four-bar (16-beat) windows with no extra gap. The melody uses all 185 notes from the original MIDI's **Guitar** track. Its pitches, durations and velocities are retained; the two sixteen-beat interludes are shortened to eight beats. The full melody arrangement lasts 136 beats, approximately 89 seconds, after the backing-recording passes.
 
