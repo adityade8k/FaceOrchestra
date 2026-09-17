@@ -79,14 +79,14 @@ test('Linked Play excludes a recorder and shares request time, launch and phase 
   assert.equal(JSON.stringify(h.a.timeline.toJSON()),before);
   for(const l of [h.a,h.b])l.looperController.stopPlayback(l);
 });
-test('Start All keeps an existing take running, schedules its release at the common boundary, and Stop cancels both generations',()=>{
+test('Start All keeps an existing cycle running while starting an idle different port; Stop cancels all audio',()=>{
   const h=fixture();h.set(500);h.a.looperController.startPlayback(h.a,500);h.quiet();h.run(750);h.run(950);
   h.calls.length=0;h.set(1000);const request=LooperController.startAll([h.a,h.b],1000);h.quiet();
   assert.equal(h.a.looperData.playing,true);assert.equal(h.a.looperData.clockPlaybackStartBeatPosition,1);
   assert.equal(h.calls.filter(c=>c.kind==='cancel').length,0);
   h.run(1400);assert.equal(h.a.looperData.clockPlaybackStartBeatPosition,1);
-  const cancel=h.calls.find(c=>c.kind==='cancel');close(cancel.scheduledTime,11.5);
-  h.run(1500);for(const l of [h.a,h.b])assert.equal(l.looperData.clockPlaybackStartBeatPosition,request.targetBeat);
+  assert.equal(h.a.looperData.pendingLaunch,null);
+  h.run(1500);assert.equal(h.a.looperData.clockPlaybackStartBeatPosition,1);assert.equal(h.b.looperData.clockPlaybackStartBeatPosition,2);
   for(const l of [h.a,h.b]){l.looperController.stopPlayback(l);assert.equal(l.looperController.applier.scheduledGenerations.size,0);assert.equal(l.looperController.applier.retiringGenerations.size,0);assert.equal(l.looperData.audioScheduling.timer,null);}
 });
 test('scheduler prepares attacks ahead of frames and late starts recover at target-relative phase without stale attacks',()=>{
@@ -141,10 +141,11 @@ test('Start All shares an already-prepared launch anchor without duplicate sched
   h.run(750);close(h.a.looperData.launchHistory.at(-1).audioOriginTime,h.b.looperData.launchHistory.at(-1).audioOriginTime);
   for(const l of [h.a,h.b]){l.looperController.stopPlayback(l);assert.equal(l.looperController.applier.retiringGenerations.size,0);}
 });
-test('track disconnect cancels old retiring voices as well as the prepared restart generation',()=>{
+test('repeated Play keeps its cycle; track disconnect cancels its scheduled voices',()=>{
   const h=fixture();h.set(500);h.a.looperController.startPlayback(h.a,500);h.quiet();h.run(750);h.run(950);
   h.set(1300);h.a.looperController.startPlayback(h.a,1300);h.quiet();h.run(1400);
-  assert.ok(h.a.looperController.applier.retiringGenerations.size>0);
+  assert.equal(h.a.looperData.pendingLaunch,null);
+  assert.equal(h.a.looperData.clockPlaybackStartBeatPosition,1);
   h.a.looperController.disconnectTrack(h.a,0);
   assert.equal(h.a.looperController.applier.retiringGenerations.size,0);
   assert.equal(h.a.looperController.applier.scheduledGenerations.size,0);

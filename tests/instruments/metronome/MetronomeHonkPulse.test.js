@@ -72,7 +72,7 @@ test("a missed frame emits only the current beat instead of a catch-up burst", (
   context.updateMetronomeHonkPulse(context.connection, 24500);
 
   assert.equal(context.honk.started.length, 2);
-  assert.equal(context.metronomePulseStates.get("metro-a:port-2").lastBeatOrdinal, 47);
+  assert.equal(context.metronomePulseStates.get(context.getMetronomeConnectionRuntimeKey(context.connection)).lastBeatOrdinal, 47);
 });
 
 test("pause, gate expiry, and disconnect release the pulse immediately", () => {
@@ -107,7 +107,7 @@ test("an asynchronous voice start cannot survive a released pulse generation", a
   await Promise.resolve();
   await Promise.resolve();
 
-  assert.equal(context.metronomePulseStates.get("metro-a:port-2").active, false);
+  assert.equal(context.metronomePulseStates.get(context.getMetronomeConnectionRuntimeKey(context.connection)).active, false);
   assert.ok(context.honk.released.length >= 1);
 });
 
@@ -128,7 +128,7 @@ test("completion of an old async start cannot release a newer pulse generation",
   await Promise.resolve();
   await Promise.resolve();
   assert.equal(context.honk.released.length, 1);
-  assert.equal(context.metronomePulseStates.get("metro-a:port-2").active, true);
+  assert.equal(context.metronomePulseStates.get(context.getMetronomeConnectionRuntimeKey(context.connection)).active, true);
 
   pendingStarts[1]();
 });
@@ -161,7 +161,7 @@ function createPulseContext({ startPromise = Promise.resolve() } = {}) {
     timing,
     honk,
     instrumentRegistry: { get: (id) => instruments.get(id) || null },
-    metronomePulseStates: new Map([["metro-a:port-2", {
+    metronomePulseStates: new Map([[MetronomePulseRuntimeMethods.getMetronomeConnectionRuntimeKey(connection), {
       active: false,
       generation: 0,
       members: new Map(),

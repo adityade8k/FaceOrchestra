@@ -1,6 +1,6 @@
 import { COMPOSITION as C, TOLERANCES as T } from './composition.js';
 import { LESSON_STEPS, SIMULATION_STEPS } from './lessonSteps.js';
-import { expectedForStep, validateNote, validateSequence, validateSetup, validateTake } from './validation.js';
+import { expectedForStep, validateNote, validateSequence, validateSetup, validateTake, validateSwitchExercise } from './validation.js';
 import { scoreAttempt, scoreForStep, PRACTICE_TOLERANCES as P } from './scoring.js';
 import { setupStatus } from './TutorialLessonPolicy.js';
 
@@ -64,7 +64,7 @@ export class TutorialSession {
     this.discardAttempt(now);this.phase='ready';this.result=null;this.attempt=0;this.attemptAssisted=false;this.revision++;return true;
   }
   discardAttempt(now) {
-    this.evidence=[];this.seen.clear();this.anchorMs=null;this.enteredAt=now;this.failed=false;this.playbackSince=null;this.phrasesPassed=[];this.feedback='';this.finalRestApplied=false;this.pendingAssessment=null;
+    this.evidence=[];this.seen.clear();this.anchorMs=null;this.enteredAt=now;this.failed=false;this.playbackSince=null;this.phrasesPassed=[];this.feedback='';this.finalRestApplied=false;this.pendingAssessment=null;this.switchQueued=new Set();
   }
   startAttempt(now,{assisted=false}={}) {
     this.discardAttempt(now);this.phase='practicing';this.result=null;this.attempt++;this.attemptAssisted=assisted;this.revision++;
@@ -153,6 +153,8 @@ export class TutorialSession {
         if (!result.ok) this.reject(result.message);
         else this.validatedTakes[step.looperRole]=JSON.stringify(owner.timeline);
       }
+    } else if (step.type === 'switch') {
+      result=validateSwitchExercise(snapshot,this);this.feedback=result.message;
     } else if (step.type === 'playback' || step.type === 'start-all') {
       const quiet = snapshot.liveGestures === 0 && !snapshot.anyStickContact;
       const owner=snapshot.loopers?.[step.looperRole];
@@ -237,6 +239,7 @@ export class TutorialSession {
       if(this.evidence.some(e=>e.kind==='note'||e.kind==='strike')||elapsed>P.untimedTimeoutMs)this.finishAttempt(snapshot,now,elapsed>P.untimedTimeoutMs?'No completed note or strike was received. Follow the highlighted target, then release.':'');return;
     }
     let result;
+    if(step.type==='switch'){const checked=validateSwitchExercise(snapshot,this);this.feedback=checked.message;if(checked.ok)result=checked;}
     if(step.type==='ack')result={ok:true,message:'Ready for the composition.'};
     if(step.type==='stick'&&snapshot.stickActive&&snapshot.stickOrigin==='learner')result={ok:true,message:'Stick ready.'};
     if(step.type==='unequip'&&!snapshot.anyStickActive)result={ok:true,message:'Hands ready for melody.'};
@@ -251,7 +254,7 @@ export class TutorialSession {
       else this.playbackSince=null;
     }
     if(result)this.finishResult(result,now);
-    else if(elapsed>30000)this.finishResult({ok:false,message:'This action did not complete. Check the instrument, then press Practice again or skip with Next Step.'},now);
+    else if(elapsed>(step.type==='switch'?90000:30000))this.finishResult({ok:false,message:'This action did not complete. Check the instrument, then press Practice again or skip with Next Step.'},now);
   }
   exportProgress() { return { composition:C.id,version:C.version,mode:this.mode,complete:this.complete,
     checkpoints:[...this.checkpoints.keys()],outcomes:Object.fromEntries(this.outcomes),demonstrated:[...this.demonstrated],phrasesPassed:[...this.phrasesPassed] }; }

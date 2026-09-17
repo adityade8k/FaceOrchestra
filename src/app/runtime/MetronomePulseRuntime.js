@@ -4,7 +4,7 @@ import { METRONOME_CONNECTION_TARGET_KINDS } from "../../instruments/metronome/M
 
 export const MetronomePulseRuntimeMethods = {
   getMetronomeConnectionRuntimeKey(connection) {
-    return `${connection.metronomeId}:${connection.portId}`;
+    return JSON.stringify([connection.metronomeId, connection.portId, connection.targetKind, connection.targetId, connection.targetPortId]);
   },
 
   updateMetronomeHonkPulse(connection, now) {

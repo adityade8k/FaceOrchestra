@@ -1,0 +1,60 @@
+{
+  "simulationSwitches": [
+    {
+      "id": 1,
+      "fromId": "looper-3875d0ca-ca92-4b3c-9d91-f30d74002e93",
+      "toId": "looper-cd3b1725-81e4-4ef4-8960-b47d5fe8a908",
+      "requestedAtMs": 65629,
+      "requestedBeat": 78.01906666666667,
+      "boundarySourceMs": 12000,
+      "origin": "simulation",
+      "requestedPhase": 0.2511916666666672,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 90,
+      "completedAtMs": 74617.60000002384
+    },
+    {
+      "id": 2,
+      "fromId": "looper-cd3b1725-81e4-4ef4-8960-b47d5fe8a908",
+      "toId": "looper-3875d0ca-ca92-4b3c-9d91-f30d74002e93",
+      "requestedAtMs": 77628.6,
+      "requestedBeat": 94.01853333333335,
+      "boundarySourceMs": 12000,
+      "origin": "simulation",
+      "requestedPhase": 0.25115833333333454,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 106,
+      "completedAtMs": 86628.2
+    }
+  ],
+  "queuedSeen": true,
+  "cables": 3,
+  "demonstrationCredit": false,
+  "learner": {
+    "composition": "virag-2-jog-study",
+    "version": 3,
+    "mode": "practice",
+    "complete": false,
+    "checkpoints": [
+      "switch-patterns"
+    ],
+    "outcomes": {
+      "switch-patterns": {
+        "status": "passed",
+        "at": 259121.3
+      }
+    },
+    "demonstrated": [
+      "switch-patterns"
+    ],
+    "phrasesPassed": []
+  },
+  "saveLoad": true,
+  "individualRemoval": true,
+  "restored": true,
+  "screenshots": [
+    "/tmp/face-orchestra-two-loopers.png"
+  ]
+}

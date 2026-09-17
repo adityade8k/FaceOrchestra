@@ -9,11 +9,11 @@ import { setupStatus, LESSON_CONTROL_IDS } from '../../src/tutorial/TutorialLess
 import { createHarness, setHonk } from '../helpers/looperCaptureHarness.js';
 import { readFileSync } from 'node:fs';
 
-for(const role of ['chordLooper','percussionLooper'])test(`${role} setup checks actual 16-beat selector with the same six controls`,()=>{
+for(const role of ['chordLooper','percussionLooper','alternativeLooper'])test(`${role} setup checks actual 16-beat selector with the six navigation controls and two switch controls`,()=>{
   const step=LESSON_STEPS.find(s=>s.type==='record-length'&&s.looperRole===role);
   assert.ok(step);assert.equal(setupStatus(step,{loopers:{[role]:{recordBeats:16}}}).ok,true);
   for(const beats of [2,4,8,undefined])assert.equal(setupStatus(step,{loopers:{[role]:{recordBeats:beats}}}).ok,false);
-  assert.equal(LESSON_CONTROL_IDS.length,6);assert.equal(LESSON_STEPS[LESSON_STEPS.indexOf(step)+1].type,'record');
+  assert.equal(LESSON_CONTROL_IDS.length,8);assert.equal(LESSON_STEPS[LESSON_STEPS.indexOf(step)+1].type,'record');
 });
 
 test('tutorial displays recorder beats, remaining time and fixed versus shortened completion',()=>{

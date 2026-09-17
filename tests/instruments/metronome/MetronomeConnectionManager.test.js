@@ -275,3 +275,32 @@ function createRegistry(instruments) {
     },
   };
 }
+
+test('shared Looper output supports individual removal, incoming moves, round-trip save/load and endpoint cleanup', () => {
+  const registry=createRegistry([metronome('m'),metronome('n'),looper('a'),looper('b'),looper('c')]);
+  const added=[],removed=[];
+  const manager=new MetronomeConnectionManager({registry,onConnectionAdded:c=>added.push(c),onConnectionRemoved:c=>removed.push(c)});
+  const connect=id=>manager.connect({metronomeId:'m',portId:'port-0',targetKind:'looper',targetId:id,targetPortId:'track-0'});
+  const a=connect('a'),b=connect('b'),c=connect('c');
+  assert.deepEqual(manager.getConnectionsForPort('m','port-0'),[a,b,c]);
+  assert.strictEqual(connect('b'),b);assert.equal(added.length,3);
+  const serialized=manager.serialize();manager.clear();manager.restore(serialized);
+  assert.deepEqual(manager.serialize(),serialized);assert.equal(manager.getConnectionsForPort('m','port-0').length,3);
+  const restoredB=manager.getConnectionForTarget('looper','b');manager.disconnectConnection(restoredB);
+  assert.deepEqual(manager.getConnectionsForPort('m','port-0').map(c=>c.targetId),['a','c']);
+  assert.equal(manager.disconnectConnection(restoredB),null);
+  manager.connect({...a,metronomeId:'n',portId:'port-1'});
+  assert.equal(manager.getConnectionsForPort('m','port-0').length,1);
+  assert.equal(manager.getConnectionForTarget('looper','a').metronomeId,'n');
+  manager.disconnectInstrument('m');assert.equal(manager.serialize().length,1);
+  manager.dispose();assert.equal(manager.serialize().length,0);
+  assert.equal(added.length,removed.length);assert.equal(manager.endpointDisposalSubscriptions.size,0);
+});
+
+test('each fan-out cable has a distinct runtime key while identical reconnects have the same key',async()=>{
+  const {MetronomePulseRuntimeMethods:runtime}=await import('../../../src/app/runtime/MetronomePulseRuntime.js');
+  const a={metronomeId:'m',portId:'port-0',targetKind:'looper',targetId:'a',targetPortId:'track-0'};
+  const b={...a,targetId:'b'};
+  assert.notEqual(runtime.getMetronomeConnectionRuntimeKey(a),runtime.getMetronomeConnectionRuntimeKey(b));
+  assert.equal(runtime.getMetronomeConnectionRuntimeKey(a),runtime.getMetronomeConnectionRuntimeKey({...a}));
+});

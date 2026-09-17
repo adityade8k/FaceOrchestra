@@ -2,25 +2,27 @@
 
 Choose **Tutorial → Start Lesson** or **Full Simulation** from the opening panel. Desktop and XR panel buttons use the same handlers. Run `npm run dev`, open `http://localhost:5173`, wait for assets and enable audio by clicking. Simulation uses real virtual controller rays, squeeze gestures, stick-body collisions, connections, recording and Web Audio. It never constructs or repairs a take’s events.
 
-## Two backing parts
+## Two backing parts and an alternative pattern
 
-One Metronome drives two labelled, separately placed Loopers:
+One Metronome drives three labelled, separately placed Loopers. Each stores one recording; its instrument tracks and chord voices remain part of that recording:
 
 | Stable role | Clock route | Recorded part |
 | --- | --- | --- |
 | `chordLooper` — Chord Looper | Any available Metronome output → compatible Looper socket | One member of each touching chord group on a distinct available track. Any member may represent its chord. |
+| `alternativeLooper` — Alternative Looper | The SAME output as Chord Looper → unused socket | A different Group 1 rhythm, recorded independently. Only one alternative plays at a time. |
 | `percussionLooper` — Percussion Looper | A separate output from the same Metronome → a compatible socket | Percussion Honk and Metronome-body taps occupy distinct actual tracks; Looper-body taps use its existing self-percussion lane. |
 
 The lesson stays at **80 BPM**, with a **16-beat / 12-second assessment window and Gap 0**. Completed automatic takes retain the entire 16-beat window. Manual Stop before the endpoint stores a content-trimmed shortened take. The four voicings, Jog melody, vowels, responsive chord contact behavior and bend lessons remain the same. Only squeeze spheres trigger frozen Honks.
 
 Practice proceeds through:
 
-1. Place the Metronome and both Loopers, connect both clock cables, start 80 BPM and set both Gaps to zero.
+1. Place the Metronome and three Loopers, connect all clock cables, start 80 BPM and set all Gaps to zero.
 2. Place and wire all four chord groups; audition E/O, soften the backing and rehearse chord holds.
-3. Arm only Chord Looper, count in, record Groups 1–4 on zero-based beats 0/4/8/12, holding about 3.7 beats each. First set the right handle to 16 beats. Capture stops automatically; validate the completed take and use linked Play to listen.
-4. Place and wire the percussion Honk; equip a stick and rehearse all three targets and the pattern.
-5. Set the right handle to 16 beats and arm only Percussion Looper. The Metronome supplies the count-in, with any existing chord take as accompaniment. On zero-based beats 0/4/8/12 strike the Honk; 2/6/10/14 the Metronome; 3/7/11/15 Percussion Looper. Withdraw between strikes. Capture stops automatically after 16 beats. Validate twelve real recorded collisions and listen with linked Play.
-6. On the “Start both parts together” step, choose **Practice** to listen to both parts launched on the same beat, put away the stick and continue the seven-note melody, descending bend and A–B–A–C–B–D lessons.
+3. Arm only Chord Looper, count in, record Groups 1–4 on zero-based beats 0/4/8/12, holding about 3.7 beats each. First set the right handle to 16 beats. Capture stops automatically; validate the completed take and use its Play to listen.
+4. Wire Group 1 to Alternative Looper. Record four shorter 1.7-beat holds on beats 0/4/8/12, keeping all final rests. Practice the switch exercise: start Chords, press Play Alternative mid-cycle, observe amber QUEUED, hear the boundary handoff, then queue Chords to switch back. Practice credit requires both actual handoffs, observed queued states and unchanged recordings.
+5. Place and wire the percussion Honk; equip a stick and rehearse all three targets and the pattern.
+6. Set the right handle to 16 beats and arm only Percussion Looper. The Metronome supplies the count-in, with any existing chord take as accompaniment. On zero-based beats 0/4/8/12 strike the Honk; 2/6/10/14 the Metronome; 3/7/11/15 Percussion Looper. Withdraw between strikes. Capture stops automatically after 16 beats. Validate twelve real recorded collisions and listen with its Play.
+7. On the “Start both parts together” step, choose **Practice** to listen to both parts launched on the same beat, put away the stick and continue the seven-note melody, descending bend and A–B–A–C–B–D lessons.
 
 Every actual learner take remains on its real Looper, including partial, imperfect and low-scoring takes. Starting a new recording replaces that Looper’s take at its first sound. Cancelling while still record-armed preserves the prior take; cancelling an active capture finalizes it through ordinary Stop. The other Looper’s recording remains untouched. Metronome strikes retain their established fan-out routing; recorder arming determines which take receives them. Both modes preserve full holds, expressive curves and release endpoints up to capture stop. Automatic takes retain their full beat window; natural tails sound beyond it. Manual percussion includes the finite lifetime of its normal envelopes and resonators, including the final hihat on beat 15. Pre-onset wait and post-sound wait before Stop add no duration. Interior rests remain intact.
 
@@ -30,13 +32,17 @@ The timing circles retain the green preparation and yellow hold/release animatio
 
 ## Play and Start All
 
-**Play restarts every eligible recorded Looper connected to the same Metronome on one shared next beat**, from each take’s own origin and first-event offset. Standalone Play remains independent. Empty, armed and actively recording Loopers are excluded. Existing playback continues until the common boundary. Repeated presses for the same target reuse the pending launch and audio anchor. Deletion, disconnection and Stop cancel stale scheduled launches. The tutorial’s “Start both” action uses this same group operation.
+**Play selects only its own Metronome output group.** An idle group starts the explicit selection on the next beat. Alternative recordings share one output and retain separate visible cables. If A is playing, selecting B queues it silently until A finishes its current complete cycle, including recorded rests and Gap. A 16-beat take starting at beat 0 switches at 16, even if B is selected at 6. A beat-aligned boundary adds no silent beat; a legacy fractional boundary waits for the first beat at or after completion. B then repeats. Both recordings remain intact.
+
+Only one selection can be pending: C replaces queued B; selecting B again is idempotent; selecting active A cancels the pending switch. Empty, recording and record-armed loopers cannot replace a valid selection. Different outputs play simultaneously. **Start All** starts one eligible recording per idle output on a shared beat, defaults to the most recently connected eligible recording, and preserves active selections and queued switches. The tutorial's chord/percussion exercise explicitly selects Chords before Start All. Connection alone never launches playback.
+
+The label distinguishes **IDLE**, **STARTING**, **PLAYING** and amber **QUEUED · next cycle**; a queued Play button pulses. Stop/Pause on a queued Looper only cancels its request. Stop/Pause on the active Looper cancels the pending handoff. Clear, recording, disconnect, deletion, metronome stop and session reset cancel invalid work. Reconnecting one cable does not remove the others.
 
 Completed 2/4/8/16-beat takes at Gap 0 repeat from that absolute clock origin and meet again every 16 beats; shorter wraps do not restart longer takes. Gap adds only its explicit beats. Shortened manual takes keep their actual fractional lengths. No rounding or stretching forces alignment. Count-ins and assessment keep their original cue coordinates regardless of when the learner first sounds.
 
 The existing 25 ms audio scheduler prepares up to 120 ms ahead; rendering does not deliver the audio. A stall retains the originally requested launch beat, skips obsolete attacks and reconciles any currently held note. Launch diagnostics distinguish when the audio was prepared from when transport was observed; late observation is not a claim that missed audio sounded on time.
 
-The programmatic `resumePlayback` method is separate: it resumes the paused source position on the next beat. The physical **Play** button always restarts. Looper Pause remains immediate internally and next-beat when externally clocked. Metronome Pause safely stops connected playback/recording and cancels scheduled voices. Volume zero is a separate mute operation and leaves clock phase and Loopers running; it does not mute recorded wooden stick taps.
+The programmatic `resumePlayback` method is separate: it resumes the paused source position on the next beat. Physical **Play** starts an idle selection at its beginning; pressing Play on the active selection keeps its current cycle. Resuming into an occupied output queues the recording from its beginning at the outgoing boundary. Looper Pause remains immediate internally and next-beat when externally clocked. Metronome Pause safely stops connected playback/recording and cancels scheduled voices. Volume zero is a separate mute operation and leaves clock phase and Loopers running; it does not mute recorded wooden stick taps.
 
 ## Clocks and compatibility
 
@@ -52,7 +58,7 @@ Legacy takes with explicit source metadata or `timingMode: metronome` retain tha
 
 Legacy scenes restore only the first saved Metronome in array order. `SceneRestorer.lastReport` lists skipped objects, affected clock connections and warnings, and retains `originalScene` for recovery. Normal persistence keeps the original storage value and blocks autosave after a partial restore. Clocks are never silently merged. Tutorial exit likewise preserves a recovery snapshot if restoration is partial.
 
-Grip and deliberately shake a Looper to remove only its incoming clock cable through `disconnectTarget('looper', id)` and the normal callback. Honk assignments and take data remain; playback and queued audio stop safely. Grip and shake a Honk to remove only that actual source’s direct Looper assignments. A frozen formation’s transform wrapper does not become the disconnected source. Both clock cables and unrelated assignments remain. Shaking a Metronome invokes neither rule.
+Grip and deliberately shake a Looper to remove only its incoming clock cable through `disconnectTarget('looper', id)` and the normal callback. Honk assignments and take data remain; playback and queued audio stop safely. Grip and shake a Honk to remove only that actual source’s direct Looper assignments. A frozen formation’s transform wrapper does not become the disconnected source. Other clock cables and unrelated assignments remain. Shaking a Metronome invokes neither rule.
 
 The detector retains one boundary sample in its bounded 360 ms window. It requires at least two meaningful reversals, 0.16 m dominant-axis range, 0.38 m total travel and average speed of 0.85 m/s. Hysteresis is 0.055 m per reversal. Gaps over 100 ms, steps over 0.3 m or speed over 8 m/s reset history as tracking discontinuities. A real Grip is required. Release, target changes, previews, session changes and cancellation reset history. Cooldown is 700 ms and one feedback message is emitted per successful disconnect. These settings still need ergonomic headset confirmation.
 
@@ -71,7 +77,7 @@ The visible catalog is:
 
 Existing recipe IDs remain available internally for saved scenes. Stick equipment still uses Grip in empty space. Percussion uses an ordinary Honk at any pitch.
 
-Only committed placements bind roles. The first ordinary Looper becomes Chord Looper and the next becomes Percussion Looper. Cancelled previews consume neither role. A replacement fills the missing role while the survivor keeps its identity. Chord and melody roles follow their actual recipe, regardless of the current step. An ordinary standalone Honk becomes the percussion target when its setup is relevant.
+Only committed placements bind roles. The first ordinary Looper becomes Chord Looper and the next becomes Percussion Looper and the third becomes Alternative Looper. Cancelled previews consume no role. A replacement fills the missing role while the survivor keeps its identity. Chord and melody roles follow their actual recipe, regardless of the current step. An ordinary standalone Honk becomes the percussion target when its setup is relevant.
 
 Composition chords placed from the radial menu during the lesson enter the existing locked group mode. Every member gets the normal locked appearance. Grab any member to move the chord; only the squeeze target sounds it. During Practice, point at any Honk and press **right B** to lock or unlock it, including separate melody and percussion Honks. Touching chords toggle together. Lock changes persist through lesson updates and Practice retries. Free-play spawning, individual Honks, scales, Loopers and Metronomes retain normal lock defaults.
 
@@ -85,7 +91,7 @@ Demonstrate uses real conductor rays and stick collisions on the existing scene.
 
 Practice starts the current musical exercise, arms its intended recording or playback when needed, and supplies a count-in. Only fresh learner input counts. Results remain until Practice or Next. All actual recordings persist regardless of score. Assessment changes feedback and progress only. Active captures finalize before cached take publication and grading; cleanup never sends idle Stop, which normally clears an idle Looper. Outcomes distinguish passed, practiced, assisted and skipped work.
 
-One green billboard belongs to each of the four chord roles, the Metronome and the two Looper roles. Cached visible body bounds are combined in world coordinates, including all group members. Native note/BPM text is accounted for separately. The billboard’s bottom clears the highest visual by the configurable margin in `TutorialLabels.js`; the result is converted to its parent coordinates. Transform, morph, retuning and text changes update bounds without repeated geometry traversal. Billboards cannot receive rays.
+One green billboard belongs to each of the four chord roles, the Metronome and the three Looper roles. Cached visible body bounds are combined in world coordinates, including all group members. Native note/BPM text is accounted for separately. The billboard’s bottom clears the highest visual by the configurable margin in `TutorialLabels.js`; the result is converted to its parent coordinates. Transform, morph, retuning and text changes update bounds without repeated geometry traversal. Billboards cannot receive rays.
 
 All tutorial Honks retain their native note text. A shared scale is assigned from the known base, so repeated refreshes do not accumulate resizing. Font arrival and retuning create the same label style. This changes neither pitches nor chord spacing.
 
@@ -118,3 +124,7 @@ This radial-menu update started from clean branch `Tutorial` at `ef47265`, conta
 See [looper-recording-validation.md](looper-recording-validation.md) for the recording regression evidence, and [tutorial-radial-validation.md](tutorial-radial-validation.md) for the preceding radial-menu validation. The usability and Spawn reports describe superseded interfaces. The prior transport/audio report remains in [tutorial-validation.json](tutorial-validation.json).
 
 **No headset or acoustic listening test was performed.** Automated audio signal measurements do not establish perceived balance, spatial comfort or hardware-controller ergonomics. The manual XR checklist remains unperformed unless separately recorded.
+
+## Port-switch verification
+
+`npm run verify` runs syntax/import checks and regression tests. `TUTORIAL_TEST=ports node scripts/run-tutorial-browser.mjs` runs the complete Jog simulation and a learner switch-and-return attempt through actual panel Play actions, checks three visible cables and session serialization, and verifies recordings survive both switches. The browser must be running in a dedicated debug profile as described by the runner. Demonstration/simulation handoffs cannot earn learner credit. Headset listening and interaction checks remain in `manual-xr-regression.md`.

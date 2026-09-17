@@ -374,7 +374,7 @@ export const LooperConnectionRuntimeMethods = {
           (action === "stop" && !data.playing && !data.paused && !data.recording && !data.armed);
         this.setHitTargetDebugColor(
           target,
-          active ? LOOPER_DEBUG_COLORS.buttonActive : LOOPER_DEBUG_COLORS.button[action],
+          action === "play" && data.queued ? 0xffd15a : active ? LOOPER_DEBUG_COLORS.buttonActive : LOOPER_DEBUG_COLORS.button[action],
           active ? 0.48 : LOOPER_COLLIDER_OPACITY,
         );
       }

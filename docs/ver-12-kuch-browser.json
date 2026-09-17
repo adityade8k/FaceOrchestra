@@ -1,0 +1,170 @@
+{
+  "melodyNotes": 185,
+  "percussionHits": 20,
+  "patternSwitches": [
+    {
+      "pattern": "D",
+      "beat": -4.976679999963441
+    },
+    {
+      "pattern": "change",
+      "beat": 12.016793333260221
+    },
+    {
+      "pattern": "D",
+      "beat": 28.013600000000004
+    },
+    {
+      "pattern": "change",
+      "beat": 60.00613999989033
+    },
+    {
+      "pattern": "D",
+      "beat": 76.03054666663012
+    },
+    {
+      "pattern": "change",
+      "beat": 108.02523333333333
+    },
+    {
+      "pattern": "D",
+      "beat": 124.0202
+    }
+  ],
+  "switches": [
+    {
+      "id": 1,
+      "fromId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "toId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "requestedAtMs": 48515.4,
+      "requestedBeat": 72.00916666670322,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.2505729166689515,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 84,
+      "completedAtMs": 56335.699999928474,
+      "phase": "switch-patterns"
+    },
+    {
+      "id": 2,
+      "fromId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "toId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "requestedAtMs": 58948.3,
+      "requestedBeat": 88.00628000003657,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.25039250000228547,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 100,
+      "completedAtMs": 66774.79999995232,
+      "phase": "switch-patterns"
+    },
+    {
+      "id": 3,
+      "fromId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "toId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "requestedAtMs": 77864.3,
+      "requestedBeat": 117.0108133333699,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7506758333356186,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 121,
+      "completedAtMs": 80467.79999995232,
+      "phase": "performance"
+    },
+    {
+      "id": 4,
+      "fromId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "toId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "requestedAtMs": 88297.2,
+      "requestedBeat": 133.0079266667032,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7504954166689507,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 137,
+      "completedAtMs": 90913.7,
+      "phase": "performance"
+    },
+    {
+      "id": 5,
+      "fromId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "toId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "requestedAtMs": 109163,
+      "requestedBeat": 165.0021533333699,
+      "boundarySourceMs": 20869.565217391304,
+      "origin": "demonstration",
+      "requestedPhase": 0.750134583335619,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 169,
+      "completedAtMs": 111773.19999992847,
+      "phase": "performance"
+    },
+    {
+      "id": 6,
+      "fromId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "toId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "requestedAtMs": 119612.5,
+      "requestedBeat": 181.02472000003655,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7515450000022846,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 185,
+      "completedAtMs": 122212.4,
+      "phase": "performance"
+    },
+    {
+      "id": 7,
+      "fromId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "toId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "requestedAtMs": 140478.4,
+      "requestedBeat": 213.01910000003656,
+      "boundarySourceMs": 20869.565217391304,
+      "origin": "demonstration",
+      "requestedPhase": 0.7511937500022848,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 217,
+      "completedAtMs": 143078.3,
+      "phase": "performance"
+    },
+    {
+      "id": 8,
+      "fromId": "looper-42e6568a-df4b-4e8d-bded-89834e49b68f",
+      "toId": "looper-2d3a11ea-acd8-4ce0-9705-d0e603034c5d",
+      "requestedAtMs": 150911.3,
+      "requestedBeat": 229.01621333336988,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7510133333356173,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 233,
+      "completedAtMs": 153511.2,
+      "phase": "performance"
+    }
+  ],
+  "queuedSeen": true,
+  "peak": 0.7221086621284485,
+  "phases": [
+    "D",
+    "change",
+    "drums",
+    "switch-patterns",
+    "performance"
+  ],
+  "sceneRestored": true,
+  "cancelPreservedTake": true,
+  "screenshots": [
+    "/tmp/face-orchestra-two-loopers.png"
+  ]
+}

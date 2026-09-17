@@ -32,7 +32,7 @@ test("signed angle follows the configured plane normal", () => {
   assert.ok(Math.abs(signedAngleOnPlane(x, y, { x: 0, y: 0, z: -1 }) + Math.PI / 2) < 1e-9);
 });
 
-test("handle config contains the verified Ver-8 hinges on the spatially reversed Ver-9 meshes", () => {
+test("handle config contains the current hinges and calibrated travel on the spatially reversed meshes", () => {
   const [bpm, volume] = METRONOME_HANDLE_CONTROLS;
 
   assert.equal(bpm.nodeName, "L_handle_geo");
@@ -40,16 +40,16 @@ test("handle config contains the verified Ver-8 hinges on the spatially reversed
   assert.deepEqual(bpm.pivot, { x: 9.907267464, y: 14.899678701, z: 10.923128679 });
   assert.deepEqual(bpm.colliderOffset, { x: 5, y: 0, z: -5 });
   assert.equal(bpm.colliderRadius, 1.6);
-  assert.equal(bpm.minAngleDegrees, -90);
-  assert.equal(bpm.maxAngleDegrees, 50);
+  assert.equal(bpm.minAngleDegrees, -80);
+  assert.equal(bpm.maxAngleDegrees, 30);
 
   assert.equal(volume.nodeName, "R_handle_geo");
   assert.equal(volume.parameter, "volume");
   assert.deepEqual(volume.pivot, { x: -10.089564549, y: 14.890084927, z: 10.666345168 });
   assert.deepEqual(volume.colliderOffset, { x: -5, y: 0, z: -5 });
   assert.equal(volume.colliderRadius, 1.6);
-  assert.equal(volume.minAngleDegrees, -40);
-  assert.equal(volume.maxAngleDegrees, 100);
+  assert.equal(volume.minAngleDegrees, -30);
+  assert.equal(volume.maxAngleDegrees, 90);
 });
 
 test("default values place both visible handles and colliders at their arc midpoints", () => {

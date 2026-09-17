@@ -238,7 +238,7 @@ Use one Metronome, several Loopers, and at least two Honks. Keep one Looper trac
 
 - [ ] **Draw both Metronome connection types** — Pull Trigger on each of the four Metronome ports and move the ray before releasing. Connect one port to any Looper track node and another to a Honk connector. Expected: a temporary adaptive wire follows every frame, release creates a purple clock/pulse wire, cancellation or an invalid release removes the preview, and the Looper node’s existing track recording/`connectedHonkId` is unchanged.
 
-- [ ] **Reconnect and enforce one incoming clock** — Reconnect one source port to a new target, then connect a different port of the same Metronome to the first target. Expected: the old relationship and wire disappear exactly once, the new one replaces it, repeating the identical connection is visually idempotent, and each target has only one incoming Metronome.
+- [ ] **Reconnect and enforce one incoming clock** — Reconnect one source port to a new target, then connect a different port of the same Metronome to the first target. Expected: two distinct Loopers retain cables on one source output. Moving one target to another source removes only its prior incoming cable. Repeating the identical connection adds nothing; each target keeps one clock source.
 
 - [ ] **Move, rotate, and scale clock endpoints** — Transform both the Metronome and its target Looper/Honk through several scales and orientations. Expected: both wire endpoints and socket directions remain attached with no stale or duplicate geometry.
 
@@ -379,7 +379,7 @@ Never attach private keys, local certificate contents, authentication tokens, or
 ## Two-looper tutorial follow-up (headset checks not yet performed)
 
 - [ ] Record and listen to Chord Looper alone, then record/listen to Percussion Looper alone. Require all twelve stick collisions and no cross-part contamination.
-- [ ] Press Start All near a beat and while one part plays. Both origins must restart together on the next beat; no doubled or stuck voices.
+- [ ] Press Start All near a beat and while one part plays. Each idle output starts one eligible selection on the next beat; active selections keep their current cycle and queued request. No doubled or stuck voices.
 - [ ] Grip/shake Percussion Looper: only its clock cable detaches, transport stops, its Honk assignment and both takes survive. Reconnect and confirm repair preserves unrelated progress.
 - [ ] Grip/shake one source in a frozen chord: only that source’s direct Looper assignment detaches. Both clock cables and other assignments survive.
 - [ ] Try one-way relocation, jitter, release/regrip, tracking loss and repeated shaking during cooldown. No false disconnect or repeated feedback.
@@ -394,3 +394,13 @@ Never attach private keys, local certificate contents, authentication tokens, or
 - [ ] Confirm all six fixed lesson controls remain legible and easy to reach. Verify setup completion without Practice and that holding Grip survives navigation into a percussion exercise.
 - [ ] Skip both recordings and practice melody against the Metronome alone, then repeat with one available part. Cancel Demonstrate, Practice and pending count-ins with their existing buttons and with navigation/Exit.
 - [ ] Listen for complete voice release, restored paused/playing transport and unchanged recorded takes after demonstrations. Check perceived timing, balance and tracking behavior on hardware.
+
+## Port-group switching (ver-12)
+
+- [ ] Record different patterns on A and B, connect both to one output, and verify two visible cables. Record chord voices or multiple tracks within A; they remain one recording.
+- [ ] Start a 16-beat A at beat 0 and select B around beat 6. A continues; B shows amber QUEUED and stays silent. Hear B start at beat 16, with its intentional note offset and bends preserved, without a doubled attack or extra beat.
+- [ ] Queue B, replace it with C, then select A to cancel. Listen for stale attacks, interrupted holds and stuck releases. Repeat close to the boundary and while changing BPM.
+- [ ] Put percussion on another output, use individual Play and Start All, and confirm independent simultaneous playback without restarting active parts.
+- [ ] Stop/Pause queued B, re-record it, disconnect or delete it, and stop/restart the clock. None should launch a stale request. Stop/Pause A cancels its pending switch. Resume respects output exclusivity.
+- [ ] Save/load three cables, remove one, and confirm the other two remain. Direct Metronome-to-Honk pulses still work.
+- [ ] Complete the Jog and Kuch switch-and-return exercises in Practice and Demonstrate. Only a fresh learner attempt earns practice credit. Check label legibility, Play-button pulsing, both hands, locked Looper controls, and clean note releases on the headset.

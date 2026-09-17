@@ -10,6 +10,7 @@
     "check": "node scripts/verify-imports.mjs",
     "verify": "npm run check && npm test",
     "test:tutorial:browser": "node scripts/run-tutorial-browser.mjs",
-    "test:kuch:browser": "TUTORIAL_TEST=kuch node scripts/run-tutorial-browser.mjs"
+    "test:kuch:browser": "TUTORIAL_TEST=kuch node scripts/run-tutorial-browser.mjs",
+    "test:ports:browser": "TUTORIAL_TEST=ports node scripts/run-tutorial-browser.mjs"
   }
 }

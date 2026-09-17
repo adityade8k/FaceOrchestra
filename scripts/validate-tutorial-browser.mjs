@@ -30,7 +30,7 @@ export async function validate(app, { timeoutMs = 480000, onProgress = () => {} 
       const looper=t.adapter.get('percussionLooper');
       if(looper?.transport.recording)recordedStrikes.push({kind:target.kind,timeMs:event.timestamp,type:event.percussionType});
     });
-    await click('tutorial');await click('simulate');
+    await click('tutorial');await click('jog');await click('simulate');
     const started=performance.now();let last='';
     await wait(()=>{
       const s=t.session;
@@ -40,9 +40,11 @@ export async function validate(app, { timeoutMs = 480000, onProgress = () => {} 
       return s?.complete;
     },'complete simulation');
     for(const [role,take] of Object.entries(t.report.takes)){
-      check(take.durationMs===take.contentEndMs&&take.durationMs>11000&&take.durationMs<12000,role+' retains exact musical content inside the 16-beat exercise window');
-      check(Math.min(...take.tracks.flatMap(track=>track.events.filter(e=>['squeezeStart','drumHit'].includes(e.type)).map(e=>e.timeMs)))===0,role+' begins at its first sound');
+      check(take.lengthMode==='fixed-window'&&Math.abs(take.durationMs-16*take.sourceBeatIntervalMs)<.001,role+' retains all sixteen beats including final rests');
+      check(Math.min(...take.tracks.flatMap(track=>track.events.filter(e=>['squeezeStart','drumHit'].includes(e.type)).map(e=>e.timeMs)))>=0,role+' retains its intentional first-onset offset');
     }
+    check(t.report.checkpoints.includes('switch-patterns'),'Actual alternative switch-and-return exercise completed');
+    check(r.metronomeConnectionManager.getConnections().length===3&&r.metronomeConnectionWires.size===3,'All three clock cables remain visible');
     check(t.report.takes.chordLooper.tracks.every(track=>track.events.every(e=>e.type!=='drumHit')),'Chord take has no percussion');
     check(t.report.takes.percussionLooper.tracks.every(track=>track.events.every(e=>!['squeezeStart','squeezeEnd'].includes(e.type))),'Percussion take has no pitched gates');
     check(r.instrumentRegistry.getByKind('metronome').length===1,'Only one active metronome');
@@ -256,11 +258,11 @@ async function validateClockAndShake(app) {
       base=grip('group-1');check(r.controllerStates.get(controller).gripInstrumentState!==a.get('group-1'),'Formation moves through its transform wrapper');
       await move(base,650);a.input(controller,'grip',false);
       check(!chords.tracks.some(track=>a.ids('group-1').includes(track.connectedHonkId))&&chords.tracks.some(track=>a.ids('group-2').includes(track.connectedHonkId)),'Formation shake disconnects only grabbed source assignment');
-      check(r.metronomeConnectionManager.connectionsByPort.size===2,'Honk shake preserves both metronome cables');
+      check(r.metronomeConnectionManager.getConnections().length===3,'Honk shake preserves all metronome cables');
       check(notices===2,'One feedback indication per successful gesture');
       a.command('wire-group-1',performance.now(),'simulation');
       base=grip('metronome');await move(base,650);a.input(controller,'grip',false);
-      check(notices===2&&r.metronomeConnectionManager.connectionsByPort.size===2,'Metronome shake invokes neither disconnect rule');
+      check(notices===2&&r.metronomeConnectionManager.getConnections().length===3,'Metronome shake invokes neither disconnect rule');
     } finally {r.showRuntimeFeedback=originalFeedback;a.releaseVirtuals();}
     check([chords,percussion].every((l,i)=>JSON.stringify(l.timeline.toJSON())===takes[i]),'Both actual recordings survive shake and reconnect byte-for-byte');
     return {singleton:true,selectiveRealGripShake:true,formationSource:true,cooldown:true,recordingsRetained:true,

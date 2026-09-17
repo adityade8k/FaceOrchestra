@@ -24,26 +24,27 @@ export const DRUMS = notes('Drumset').filter(n=>n.beat>=24&&n.beat<40).map((n,i)
   id:`drum-${i}`,beat:n.beat-24,beats:.2,velocity:n.velocity,sourceDrum:n.midi,
   role:n.midi===36?'percussion':'percussionLooper',sound:n.midi===36?'boink':'hihat',
 }));
-export const BANK_CHANGES = [[0,'D'],[16,'change'],[32,'D'],[64,'change'],[80,'D'],[112,'change'],[128,'D']];
+export const PATTERN_CHANGES = [[0,'D'],[16,'change'],[32,'D'],[64,'change'],[80,'D'],[112,'change'],[128,'D']];
 // Cut on phrase/loop boundaries without splitting notes. The interlude after
 // part 3 belongs to the joined performance, rather than the end of that drill.
 export const MELODY_PARTS = [[0,32],[32,64],[64,88],[96,136]].map(([start,end],i)=>({
-  id:`melody-${i+1}`,title:`${i+4} · Melody, part ${i+1}`,kind:'melody',sourceStart:start,beats:end-start,
+  id:`melody-${i+1}`,title:`${i+5} · Melody, part ${i+1}`,kind:'melody',sourceStart:start,beats:end-start,
   events:MELODY.filter(n=>n.beat>=start&&n.beat<end).map(n=>({...n,beat:n.beat-start})),
-  backingChanges:[[0,BANK_CHANGES.filter(([beat])=>beat<=start).at(-1)[1]],
-    ...BANK_CHANGES.filter(([beat])=>beat>start&&beat<end).map(([beat,bank])=>[beat-start,bank])],
+  backingChanges:[[0,PATTERN_CHANGES.filter(([beat])=>beat<=start).at(-1)[1]],
+    ...PATTERN_CHANGES.filter(([beat])=>beat>start&&beat<end).map(([beat,pattern])=>[beat-start,pattern])],
   instruction:`Learn part ${i+1} of four. Follow the highlighted pitch, squeeze the bottom sphere, hold, then release. Keep your wrist neutral. Demonstrate plays this part; Practice lets you try it with your recorded backing.`,
 }));
 export const STEPS = [
-  {id:'D',title:'1 · D major accompaniment',beats:16,kind:'chords',bank:'D',events:CHORDS.D,
-    instruction:'Squeeze the D cluster together. Each bar attacks on 1, the last sixteenth before 2, and the last sixteenth before 4. Release between attacks. Practice records four bars into the chord looper.'},
-  {id:'change',title:'2 · C major → D major',beats:16,kind:'chords',bank:'change',events:CHORDS.change,
-    instruction:'Follow the C cluster, then return to D in the second bar. This is the alternate four-bar accompaniment. Practice keeps this take separately and reuses the same chord looper.'},
+  {id:'D',title:'1 · D major accompaniment',beats:16,kind:'chords',pattern:'D',events:CHORDS.D,
+    instruction:'Squeeze the D cluster together. Each bar attacks on 1, the last sixteenth before 2, and the last sixteenth before 4. Release between attacks. Practice records four bars into D Pattern Looper. Each Looper stores one recording; recording again replaces it.'},
+  {id:'change',title:'2 · C major → D major',beats:16,kind:'chords',pattern:'change',events:CHORDS.change,
+    instruction:'Follow the C cluster, then return to D in the second bar. This is the alternate four-bar accompaniment. Practice records this in the separate Change Pattern Looper. Both pattern loopers connect to the SAME Metronome output, so only one plays at a time.'},
   {id:'drums',title:'3 · Stick groove',beats:16,kind:'drums',events:DRUMS,
-    instruction:'Grip in empty space to equip a stick. Strike the percussion Honk for boink and the percussion looper body for hihat. Pull the stick clear after every hit. Practice records four bars into the second looper.'},
+    instruction:'Grip in empty space to equip a stick. Strike the percussion Honk for boink and the percussion looper body for hihat. Pull the stick clear after every hit. Practice records four bars into Percussion Looper on a DIFFERENT Metronome output so it can play alongside either chord pattern.'},
+  {id:'switch-patterns',title:'4 · Switch patterns at the boundary',kind:'switch',beats:36,events:[],instruction:'Practice starts D Pattern Looper. Mid-cycle press Play Change and watch QUEUED: it starts when D finishes all 16 beats. Mid-cycle press Play D to switch back. Both recordings remain available. Use these buttons or the Looper Play controls.'},
   ...MELODY_PARTS,
-  {id:'performance',title:'8 · All together — Kuch To Hua Hai',kind:'performance',beats:PERFORMANCE_BEATS,events:MELODY,
-    instruction:'Join all four melody parts into one complete performance over your two recorded loopers. Keep the eight-beat interludes between verses. The chord pattern changes with the song, and both loops stop after the final phrase.'},
+  {id:'performance',title:'9 · All together — Kuch To Hua Hai',kind:'performance',beats:PERFORMANCE_BEATS,events:MELODY,
+    instruction:'Join all four melody parts into one complete performance over your two alternative pattern loopers and separate percussion looper. Keep the eight-beat interludes between verses. The conductor selects the next separate pattern mid-cycle; the shared transport switches at its boundary. All loopers stop after the final phrase.'},
 ];
 
 // Only observed learner gestures count. Demonstrations never award practice credit.

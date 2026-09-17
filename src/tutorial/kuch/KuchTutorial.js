@@ -1,13 +1,16 @@
 import * as THREE from 'three';
+import { validateSwitchExercise } from '../validation.js';
 import { tuningForMidi } from '../composition.js';
 import { connectTutorialClock, connectTutorialHonk } from '../TutorialRoutes.js';
-import { BPM, BEAT_MS, VOICINGS, PITCHES, STEPS, BANK_CHANGES, noteName, assess } from './score.js';
+import { BPM, BEAT_MS, VOICINGS, PITCHES, STEPS, PATTERN_CHANGES, noteName, assess } from './score.js';
 
 // Uses the shared tutorial's real controller, contact, recorder and audio paths.
-// The normal INPUT phase is the only scheduler; there are no owned timers.
+// INPUT selects patterns; the shared application audio transport owns handoffs.
+const PATTERN_ROLES = {D:'chordLooper',change:'alternativeLooper'};
+const LOOPER_ROLES = ['chordLooper','alternativeLooper','percussionLooper'];
 export class KuchTutorial {
   constructor(host) {
-    this.host=host;this.r=host.r;this.a=host.adapter;this.index=0;this.banks={};this.heard=[];
+    this.host=host;this.r=host.r;this.a=host.adapter;this.index=0;this.heard=[];
     this.queue=[];this.phase=null;this.note=null;this.lastNow=null;this.feedback='Choose Demonstrate to listen, then Practice to try it. Next Step skips an exercise.';
     this.labels=[];this.results={};this.report=null;this.desktopRole=null;this.desktopStrike=null;
   }
@@ -36,16 +39,18 @@ export class KuchTutorial {
     }
     PITCHES.forEach((m,i)=>{spawn('honk',`lead-${m}`,(i%6-2.5)*.175,.72-Math.floor(i/6)*.30,-.12,1.1,m);});
     spawn('looper','chordLooper',-.31,-.37,.16,.6);
+    spawn('looper','alternativeLooper',-.04,-.37,.16,.6);
     spawn('looper','percussionLooper',.24,-.37,.16,.6);
     spawn('honk','percussion',.69,-.31,.16,1.65,48);
     spawn('metronome','metronome',-.68,-.32,.16,.65);
-    this.label('chordLooper','CHORD LOOP');this.label('percussionLooper','STICK LOOP · HIHAT');
+    this.label('chordLooper','D PATTERN');this.label('alternativeLooper','CHANGE PATTERN · SAME OUTPUT');this.label('percussionLooper','STICK LOOP · HIHAT');
     this.label('percussion','BOINK');this.label('metronome','92 BPM');
     for(const role of ['D','C','percussion'])connectTutorialHonk(this.a,role);
-    for(const role of ['chordLooper','percussionLooper']){
+    for(const role of ['D','C'])connectTutorialHonk(this.a,role,'alternativeLooper');
+    for(const role of LOOPER_ROLES){
       connectTutorialClock(this.a,role);this.r.setLooperControlValue(this.a.get(role),'recordLength',1);
       this.r.setLooperControlValue(this.a.get(role),'gap',-1);
-      this.r.setLooperControlValue(this.a.get(role),'volume',role==='chordLooper'?-.62:-.66);
+      this.r.setLooperControlValue(this.a.get(role),'volume',role!=='percussionLooper'?-.62:-.66);
     }
     const metro=this.a.get('metronome');metro.setBpm(BPM);metro.setVolume(.12);this.r.updateMetronomeLabel(metro);
     this.controls();
@@ -84,18 +89,19 @@ export class KuchTutorial {
   accept(event) {if(this.phase)this.heard.push(event);}
   take(role){const h=this.a.get(role);return structuredClone(h.looperController.serializeState(h));}
   restore(role,take){const h=this.a.get(role);if(h)h.looperController.restoreState(h,structuredClone(take),{preserveConnections:true});}
-  ready(){return this.banks.D&&this.banks.change&&this.a.get('percussionLooper')?.timeline.hasRecording();}
+  ready(){return LOOPER_ROLES.every(role=>this.a.get(role)?.timeline.hasRecording());}
   async action(id) {
     if(this.disposed)return;
     if(id==='exit'){await this.host.enterPlay();return;}
     if(id==='recenter'){this.host.panel.recenter(this.r.getUserCamera(),true);return;}
+    if(['play-chordLooper','play-alternativeLooper'].includes(id)&&this.phase?.learner&&this.phase.kind==='switch'){this.a.command(id,performance.now(),'learner');return;}
     if(id==='previous-step'||id==='next-step'){
       this.cancel();this.index=Math.max(0,Math.min(STEPS.length-1,this.index+(id==='next-step'?1:-1)));this.feedback='Demonstrate or Practice. Next Step skips this exercise.';
     } else if(id==='step-demo'||id==='step-practice') {
       if(this.running){this.cancel('Stopped. Choose an action for a fresh count-in.');return;}
       await this.r.audioSystem.ensureAudio();
       if(this.disposed||this.host.kuch!==this)return;
-      if(id==='step-practice'&&this.step.kind==='performance'&&!this.ready()){this.feedback='Record D major, C → D, and the stick groove with Practice first.';return;}
+      if(id==='step-practice'&&['performance','switch'].includes(this.step.kind)&&!this.ready()){this.feedback='Record D major, C → D, and the stick groove with Practice first.';return;}
       this.start(this.step,id==='step-practice');
     }
     this.host.render(performance.now());
@@ -103,16 +109,16 @@ export class KuchTutorial {
   start(step,learner=false,{full=false}={}) {
     this.cancel();this.heard=[];this.report=null;
     // A full example may need temporary backing recordings. Preserve every learner take.
-    if(!learner&&(full||step.kind==='performance'&&!this.ready())) {
-      this.saved={banks:structuredClone(this.banks),chords:this.take('chordLooper'),drums:this.take('percussionLooper')};
-      this.queue=[...STEPS.slice(0,3).map(s=>({...s,learner:false,record:true})),{...STEPS.at(-1),learner:false}];
+    if(!learner&&(full||['performance','switch'].includes(step.kind)&&!this.ready())) {
+      this.saved=Object.fromEntries(LOOPER_ROLES.map(role=>[role,this.take(role)]));
+      this.queue=[...STEPS.slice(0,3).map(s=>({...s,learner:false,record:true})),...(full?[STEPS.find(s=>s.kind==='switch'),STEPS.at(-1)]:[step]).map(s=>({...s,learner:false}))];
     } else this.queue=[{...step,learner,record:learner&&['chords','drums'].includes(step.kind)}];
     this.full=full;this.feedback=learner?'Practice: follow the beat and highlighted target.':'Demonstration: watch the squeezes, releases and stick contacts.';
     const metro=this.a.get('metronome');if(!metro.playing)metro.pressButton('play',performance.now());
     this.next(performance.now());
   }
   next(now) {
-    this.phase=this.queue.shift()||null;this.note=null;this.activeBank=null;this.lastNow=now;
+    this.phase=this.queue.shift()||null;this.note=null;this.activePattern=null;this.switchStage=0;this.switchAttempt={origin:this.phase?.learner?'learner':'demonstration',enteredAt:now,switchQueued:new Set()};this.lastNow=now;
     if(!this.phase){this.finish();return;}
     this.heard=[];this.a.releaseVirtuals();
     this.a.setVirtualsActive(!this.phase.learner,!this.phase.learner?'demonstration':'learner');
@@ -120,20 +126,21 @@ export class KuchTutorial {
     this.anchor=timing.beatOriginMs+Math.ceil((now-timing.beatOriginMs)/BEAT_MS+4)*BEAT_MS;
     this.anchorBeat=(this.anchor-timing.beatOriginMs)/BEAT_MS;
     if(this.phase.record){
-      this.recordRole=this.phase.kind==='drums'?'percussionLooper':'chordLooper';
+      this.recordRole=this.phase.kind==='drums'?'percussionLooper':PATTERN_ROLES[this.phase.pattern];
       // Cancel restores this exact pre-attempt take, including its connections.
       this.attemptTake=this.take(this.recordRole);
       this.r.pressLooperButton(this.a.get(this.recordRole),'record',null,now);
     }
     if(this.phase.kind==='drums'&&!this.phase.learner)this.a.equip(true,'demonstration');
-    if(['melody','performance'].includes(this.phase.kind)&&this.ready()){
-      this.activeBank=(this.phase.backingChanges||BANK_CHANGES)[0][1];
-      this.restore('chordLooper',this.banks[this.activeBank]);
-      for(const role of ['chordLooper','percussionLooper']){
-        const h=this.a.get(role);h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{targetBeat:this.anchorBeat});
+    if((['melody','performance'].includes(this.phase.kind)||this.phase.kind==='switch')&&this.ready()){
+      this.activePattern=this.phase.kind==='switch'?'D':(this.phase.backingChanges||PATTERN_CHANGES)[0][1];
+      const roles=this.phase.kind==='switch'?[PATTERN_ROLES[this.activePattern]]:[PATTERN_ROLES[this.activePattern],'percussionLooper'];
+      for(const role of roles){
+        const h=this.a.get(role);h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{targetBeat:this.anchorBeat,origin:'demonstration'});
       }
     }
   }
+
   playNote(note,now) {
     const id=note?.id||note?.role||null;
     if(id!==this.note){
@@ -158,11 +165,30 @@ export class KuchTutorial {
     if(!this.phase)return;
     if(this.lastNow!==null&&this.lastNow>=this.anchor&&now-this.lastNow>500){this.cancel('Playback paused after a delayed frame. Restart for a fresh count-in.');return;}
     this.lastNow=now;const p=this.phase,beat=(now-this.anchor)/BEAT_MS;
+    if(p.kind==='switch') {
+      const a=this.a.get('chordLooper'),b=this.a.get('alternativeLooper');
+      const phase=h=>h.looperController.getAbsoluteSourcePosition(h,now)%h.timeline.durationMs/h.timeline.durationMs;
+      if(!p.learner) {
+        if(this.switchStage===0&&a.transport.playing&&phase(a)>.25){this.a.command('play-alternativeLooper',now,'demonstration');this.switchStage=1;}
+        if(this.switchStage===1&&b.transport.playing&&phase(b)>.25){this.a.command('play-chordLooper',now,'demonstration');this.switchStage=2;}
+      }
+      const checked=validateSwitchExercise(this.a.snapshot(now),this.switchAttempt);
+      this.feedback=checked.message;
+      if(checked.ok) {
+        if(p.learner)this.results[p.id]=checked;
+        this.report={step:p.id,origin:p.learner?'learner':'demonstration',result:checked,completed:true};
+        for(const role of LOOPER_ROLES)this.a.get(role).stop();
+        this.next(now);
+      } else if(beat>100)this.cancel('Choose Practice and try selecting the other pattern mid-cycle, then switch back.');
+      return;
+    }
     if(['melody','performance'].includes(p.kind)&&this.ready()&&beat>=0&&beat<p.beats){
-      const [at,bank]=(p.backingChanges||BANK_CHANGES).filter(([at])=>at<=beat).at(-1)||[];
-      if(bank&&bank!==this.activeBank){
-        this.restore('chordLooper',this.banks[bank]);const h=this.a.get('chordLooper');
-        h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{targetBeat:this.anchorBeat+at});this.activeBank=bank;
+      // Select four beats before the written change. The real port arbiter,
+      // including its audio lookahead, owns the eventual boundary handoff.
+      const upcoming=(p.backingChanges||PATTERN_CHANGES).find(([at])=>at>beat&&at-beat<=4);
+      if(upcoming&&upcoming[1]!==this.activePattern){
+        const h=this.a.get(PATTERN_ROLES[upcoming[1]]);
+        h.looperController.startPlayback(h,now,{origin:'demonstration'});this.activePattern=upcoming[1];
       }
     }
     if(!p.learner){
@@ -173,7 +199,7 @@ export class KuchTutorial {
     }
     if(beat>=p.beats&&!this.ending){
       this.ending=true;this.playNote(null,now);this.a.park(this.a.virtuals[1]);
-      for(const role of ['chordLooper','percussionLooper'])if(!this.a.get(role).transport.recording)this.a.get(role).stop();
+      for(const role of LOOPER_ROLES)if(!this.a.get(role).transport.recording)this.a.get(role).stop();
       if(!this.queue.length)this.a.get('metronome').pause();
     }
     if(beat>=p.beats+.5){
@@ -182,7 +208,6 @@ export class KuchTutorial {
         if(h.transport.recording||h.transport.recordArmed||!h.timeline.hasRecording()){
           this.cancel('No complete four-bar take. Start on beat 1 and continue through the recording window.');return;
         }
-        if(p.bank)this.banks[p.bank]=this.take('chordLooper');
         this.recordRole=null;this.attemptTake=null;
       }
       const result=assess(p.events,this.heard,this.anchor);
@@ -204,11 +229,11 @@ export class KuchTutorial {
   }
   restoreSaved() {
     if(!this.saved)return;
-    this.banks=this.saved.banks;this.restore('chordLooper',this.saved.chords);this.restore('percussionLooper',this.saved.drums);this.saved=null;
+    for(const [role,take] of Object.entries(this.saved))this.restore(role,take);this.saved=null;
   }
   finish() {
     this.a.releaseVirtuals();this.a.stopSound();this.a.setVirtualsActive(false);this.restoreSaved();
-    if(this.full){this.index=STEPS.length-1;this.feedback='Full demonstration complete. Both loops stopped on the final beat. Choose Previous Step to practice the parts.';}
+    if(this.full){this.index=STEPS.length-1;this.feedback='Full demonstration complete. All loopers stopped on the final beat. Choose Previous Step to practice the parts.';}
     else if(this.report?.origin==='demonstration')this.feedback='Example complete. Choose Practice to try this part yourself.';
     this.full=false;
   }
@@ -229,7 +254,7 @@ export class KuchTutorial {
     const button=(id,label,disabled=false)=>({id,label,disabled});
     return {visible:true,title:p.title,instruction:p.instruction,progress:`KUCH TO HUA HAI · ${STEPS.findIndex(s=>s.id===p.id)+1}/${STEPS.length}${this.phase?this.phase.learner?' · Practice':' · Demonstration':''}`,
       feedback:this.feedback,navigation:[button('previous-step','Previous Step',this.index===0||this.running),button('next-step','Next Step',this.index===STEPS.length-1||this.running),button('step-demo',this.demonstrating?'Stop Example':'Demonstrate',Boolean(this.phase?.learner)),button('step-practice',this.phase?.learner?'Stop Practice':'Practice',this.demonstrating)],
-      actions:[button('recenter','Recenter'),button('exit','Exit')]};
+      actions:[...(p.kind==='switch'?[button('play-alternativeLooper','Play Change',!this.phase?.learner),button('play-chordLooper','Play D',!this.phase?.learner)]:[]),button('recenter','Recenter'),button('exit','Exit')]};
   }
   dispose() {
     this.disposed=true;

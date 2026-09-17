@@ -51,11 +51,13 @@ export const HonkPresentationRuntimeMethods = {
       }
       const timing=state.looperController.getTimingForLooper(state,now);
       const tempo=timing.connected ? `${timing.bpm} BPM${timing.active?'':' · Paused'}` : `${timing.bpm} BPM · Internal`;
-      const record=`Record: ${state.looperData.recordBeats} beats`;
+      const data=state.looperData;
+      const status=data.queued?'QUEUED · next cycle':data.playing?'PLAYING':data.playArmed?'STARTING · next beat':data.recording?'RECORDING':data.recordArmed?'RECORD ARMED':data.paused?'PAUSED':'IDLE';
+      const record=`${status} · Record: ${data.recordBeats} beats`;
       const text=tempo+'\n'+record;
       if(state.tempoLabel.text===text)return;
       const {canvas,texture}=state.tempoLabel,ctx=canvas.getContext('2d');
-      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff4dd';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tempo,320,35);ctx.fillStyle='#ffd15a';ctx.fillText(record,320,88);
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff4dd';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tempo,320,35);ctx.fillStyle=data.queued?'#ffd15a':data.playing?'#73e0c1':'#fff4dd';ctx.font='bold 27px sans-serif';ctx.fillText(record,320,88);
       texture.needsUpdate=true;state.tempoLabel.text=text;
     },
     createMetronomeLabel(state) {

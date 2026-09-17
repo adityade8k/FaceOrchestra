@@ -60,6 +60,7 @@ const percussion = [0,4,8,12].flatMap(beat => [
 export const COMPOSITION = Object.freeze({
   id: 'virag-2-jog-study', version: 3, title: 'VIRAG 2 — JOG STUDY', bpm: 80,
   beatMs: 750, loopBeats: 16, gapBeats: 0, phrases, backing: Object.freeze(backing),
+  alternateBacking: Object.freeze([0,4,8,12].map(beat => ({...backing[0], beat, beats:1.7}))),
   percussion: Object.freeze(percussion), pitches: PITCHES,
   order: Object.freeze(['A','B','A','C','B','D']), backingVowel: 'O', backingNose: 0.35,
 });
@@ -83,4 +84,5 @@ export const TUTORIAL_PRESETS = Object.freeze([
 export const TUTORIAL_LOOPERS = Object.freeze([
   {role:'chordLooper', label:'Chord Looper', catalogId:'jog-chord-looper'},
   {role:'percussionLooper', label:'Percussion Looper', catalogId:'jog-percussion-looper'},
+  {role:'alternativeLooper', label:'Alternative Looper', catalogId:'jog-alternative-looper'},
 ]);

@@ -114,3 +114,12 @@ test('audio readiness from a cancelled demo cannot create or restore a stale ope
   const take=captures.chordLooper.timeline.toJSON();ready();await pending;
   assert.equal(t.demo,undefined);assert.deepEqual(captures.chordLooper.timeline.toJSON(),take);
 });
+
+test('restoring a demonstration snapshot never turns an old queued request into an armed start',()=>{
+  const {flow,captures}=fixture(),h=captures.chordLooper;prior(h);
+  h.looper.looperData.queued=true;h.looper.transport.armPlay();
+  const saved=flow.snapshots();h.looper.looperData.queued=false;h.looper.stop();
+  flow.restore(saved,{transports:true});
+  assert.equal(h.looper.looperData.pendingLaunch,null);assert.equal(h.looper.looperData.queued,false);assert.equal(h.looper.transport.playArmed,false);
+  assert.ok(h.timeline.hasRecording());
+});

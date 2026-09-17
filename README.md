@@ -101,11 +101,11 @@ Point at a touching member and press Right B to lock the complete connected comp
 
 ## Record with a Looper
 
-Each Looper has eight track nodes, four transport buttons, and three controls:
+Each Looper stores **one recording**, with up to eight instrument tracks and simultaneous voices. Recording again replaces that recording; separate Loopers hold separate patterns. Each has four transport buttons and three controls:
 
 - **Record** arms capture and latches the selected recording length. Silent waiting consumes no beats.
 - **Stop** finishes recording or stops playback. Pressing Stop again while fully idle clears the recording.
-- **Play** restarts every eligible recorded Looper connected to the same Metronome on one shared next beat. Unconnected Loopers play independently on their silent internal 70 BPM clock. Pressing exactly on a beat selects the following beat. Recorded offsets and expression remain intact.
+- **Play** selects this Looper within its Metronome output group. An idle group starts it on the next beat. If another Looper on the **same output** is playing, it becomes **QUEUED** until the current complete cycle finishes. Different outputs play simultaneously. Play on the active Looper keeps its cycle running and cancels the queued switch. Unconnected Loopers play independently on their silent internal 70 BPM clock. Pressing exactly on a beat selects the following beat. Recorded offsets and expression remain intact.
 - **Pause** pauses immediately when unconnected, or on the next clock beat when clocked.
 - **Volume** is the left handle and controls Looper playback level.
 - **Gap** chooses 0, 1, 2, 3, or 4 extra whole beats between repetitions. A new Looper starts at Gap 0 with the bottom Gap handle at its down endpoint.
@@ -125,9 +125,9 @@ Recording stops automatically at the selected endpoint and animates Stop. A comp
 
 Manual Stop before the endpoint is a shortened-take override. It captures the final held expression and closes the recorded gate, trims waiting before the first and after the final completed event, and preserves interior rests and complete percussion envelopes. Silent cancellation while still armed retains the prior take. An idle Stop after the completion animation clears the take.
 
-At Gap 0, completed takes repeat at their selected beat length from a common absolute origin: 2/4/8/16-beat takes meet again every 16 beats. Gap adds its explicit 0–4 beats; shortened takes and nonzero gaps keep their own cycle lengths. Empty or recording Loopers are excluded from linked Play, which leaves existing playback sounding until the restart boundary. Stop and Pause act on their own Looper.
+At Gap 0, completed takes repeat at their selected beat length from a common absolute origin: 2/4/8/16-beat takes meet again every 16 beats. Gap adds its explicit 0–4 beats; shortened takes and nonzero gaps keep their own cycle lengths. Empty, recording and record-armed Loopers cannot take over. Start All starts at most one eligible recording per output: it preserves active selections and otherwise chooses the most recently connected eligible Looper. Explicit Play takes precedence. Stop/Pause on a queued Looper cancels only that request. Stopping or pausing the active Looper cancels its pending switch.
 
-Save/load preserves the selector separately from the take, and stores explicit fixed-window versus content-trimmed timing. Learner takes survive Practice results and navigation regardless of score. Playback scales the recorded attacks, releases and expression together with tempo. Legacy recordings retain the existing migration policy and receive only the new 16-beat selector default; see [compatibility policy](docs/tutorial.md#clocks-and-compatibility).
+Multiple Loopers can share one Metronome output, each with its own visible cable. Reconnecting the same cable is idempotent, and each Looper still has only one clock source. Save/load preserves all these cables and the selector separately from the take, and stores explicit fixed-window versus content-trimmed timing. Learner takes survive Practice results and navigation regardless of score. Playback scales the recorded attacks, releases and expression together with tempo. Legacy recordings retain the existing migration policy and receive only the new 16-beat selector default; see [compatibility policy](docs/tutorial.md#clocks-and-compatibility).
 
 ### Record Stick hits
 
@@ -146,7 +146,7 @@ Every Metronome has:
 - a swinging pendulum;
 - four independent output ports.
 
-Pull Trigger on a port, aim at any Looper track node or Honk connector, and release Trigger. Each port owns at most one connection, and each target accepts at most one incoming Metronome; making a replacement removes the prior wire.
+Pull Trigger on a port, aim at any Looper track node or Honk connector, and release Trigger. A port can keep multiple distinct Looper cables; these Loopers form one group with one playing selection. Each target accepts one incoming Metronome, so moving a target removes only its prior cable. Reconnecting an identical cable does nothing. Direct Honk outputs retain their existing replacement and beat-pulse behavior.
 
 Only one Metronome is admitted across the active free-play, tutorial or simulation scene. A pending preview reserves its slot. A second creation or duplication shows “Only one metronome can be placed. Use the existing metronome.” A Looper follows its wired Metronome; free play allows any number of Loopers. A Honk connection pulses that Honk once per beat; any Honks touching it at that moment join the pulse. Frame hitches do not create a catch-up burst.
 

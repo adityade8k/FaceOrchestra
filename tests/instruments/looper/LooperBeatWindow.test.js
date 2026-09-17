@@ -101,15 +101,16 @@ for(const source of ['track','self'])test(`${source} percussion starts capture, 
   h.controller.scheduleSourceRange(h.looper,0,4000,{includeStart:true,sourceNow:0,rate:1,audioNow:10});assert.equal(h.calls.filter(c=>c.kind==='drum').length,4);
 });
 
-test('linked physical Play path groups actual connections, ignores ineligible loopers, and shares one clock across mixed cycles',()=>{
+test('individual Play selects one looper; Start All shares a clock across different ports and ignores ineligible takes',()=>{
   const group=[2,4,8,16].map((beats,i)=>{
     const h=fixture();h.looper.id=`looper-${i}`;select(h,beats);h.controller.startRecording(h.looper,0);h.controller.recordSelfDrumHit(h.looper,'hihat',250);h.advance(beats*1000);return h;
   });
   const empty=fixture(),armed=fixture(),disconnected=fixture();armed.controller.startRecording(armed.looper,0);disconnected.clock.connected=false;
   const all=[...group,empty,armed,disconnected];for(const h of all)h.controller.adapter.getLoopers=()=>all.map(h=>h.looper);
   assert.equal(group[0].controller.startPlayback(group[0].looper,20100),true);
+  assert.equal(group[1].looper.looperData.pendingLaunch,null);
   const anchor=group[0].looper.looperData.pendingLaunch.audioAnchor;
-  assert.equal(group[2].controller.startPlayback(group[2].looper,20200),true);
+  assert.equal(LooperController.startAll(all.map(h=>h.looper),20200).ok,true);
   for(const h of group){assert.equal(h.looper.looperData.pendingLaunch.targetBeat,21);assert.equal(h.looper.looperData.pendingLaunch.audioAnchor,anchor);h.controller.updateClockedTransports([h.looper],21000);assert.equal(h.looper.looperData.launchHistory.length,1);}
   for(const h of [empty,armed,disconnected])assert.equal(h.looper.looperData.pendingLaunch,null);
   assert.equal(armed.looper.looperData.recordArmed,true);

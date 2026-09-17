@@ -83,11 +83,11 @@ export const LooperTransportRuntimeMethods = {
   
       this.pressLooperButton(
         looperState,
-        "play",
+        data.queued || data.playArmed ? "pause" : "play",
         looperState.hitTargets[getLooperButtonName("play")]?.userData.looperMorphName,
       );
     },
-    pressLooperButton(looperState, action, morphName = null, now = performance.now()) {
+    pressLooperButton(looperState, action, morphName = null, now = performance.now(), origin = "learner") {
       if (!this.isLooperRuntimeState(looperState)) {
         return;
       }
@@ -124,7 +124,7 @@ export const LooperTransportRuntimeMethods = {
   
       if (action === "play") {
         this.setLooperButtonMorph(looperState, "record", 0);
-        const accepted = this.startPlayback(looperState, now);
+        const accepted = this.startPlayback(looperState, now, {origin});
         this.updateLooperVisuals(looperState);
         // A rejected Play (for example, before anything is recorded) still
         // needs to show the physical button press instead of being reset in
@@ -367,6 +367,7 @@ export const LooperTransportRuntimeMethods = {
         return;
       }
   
+      if (data.queued) this.setLooperButtonMorph(looperState, "play", 0.35 + 0.3 * (1 + Math.sin(now / 180)));
       const settings = LOOPER_MORPH_SETTINGS.playingHead;
       const min = settings.min ?? 0;
       const max = settings.max ?? 1;
@@ -428,9 +429,9 @@ export const LooperTransportRuntimeMethods = {
       const runtimeState = this.getLooperRuntimeState(looperState);
       return runtimeState?.looperController?.clearRecording(runtimeState);
     },
-    startPlayback(looperState, now = performance.now()) {
+    startPlayback(looperState, now = performance.now(), options = {}) {
       const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.startPlayback(runtimeState, now) ?? false;
+      return runtimeState?.looperController?.startPlayback(runtimeState, now, options) ?? false;
     },
     pausePlayback(looperState, now = performance.now()) {
       const runtimeState = this.getLooperRuntimeState(looperState);

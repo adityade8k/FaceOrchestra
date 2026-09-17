@@ -426,6 +426,7 @@ export class RuntimeHost {
         ),
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
       cancelLooperPercussion: (id, options) => this.audioSystem.percussionVoices.cancelOwner(id, options),
+      getPortTransport: () => this.metronomeConnectionManager.portTransport,
       getTimingForLooper: (looperId, now) =>
         this.metronomeConnectionManager.getTimingForLooper(looperId, now),
       updateWireForTrack: (looper, track) => this.updateLooperWireForTrack(looper, track),

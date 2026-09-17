@@ -17,11 +17,17 @@ export async function validate(app,{onProgress=()=>{}}={}) {
   check(k?.phase,'Kuch simulation did not start');
   const accept=k.accept.bind(k);k.accept=e=>{events.push({...e,phase:k.phase?.id});accept(e);};
   const audio=r.audioSystem,analyser=audio.audioContextService.context.createAnalyser(),samples=new Float32Array(2048);
-  audio.masterBus.output.connect(analyser);let peak=0,raf,bankSwitches=[],lastBank=null;
+  audio.masterBus.output.connect(analyser);let peak=0,raf,patternSwitches=[],lastPattern=null;
+  const switches=[];let queuedSeen=false;const observedSwitches=new Set();
   const sample=()=>{
     analyser.getFloatTimeDomainData(samples);for(const v of samples)peak=Math.max(peak,Math.abs(v));
     if(k.phase&&!phases.has(k.phase.id)){phases.set(k.phase.id,performance.now());onProgress(k.phase.id);}
-    if(k.activeBank&&k.activeBank!==lastBank){bankSwitches.push({bank:k.activeBank,beat:(performance.now()-k.anchor)/BEAT_MS});lastBank=k.activeBank;}
+    if(k.phase?.kind==='performance'&&k.activePattern&&k.activePattern!==lastPattern){patternSwitches.push({pattern:k.activePattern,beat:(performance.now()-k.anchor)/BEAT_MS});lastPattern=k.activePattern;}
+    for(const role of ['chordLooper','alternativeLooper']) {
+      const data=t.adapter.get(role).looperData;
+      queuedSeen ||= data.queued;
+      for(const event of data.switchHistory)if(!observedSwitches.has(event.id)){observedSwitches.add(event.id);switches.push({...event,phase:[...phases].reverse().find(([,at])=>at<=event.requestedAtMs)?.[0]});}
+    }
     raf=requestAnimationFrame(sample);
   };sample();
   try {
@@ -40,11 +46,15 @@ export async function validate(app,{onProgress=()=>{}}={}) {
       const played=events.filter(e=>e.phase===bank&&e.kind==='note');
       check(played.length===CHORDS[bank].length,`Incomplete chord pattern ${bank}: ${played.length}`);
     }
-    check(bankSwitches.length===7,'Expected seven harmony launches');
+    check(patternSwitches.length===7,'Expected seven harmony selections');
+    check(queuedSeen&&switches.filter(e=>e.phase==='switch-patterns').length===2,'Switch exercise must use two actual handoffs');
+    const songSwitches=switches.filter(e=>e.phase==='performance');
+    check(songSwitches.length===6,'Expected six actual song handoffs');
+    check(songSwitches.every(e=>e.beat%16===songSwitches[0].beat%16),'Song changes must share complete-cycle boundaries');
     check(peak>0&&peak<1,`Audio must sound without clipping; peak ${peak}`);
-    check(['chordLooper','percussionLooper'].every(role=>!t.adapter.get(role).transport.playing&&!t.adapter.get(role).transport.recording),'Loopers did not stop');
+    check(['chordLooper','alternativeLooper','percussionLooper'].every(role=>!t.adapter.get(role).transport.playing&&!t.adapter.get(role).transport.recording),'Loopers did not stop');
     check(!t.adapter.get('metronome').playing&&!k.queue.length,'Clock or conductor is still active');
-    const report={melodyNotes:leads.length,percussionHits:hits.length,bankSwitches,peak,phases:[...phases.keys()]};
+    const report={melodyNotes:leads.length,percussionHits:hits.length,patternSwitches,switches,queuedSeen,peak,phases:[...phases.keys()]};
     // A learner attempt followed by a demo must not silently replace their saved take.
     k.index=0;await t.action('step-practice');const old=k.attemptTake;
     await t.action('step-practice');check(JSON.stringify(k.take('chordLooper'))===JSON.stringify(old),'Cancelled count-in changed the take');

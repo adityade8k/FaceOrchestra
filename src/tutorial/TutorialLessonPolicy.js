@@ -2,9 +2,9 @@ import { COMPOSITION as C } from './composition.js';
 import { scoreForStep } from './scoring.js';
 import { validateSetup } from './validation.js';
 
-export const LESSON_CONTROL_IDS=Object.freeze(['previous-step','next-step','step-demo','step-practice','recenter','exit']);
+export const LESSON_CONTROL_IDS=Object.freeze(['previous-step','next-step','step-demo','step-practice','recenter','exit','play-chordLooper','play-alternativeLooper']);
 export const isSetupStep=step=>Boolean(step&&['ack','spawn','clock-wire','wire','tempo','timbre','stick','unequip','record-length'].includes(step.type));
-export const roleName=role=>C.backing.find(group=>group.role===role)?.label||({metronome:'Metronome',chordLooper:'Chord Looper',percussionLooper:'Percussion Looper',percussion:'percussion Honk',melody:'Jog Study'}[role])||role?.replace('melody-','')||'instrument';
+export const roleName=role=>C.backing.find(group=>group.role===role)?.label||({metronome:'Metronome',chordLooper:'Chord Looper',percussionLooper:'Percussion Looper',alternativeLooper:'Alternative Looper',percussion:'percussion Honk',melody:'Jog Study'}[role])||role?.replace('melody-','')||'instrument';
 
 export function setupStatus(step,snapshot) {
   if(!isSetupStep(step))return null;
@@ -18,7 +18,7 @@ export function setupStatus(step,snapshot) {
     if(!role?.ready||!role.placed)return {ok:false,message:`Place ${roleName(step.role)} from the radial menu. A preview does not count.`};
   }
   if(step.type==='clock-wire'&&!snapshot.loopers?.[step.looperRole]?.clockWired)return {ok:false,message:`Connect a free Metronome output to any compatible ${roleName(step.looperRole)} socket.`};
-  if(step.type==='wire'&&!snapshot.wires?.[step.role])return {ok:false,message:`Connect one ${roleName(step.role)} member to a free ${step.role==='percussion'?'Percussion':'Chord'} Looper socket.`};
+  if(step.type==='wire'&&!snapshot.wires?.[step.wireKey||step.role])return {ok:false,message:`Connect one ${roleName(step.role)} member to a free ${roleName(step.looperRole||(step.role==='percussion'?'percussionLooper':'chordLooper'))} socket.`};
   const result=validateSetup(step,snapshot,null);
   return result.ok?{ok:true,message:'Setup complete. Choose Next Step.'}:result;
 }
@@ -29,6 +29,7 @@ export function musicUnavailable(step,snapshot) {
   if(!step)return 'The study is complete.';
   if(isSetupStep(step))return 'Follow the setup instruction; completion is checked automatically.';
   if(['finalize','playback'].includes(step.type)&&!snapshot.loopers?.[step.looperRole]?.hasRecording)return 'No recording yet; you can skip this step';
+  if(step.type==='switch'&&(!['chordLooper','alternativeLooper'].every(role=>snapshot.loopers?.[role]?.hasRecording&&snapshot.loopers[role].clockWired)||snapshot.loopers.chordLooper.portId!==snapshot.loopers.alternativeLooper.portId))return 'Record both patterns and connect them to the same Metronome output first.';
   if(step.type==='start-all'&&!['chordLooper','percussionLooper'].every(role=>snapshot.loopers?.[role]?.hasRecording))return 'Two recordings are needed to hear both together; you can skip this step.';
   const roles=new Set(scoreForStep(step).map(event=>event.role));
   if(step.type==='strike')roles.add(step.role);
@@ -39,7 +40,7 @@ export function musicUnavailable(step,snapshot) {
     if(!state.correctPitch)return `Restore the requested notes on ${roleName(role)}.`;
     if(!state.contactExact)return `Keep ${roleName(role)} separate from other groups, with its chord members touching.`;
   }
-  if(step.timed||['playback','start-all'].includes(step.type)){
+  if(step.timed||['playback','start-all','switch'].includes(step.type)){
     if(!snapshot.clockPlaying||Math.abs(snapshot.bpm-C.bpm)>1)return 'Set the Metronome to 80 BPM and press its Play control.';
   }
   if(step.type==='record'){
@@ -48,7 +49,7 @@ export function musicUnavailable(step,snapshot) {
     if(!owner.clockWired)return `Connect ${roleName(step.looperRole)} to the Metronome.`;
     if(owner.gapBeats!==0)return `Set ${roleName(step.looperRole)} Gap to zero.`;
     if(owner.recordBeats!==16)return `Set ${roleName(step.looperRole)} right handle to 16 beats.`;
-    const inputs=step.looperRole==='chordLooper'?C.backing.map(group=>group.role):['percussion'];
+    const inputs=step.looperRole==='alternativeLooper'?['alternative-group-1']:step.looperRole==='chordLooper'?C.backing.map(group=>group.role):['percussion'];
     for(const role of inputs)if(!snapshot.wires?.[role])return `Connect ${roleName(role)} to ${roleName(step.looperRole)}.`;
   }
   if(['playback','start-all'].includes(step.type))for(const role of step.type==='start-all'?['chordLooper','percussionLooper']:[step.looperRole]){

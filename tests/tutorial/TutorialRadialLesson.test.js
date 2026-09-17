@@ -24,6 +24,7 @@ test('cancelled previews consume no Looper role; replacement preserves the survi
   assert.deepEqual([...roles],[['chordLooper',['first']],['percussionLooper',['second']]]);
   objects.delete('first');commit('looper',[{id:'replacement'}]);
   assert.deepEqual([...roles],[['chordLooper',['replacement']],['percussionLooper',['second']]]);
+  assert.deepEqual(commit('looper',[{id:'third'}]),[{role:'alternativeLooper',ids:['third']}]);
   assert.deepEqual(commit('looper',[{id:'extra'}]),[]);
 });
 test('recipe identity determines roles regardless of current step; ordinary percussion accepts any pitch',()=>{

@@ -7,12 +7,17 @@ export class PercussionVoiceService {
     this.getDestination = getDestination;
     this.ownedOutputs = new Map();
     this.ownerEpochs = new Map();
+    this.pendingTriggers = new Set();
   }
 
   async trigger(type, { volume = 1, scheduledTime = undefined, ownerId = null } = {}) {
     const epoch = this.ownerEpochs.get(ownerId) || 0;
-    const context = await this.ensureAudio();
-    if (ownerId && epoch !== (this.ownerEpochs.get(ownerId) || 0)) return;
+    const request = {ownerId, scheduledTime, cancelled:false};
+    this.pendingTriggers.add(request);
+    let context;
+    try { context = await this.ensureAudio(); }
+    finally { this.pendingTriggers.delete(request); }
+    if (request.cancelled || ownerId && epoch !== (this.ownerEpochs.get(ownerId) || 0)) return;
     const startTime = Number.isFinite(scheduledTime)
       ? Math.max(scheduledTime, context.currentTime)
       : context.currentTime;
@@ -28,11 +33,11 @@ export class PercussionVoiceService {
     this.triggerBoink(context, volume, startTime, ownerId);
   }
 
-  ownOutput(ownerId, output, context) {
+  ownOutput(ownerId, output, context, startsAt) {
     if (!ownerId) return;
     let outputs = this.ownedOutputs.get(ownerId);
     if (!outputs) this.ownedOutputs.set(ownerId, outputs = new Set());
-    const entry = {output, context}; outputs.add(entry);
+    const entry = {output, context, startsAt}; outputs.add(entry);
     const originalDisconnect = output.disconnect.bind(output);
     output.disconnect = (...args) => {
       outputs.delete(entry);
@@ -41,9 +46,13 @@ export class PercussionVoiceService {
     };
   }
 
-  cancelOwner(ownerId, {scheduledTime} = {}) {
-    this.ownerEpochs.set(ownerId, (this.ownerEpochs.get(ownerId) || 0)+1);
-    for (const {output, context} of this.ownedOutputs.get(ownerId) || []) {
+  cancelOwner(ownerId, {scheduledTime, afterTime} = {}) {
+    for (const request of this.pendingTriggers) {
+      if (request.ownerId === ownerId && (!Number.isFinite(afterTime) || request.scheduledTime >= afterTime - 1e-7)) request.cancelled = true;
+    }
+    if (!Number.isFinite(afterTime)) this.ownerEpochs.set(ownerId, (this.ownerEpochs.get(ownerId) || 0)+1);
+    for (const {output, context, startsAt} of this.ownedOutputs.get(ownerId) || []) {
+      if (Number.isFinite(afterTime) && startsAt < afterTime - 1e-7) continue;
       const when = Math.max(scheduledTime ?? context.currentTime, context.currentTime);
       output.gain.cancelScheduledValues(when);
       output.gain.setValueAtTime(0, when);
@@ -72,7 +81,7 @@ export class PercussionVoiceService {
     const settings = PERCUSSION_PROFILES.boink;
     const now = Math.max(startTime, context.currentTime);
     const output = context.createGain();
-    this.ownOutput(ownerId, output, context);
+    this.ownOutput(ownerId, output, context, now);
     const bodyBus = context.createGain();
     const bodyDrive = context.createWaveShaper();
     const bodyTone = context.createBiquadFilter();
@@ -232,7 +241,7 @@ export class PercussionVoiceService {
     }
 
     const output = context.createGain();
-    this.ownOutput(ownerId, output, context);
+    this.ownOutput(ownerId, output, context, now);
     const source = context.createBufferSource();
     const highpass = context.createBiquadFilter();
     const bandpass = context.createBiquadFilter();
@@ -357,7 +366,7 @@ export class PercussionVoiceService {
     const settings = PERCUSSION_PROFILES.metronomeWood;
     const now = Math.max(startTime, context.currentTime);
     const output = context.createGain();
-    this.ownOutput(ownerId, output, context);
+    this.ownOutput(ownerId, output, context, now);
     const bodyBus = context.createGain();
     const bodyFilter = context.createBiquadFilter();
     const noiseSource = context.createBufferSource();

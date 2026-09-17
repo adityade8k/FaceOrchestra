@@ -13,7 +13,7 @@ export class TutorialLessonFlow {
     return Object.fromEntries(TUTORIAL_LOOPERS.flatMap(({role})=>{
       const h=this.a.get(role);if(!h)return [];
       return [[role,{id:h.id,state:h.looperController.serializeState(h),routes:this.a.takeRoutes[role],evidence:this.a.takeEvidence[role],
-        transport:h.transport.state,source:h.transport.playing?h.looperController.getAbsoluteSourcePosition(h,now):h.looperData.playbackEngine.elapsedMs,
+        transport:h.transport.state,queued:Boolean(h.looperData.queued),source:h.transport.playing?h.looperController.getAbsoluteSourcePosition(h,now):h.looperData.playbackEngine.elapsedMs,
         pendingSource:h.looperData.pendingLaunch?.resumeSourceMs}]];
     }));
   }
@@ -43,11 +43,11 @@ export class TutorialLessonFlow {
       const h=this.a.get(role);if(!h||h.id!==value.id||(demo&&!this.demoOwnsTake(demo,role)))continue;
       h.stop();h.looperController.restoreState(h,value.state,{preserveConnections:true});
       this.a.takeRoutes[role]=value.routes;this.a.takeEvidence[role]=value.evidence;
-      if(transports&&['playing','paused','armed-playback'].includes(value.transport)){
+      if(transports&&!value.queued&&['playing','paused','armed-playback'].includes(value.transport)){
         // Resume from the saved source point through the existing scheduler.
         // One request time/audio anchor preserves alignment between both parts.
         h.transport.play();h.transport.pause();h.looperData.playbackEngine.elapsedMs=value.pendingSource??value.source??0;
-        if(value.transport!=='paused')h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{resume:true,audioAnchor});
+        if(value.transport!=='paused')h.looperController.armPlayback(h,now,h.looperController.getTimingForLooper(h,now),{resume:true,audioAnchor,origin:'demonstration'});
       }
     }
     this.a.snapshotAt=-Infinity;
@@ -96,10 +96,10 @@ export class TutorialLessonFlow {
     s.startAttempt(now);
     s.musicalClock=time=>this.a.get('metronome')?.getBeatTiming(time);
     try{
-      if(['playback','start-all','finalize','record'].includes(step.type)&&step.action){
+      if(['playback','start-all','finalize','record','switch'].includes(step.type)&&step.action){
         this.a.command(step.action,now,'learner');
         if(step.type==='record')this.practiceCapture={session:s,revision:this.a.get(step.looperRole)?.looperData.takeRevision,timeline:this.a.get(step.looperRole)?.timeline};
-        for(const {role} of TUTORIAL_LOOPERS)if(this.a.get(role)?.transport.playing||this.a.get(role)?.looperData.playArmed)this.ownedPlayback.add(role);
+        for(const {role} of TUTORIAL_LOOPERS)if(step.type==='switch'||this.a.get(role)?.transport.playing||this.a.get(role)?.looperData.playArmed)this.ownedPlayback.add(role);
       }
       if(step.timed){
         const phrase=['phrase','performance'].includes(step.type);
@@ -164,6 +164,7 @@ export class TutorialLessonFlow {
     else this.t.uiFeedback=message;
   }
   action(id){
+    if(['play-chordLooper','play-alternativeLooper'].includes(id)&&this.t.session?.step.type==='switch'&&this.t.session.phase==='practicing'){this.a.command(id,performance.now(),'learner');for(const role of ['chordLooper','alternativeLooper'])this.ownedPlayback.add(role);return;}
     if(id==='previous-step')return this.navigate(-1);
     if(id==='next-step')return this.navigate(1);
     if(id==='step-practice')return this.practice();

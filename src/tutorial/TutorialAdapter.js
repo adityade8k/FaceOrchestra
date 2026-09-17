@@ -135,6 +135,7 @@ export class TutorialAdapter {
     if (role==='metronome')p.set(-0.62,-0.10,0.36);
     if (role==='chordLooper')p.set(-0.28,-0.13,0.40);
     if (role==='percussionLooper')p.set(0.30,-0.13,0.40);
+    if (role==='alternativeLooper')p.set(0,-0.48,0.40);
     if (role==='percussion')p.set(0.65,-0.18,0.40);
     if (role==='melody')p.set(0,0.37,-0.10);
     return p.applyQuaternion(this.layoutRotation).add(this.anchor);
@@ -178,7 +179,7 @@ export class TutorialAdapter {
       const binding=routes.clocks[step.looperRole],looper=this.get(step.looperRole);
       from=this.get('metronome')?.getConnectionPortTarget(binding?.portId);to=looper?.tracks.find(t=>t.trackId===binding?.targetPortId)?.nodeTarget;
     }else if(step.type==='wire'){
-      const binding=routes.chords[step.role]||routes.percussion[step.role];
+      const binding=(step.looperRole==='alternativeLooper'?routes.alternatives:routes.chords)[step.role]||routes.percussion[step.role];
       from=this.r.instrumentRegistry.get(binding?.honkId)?.root;
       to=this.r.instrumentRegistry.get(binding?.looperId)?.tracks.find(t=>t.trackId===binding?.trackId)?.nodeTarget;
     }else if(step.type==='tempo')to=this.get('metronome')?.handleRig?.controls.get('bpm')?.node||this.get('metronome')?.root;
@@ -199,7 +200,12 @@ export class TutorialAdapter {
       connectTutorialClock(this,action.slice(6));
     } else if (action==='tempo' && metro && chords && percussion) {
       metro.setBpm(C.bpm,now);metro.setVolume(1);metro.pressButton('play',now);this.r.updateMetronomeLabel(metro);
-      for(const l of [chords,percussion]) this.r.setLooperControlValue(l,'gap',-1);
+      for(const l of TUTORIAL_LOOPERS.map(({role})=>this.get(role)).filter(Boolean)) this.r.setLooperControlValue(l,'gap',-1);
+    } else if (action==='wire-alternative-group-1') {
+      connectTutorialHonk(this,'group-1','alternativeLooper');
+    } else if (action==='switch-start') {
+      for(const {role} of TUTORIAL_LOOPERS)this.get(role)?.stop();
+      if(chords)this.r.pressLooperButton(chords,'play',null,now,origin);
     } else if (action.startsWith('wire-')) {
       connectTutorialHonk(this,action.slice(5));
     } else if (action.startsWith('vowel-')) {
@@ -208,30 +214,31 @@ export class TutorialAdapter {
       for (const group of C.backing) for (const h of this.members(group.role)) { h.setVowel(C.backingVowel);h.setNose(C.backingNose); }
       if (chords) this.r.setLooperControlValue(chords,'volume',-0.55);
     } else if (action==='start-all') {
+      // The exercise explicitly selects its chord part before global Play.
+      if(chords)this.r.pressLooperButton(chords,'play',null,now,origin);
       this.startAllRequest=LooperController.startAll(this.r.instrumentRegistry.getByKind('looper'),now,{metronomeId:metro?.id});
       this.r.showRuntimeFeedback(this.startAllRequest.message);
     } else if (action.startsWith('record-length-')) {
       const looper=this.get(action.slice('record-length-'.length));
       if(looper)this.r.setLooperControlValue(looper,'recordLength',1);
     } else {
-      const match=/^(record|stop-record|play)-(chordLooper|percussionLooper)$/.exec(action);
+      const match=/^(record|stop-record|play)-(chordLooper|percussionLooper|alternativeLooper)$/.exec(action);
       if(match) {
         const looper=this.get(match[2]);
         if(looper && match[1]==='record') {
           // Metronome stick routing stays global; only the intended recorder is armed.
-          const other=match[2]==='chordLooper'?percussion:chords;
-          if(other?.transport.recording || other?.transport.recordArmed) return;
+          if(TUTORIAL_LOOPERS.some(({role})=>role!==match[2]&&(this.get(role)?.transport.recording||this.get(role)?.transport.recordArmed)))return;
           this.r.pressLooperButton(looper,'record',null,now);
         } else if(looper && match[1]==='stop-record'&&(looper.transport.recording||looper.transport.recordArmed)) this.r.pressLooperButton(looper,'stop',null,now);
         else if(looper && match[1]==='play') {
-          this.r.pressLooperButton(looper,'play',null,now);
+          this.r.pressLooperButton(looper,'play',null,now,origin);
         }
       }
     }
     if(demo){
-      const role=/-(chordLooper|percussionLooper)$/.exec(action)?.[1];
+      const role=/-(chordLooper|percussionLooper|alternativeLooper)$/.exec(action)?.[1];
       if(role)this.r.tutorial.flow.rememberDemoCommand(role);
-      if(action==='start-all')for(const {role} of TUTORIAL_LOOPERS)this.r.tutorial.flow.rememberDemoCommand(role);
+      if(action==='start-all'||action==='switch-start')for(const {role} of TUTORIAL_LOOPERS)this.r.tutorial.flow.rememberDemoCommand(role);
     }
     this.snapshotAt=-Infinity;
     this.emit({id:`command-${++this.sequence}`,kind:'command',origin,action,startMs:now});
@@ -404,7 +411,10 @@ export class TutorialAdapter {
       }
       const startBeat=h?.looperData.clockPlaybackStartBeatPosition;
       const source=h?.looperController.getAbsoluteSourcePosition(h,now);
-      loopers[role]={id:h?.id,recording,recordArmed:Boolean(h?.transport.recordArmed),playing:Boolean(h?.transport.playing),
+      loopers[role]={id:h?.id,recording,
+        queued:Boolean(h?.looperData.queued),queuedRequest:h?.looperData.queued?h.looperData.portGroup?.request:null,
+        switchHistory:h?.looperData.switchHistory||[],takeRevision:h?.looperData.takeRevision,
+        portId:connection?.portId,metronomeId:connection?.metronomeId,recordArmed:Boolean(h?.transport.recordArmed),playing:Boolean(h?.transport.playing),
         recordBeats:h?.looperData.recordBeats,recordingProgress:h?.looperController.getRecordingProgress(h,now),
         playArmed:Boolean(h?.looperData.playArmed),hasRecording:Boolean(h?.timeline.hasRecording()),gapBeats:h?.looperData.gapBeats,timeline:this.takes[role],
         clockWired:Boolean(routes.clocks[role]&&(role!=='percussionLooper'||routes.percussion.metronome)),
@@ -422,7 +432,7 @@ export class TutorialAdapter {
   }
   startAvailableBacking(now,{excludeRole=null}={}){
     const routes=resolveTutorialRoutes(this);
-    const roles=TUTORIAL_LOOPERS.map(l=>l.role).filter(role=>role!==excludeRole&&this.get(role)?.timeline.hasRecording()&&routes.clocks[role]);
+    const roles=['chordLooper','percussionLooper'].filter(role=>role!==excludeRole&&this.get(role)?.timeline.hasRecording()&&routes.clocks[role]);
     if(roles.length===2)this.command('start-all',now,'demonstration');
     else if(roles.length===1)this.r.pressLooperButton(this.get(roles[0]),'play',null,now);
     return roles;

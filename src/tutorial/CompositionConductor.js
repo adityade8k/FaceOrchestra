@@ -19,6 +19,9 @@ export class CompositionConductor {
     const step=this.session.step;
     if(this.demonstration&&['ack','spawn','clock-wire','wire','tempo','record-length','timbre','stick','unequip'].includes(step.type))return;
     if(this.stepId!==`${step.id}:${this.session.attempt}`) {
+      if(this.previousStep?.type==='playback')this.adapter.get(this.previousStep.looperRole)?.stop();
+      if(this.previousStep?.type==='switch')for(const role of ['chordLooper','alternativeLooper'])this.adapter.get(role)?.stop();
+      this.previousStep=step;
       this.adapter.squeeze(null,false,0,now);
       this.stepId=`${step.id}:${this.session.attempt}`;this.stepAt=now;this.actions.clear();this.noteId=null;
     }
@@ -30,6 +33,12 @@ export class CompositionConductor {
     } else if(['ack','clock-wire','wire','tempo','record-length','timbre','finalize','playback','start-all'].includes(step.type)) {
       if(elapsed>=(step.type==='finalize'?0:300)) this.once('action',()=>this.adapter.command(step.action,now,this.origin));
       if(step.type==='playback') this.adapter.releaseVirtuals();
+    } else if(step.type==='switch') {
+      this.once('start',()=>this.adapter.command('switch-start',now,this.origin));
+      const a=this.adapter.get('chordLooper'),b=this.adapter.get('alternativeLooper');
+      const phase=h=>h.looperController.getAbsoluteSourcePosition(h,now)%h.timeline.durationMs/h.timeline.durationMs;
+      if(a?.transport.playing&&phase(a)>.25&&!this.actions.has('forward'))this.once('forward',()=>this.adapter.command('play-alternativeLooper',now,this.origin));
+      if(b?.transport.playing&&phase(b)>.25)this.once('back',()=>this.adapter.command('play-chordLooper',now,this.origin));
     } else if(step.type==='note') {
       if(step.action) this.once('action',()=>this.adapter.command(step.action,now,this.origin));
       const duration=step.bend ? 2250 : Math.max(step.minimumMs+100,600);
@@ -83,7 +92,7 @@ export class CompositionConductor {
     if(this.paused || !this.running)return;
     this.paused=true;this.adapter.releaseVirtuals();
     const looper=this.adapter.get(this.session.step?.looperRole || 'chordLooper');this.recordInterrupted=Boolean(looper?.transport.recording||looper?.transport.recordArmed||this.session.step?.type==='finalize');
-    if(this.recordInterrupted) this.adapter.command(`stop-record-${this.session.step?.looperRole}`,performance.now(),this.origin);else { this.adapter.get('chordLooper')?.stop(); this.adapter.get('percussionLooper')?.stop(); }
+    if(this.recordInterrupted) this.adapter.command(`stop-record-${this.session.step?.looperRole}`,performance.now(),this.origin);else { this.adapter.get('chordLooper')?.stop(); this.adapter.get('percussionLooper')?.stop(); this.adapter.get('alternativeLooper')?.stop(); }
     this.session.feedback=message;
   }
   resume(now) {

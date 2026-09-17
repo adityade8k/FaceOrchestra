@@ -67,8 +67,10 @@ export function validateSequence(expected, actual, { kind = 'note', partial = fa
   return {ok:true, matched:used.size};
 }
 export function validateTake(timeline, evidence, role, routes = {}, tolerances = {}) {
-  const chords = role === "chordLooper";
-  if (!["chordLooper", "percussionLooper"].includes(role)) return fail("Specify the recording owner.");
+  const chords = role !== "percussionLooper";
+  const expectedChords = role === "alternativeLooper" ? C.alternateBacking : C.backing;
+  const chordRoutes = role === "alternativeLooper" ? routes.alternatives : routes.chords;
+  if (!["chordLooper", "percussionLooper", "alternativeLooper"].includes(role)) return fail("Specify the recording owner.");
   if (!timeline || timeline.timingMode !== 'metronome') return fail('Record with the connected Metronome running.');
   if (timeline.gapBeats !== 0) return fail('Leave Gap at zero for this exercise.');
   if (!(timeline.durationMs > 0)) return fail('Record a note or strike before playing the take.');
@@ -76,7 +78,7 @@ export function validateTake(timeline, evidence, role, routes = {}, tolerances =
   if (!chords && evidence.some(e=>e.kind==='note')) return fail('Record only stick taps in Percussion Looper.');
   const expectedDrums=C.percussion.map(event=>({...event,lane:routes.percussion?.[event.role]?.trackId}));
   if(!chords&&expectedDrums.some(event=>!event.lane))return fail('Reconnect each percussion target through a distinct compatible route, then record again.');
-  const live = chords ? validateSequence(C.backing, evidence,tolerances) : validateSequence(expectedDrums, evidence, {...tolerances,kind:'strike'});
+  const live = chords ? validateSequence(expectedChords, evidence,tolerances) : validateSequence(expectedDrums, evidence, {...tolerances,kind:'strike'});
   if (!live.ok) return live;
   if (!chords && evidence.filter(e=>e.kind==='strike').some(e=>e.recordedCount !== 1)) return fail('Each tap must enter only Percussion Looper through its real cable route.');
   // Live evidence keeps its original count-in coordinates. Only the stored
@@ -99,7 +101,7 @@ export function validateTake(timeline, evidence, role, routes = {}, tolerances =
         open = e;
       }
       if (e.type === 'squeezeEnd' && open) {
-        const group = C.backing.find(g=>routes.chords?.[g.role]?.trackId === track.trackId);
+        const group = C.backing.find(g=>chordRoutes?.[g.role]?.trackId === track.trackId);
         if (!group || e.synthetic) return fail('A chord was not released normally before Stop.');
         gates.push({kind:'note',role:group.role,midis:group.midis,voiced:true,articulated:true,released:true,
           startMs:open.timeMs,endMs:e.timeMs,beat:firstBeat + open.timeMs / timeline.beatIntervalMs,
@@ -111,7 +113,7 @@ export function validateTake(timeline, evidence, role, routes = {}, tolerances =
     }
     if (open) return fail('A recorded chord has no release.');
   }
-  return chords ? validateSequence(C.backing,gates,tolerances) : validateSequence(expectedDrums,drums,{...tolerances,kind:'strike'});
+  return chords ? validateSequence(expectedChords,gates,tolerances) : validateSequence(expectedDrums,drums,{...tolerances,kind:'strike'});
 }
 export function validateSetup(step, snapshot, origin) {
   const role = snapshot.roles?.[step.role];
@@ -122,9 +124,12 @@ export function validateSetup(step, snapshot, origin) {
   } else if (step.type === 'record-length') {
     if (snapshot.loopers?.[step.looperRole]?.recordBeats !== 16) return fail('Set the right handle to 16 beats. Recording stops automatically.');
   } else if (step.type === 'clock-wire') {
-    if (!snapshot.loopers?.[step.looperRole]?.clockWired) return fail(`Connect the Metronome to ${step.looperRole} using an available output and compatible socket.`);
+    const owner=snapshot.loopers?.[step.looperRole],chord=snapshot.loopers?.chordLooper;
+    if (!owner?.clockWired) return fail(`Connect the Metronome to ${step.looperRole} using a compatible socket.`);
+    if(step.looperRole==='alternativeLooper'&&(!chord?.clockWired||owner.portId!==chord.portId||owner.metronomeId!==chord.metronomeId))return fail('Connect both alternative patterns to the SAME Metronome output.');
+    if(step.looperRole==='percussionLooper'&&owner.portId!==undefined&&owner.portId===chord?.portId&&owner.metronomeId===chord.metronomeId)return fail('Use DIFFERENT outputs for simultaneous chords and percussion.');
   } else if (step.type === 'wire') {
-    if (!snapshot.wires?.[step.role]) return fail(`Connect one member of ${step.role} to an available socket on its Looper.`);
+    if (!snapshot.wires?.[step.wireKey || step.role]) return fail(`Connect one member of ${step.role} to an available socket on its Looper.`);
   } else if (step.type === 'tempo') {
     if (!snapshot.clockPlaying || Math.abs(snapshot.bpm - C.bpm) > T.bpm || snapshot.tempoStableMs < T.setupStableMs || ['chordLooper','percussionLooper'].some(role=>snapshot.loopers?.[role]?.gapBeats !== 0))
       return fail('Start the clock at 80 BPM and leave both Looper Gaps at zero.');
@@ -137,8 +142,22 @@ const expectedCache=new WeakMap();
 export function expectedForStep(step) {
   if(!step)return [];
   if(!expectedCache.has(step))expectedCache.set(step,
+    step.type==='record'&&step.looperRole==='alternativeLooper'?C.alternateBacking:
     step.type==='chords'||step.type==='record'&&step.looperRole==='chordLooper'?C.backing:
     step.type==='phrase'?C.phrases[step.phrase].filter(e=>e.pitch):
     step.type==='performance'?performanceEvents().filter(e=>e.pitch):[]);
   return expectedCache.get(step);
+}
+
+// A checkpoint requires actual arbiter handoffs whose queued states this attempt
+// observed. Playback/demonstration snapshots cannot manufacture learner credit.
+export function validateSwitchExercise(snapshot, session) {
+  const a=snapshot.loopers?.chordLooper,b=snapshot.loopers?.alternativeLooper;
+  session.switchQueued ||= new Set();
+  for(const owner of [a,b])if(owner?.queuedRequest?.origin===session.origin&&owner.queuedRequest.requestedAtMs>=session.enteredAt)session.switchQueued.add(owner.queuedRequest.id);
+  if(!a?.hasRecording||!b?.hasRecording||!a.clockWired||!b.clockWired||a.portId!==b.portId||a.metronomeId!==b.metronomeId)return fail('Keep both recorded loopers connected to the same output.');
+  const valid=e=>e.origin===session.origin&&e.requestedAtMs>=session.enteredAt&&session.switchQueued.has(e.id)&&e.requestedPhase>.05&&e.requestedPhase<.95;
+  const forward=b.switchHistory?.find(e=>valid(e)&&e.fromId===a.id&&e.toId===b.id&&e.fromRevision===a.takeRevision&&e.toRevision===b.takeRevision);
+  const back=a.switchHistory?.find(e=>valid(e)&&forward&&e.requestedAtMs>=forward.completedAtMs&&e.fromId===b.id&&e.toId===a.id&&e.fromRevision===b.takeRevision&&e.toRevision===a.takeRevision);
+  return back&&a.playing&&!b.playing&&snapshot.audioRunning?{ok:true,message:'Both queued selections completed at real loop boundaries. Both recordings are still available.'}:fail(forward?'Alternative is playing. Mid-cycle press Play Chords to queue the return.':'Start Chords, then mid-cycle press Play Alternative and watch its queued indicator.');
 }

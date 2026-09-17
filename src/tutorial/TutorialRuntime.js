@@ -184,7 +184,7 @@ export class TutorialRuntime {
       if(snapshot.aligned) this.alignmentEvidence={atMs:now,loopers:snapshot.loopers.chordLooper.startBeat,phaseDifference:Math.abs(snapshot.loopers.chordLooper.phase-snapshot.loopers.percussionLooper.phase)};
       if(this.demo) {
         this.demo.session.update(snapshot,now);
-        const ds=this.demo.session,limit=ds.step?.timed?(ds.step.beats+24)*ds.beatMs+5000:['playback','start-all'].includes(ds.step?.type)?30000:10000;
+        const ds=this.demo.session,limit=ds.step?.timed?(ds.step.beats+24)*ds.beatMs+5000:ds.step?.type==='switch'?90000:['playback','start-all'].includes(ds.step?.type)?30000:10000;
         if(ds.complete||ds.failed||this.demo.conductor.paused)this.flow.stopDemo(ds.complete,ds.failed||this.demo.conductor.paused?ds.feedback:'');
         else if(now-ds.enteredAt>limit)this.flow.stopDemo(false,`${ds.step.title} could not complete. Check the instruments, then press Demonstrate again.`);
       } else if(!this.conductor?.paused) {
@@ -255,7 +255,7 @@ export class TutorialRuntime {
       if(this.screen==='launch')model={title:'Honk Orchestra',instruction:'Play freely, or learn a piece with a guided tutorial.',actions:[button('play','Play'),button('tutorial','Tutorials')]};
       else if(this.screen==='tutorial')model={title:'Choose a study',instruction:'Listen to an example, practice each part, then perform with recorded backing.',actions:[button('jog','Rag Jog Study'),button('kuch','Kuch To Hua Hai'),button('back','Back')]};
       else if(this.screen==='jog')model={title:C.title,instruction:'Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.',feedback:'Full simulation builds and performs the composition automatically; allow several minutes.',actions:[button('practice','Start Lesson'),button('simulate','Full Simulation'),button('tutorial','All Tutorials')]};
-      else if(this.screen==='kuch')model={title:'Kuch To Hua Hai',instruction:'Learn two chord patterns and a stick groove, then practice the melody in four separate lessons. Finish with All together to play the complete song over your two recorded loopers. The ensemble is prepared for you.',feedback:'Eight lessons · 92 BPM · 4/4 · Eight-beat verse breaks. Full simulation records the backing, then performs the song once (about two minutes). Your free-play scene returns on Exit.',actions:[button('kuch-practice','Start Lesson'),button('kuch-simulate','Full Simulation'),button('tutorial','All Tutorials')]};
+      else if(this.screen==='kuch')model={title:'Kuch To Hua Hai',instruction:'Learn two chord patterns and a stick groove, then practice the melody in four separate lessons. Finish with All together to play the complete song over separate D and Change pattern loopers sharing one output, with percussion on another. The ensemble is prepared for you.',feedback:'Nine lessons · 92 BPM · 4/4 · Eight-beat verse breaks. Full simulation records the backing, then performs the song once (about two minutes). Your free-play scene returns on Exit.',actions:[button('kuch-practice','Start Lesson'),button('kuch-simulate','Full Simulation'),button('tutorial','All Tutorials')]};
       else model={title:'Free play',instruction:'Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.',actions:[button('tutorial','Tutorial')]};
       if(this.uiFeedback)model.feedback=this.uiFeedback;
       this.panel.setTransport('');
@@ -308,7 +308,7 @@ export class TutorialRuntime {
       if(s.complete)feedback=simulation?'Simulation complete in '+(this.report?.durationSeconds||0).toFixed(1)+' seconds.':
         [...s.outcomes.values()].filter(o=>o.status==='passed').length+' completed · '+[...s.outcomes.values()].filter(o=>o.status==='skipped').length+' skipped.';
       model={title:s.complete?'Study complete':step.title,instruction:s.complete?'VIRAG 2 · A, B, A, C, B, D.':step.instruction,
-        navigation,actions:[button('recenter','Recenter'),button('exit','Exit')],feedback,
+        navigation,actions:[...(step?.type==='switch'?[button('play-alternativeLooper','Play Alternative',!activePractice),button('play-chordLooper','Play Chords',!activePractice)]:[]),button('recenter','Recenter'),button('exit','Exit')],feedback,
         result:!activeDemo&&s.phase==='results'?(s.result?.ok?'passed':'retry'):null,
         progress:(simulation?'Simulation':activeDemo?'Demonstration':'Lesson')+' · '+Math.min(s.index+1,s.steps.length)+'/'+s.steps.length+(activePractice?' · Practice':s.phase==='results'?' · Results':'')};
     }

@@ -133,11 +133,10 @@ export const MetronomeConnectionRuntimeMethods = {
   },
 
   validateMetronomeConnections() {
-    for (const connection of [...this.metronomeConnectionManager.connectionsByPort.values()]) {
+    for (const connection of this.metronomeConnectionManager.getConnections()) {
       if (!this.isMetronomeConnectionUsable(connection)) {
-        this.metronomeConnectionManager.disconnectPort(
-          connection.metronomeId,
-          connection.portId,
+        this.metronomeConnectionManager.disconnectConnection(
+          connection,
           "endpoint-unavailable",
         );
       }
@@ -145,7 +144,7 @@ export const MetronomeConnectionRuntimeMethods = {
   },
 
   updateMetronomeConnections(now = performance.now()) {
-    for (const connection of this.metronomeConnectionManager.connectionsByPort.values()) {
+    for (const connection of this.metronomeConnectionManager.getConnections()) {
       if (connection.targetKind === METRONOME_CONNECTION_TARGET_KINDS.honk) {
         this.updateMetronomeHonkPulse(connection, now);
       }
@@ -170,7 +169,7 @@ export const MetronomeConnectionRuntimeMethods = {
   },
 
   updateMetronomeConnectionWires() {
-    for (const connection of this.metronomeConnectionManager.connectionsByPort.values()) {
+    for (const connection of this.metronomeConnectionManager.getConnections()) {
       this.updateMetronomeConnectionWire(connection);
     }
   },
@@ -186,7 +185,7 @@ export const MetronomeConnectionRuntimeMethods = {
     if (!wireMesh) {
       wireMesh = createConnectionWireMesh({
         scene: this.scene,
-        name: `METRONOME_wire_${connection.metronomeId}_${connection.portId}`,
+        name: `METRONOME_wire_${key}`,
         color: METRONOME_SETTINGS.connectionWireColor,
         textures: this.instrumentMaterialTextures,
         renderOrder: METRONOME_SETTINGS.connectionWireRenderOrder,
@@ -216,7 +215,7 @@ export const MetronomeConnectionRuntimeMethods = {
 
   resetMetronomeConnectionRuntime({ clearRelationships = true } = {}) {
     this.cancelAllMetronomeWireInteractions();
-    for (const connection of [...this.metronomeConnectionManager.connectionsByPort.values()]) {
+    for (const connection of this.metronomeConnectionManager.getConnections()) {
       this.releaseMetronomePulse(connection);
     }
     if (clearRelationships) this.metronomeConnectionManager.clear("session-reset");
