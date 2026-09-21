@@ -5,6 +5,10 @@ import { execFileSync } from 'node:child_process';
 import { startServer } from './server.mjs';
 import { launchChrome } from './chrome.mjs';
 import { generateDemo } from './demo.mjs';
+import { checkAlignment } from './check-alignment.mjs';
+import { checkScrubbing } from './check-scrubbing.mjs';
+import { checkFrameMatching } from './check-frame-matching.mjs';
+import { checkRayStyle, checkRayExportParity } from './check-ray-style.mjs';
 const output=resolve('test-results/capture');await mkdir(output,{recursive:true});
 const service=await startServer({host:'127.0.0.1',port:0,plain:true,pairCode:'123456'}),chrome=await launchChrome();
 const base=`http://127.0.0.1:${service.port}`;
@@ -16,6 +20,7 @@ try {
   clearInterval(disconnectTimer);assert.equal(interrupted,true);
   await chrome.navigate(`${base}/capture/`);
   await chrome.evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(window.captureEditor){clearInterval(timer);resolve();}else if(++n>200){clearInterval(timer);reject(new Error('Editor did not load'));}},50);})`);
+  assert.equal(await chrome.evaluate(`document.getElementById('preview-guides').checked&&document.getElementById('preview-rays').checked`),true,'Controller spheres and rays default on');
   await chrome.evaluate(`captureEditor.loadTake(${JSON.stringify(demo.id)})`);
   const document=await chrome.send('DOM.getDocument');const input=await chrome.send('DOM.querySelector',{nodeId:document.root.nodeId,selector:'#video-file'});
   await chrome.send('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[join(output,'phone.webm')]});
@@ -41,6 +46,14 @@ try {
     return {snapshots:snapshots.length,rootScale:true,childAnimation:true,grip:true,playingLooper:true,locked:true,spawnDelete:true,wires:true};
   })()`);
   report.reconnectRecovered=interrupted;
+  console.log('Checking continuous forward/backward timeline scrubbing…');
+  report.scrubbing=await checkScrubbing(chrome);
+  console.log('Checking camera handles, orbit isolation, undo, saved frames and project download…');
+  report.alignment=await checkAlignment({chrome,output});
+  console.log('Matching controllers in decoded video frames and refining the fixed camera…');
+  report.frameMatching=await checkFrameMatching(chrome);
+  console.log('Checking live ray color, opacity and length controls…');
+  report.rayStyle=await checkRayStyle(chrome);
   const savedProject=await chrome.evaluate('captureEditor.project');await writeFile(join(output,'reopen.json'),JSON.stringify(savedProject));
   await chrome.navigate(`${base}/capture/`);
   await chrome.evaluate(`new Promise(resolve=>{const timer=setInterval(()=>{if(window.captureEditor){clearInterval(timer);resolve();}},50);})`);
@@ -51,12 +64,44 @@ try {
   const reopenedVideo=await chrome.send('DOM.querySelector',{nodeId:reopenedDocument.root.nodeId,selector:'#video-file'});
   await chrome.send('DOM.setFileInputFiles',{nodeId:reopenedVideo.nodeId,files:[join(output,'phone.webm')]});
   await chrome.evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(document.getElementById('video').readyState>=2){clearInterval(timer);resolve();}else if(++n>200){clearInterval(timer);reject(new Error(document.getElementById('notice').textContent));}},50);})`);
-  const restored=await chrome.evaluate('({trim:captureEditor.project.trim,camera:captureEditor.project.camera,mapping:captureEditor.project.mapping})');
-  assert.deepEqual(restored,{trim:savedProject.trim,camera:savedProject.camera,mapping:savedProject.mapping});report.projectReopen=true;
+  const restored=await chrome.evaluate('({trim:captureEditor.project.trim,camera:captureEditor.project.camera,mapping:captureEditor.project.mapping,bookmarks:captureEditor.project.bookmarks,frameMatches:captureEditor.project.frameMatches,layers:captureEditor.project.layers,rayStyle:captureEditor.project.rayStyle})');
+  assert.deepEqual(restored,{trim:savedProject.trim,camera:savedProject.camera,mapping:savedProject.mapping,bookmarks:savedProject.bookmarks,frameMatches:savedProject.frameMatches,layers:savedProject.layers,rayStyle:savedProject.rayStyle});report.projectReopen=true;
+  assert.deepEqual(await chrome.evaluate(`['ray-left-color','ray-right-color','ray-opacity','ray-length'].map(id=>document.getElementById(id).value)`),['#ff00ff','#00ffff','0.42','2.1']);
+  const legacyProject={...savedProject};delete legacyProject.bookmarks;delete legacyProject.frameMatches;delete legacyProject.frameFit;delete legacyProject.rayStyle;
+  await writeFile(join(output,'legacy-project.json'),JSON.stringify(legacyProject));
+  await chrome.send('DOM.setFileInputFiles',{nodeId:projectInput.nodeId,files:[join(output,'legacy-project.json')]});
+  await chrome.evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(captureEditor.project.bookmarks.length===0){clearInterval(timer);resolve();}else if(++n>100){clearInterval(timer);reject(new Error('Legacy project not restored'));}},50);})`);
+  assert.deepEqual(await chrome.evaluate('captureEditor.project.camera'),savedProject.camera);report.alignment.legacyProject=true;
+  assert.deepEqual(await chrome.evaluate('captureEditor.project.rayStyle'),report.rayStyle.defaults);report.rayStyle.legacyDefaults=true;
+  await chrome.send('DOM.setFileInputFiles',{nodeId:projectInput.nodeId,files:[join(output,'reopen.json')]});
+  await chrome.evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(captureEditor.project.bookmarks.length===${savedProject.bookmarks.length}){clearInterval(timer);resolve();}else if(++n>100){clearInterval(timer);reject(new Error('Saved frames not restored'));}},50);})`);
   await chrome.evaluate('captureEditor.seek(.7)');
   const image=await chrome.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(output,'editor.png'),Buffer.from(image.data,'base64'));
+  // Model a decoder delivering its presentation notification before its public
+  // readyState becomes drawable. Every exported frame must wait through this.
+  await chrome.evaluate(`(()=>{
+    const video=document.getElementById('video'),request=video.requestVideoFrameCallback.bind(video);
+    const ready=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,'readyState').get;
+    window.decodeCheck={delays:0,blocked:false};
+    Object.defineProperty(video,'readyState',{configurable:true,get(){return decodeCheck.blocked?1:ready.call(video);}});
+    video.requestVideoFrameCallback=fn=>request((now,meta)=>{
+      if(!decodeCheck.blocked){decodeCheck.blocked=true;decodeCheck.delays++;requestAnimationFrame(()=>requestAnimationFrame(()=>{decodeCheck.blocked=false;video.dispatchEvent(new Event('loadeddata'));}));}
+      fn(now,meta);
+    });
+    window.restoreVideoReadiness=()=>{delete video.readyState;delete video.requestVideoFrameCallback;};
+  })()`);
   console.log(`Replay loaded ${report.nodeCount} presentation nodes. Exporting deterministic frames…`);
   const exported=await chrome.evaluate('captureEditor.exportProject()');assert.equal(exported.frames,60);assert.equal(exported.timestamps.length,60);
+  report.decodeReadiness=await chrome.evaluate('({delays:decodeCheck.delays})');assert.ok(report.decodeReadiness.delays>0);await chrome.evaluate('restoreVideoReadiness()');
+  report.rayStyle.exportParity=await checkRayExportParity(chrome,exported);
+  if(exported.ffmpeg)report.decodeReadiness.phoneBackgroundFrames=await chrome.evaluate(`(async()=>{
+    const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');let checked=0;
+    for(let i=0;i<${exported.frames};i++){
+      const image=new Image();image.src='/api/exports/${exported.id}/frame-'+String(i).padStart(6,'0')+'.png';await image.decode();canvas.width=image.width;canvas.height=image.height;ctx.drawImage(image,0,0);
+      const pixel=ctx.getImageData(3,Math.floor(image.height*.2),1,1).data;
+      if(![207,203,189].every((value,j)=>Math.abs(pixel[j]-value)<10))throw new Error('Phone background missing in exported frame '+i+': '+[...pixel]);checked++;
+    }return checked;
+  })()`);
   const exportDir=resolve('captures/exports',exported.id);
   const wav=await readFile(join(exportDir,'audio.wav'));let peak=0;for(let i=44;i<wav.length;i+=2)peak=Math.max(peak,Math.abs(wav.readInt16LE(i)));assert.ok(peak>100);report.cleanAudioPeak=peak;
   if(exported.ffmpeg){const info=JSON.parse(execFileSync('ffprobe',['-v','error','-show_streams','-show_format','-of','json',join(exportDir,'composite.mp4')],{encoding:'utf8'}));const video=info.streams.find(s=>s.codec_type==='video'),audio=info.streams.find(s=>s.codec_type==='audio');assert.equal(video.width,270);assert.equal(video.height,480);assert.equal(Number(video.nb_frames),60);assert.equal(audio.codec_name,'aac');report.ffprobe=info;}
@@ -67,11 +112,36 @@ try {
   // Exercise real portable export + import, not just metadata serialization.
   const archive=await chrome.evaluate(`(async()=>{const blob=await fetch('/api/takes/${demo.id}/archive').then(r=>r.blob());const result=await fetch('/api/import',{method:'POST',body:blob}).then(r=>r.json());if(!result.id)throw new Error(JSON.stringify(result));await captureEditor.loadTake(result.id);return {id:result.id,bytes:blob.size,nodes:captureEditor.replay.nodes.size};})()`);
   assert.equal(archive.nodes,report.nodeCount);
+  assert.deepEqual(await chrome.evaluate('captureEditor.project.bookmarks'),[]);report.alignment.differentTakeClearsBookmarks=true;
+  await chrome.evaluate(`(async()=>{
+    await captureEditor.seek(.7);await document.getElementById('save-frame').onclick();document.getElementById('cancel-match').click();
+    const input=document.getElementById('video-file'),transfer=new DataTransfer();
+    transfer.items.add(new File([input.files[0]],'different-phone.webm',{type:input.files[0].type}));input.files=transfer.files;await input.onchange({target:input});
+  })()`);
+  assert.deepEqual(await chrome.evaluate('captureEditor.project.bookmarks'),[]);report.alignment.differentVideoClearsBookmarks=true;
   const previousFFmpeg=process.env.FFMPEG;process.env.FFMPEG='/nonexistent-honk-encoder';
-  await chrome.evaluate(`captureEditor.setProject({...${JSON.stringify(demo.project)},takeId:${JSON.stringify(archive.id)},trim:{start:.3,end:.4}})`);
+  await chrome.evaluate(`captureEditor.setProject({...${JSON.stringify(demo.project)},takeId:${JSON.stringify(archive.id)},trim:{start:.3,end:.4},layers:{...${JSON.stringify(demo.project.layers)},controllers:true,controllerRays:true,headset:true}});document.getElementById('rotate-camera').click()`);
   const fallback=await chrome.evaluate('captureEditor.exportProject()');assert.equal(fallback.ffmpeg,false);assert.equal(fallback.frames,3);
+  report.rayStyle.transparentExportParity=await checkRayExportParity(chrome,fallback);
   const transparency=await chrome.evaluate(`(async()=>{const image=new Image();image.src='/api/exports/${fallback.id}/frame-000000.png';await image.decode();const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;let visible=0,transparent=0;for(let i=3;i<pixels.length;i+=4){if(pixels[i])visible++;else transparent++;}return {visible,transparent};})()`);
   assert.ok(transparency.visible>0);assert.ok(transparency.transparent>transparency.visible);report.fallback={...fallback,transparency};
+  // Actual exported PNGs must be identical with every calibration helper on/off.
+  await chrome.evaluate(`captureEditor.setProject({layers:{...captureEditor.project.layers,controllers:false,headset:false}});captureEditor.inspector.helpers.visible=false;document.getElementById('inspect-scene').click()`);
+  const withoutGuides=await chrome.evaluate('captureEditor.exportProject()');
+  for(let i=0;i<3;i++){
+    const name=`frame-${String(i).padStart(6,'0')}.png`;
+    assert.deepEqual(await readFile(resolve('captures/exports',fallback.id,name)),await readFile(resolve('captures/exports',withoutGuides.id,name)),`Helpers must not change exported ${name}`);
+  }
+  report.alignment.exportHelperPixelEquality=true;
+  // Controller rays are an explicit output layer; hiding them must change real
+  // exported frames, independently of the preview-only sphere/headset helpers.
+  await chrome.evaluate(`captureEditor.setProject({layers:{...captureEditor.project.layers,controllerRays:false}})`);
+  const withoutRays=await chrome.evaluate('captureEditor.exportProject()');
+  for(let i=0;i<3;i++){
+    const name=`frame-${String(i).padStart(6,'0')}.png`;
+    assert.notDeepEqual(await readFile(resolve('captures/exports',fallback.id,name)),await readFile(resolve('captures/exports',withoutRays.id,name)),`Controller rays must appear in exported ${name}`);
+  }
+  report.alignment.controllerRaysExport=true;
   const tarBase64=await chrome.evaluate(`(async()=>{const blob=await fetch('/api/exports/${fallback.id}/archive.tar').then(r=>r.blob());return new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.readAsDataURL(blob);});})()`);
   await writeFile(join(output,'fallback-frames.tar'),Buffer.from(tarBase64,'base64'));
   const entries=execFileSync('tar',['-tf',join(output,'fallback-frames.tar')],{encoding:'utf8'}).trim().split('\n');assert.equal(entries.filter(n=>n.endsWith('.png')).length,3);assert.ok(entries.includes('audio.wav'));report.fallback.archiveEntries=entries;

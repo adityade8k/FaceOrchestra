@@ -3,18 +3,35 @@ import { createLighting } from '../scene/createLighting.js';
 import { cameraQuaternion } from './calibration.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { validateEnvelope } from './format.js';
+import { normalizeRayStyle } from './rayStyle.js';
+
+export const DEFAULT_REPLAY_LAYERS=Object.freeze({instruments:true,labels:true,wires:true,tutorial:false,rays:false,controllers:true,controllerRays:true,headset:false});
 
 export class ReplayScene {
   constructor(renderer, {assetURL = path => path} = {}) {
     this.assetURL=assetURL;
     this.renderer=renderer;this.scene=new THREE.Scene();this.scene.add(createLighting());
     this.camera=new THREE.PerspectiveCamera(55,9/16,.01,100);
-    this.nodes=new Map();this.resources=new Map();this.layers={instruments:true,labels:true,wires:true,tutorial:false,rays:false,controllers:false,headset:false};
+    this.nodes=new Map();this.resources=new Map();this.layers={...DEFAULT_REPLAY_LAYERS};
     this.issues=[];
-    this.proxies=new Map();
+    // Preview-only tracked origins are never part of the recorded scene.
+    this.guides=new THREE.Scene();this.proxies=new Map();
+    // Controller target rays are an output layer, separate from preview helpers
+    // and recorded presentation nodes. Preview and export use the same poses.
+    this.controllerRayScene=new THREE.Scene();this.controllerRays=new Map();this.rayStyle=normalizeRayStyle();
+    this.guides.add(new THREE.HemisphereLight(0xffffff,0x34433b,1.6));
+    const guideLight=new THREE.DirectionalLight(0xffffff,2);guideLight.position.set(2,4,3);this.guides.add(guideLight);
     for(const name of ['left','right','headset']) {
-      const proxy=new THREE.Mesh(name==='headset'?new THREE.BoxGeometry(.16,.09,.1):new THREE.SphereGeometry(.025,12,8),new THREE.MeshBasicMaterial({color:name==='left'?0x44ffaa:name==='right'?0xffaa44:0x77aaff,wireframe:true}));
-      proxy.visible=false;this.scene.add(proxy);this.proxies.set(name,proxy);
+      const color=name==='left'?0x44ffaa:name==='right'?0xffaa44:0x77aaff;
+      const proxy=new THREE.Mesh(name==='headset'?new THREE.BoxGeometry(.16,.09,.1):new THREE.SphereGeometry(.045,20,16),name==='headset'?new THREE.MeshBasicMaterial({color,wireframe:true}):new THREE.MeshLambertMaterial({color}));
+      proxy.visible=false;this.guides.add(proxy);this.proxies.set(name,proxy);
+      if(name!=='headset'){
+        // A direction guide from target-ray space, independent of
+        // the grip sphere and optional recorded UI/ray presentation objects.
+        const geometry=new THREE.CylinderGeometry(.005,.005,1.5,8).rotateX(Math.PI/2).translate(0,0,-.75);
+        const ray=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,depthWrite:false}));
+        ray.visible=false;this.controllerRayScene.add(ray);this.controllerRays.set(name,ray);
+      }
     }
   }
   async load(events) {
@@ -83,6 +100,15 @@ export class ReplayScene {
     this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
     this.camera.updateMatrixWorld();
   }
+  setRayStyle(value) {
+    this.rayStyle=normalizeRayStyle(value);
+    for(const [hand,ray] of this.controllerRays){
+      ray.material.color.set(this.rayStyle[`${hand}Color`]);ray.material.opacity=this.rayStyle.opacity;
+      // Scale only along the beam. The origin, orientation and thickness stay
+      // fixed to the recorded target-ray pose in both preview and export.
+      ray.scale.set(1,1,this.rayStyle.length/1.5);
+    }
+  }
   apply(frame) {
     for(const [id,node] of this.nodes) {
       const state=frame.nodes[id];if(!state){node.visible=false;continue;}
@@ -101,8 +127,9 @@ export class ReplayScene {
       node.updateMatrix();
     }
     for(const [name,proxy] of this.proxies){const pose=name==='headset'?frame.xr.viewer:frame.xr.controllers.find(c=>c.handedness===name)?.grip;proxy.visible=Boolean(pose&&this.layers[name==='headset'?'headset':'controllers']);if(pose){proxy.position.fromArray(pose.p);proxy.quaternion.fromArray(pose.q);}}
+    for(const [name,ray] of this.controllerRays){const pose=frame.xr.controllers.find(c=>c.handedness===name)?.ray;ray.visible=Boolean(pose&&this.layers.controllerRays&&this.rayStyle.opacity>0&&this.rayStyle.length>0);if(pose){ray.position.fromArray(pose.p);ray.quaternion.fromArray(pose.q);}}
     this.scene.updateMatrixWorld(true);
   }
-  render(){this.renderer.setClearColor(0x000000,0);this.renderer.render(this.scene,this.camera);}
-  dispose(){for(const node of this.nodes.values()){for(const m of node.userData.materials||[])m.dispose();if(node.userData.wireSignature)node.geometry.dispose();}for(const r of this.resources.values())r.dispose?.();this.nodes.clear();this.resources.clear();}
+  render({guides=true}={}){this.renderer.setClearColor(0x000000,0);this.renderer.render(this.scene,this.camera);const autoClear=this.renderer.autoClear;this.renderer.autoClear=false;this.renderer.render(this.controllerRayScene,this.camera);if(guides)this.renderer.render(this.guides,this.camera);this.renderer.autoClear=autoClear;}
+  dispose(){for(const node of this.nodes.values()){for(const m of node.userData.materials||[])m.dispose();if(node.userData.wireSignature)node.geometry.dispose();}for(const r of this.resources.values())r.dispose?.();for(const proxy of [...this.proxies.values(),...this.controllerRays.values()]){proxy.geometry.dispose();proxy.material.dispose();}this.nodes.clear();this.resources.clear();}
 }

@@ -4,7 +4,7 @@ Face Orchestra is a browser-based WebXR instrument for building music in space. 
 
 This page is the user manual. Developers should use [the architecture document](docs/architecture.md) and [the manual XR regression checklist](docs/manual-xr-regression.md).
 
-For fixed-phone video compositing, use [Mixed Reality Capture](docs/mixed-reality-capture.md): local scene/audio recording, calibration, replay, and MP4 or transparent PNG/WAV export.
+For fixed-phone video compositing, follow the [step-by-step recording and editing guide](docs/mixed-reality-step-by-step.md). See [Mixed Reality Capture](docs/mixed-reality-capture.md) for technical setup, calibration, recovery, and export details.
 
 ## What you need
 

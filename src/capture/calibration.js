@@ -37,28 +37,36 @@ function solve(matrix,vector) {
 }
 function pack(camera,fitFocal) {return [...camera.position,...camera.rotation.map(v=>v*DEG),...(fitFocal?[Math.log(Math.tan(camera.fov*DEG/2))]:[])];}
 function unpack(p,base,fitFocal) {return {...base,position:p.slice(0,3),rotation:p.slice(3,6).map(v=>v/DEG),fov:fitFocal?2*Math.atan(Math.exp(p[6]))/DEG:base.fov};}
-function residual(p,base,points,width,height,fitFocal) {
+function residual(p,base,points,width,height,fitFocal,prior=null) {
   const camera=unpack(p,base,fitFocal),r=[];
-  for(const o of points){const projected=projectPoint(o.world,camera,width,height);if(!projected)return null;r.push(projected[0]-o.pixel[0],projected[1]-o.pixel[1]);}return r;
+  for(const o of points){const projected=projectPoint(o.world,camera,width,height);if(!projected)return null;r.push(projected[0]-o.pixel[0],projected[1]-o.pixel[1]);}
+  // Early saved frames cannot determine every camera parameter. A prior keeps
+  // unobserved directions near the current camera instead of inventing a fit.
+  if(prior)for(let i=0;i<p.length;i++)r.push((p[i]-prior[i])*[80,80,80,300,300,300,80][i]);
+  return r;
 }
 const cost=r=>r?r.reduce((s,v)=>s+(Math.abs(v)<8?v*v:16*Math.abs(v)-64),0):Infinity;
-function optimize(camera,points,width,height,fitFocal) {
-  let p=pack(camera,fitFocal),r=residual(p,camera,points,width,height,fitFocal),score=cost(r),lambda=.01,condition=Infinity;
+function optimize(camera,points,width,height,fitFocal,regularize=false) {
+  const prior=regularize?pack(camera,fitFocal):null;
+  let p=pack(camera,fitFocal),r=residual(p,camera,points,width,height,fitFocal,prior),score=cost(r),lambda=.01,condition=Infinity;
   if(!r)return null;
   for(let iteration=0;iteration<100;iteration++) {
     const n=p.length,jac=Array.from({length:r.length},()=>Array(n));
-    for(let j=0;j<n;j++){const candidate=p.slice(),step=1e-5;candidate[j]+=step;const next=residual(candidate,camera,points,width,height,fitFocal);if(!next)return null;for(let i=0;i<r.length;i++)jac[i][j]=(next[i]-r[i])/step;}
+    for(let j=0;j<n;j++){const candidate=p.slice(),step=1e-5;candidate[j]+=step;const next=residual(candidate,camera,points,width,height,fitFocal,prior);if(!next)return null;for(let i=0;i<r.length;i++)jac[i][j]=(next[i]-r[i])/step;}
     const normal=Array.from({length:n},()=>Array(n).fill(0)),gradient=Array(n).fill(0);
     for(let i=0;i<r.length;i++){const weight=Math.min(1,8/Math.max(Math.abs(r[i]),1e-9));for(let a=0;a<n;a++){gradient[a]-=jac[i][a]*r[i]*weight;for(let b=0;b<n;b++)normal[a][b]+=jac[i][a]*jac[i][b]*weight;}}
     for(let j=0;j<n;j++)normal[j][j]+=lambda*Math.max(1,normal[j][j]);
     const solved=solve(normal,gradient);if(!solved)break;condition=solved.condition;
     const candidate=p.map((v,i)=>v+solved.x[i]);
     if(fitFocal)candidate[6]=Math.max(Math.log(Math.tan(10*DEG/2)),Math.min(Math.log(Math.tan(130*DEG/2)),candidate[6]));
-    const next=residual(candidate,camera,points,width,height,fitFocal),nextCost=cost(next);
+    const next=residual(candidate,camera,points,width,height,fitFocal,prior),nextCost=cost(next);
     if(nextCost<score){const improvement=score-nextCost;p=candidate;r=next;score=nextCost;lambda=Math.max(1e-9,lambda/3);if(improvement<1e-9)break;}
     else lambda=Math.min(1e12,lambda*10);
   }
   return {camera:unpack(p,camera,fitFocal),cost:score,condition};
+}
+export function approximateCamera(observations,initial) {
+  return optimize(initial,observations,1080,1920,true,true)?.camera||null;
 }
 function checkSpread(points) {
   const center=[0,0,0];for(const o of points)for(let i=0;i<3;i++)center[i]+=o.world[i]/points.length;
