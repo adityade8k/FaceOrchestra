@@ -18,7 +18,21 @@ export class AssetRepository {
   async loadModel(key, path = ASSET_PATHS.models[key]) {
     if (!path) throw new Error(`No model asset configured for ${key}`);
     if (!this.models.has(key)) {
-      this.models.set(key, this.gltfLoader.loadAsync(path).then((gltf) => gltf.scene));
+      this.models.set(key, this.gltfLoader.loadAsync(path).then((gltf) => {
+        // Stable authored node paths let capture reference the installed asset once.
+        const visit = (node, nodePath = []) => {
+          const ref = { path: new URL(path, globalThis.location?.href || 'http://localhost/').pathname, nodePath };
+          if (node.geometry) node.geometry.userData.captureAsset = ref;
+          for (const [index, material] of (Array.isArray(node.material) ? node.material : node.material ? [node.material] : []).entries()) {
+            for (const slot of ['map','normalMap','roughnessMap','metalnessMap','emissiveMap','alphaMap','aoMap']) {
+              if (material[slot]) material[slot].userData.captureAsset = { ...ref, materialIndex: index, slot };
+            }
+          }
+          node.children.forEach((child, index) => visit(child, [...nodePath, index]));
+        };
+        visit(gltf.scene);
+        return gltf.scene;
+      }));
     }
     return this.models.get(key);
   }

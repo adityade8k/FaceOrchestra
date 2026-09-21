@@ -35,6 +35,10 @@ export const RADIAL_MENU_SETTINGS = Object.freeze({
 });
 
 export const SPAWN_CATALOG_ENTRIES = Object.freeze([
+  { id: 'capture-toggle', label: 'Start Mixed Reality Recording', action: 'capture', color: 0xff7777 },
+  { id: 'capture-sync', label: 'Mark Sync', action: 'capture', color: 0x83dfbd },
+  { id: 'capture-pose', label: 'Mark Calibration Pose', action: 'capture', color: 0x83dfbd },
+  { id: 'capture-status', label: 'Connection Status', action: 'capture', color: 0xffd591 },
   { id: "metronome", label: "Metronome", action: "instrument", kind: "metronome", modelPath: ASSET_PATHS.models.metronome, color: 0xff8c42 },
   { id: "honk", label: "Honk", action: "instrument", kind: "honk", modelPath: ASSET_PATHS.models.honk, color: 0xf7d04a },
   { id: "honk-cmajor", label: "C Major", action: "formation", recipeId: "honk-cmajor", color: 0x72d572 },
@@ -82,4 +86,5 @@ export const SPAWN_RADIAL_CATEGORIES = Object.freeze([
       "preset-melody",
     ]),
   }),
+  Object.freeze({ id: 'category-capture', label: 'Capture', color: 0xff7777, childIds: Object.freeze(['capture-toggle', 'capture-sync', 'capture-pose', 'capture-status']) }),
 ]);

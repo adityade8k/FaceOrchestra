@@ -13,6 +13,7 @@ const EXPECTED = Object.freeze({
     "preset-quiet",
     "preset-melody",
   ],
+  Capture: ['capture-toggle', 'capture-sync', 'capture-pose', 'capture-status'],
 });
 
 const EXPECTED_LABELS = Object.freeze({
@@ -99,9 +100,9 @@ test("all instrument, formation, and Metronome 93 leaves retain the existing act
   );
 });
 
-test("every hierarchical leaf enters the same placement controller", () => {
+test("instrument leaves enter the placement controller; capture commands stay separate", () => {
   const catalog = new SpawnCatalog();
-  const leaves = catalog.getRadialCategories().flatMap(({ entries }) => entries);
+  const leaves = catalog.getRadialCategories().flatMap(({ entries }) => entries).filter(entry => entry.action !== 'capture');
   const seen = [];
   const placement = new SpawnPlacementController({
     scene: {},

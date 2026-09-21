@@ -465,6 +465,7 @@ export class TutorialAdapter {
   }
   stopSound() { for(const {role} of TUTORIAL_LOOPERS)this.get(role)?.stop();this.get('metronome')?.pause();this.r.audioSystem.releaseAll(); }
   clear() {
+    if(this.r.capture?.active)this.r.capture.event('scene-reset',{source:'tutorial-clear'});
     this.focusRing.visible=false;
     this.releaseAll();this.stopSound();this.r.deletePendingSpawnPlacement();
     for(const h of [...this.r.instrumentRegistry.values()]) this.r.deleteInstrument(h);

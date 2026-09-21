@@ -4,22 +4,25 @@ Face Orchestra is a browser-based WebXR instrument for building music in space. 
 
 This page is the user manual. Developers should use [the architecture document](docs/architecture.md) and [the manual XR regression checklist](docs/manual-xr-regression.md).
 
+For fixed-phone video compositing, use [Mixed Reality Capture](docs/mixed-reality-capture.md): local scene/audio recording, calibration, replay, and MP4 or transparent PNG/WAV export.
+
 ## What you need
 
 - A Quest-style headset and controllers for the full experience. The controller map is designed around Meta Quest button names and handedness.
 - A WebXR browser with WebGL and Web Audio. Passthrough AR is preferred when available; immersive VR is the fallback.
 - A development computer on the same network as the headset.
 - Python 3 for the included web servers.
-- Node.js 20 or newer only if you want to run the automated checks.
-- Internet access when the page loads. Three.js, its browser addons, and the note-label font are loaded from `unpkg.com`.
+- Node.js 22 or newer for dependency setup, the capture receiver and automated checks.
+- Internet access during dependency setup only. Three.js, its addons and the note-label font are served locally afterward.
 
-There are no npm runtime packages to install. The browser import map pins Three.js `0.164.1`.
+Run `npm ci` once. The browser import map pins local Three.js `0.164.1`; postinstall prepares the vendor files.
 
 ## Start the app
 
 For a desktop boot and asset check:
 
 ```sh
+npm ci
 npm run dev
 ```
 

@@ -1,4 +1,6 @@
 import { TutorialRuntime } from '../../tutorial/TutorialRuntime.js';
+import { CaptureRecorder } from '../../capture/CaptureRecorder.js';
+import { installCaptureControls } from '../../capture/CaptureControls.js';
 import * as THREE from "three";
 import { INSTRUMENT_MAX_SCALE, INSTRUMENT_MIN_SCALE, INSTRUMENT_SCALE_STEP } from "../../config/honk.js";
 import { AssetRepository } from "../../scene/AssetRepository.js";
@@ -209,6 +211,7 @@ export class RuntimeHost {
     this.configureStickEvents();
     this.configureRelationshipEvents();
     this.tutorial = new TutorialRuntime(this);
+    this.capture = new CaptureRecorder(this);
   }
 
   get instrumentStates() {
@@ -472,6 +475,7 @@ export class RuntimeHost {
     await this.restorePersistedScene();
     this.onRuntimeInitialized();
     this.tutorial.initialize();
+    this.disposeCaptureControls = installCaptureControls(this.capture);
     return this;
   }
 
@@ -514,6 +518,8 @@ export class RuntimeHost {
   }
 
   dispose() {
+    this.capture?.dispose();
+    this.disposeCaptureControls?.();
     clearTimeout(this.runtimeFeedbackTimer);
     this.runtimeFeedbackElement?.remove();
     this.tutorial?.dispose();

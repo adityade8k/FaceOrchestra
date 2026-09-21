@@ -31,13 +31,15 @@ export class FaceOrchestraApp {
     if (this.running) return;
     this.running = true;
     this.sceneRuntime.start();
-    this.sceneRuntime.renderer.setAnimationLoop((frameMs) => {
+    this.sceneRuntime.renderer.setAnimationLoop((frameMs, xrFrame) => {
       if (this.computeSuspended) return;
       const now = Number.isFinite(frameMs) ? frameMs : performance.now();
       const delta = this.lastFrameMs === null ? 0 : Math.max((now - this.lastFrameMs) / 1000, 0);
       this.lastFrameMs = now;
       this.elapsedSeconds += delta;
       this.update(delta, this.elapsedSeconds, now);
+      // Deliberately outside the scheduler: preview phases can exit early.
+      this.runtime.capture?.sample(now, xrFrame);
       this.sceneRuntime.render();
     });
   }
@@ -58,10 +60,12 @@ export class FaceOrchestraApp {
     this.computeSuspended = false;
     this.sceneRuntime.setXRBlendMode(session?.environmentBlendMode);
     this.runtime.onXRSessionStart();
+    this.runtime.capture?.onSession(session);
     this.start();
   }
 
   onXRSessionEnd() {
+    this.runtime.capture?.stop("session-end", { tailMs: 0 });
     // Quiesce frame work immediately, but let Three.js and the browser finish
     // dismantling the XR compositor before detaching the renderer loop or
     // doing synchronous persistence work.

@@ -144,7 +144,24 @@ export class RadialSpawnMenu {
     const label = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.042), material);
     label.name = `SpawnRadialLabel_${labelText}`;
     label.renderOrder = renderOrder;
+    this.setLabelText(label, labelText);
     return label;
+  }
+
+  setLabelText(label, text) {
+    if (!label || label.userData.labelText === text) return;
+    label.userData.labelText = text;
+    const canvas = label.material.map.image, ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#10100e'; ctx.font = '700 24px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const words = text.split(' '), lines = [''];
+    for (const word of words) {
+      const i = lines.length - 1, candidate = lines[i] ? `${lines[i]} ${word}` : word;
+      if (ctx.measureText(candidate).width > 310 && lines[i]) lines.push(word); else lines[i] = candidate;
+    }
+    lines.forEach((line, i) => ctx.fillText(line, 160, 48 + (i - (lines.length - 1) / 2) * 27));
+    label.material.map.needsUpdate = true;
   }
 
   open(controller, state) {

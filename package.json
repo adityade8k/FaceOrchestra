@@ -3,8 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": { "node": ">=22" },
   "scripts": {
-    "dev": "python3 -m http.server 5173",
+    "postinstall": "node scripts/capture/setup.mjs",
+    "capture:setup": "node scripts/capture/setup.mjs",
+    "capture:serve": "node scripts/capture/server.mjs",
+    "capture:demo": "node scripts/capture/demo.mjs",
+    "test:capture:browser": "node scripts/capture/run-browser.mjs",
+    "test:capture:server": "node scripts/capture/check-server.mjs",
+    "dev": "python3 scripts/serve-https.py --http",
     "dev:https": "python3 scripts/serve-https.py",
     "test": "node --test",
     "check": "node scripts/verify-imports.mjs",
@@ -12,5 +19,9 @@
     "test:tutorial:browser": "node scripts/run-tutorial-browser.mjs",
     "test:kuch:browser": "TUTORIAL_TEST=kuch node scripts/run-tutorial-browser.mjs",
     "test:ports:browser": "TUTORIAL_TEST=ports node scripts/run-tutorial-browser.mjs"
+  },
+  "dependencies": {
+    "three": "0.164.1",
+    "ws": "8.21.3"
   }
 }

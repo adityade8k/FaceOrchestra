@@ -98,6 +98,10 @@ export const SpawnRuntimeMethods = {
   
       const selectedOption = this.spawnMenuController.confirm(controller, state);
       this.interactionCoordinator.setMode(controller, ControllerMode.IDLE);
+      if (selectedOption?.action === 'capture') {
+        this.capture?.command(selectedOption.id);
+        return;
+      }
       if (selectedOption) {
         this.beginPendingSpawnPlacement(controller, selectedOption.id);
       }
@@ -125,6 +129,7 @@ export const SpawnRuntimeMethods = {
       }
   
       const requested = this.spawnCatalog.get(componentId);
+      if (requested?.action === 'capture') { this.capture?.command(requested.id); return; }
       const kind = resolveCatalogInstrumentSpawn(requested, componentId).componentId;
       if (kind === 'metronome' && this.instrumentRegistry.admission) {
         const token = this.instrumentRegistry.admission.reserve(kind);
@@ -160,7 +165,7 @@ export const SpawnRuntimeMethods = {
         return { instruments };
       }
 
-      if (entry?.action === "equip") return null;
+      if (entry?.action === "equip" || entry?.action === 'capture') return null;
       const spawnRequest = resolveCatalogInstrumentSpawn(entry, componentId);
       const root = this.createSpawnedComponent(spawnRequest.componentId, spawnRequest.options);
       const state = this.activeInstrumentState;
@@ -331,6 +336,7 @@ export const SpawnRuntimeMethods = {
       if (!duplicateRoot || !duplicateState) {
         return;
       }
+      if (this.capture?.active) this.capture.event('duplicate', { sourceId: sourceState.id, entityId: duplicateState.id });
   
       duplicateRoot.position.copy(sourceState.root.position);
       duplicateRoot.quaternion.copy(sourceState.root.quaternion);
