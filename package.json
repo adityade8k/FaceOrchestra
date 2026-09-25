@@ -10,6 +10,7 @@
     "capture:serve": "node scripts/capture/server.mjs",
     "capture:demo": "node scripts/capture/demo.mjs",
     "test:capture:browser": "node scripts/capture/run-browser.mjs",
+    "test:jog:browser": "node scripts/capture/check-jog.mjs",
     "test:capture:server": "node scripts/capture/check-server.mjs",
     "dev": "python3 scripts/serve-https.py --http",
     "dev:https": "python3 scripts/serve-https.py",

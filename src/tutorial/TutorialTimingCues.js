@@ -11,6 +11,8 @@ export class TutorialTimingCues {
     this.bendInstruction='';this.releasedGuide=null;
     this.pool=Array.from({length:3},()=>{
       const make=color=>{const mesh=new THREE.Mesh(this.geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.92,depthTest:false,depthWrite:false,side:THREE.DoubleSide}));
+        // Headset guidance stays outside instrument/UI capture roots.
+        mesh.name='Tutorial timing ring';
         mesh.raycast=()=>{};mesh.renderOrder=100;mesh.visible=false;adapter.r.scene.add(mesh);return mesh;};
       const reference=make(0xfff4dd);reference.material.opacity=.45;
       return {yellow:make(0xffd15a),green:make(0x60ef9b),reference,bend:make(0xffad38)};

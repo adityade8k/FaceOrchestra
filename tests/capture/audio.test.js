@@ -22,3 +22,14 @@ test('audio tap adds a separate silent branch and disconnects only itself',async
   try{const capture=new AudioCapture(system,(kind,data)=>events.push({kind,data}));await capture.prepare();capture.start(performance.now());const node=capture.node;assert.deepEqual(connections,[node,destination]);assert.equal(events[0].kind,'anchor');await capture.stop();assert.deepEqual(disconnections,[node,node]);assert.ok(!disconnections.includes(destination));}
   finally{globalThis.AudioWorkletNode=old;}
 });
+
+test('prepared-performance PCM reserve remains bounded and survives a one-second transfer stall',async()=>{
+  const messages=[];let Constructor;
+  const sandbox={Float32Array,currentFrame:0,AudioWorkletProcessor:class{constructor(){this.port={postMessage:m=>messages.push(m)};}},registerProcessor:(_name,C)=>{Constructor=C;}};
+  vm.runInNewContext(await readFile(new URL('../../src/capture/pcm-worklet.js',import.meta.url),'utf8'),sandbox);
+  const worklet=new Constructor({processorOptions:{poolBlocks:1e9}}),input=[[new Float32Array(128).fill(.25)]];
+  for(let i=0;i<375;i++){worklet.process(input);sandbox.currentFrame+=128;}
+  assert.ok(messages.length>=23);assert.ok(messages.every(m=>m.buffer));
+  for(let i=0;i<16*65;i++){worklet.process(input);sandbox.currentFrame+=128;}
+  assert.equal(messages.filter(m=>m.buffer).length,64);assert.ok(messages.some(m=>m.gap));
+});

@@ -1,3 +1,5 @@
+import { JogRecordingSession } from '../performance/JogRecordingSession.js';
+import { JogEnsemble } from '../performance/JogEnsemble.js';
 import { recordingGuidance } from './recordingGuidance.js';
 import * as THREE from 'three';
 import { TutorialAdapter } from './TutorialAdapter.js';
@@ -21,6 +23,7 @@ export class TutorialRuntime {
     this.report=null;this.practiceProgress=null;this.simulationProgress=null;this.uiFeedback='';
     this.pendingXRPlacementFrames=0;
     this.onVisibility=()=>{if(document.hidden){
+      this.jogRecording?.interrupt('visibility-interruption');
       this.kuch?.cancel('Tab hidden. Choose an action for a fresh count-in.');
       this.conductor?.pause('Tab hidden. Resume restarts the current action.');
       if(this.session?.mode==='practice')this.flow.cancelOutgoing({keepResult:this.session.phase==='results'});
@@ -51,6 +54,8 @@ export class TutorialRuntime {
   onSpawnCancelled() {this.adapter.snapshotAt=-Infinity;this.lastDraw=-Infinity;}
   async action(id,controller=null) {
     if(this.busy||this.disposed)return;
+    if(this.jogRecording){await this.jogRecording.action(id.replace('jog-record-',''));this.render(performance.now());return;}
+    if(id==='record-jog'&&!this.session&&!this.kuch){await this.enterJogRecording();return;}
     if(this.kuch){
       try{await this.kuch.action(id);}catch(error){this.kuch?.cancel(error.message);}
       this.render(performance.now());return;
@@ -83,6 +88,33 @@ export class TutorialRuntime {
       catch(error){this.uiFeedback=error.message;this.render(performance.now());}
     }
   }
+  async enterJogRecording() {
+    try {
+      const ensemble=new JogEnsemble(this);
+      const mode=new JogRecordingSession({recorder:this.r.capture,ensemble,
+        ensureAudio:()=>this.r.audioSystem.ensureAudio(),
+        trackingReady:()=>Boolean(this.r.xrSessionActive&&this.r.renderer.xr.getReferenceSpace()&&performance.now()-(this.lastTrackedFrame??-Infinity)<250),
+        onChange:()=>this.render(performance.now()),
+        onExit:async()=>{this.jogRecording.restoring=true;try{await this.enterPlay();this.jogRecording=null;this.render(performance.now());}finally{mode.restoring=false;}},
+      });
+      this.freePlayScene??=this.r.sceneSerializer.serialize();
+      this.jogRecording=mode;this.r.sessionMode='jog-recording';
+      this.placeRecordingPanel();this.render(performance.now());
+      await mode.action('prepare');
+    }catch(error){this.uiFeedback=error.message;this.render(performance.now());}
+  }
+  placeRecordingPanel() {
+    const camera=this.r.getUserCamera(),position=new THREE.Vector3(),rotation=new THREE.Quaternion();
+    camera.getWorldPosition(position);camera.getWorldQuaternion(rotation);
+    const right=new THREE.Vector3(1,0,0).applyQuaternion(rotation);right.y=0;right.normalize();
+    this.panel.recenter(camera,true);this.panel.group.position.addScaledVector(right,-.45);
+    this.panel.group.lookAt(position.x,this.panel.group.position.y,position.z);this.panel.group.updateMatrixWorld(true);
+  }
+  observeXRFrame(now,frame) {
+    const reference=this.r.renderer.xr.getReferenceSpace();
+    if(frame&&reference&&frame.getViewerPose(reference))this.lastTrackedFrame=now;
+    else if(this.r.xrSessionActive){this.lastTrackedFrame=null;this.jogRecording?.interrupt('tracking-lost');}
+  }
   async enter(mode) {
     this.flow.cancelOutgoing();
     this.busy=true;this.r.sessionMode='transition';
@@ -112,6 +144,7 @@ export class TutorialRuntime {
     finally{this.busy=false;}
   }
   async enterPlay() {
+    if(this.jogRecording&&!this.jogRecording.restoring)return this.jogRecording.action('exit');
     this.flow.cancelOutgoing();
     this.kuch?.dispose();this.kuch=null;
     const firstPlay=!this.freePlayScene&&!this.session;
@@ -156,6 +189,7 @@ export class TutorialRuntime {
   }
   beforeFrame(now) {
     if(!this.ready||this.busy||this.disposed)return;
+    if(this.jogRecording){if(this.pendingXRPlacementFrames>0){this.placeRecordingPanel();this.pendingXRPlacementFrames--;}this.jogRecording.update(now);return;}
     if(this.kuch){
       if(this.pendingXRPlacementFrames>0){this.panel.recenter(this.r.getUserCamera(),true);this.pendingXRPlacementFrames--;}
       try{this.kuch.update(now);}catch(error){this.kuch.cancel(error.message);console.error('Kuch tutorial:',error);}
@@ -172,6 +206,14 @@ export class TutorialRuntime {
   }
   afterFrame(now) {
     if(!this.ready||this.busy||this.disposed)return;
+    if(this.jogRecording){
+      this.adapter.observe(now);
+      const guide=this.jogRecording.guidance(now);
+      this.cues.update(guide,now,{active:Boolean(guide&&!guide.complete(now))});
+      if(now-this.lastDraw>=50){this.render(now);this.lastDraw=now;}
+      if(this.panel.xr){const hit=this.r.controllers.filter(c=>!c.userData.virtualTutorial).map(c=>this.panelHit(c)).find(h=>h?.object.userData.action);this.panel.hover(hit?.object);}
+      return;
+    }
     if(this.kuch){
       this.kuch.afterFrame(now);this.panel.animate?.(now);
       if(now-this.lastDraw>=100){this.render(now);this.lastDraw=now;}
@@ -244,19 +286,24 @@ export class TutorialRuntime {
     if(!state?.tutorialPanelCapture)return false;
     state.tutorialPanelCapture=false;state.suppressTriggerUntilRelease=false;this.r.releaseRaySqueeze(state);return true;
   }
-  onXRStart() {this.pendingXRPlacementFrames=4;if(this.r.sessionMode==='play')this.r.spawnDefaultInstrumentPreview();this.r.hideInstructionPanel();this.r.instructionPanelClosed=true;this.panel?.setXR(true,this.r.getUserCamera());this.panel?.recenter(this.r.getUserCamera(),Boolean(this.session));}
-  onXREnd() {this.pendingXRPlacementFrames=0;this.conductor?.stop();this.flow.cancelOutgoing();this.adapter.releaseAll();this.panel?.setXR(false);if(this.session||this.kuch)this.enterPlay().catch(error=>console.error(error));}
+  onXRStart() {this.pendingXRPlacementFrames=4;this.lastTrackedFrame=null;
+    this.jogReference?.removeEventListener('reset',this.jogReset);this.jogReference=this.r.renderer.xr.getReferenceSpace();this.jogReset=()=>this.jogRecording?.interrupt('reference-space-reset');this.jogReference?.addEventListener('reset',this.jogReset);if(this.r.sessionMode==='play')this.r.spawnDefaultInstrumentPreview();this.r.hideInstructionPanel();this.r.instructionPanelClosed=true;this.panel?.setXR(true,this.r.getUserCamera());this.panel?.recenter(this.r.getUserCamera(),Boolean(this.session||this.jogRecording));}
+  onXREnd() {this.pendingXRPlacementFrames=0;this.lastTrackedFrame=null;this.jogRecording?.interrupt('session-end');this.conductor?.stop();this.flow.cancelOutgoing();this.adapter.releaseAll();this.panel?.setXR(false);if(this.session||this.kuch)this.enterPlay().catch(error=>console.error(error));}
   render(now) {
     if(!this.panel)return;
+    if(this.jogRecording){
+      if(!this.jogRecording.guidance(now))this.cues.reset();
+      const model=this.jogRecording.model(now);this.panel.setTransport(model.transport);this.panel.render(model);return;
+    }
     if(this.kuch){this.panel.render(this.kuch.model(now));return;}
     const button=(id,label,disabled=false,extra={})=>({id,label,disabled,...extra});
     let model;
     if(!this.session){
-      if(this.screen==='launch')model={title:'Honk Orchestra',instruction:'Play freely, or learn a piece with a guided tutorial.',actions:[button('play','Play'),button('tutorial','Tutorials')]};
+      if(this.screen==='launch')model={title:'Honk Orchestra',instruction:'Play freely, or learn a piece with a guided tutorial.',actions:[button('play','Play'),button('tutorial','Tutorials'),button('record-jog','Record Raag Jog in mixed reality')]};
       else if(this.screen==='tutorial')model={title:'Choose a study',instruction:'Listen to an example, practice each part, then perform with recorded backing.',actions:[button('jog','Rag Jog Study'),button('kuch','Kuch To Hua Hai'),button('back','Back')]};
       else if(this.screen==='jog')model={title:C.title,instruction:'Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.',feedback:'Full simulation builds and performs the composition automatically; allow several minutes.',actions:[button('practice','Start Lesson'),button('simulate','Full Simulation'),button('tutorial','All Tutorials')]};
       else if(this.screen==='kuch')model={title:'Kuch To Hua Hai',instruction:'Learn two chord patterns and a stick groove, then practice the melody in four separate lessons. Finish with All together to play the complete song over separate D and Change pattern loopers sharing one output, with percussion on another. The ensemble is prepared for you.',feedback:'Nine lessons · 92 BPM · 4/4 · Eight-beat verse breaks. Full simulation records the backing, then performs the song once (about two minutes). Your free-play scene returns on Exit.',actions:[button('kuch-practice','Start Lesson'),button('kuch-simulate','Full Simulation'),button('tutorial','All Tutorials')]};
-      else model={title:'Free play',instruction:'Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.',actions:[button('tutorial','Tutorial')]};
+      else model={title:'Free play',instruction:'Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.',actions:[button('tutorial','Tutorial'),button('record-jog','Record Raag Jog in mixed reality')]};
       if(this.uiFeedback)model.feedback=this.uiFeedback;
       this.panel.setTransport('');
     }else{
@@ -316,7 +363,7 @@ export class TutorialRuntime {
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.conductor?.stop();this.stopDemo();
-    this.kuch?.dispose();this.kuch=null;
+    this.kuch?.dispose();this.kuch=null;this.jogRecording?.interrupt('disposed');this.jogReference?.removeEventListener('reset',this.jogReset);
     this.flow.cancelOutgoing();document.removeEventListener('visibilitychange',this.onVisibility);this.cues.dispose();this.adapter.dispose();this.panel?.dispose();
   }
 }

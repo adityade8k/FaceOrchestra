@@ -1,6 +1,6 @@
 import { LIMITS, STREAMS } from './format.js';
 
-let socket, metadata, url, ready=false, closing=null, retry, failed=false, finalized=false;
+let socket, metadata, url, ready=false, closing=null, barrier=false, retry, failed=false, finalized=false;
 let seq={samples:-1,events:-1,audio:-1}, ack={...seq}, queue=[], queueBytes=0, db=null, previous={}, previousSemantic='', lastKey=-Infinity, maxQueue=0;
 let pendingIDB=Promise.resolve(), gaps=[],spoolBytes=0,pendingSpoolBytes=0;
 const post = value => self.postMessage(value);
@@ -33,7 +33,7 @@ function enqueue(stream,t,data) {
   queue.push({packet,wire,bytes,sent:false});queueBytes+=bytes;maxQueue=Math.max(maxQueue,queueBytes);
   if(db&&spoolBytes+bytes>LIMITS.spool){post({type:'warning',message:'128 MiB recovery spool limit reached. Recover older pending takes; keep this tab open.'});db=null;}
   if(db){spoolBytes+=bytes;spool(()=>transaction('packets',s=>s.put(wire,key(packet))),bytes);}
-  spool(()=>transaction('takes',s=>s.put({metadata,url,seq,gaps},metadata.id)));
+  spool(()=>transaction('takes',s=>s.put({metadata,url,seq,gaps,closing},metadata.id)));
 }
 function event(t,kind,data) {
   if(kind==='resource') {
@@ -51,7 +51,7 @@ function connect(create=false) {
       ready=true;if(closing)closing.sent=false;for(const stream of STREAMS)acknowledge(stream,msg.last[stream]);for(const q of queue)q.sent=false;
       post({type:'ready',id:metadata.id,last:msg.last});pump();
     } else if(msg.type==='ack') {acknowledge(msg.stream,msg.seq);pump();}
-    else if(msg.type==='finalized') {closing=null;failed=true;finalized=true;post(msg);spool(()=>transaction('takes',s=>s.delete(metadata.id)));socket.close();pendingIDB.then(()=>self.close());}
+    else if(msg.type==='finalized') {closing=null;failed=true;finalized=true;spool(()=>transaction('takes',s=>s.delete(metadata.id)));socket.close();pendingIDB.then(()=>{post(msg);self.close();});}
     else if(msg.type==='error')post({type:'warning',message:msg.message});
   };
   socket.onclose=()=>{ready=false;if(finalized)return;post({type:'connection',connected:false,queuedBytes:queueBytes});if(!failed||closing||queue.length)retry=setTimeout(()=>connect(false),1500);};
@@ -74,6 +74,7 @@ function pump() {
     if(inFlight>=24||socket.bufferedAmount>1024*1024)break;
     if(!item.sent){socket.send(item.wire);item.sent=true;inFlight++;}
   }
+  if(barrier&&!queue.length){barrier=false;post({type:'drained'});}
   if(closing&&!queue.length&&!closing.sent) {
     closing.sent=true;socket.send(JSON.stringify({type:'finish',...closing,expected:seq,gaps:[...gaps,...(closing.gaps||[])],metrics:{...closing.metrics,maxQueueBytes:maxQueue}}));
   }
@@ -81,7 +82,7 @@ function pump() {
 setInterval(()=>{pump();if(metadata)post({type:'stats',queuedBytes:queueBytes,connected:ready,ack});},500);
 self.onmessage=async({data:m})=>{
   try {
-    if(m.type==='start') {metadata=m.metadata;url=m.url;await openSpool();spool(()=>transaction('takes',s=>s.put({metadata,url,seq,gaps},metadata.id)));connect(true);}
+    if(m.type==='start') {metadata=m.metadata;url=m.url;await openSpool();spool(()=>transaction('takes',s=>s.put({metadata,url,seq,gaps,closing},metadata.id)));connect(true);}
     else if(m.type==='sample') {
       const floats=new Float32Array(m.buffer),current={},changed={};
       const full=m.t-lastKey>=1;
@@ -96,14 +97,15 @@ self.onmessage=async({data:m})=>{
       enqueue('samples',m.t,{sourceTime:m.sourceTime,segment:m.segment,full,nodes:changed,removed,xr:m.xr});
       previous=current;if(full)lastKey=m.t;
       self.postMessage({type:'recycle',buffer:m.buffer},[m.buffer]);
-    } else if(m.type==='event')event(m.t,m.kind,m.data);
+    } else if(m.type==='barrier')barrier=true;
+    else if(m.type==='event')event(m.t,m.kind,m.data);
     else if(m.type==='audio') {
       const values=new Float32Array(m.buffer),bytes=new Uint8Array(m.frames*4),view=new DataView(bytes.buffer);
       for(let i=0;i<m.frames*2;i++)view.setInt16(i*2,Math.round(Math.max(-1,Math.min(1,values[i]))*(values[i]<0?32768:32767)),true);
       let binary='';for(let i=0;i<bytes.length;i+=4096)binary+=String.fromCharCode(...bytes.subarray(i,i+4096));
       enqueue('audio',m.sceneTime,{pcm:btoa(binary),sampleIndex:m.sampleIndex,contextFrame:m.contextFrame,frames:m.frames,sceneTime:m.sceneTime});
       self.postMessage({type:'audio-recycle',buffer:m.buffer},[m.buffer]);
-    } else if(m.type==='finish') {closing={...m,sent:false};if(gaps.length)gaps[gaps.length-1].end=m.duration;pump();}
+    } else if(m.type==='finish') {closing={...m,sent:false};if(gaps.length)gaps[gaps.length-1].end=m.duration;spool(()=>transaction('takes',s=>s.put({metadata,url,seq,gaps,closing},metadata.id)));pump();}
     else if(m.type==='recover-list') {
       await openSpool();const takes=db?await new Promise((resolve,reject)=>{const r=db.transaction('takes').objectStore('takes').getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);}):[];
       post({type:'recover-list',takes});
@@ -111,7 +113,7 @@ self.onmessage=async({data:m})=>{
       await openSpool(); metadata=m.take.metadata;url=m.url;seq=m.take.seq;gaps=m.take.gaps||[];
       const records=await new Promise(resolve=>{const r=db.transaction('packets').objectStore('packets').getAll(IDBKeyRange.bound(`${metadata.id}/`,`${metadata.id}/\uffff`));r.onsuccess=()=>resolve(r.result);});
       queue=records.map(wire=>({packet:JSON.parse(wire).packet,wire,bytes:wire.length*2,sent:false}));queueBytes=queue.reduce((n,p)=>n+p.bytes,0);
-      closing={reason:'recovered-client',duration:Math.max(0,...queue.map(q=>q.packet.t)),sent:false};connect(false);
+      closing=m.take.closing?{...m.take.closing,sent:false}:{reason:'recovered-client',duration:Math.max(0,...queue.map(q=>q.packet.t)),sent:false};connect(false);
     }
     pump();
   } catch(error) {post({type:'fatal',message:error.message});}

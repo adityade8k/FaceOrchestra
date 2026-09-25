@@ -31,7 +31,7 @@ export function resolveTutorialRoutes(adapter) {
   }
   const clock=result.clocks.percussionLooper;
   if(clock&&clock.targetPortId!==result.percussion.percussion?.trackId)
-    result.percussion.metronome={looperId:percussion.id,trackId:clock.targetPortId};
+    result.percussion.metronome={looperId:percussion.id,trackId:clock.targetPortId,trackIndex:percussion.tracks.find(t=>t.trackId===clock.targetPortId)?.index};
   if(percussion)result.percussion.percussionLooper={looperId:percussion.id,trackId:'looper-self-percussion'};
   return result;
 }

@@ -42,6 +42,7 @@ export class TakeStore {
       } catch (error) { throw new Error(`Cannot reopen ${stream}: ${error.message}`); }
       for await (const packet of readLines(join(dir, `${stream}.ndjson`))) {
         if (packet.seq !== take.last[stream] + 1) throw new Error(`Stored ${stream} sequence gap.`);
+        if(stream==='events'&&packet.data?.performance&&take.metadata.performance)Object.assign(take.metadata.performance,packet.data.performance);
         take.last[stream] = packet.seq;
         take.duration = Math.max(take.duration, packet.t);
         take.lastTimes[stream]=packet.stream==='audio'?packet.data.sceneTime+packet.data.frames/metadata.audio.sampleRate:packet.t;
@@ -83,14 +84,16 @@ export class TakeStore {
     }
     await take.handles[packet.stream].write(`${JSON.stringify(stored)}\n`);
     await take.handles[packet.stream].datasync();
+    if(packet.stream==='events'&&packet.data?.performance&&take.metadata.performance)Object.assign(take.metadata.performance,packet.data.performance);
     take.last[packet.stream] = packet.seq;
     take.lastTimes[packet.stream]=packet.stream==='audio'?packet.data.sceneTime+packet.data.frames/take.metadata.audio.sampleRate:packet.t;
     take.duration = Math.max(take.duration, packet.t);
     return packet.seq;
   }
-  async finalize(id, { expected = {}, gaps = [], reason = 'interrupted', duration = 0, metrics = null } = {}) {
+  async finalize(id, { expected = {}, gaps = [], reason = 'interrupted', duration = 0, metrics = null, performance = null } = {}) {
     const take = await this.load(id);
     if (take.metadata.complete) return take.metadata;
+    if(performance&&take.metadata.performance)Object.assign(take.metadata.performance,performance);
     const missing = STREAMS.filter(s => expected[s] !== take.last[s]);
     const complete = missing.length === 0 && gaps.length === 0 && reason === 'stop';
     const pcmSize = (await take.handles.pcm.stat()).size;

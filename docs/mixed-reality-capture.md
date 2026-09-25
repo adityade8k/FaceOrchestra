@@ -44,6 +44,50 @@ Install FFmpeg locally for MP4 encoding, e.g. `brew install ffmpeg` on a Homebre
 
 Recenter/reset ends the take with an explicit reset event. Start a new take and calibrate again. The recorder never joins incompatible reference spaces. A phone movement also requires new calibration.
 
+## Record Raag Jog in mixed reality
+
+Pair the headset and computer with the existing receiver code. Enter XR, then choose **Record Raag Jog in mixed reality** beside **Play** and **Tutorials**. Selecting it on desktop instead shows **Prepare ensemble**; enter XR before preparing.
+
+The mode saves your current free-play scene in memory and prepares the canonical `virag-2-jog-study` version 3 arrangement at 80 BPM: the seven-note melody row, four chord groups, percussion Honk, Metronome, and three recorded Loopers. All transports start stopped. Move instruments to comfortable positions before starting. The chord and alternative Loopers share one output; percussion uses another. The standard chord pattern and percussion start together; the alternative recording remains available through the ordinary Looper controls. There are no demonstration hands, melody autoplay, lesson steps or scoring.
+
+1. Start the external phone video and let its microphone hear the headset speakers. Phone recording stays independent and may run across several attempts.
+2. Press **Start**. The app checks tracking, pairing, audio and the prepared ensemble. It opens a distinct take, prepares its presentation resources, and waits for receiver and PCM readiness. One automatic **Mark Sync** cue plays, followed by **4, 3, 2, 1**, then **Play**. Sync and count-in are included in master audio. The two backing parts use the same scheduled beat-zero anchor as the count-in.
+3. Perform the melody yourself with the tutorial's guidance. Green rings shrink toward the next Honk; squeeze Trigger when yellow opens, hold while it stays open, and release as it shrinks. The orange wrist guide follows each held Eb-to-C bend. The panel names the current and next note, beat/phrase, rests and bend instructions. All cues follow the same scheduled beat zero as the backing and restart from the beginning on each take. These rings appear only for the player: they are excluded from recorded scene data, replay and composite exports, even with UI capture enabled. At the end of the written melody, guidance clears and the panel invites you to continue freely. Recording and backing continue until you stop. **Restart Recording** and **Stop Recording** remain on the XR panel during the count-in and performance.
+4. **Restart Recording** cancels pending cues, backing starts and pattern switches, releases voices, records the normal release tail, and waits for acknowledged saving. It then opens the next numbered take with a fresh sync and count-in. Recordings, instrument placement and XR origin stay in place.
+5. **Stop Recording** follows the same save path and returns to Start. **Exit** saves an active take before restoring your prior free-play scene. Exit from ready creates no take. Saved scenes and tutorial progress are not overwritten.
+
+**Saving…** means the receiver has not yet acknowledged finalization. If saving times out, keep the tab and receiver open, restore the connection, and choose **Check saving**. The current worker and spool remain available; no new take replaces them. A late acknowledgement returns to ready without an automatic retry. XR/session loss, hidden XR, tracking loss, reference-space reset, audio suspension or a capture gap cancels musical actions. Start again explicitly after an interruption. Desktop/radial capture commands use the same recorder owner; Mark Sync cannot add a second cue to this mode's attempt.
+
+In the paired computer editor, each attempt appears as **Raag Jog — Take 01**, **Take 02**, and so on, with its date, musical completion action and capture status. **restarted** describes the performance choice; it does not make an otherwise intact take incomplete. The information panel shows the performance-start time in take seconds for trimming. Align each take's own sync cue to the corresponding point in the continuously recorded phone video. Every saved attempt can be selected, replayed and downloaded as a portable take.
+
+Optional `take.performance` metadata keeps the mode, composition ID/version, session `groupId`, attempt number, readable label, sync cue, scheduled and actual performance-start timestamps, and completion action (`stopped`, `restarted`, `interrupted`). Ordinary take ID/creation time and capture integrity (`complete`, `gaps`, missing streams, reason) keep their existing meanings. Timestamped events carry updates through recovery. Portable archives and receiver reopens retain the metadata; older takes need none of these fields.
+
+### Implementation and local validation
+
+Changed files for this workflow:
+
+- Preparation, performance ownership and melody guidance: `src/performance/JogEnsemble.js`, `JogRecordingSession.js`, `JogMelodyGuidance.js`; the existing `src/tutorial/TutorialTimingCues.js` renders the rings outside capture roots.
+- Launch, XR panel and tracking integration: `src/tutorial/TutorialRuntime.js`, `src/tutorial/TutorialRoutes.js`, `src/app/FaceOrchestraApp.js`.
+- Capture readiness, finalization and cues: `src/capture/CaptureRecorder.js`, `AudioCapture.js`, `CaptureControls.js`, `pcm-worklet.js`, `stream-worker.js` in that same directory.
+- Optional take metadata and editor labels: `scripts/capture/storage.mjs`, `capture/editor.js`. The archive format and capture protocol remain version 1.
+- Validation: `tests/performance/JogEnsemble.test.js`, `JogRecordingSession.test.js`, `JogMelodyGuidance.test.js`; `tests/capture/lifecycle.test.js`, `jog-archive.test.js`, `audio.test.js`, `worker.test.js`; `scripts/capture/check-jog.mjs`; the `test:jog:browser` command in `package.json`; this document.
+
+Local checks on 2026-09-24: `npm run verify` (603 passing tests, including capture, transport, persistence, tutorial and guidance regressions), `npm run test:capture:server`, `npm run test:capture:browser`, and `node scripts/capture/check-jog.mjs` (`npm run test:jog:browser`). The Jog browser fixture created three distinct complete takes, restarted during count-in and performance, cancelled an alternative-pattern queue, checked captured sync/count-in/backing audio and common backing onset, preserved adjusted resting placement, restored a nonempty free-play scene, replayed all three takes in the editor, and downloaded/imported a portable take. It also verified visible melody cues sharing the backing anchor, cleared cues after Stop, fitting panel text, and no timing-ring nodes in stored take data. Unit checks cover every phrase, rests, bend phases, retry anchors and exclusion of ring nodes/resources with UI capture enabled or disabled. Synthetic rays reached both ready-panel actions within the existing 2.5 m ray limit. Browser reports and screenshots are in gitignored `test-results/jog/` and `test-results/capture/`.
+
+The Jog fixture uses an isolated Chrome profile, temporary receiver storage, synthetic tracking/capture, and reduced raster resolution for the software renderer. Browser texture encoding caused startup audio gaps during development; presentation preparation and the bounded PCM reserve resolved those gaps in the final fixture. Native headset frame rate and acoustic timing still require the checks below.
+
+### Headset check
+
+- Reach Start, Restart Recording, Stop Recording and Exit with both controllers; confirm the side panel does not obstruct the melody row.
+- Hear one rising sync cue, then four evenly spaced count-in clicks without overlap. Confirm the phone records that cue.
+- Check that chord and percussion begin together on Play, and that selecting the alternative never layers both chord patterns on their shared output.
+- Follow the highlighted melody Honks, hold/release rings, rests and orange Eb-to-C wrist guide through all six phrases. Check readability from playing position; verify the rings stay out of the computer composite. After the melody ends, keep playing and confirm capture/backing continue.
+- Restart once during count-in and once while holding a note. Check for cancelled old cues, no stuck notes, unchanged placement and a fresh count-in each time.
+- Stop, wait for **Take saved**, then Exit and inspect the restored scene. Verify at least two distinct numbered takes in the computer editor, replay both, and download/import one.
+- Interrupt tracking or Wi-Fi during an attempt. Confirm music stops, saving is reported honestly, and recovery does not automatically restart a count-in or move the ensemble.
+
+The automated browser fixture uses synthetic capture, real app instruments and Web Audio, and a local receiver. It does not verify headset controllers, tracking quality, audible speaker/phone alignment or device performance.
+
 ## Storage, recovery and portability
 
 Each take is written incrementally under gitignored `captures/<take-id>/`: metadata, sample/event/audio NDJSON streams, PCM, finalized WAV and a snapshot of model/texture assets. Access is through paired local API endpoints. HTTPS/WSS use same-origin/host checks and HttpOnly pairing cookies; there is no cloud account system.
@@ -114,7 +158,7 @@ Take version 1 includes commit, source hash, asset SHA-256 versions, Three versi
 
 Roots use capture/world meters, right-handed, +Y up. Children/bones use local space; equipped roots include their parent transform exactly once. Cached bindings sample actual animated transforms/scales, visibility, morphs and material presentation. Resources are referenced once; procedural label geometry is saved on changes. Wires reconstruct recorded Bezier segments, radius and subdivision counts. The worker emits delta samples, full keyframes at least once per second and separate lifecycle/state events. Continuous transforms/morphs interpolate with quaternion slerp; discrete state steps. Deleted/invalid poses, gaps and reference discontinuities are not interpolated together.
 
-Capture runs after runtime updates, immediately before render, outside scheduler phases that can exit early during spawn preview. Serialization/resource encoding is deferred outside the XR callback. AudioWorklet captures an independent branch of `MasterBus.output`, leaving the speaker connection and gain untouched; its own output is silent. A fixed eight-buffer pool transfers stereo blocks of 2048 frames. Sample-index and AudioContext-frame timestamps map to scene time through recorded clock anchors with quantum uncertainty and output-latency diagnostics. PCM is placed at its scene-time offset, preserving gaps. Audio suspension ends/flags the take. External speaker/phone latency is handled by video sync anchors.
+Capture runs after runtime updates, immediately before render, outside scheduler phases that can exit early during spawn preview. Serialization/resource encoding is deferred outside the XR callback. AudioWorklet captures an independent branch of `MasterBus.output`, leaving the speaker connection and gain untouched; its own output is silent. The ordinary recorder uses an eight-buffer pool of stereo blocks of 2048 frames. Jog performance mode requests a bounded 64-buffer reserve (1 MiB) so brief texture-encoding stalls can recycle PCM without dropping blocks; block size and timestamps are unchanged. Sample-index and AudioContext-frame timestamps map to scene time through recorded clock anchors with quantum uncertainty and output-latency diagnostics. PCM is placed at its scene-time offset, preserving gaps. Audio suspension ends/flags the take. External speaker/phone latency is handled by video sync anchors.
 
 Replay constructs only Three presentation objects and shared lighting, with alpha background and no fallback environment, transport, collisions, haptics or synth. Recorded layers cover instruments, labels, wires, tutorial and rays; tracked controller spheres and headset guides are preview-only. Controller target rays are a separate selectable output layer. RGB video has **no reliable body depth**: an overlaid instrument covers a foreground hand. No automatic segmentation or correct occlusion is claimed. The alpha/layer structure supports future imported masks or foreground/background assignments; a person silhouette alone would not solve all hand/instrument ordering.
 
@@ -124,6 +168,7 @@ Replay constructs only Three presentation objects and shared lighting, with alph
 npm run verify
 npm run test:capture:server
 npm run test:capture:browser
+npm run test:jog:browser
 npm run capture:demo
 ```
 

@@ -34,3 +34,17 @@ test('bounded queue overflow reports its exact interval and cannot finalize comp
   assert.equal(h.outputs.find(m=>m.type==='overflow').gap.start,2);
   await h.send({type:'finish',reason:'capture-error',duration:2.5});const finish=h.sockets[0].sent.at(-1);assert.equal(finish.type,'finish');assert.equal(finish.gaps[0].end,2.5);assert.equal(finish.expected.events,-1);
 });
+
+test('performance resource barrier waits for receiver acknowledgments before audio starts',async()=>{
+  const h=await harness();await h.send({type:'event',kind:'resource',t:0,data:{id:'r1',kind:'geometry',data:'prepared'}});
+  await h.send({type:'barrier'});assert.ok(!h.outputs.some(m=>m.type==='drained'));
+  const socket=h.sockets[0];socket.onmessage({data:JSON.stringify({type:'ack',stream:'events',seq:0})});
+  assert.equal(h.outputs.filter(m=>m.type==='drained').length,1);
+});
+
+test('finalized notification follows local spool cleanup and never causes a reconnect',async()=>{
+  const h=await harness();await h.send({type:'finish',reason:'stop',duration:1});
+  h.sockets[0].onmessage({data:JSON.stringify({type:'finalized',metadata:{complete:true,id:'worker-test'}})});
+  assert.equal(h.outputs.filter(m=>m.type==='finalized').length,0);
+  await Promise.resolve();assert.equal(h.outputs.filter(m=>m.type==='finalized').length,1);assert.equal(h.timeouts.length,0);
+});

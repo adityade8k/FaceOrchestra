@@ -18,11 +18,11 @@ export function installCaptureControls(recorder) {
   const statusMesh=new THREE.Mesh(new THREE.PlaneGeometry(.31,.048),new THREE.MeshBasicMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false}));statusMesh.name='Mixed Reality Capture status';statusMesh.position.set(0,.08,-.22);statusMesh.renderOrder=1200;
   let last='';
   const refresh=()=>{
-    const active=recorder.active, label=active?'Stop Mixed Reality Recording':'Start Mixed Reality Recording';
+    const active=recorder.active, label=recorder.owner?(active?'Stop Recording':'Start Raag Jog Recording'):(active?'Stop Mixed Reality Recording':'Start Mixed Reality Recording');
     panel.querySelector('[data-command="capture-toggle"]').textContent=label;
     panel.querySelector('[data-command="capture-toggle"]').disabled=['preparing','stopping'].includes(recorder.state);
-    for(const selector of ['[name="rate"]','[name="ui"]','[data-command="recover"]'])panel.querySelector(selector).disabled=active||['preparing','stopping'].includes(recorder.state);
-    for(const id of ['capture-sync','capture-pose'])panel.querySelector(`[data-command="${id}"]`).disabled=!active;
+    for(const selector of ['[name="rate"]','[name="ui"]','[data-command="recover"]'])panel.querySelector(selector).disabled=Boolean(recorder.owner)||active||['preparing','stopping'].includes(recorder.state);
+    for(const id of ['capture-sync','capture-pose'])panel.querySelector(`[data-command="${id}"]`).disabled=!active||Boolean(recorder.owner&&id==='capture-sync');
     const message=`${recorder.state.toUpperCase()} · ${recorder.elapsed.toFixed(1)}s · ${recorder.connected?'Connected':'Offline'} — ${recorder.message}`;
     panel.querySelector('p').textContent=message;
     if(message!==last){last=message;const ctx=canvas.getContext('2d');ctx.fillStyle='#102321';ctx.fillRect(0,0,1024,160);ctx.fillStyle=recorder.connected?'#a7f1c5':'#ffd591';ctx.font='bold 35px sans-serif';ctx.fillText(`${recorder.state.toUpperCase()}  ${recorder.elapsed.toFixed(1)}s  ${recorder.connected?'Connected':'Offline'}`,20,52);ctx.font='25px sans-serif';ctx.fillText(recorder.message.slice(0,75),20,106);texture.needsUpdate=true;}

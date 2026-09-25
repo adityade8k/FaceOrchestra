@@ -37,6 +37,7 @@ export class FaceOrchestraApp {
       const delta = this.lastFrameMs === null ? 0 : Math.max((now - this.lastFrameMs) / 1000, 0);
       this.lastFrameMs = now;
       this.elapsedSeconds += delta;
+      this.runtime.tutorial?.observeXRFrame?.(now, xrFrame);
       this.update(delta, this.elapsedSeconds, now);
       // Deliberately outside the scheduler: preview phases can exit early.
       this.runtime.capture?.sample(now, xrFrame);

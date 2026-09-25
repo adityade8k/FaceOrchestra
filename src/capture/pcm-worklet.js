@@ -1,7 +1,11 @@
 // The original speaker connection is untouched. This branch produces silence.
 class CapturePCM extends AudioWorkletProcessor {
-  constructor() {
-    super(); this.size=2048; this.pool=Array.from({length:8},()=>new Float32Array(this.size*2));
+  constructor(options={}) {
+    super(); this.size=2048;
+    // Dense prepared scenes may briefly delay the main-thread transfer path.
+    // Spare buffers bound memory without changing block size or timestamps.
+    const poolBlocks=Math.min(64,Math.max(8,Math.floor(options.processorOptions?.poolBlocks)||8));
+    this.pool=Array.from({length:poolBlocks},()=>new Float32Array(this.size*2));
     this.buffer=this.pool.pop(); this.used=0; this.index=0; this.startFrame=0; this.enabled=true;
     this.port.onmessage=({data})=>{
       if(data.recycle)this.pool.push(new Float32Array(data.recycle));
