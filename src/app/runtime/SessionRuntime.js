@@ -1,102 +1,114 @@
 import { SHOW_INSTRUCTION_PANEL } from "../../config/ui.js";
 
-
 export const SessionRuntimeMethods = {
-    onRuntimeInitialized() {
-      if (this.tutorial && this.sessionMode !== "play") return;
-      if (this.xrSessionActive && this.instructionPanelClosed) {
-        this.spawnDefaultInstrumentPreview();
-      }
-    },
-    onXRSessionStart() {
-      this.xrSessionActive = true;
-      if (this.tutorial) { this.tutorial.onXRStart(); return; }
-      this.instructionPanelClosed = !SHOW_INSTRUCTION_PANEL;
-  
-      if (SHOW_INSTRUCTION_PANEL) {
-        this.showInstructionPanel();
-      } else {
-        this.hideInstructionPanel();
-        this.spawnDefaultInstrumentPreview();
-      }
-    },
-    onXRSessionEnd(now = performance.now()) {
-      if (!this.xrSessionActive) return false;
-      this.xrSessionActive = false;
-      let didSave = false;
-      try {
-        this.hideInstructionPanel();
-        this.pendingPanelPlacementFrames = 0;
-        this.deletePendingSpawnPlacement();
-        for (const looper of this.instrumentRegistry.getByKind("looper")) {
-          if (looper.transport?.recording) {
-            looper.finishRecording(now);
-          }
-          looper.stop();
-        }
-        didSave = this.debugMode ? false : this.savePersistedSceneOnXRExit();
-      } finally {
-        this.resetSubsystemsAfterSession();
-        this.tutorial?.onXREnd();
-        this.audioSystem?.suspend?.()?.catch?.((error) => {
-          console.warn("Could not suspend audio after XR exit:", error);
-        });
-      }
-      return didSave;
-    },
-    showInstructionPanel() {
-      if (!this.instructionPanel) {
-        return;
-      }
-  
-      this.instructionPanelView?.show();
-      this.panelVisible = true;
-      this.pendingPanelPlacementFrames = 4;
-    },
-    hideInstructionPanel() {
-      if (!this.instructionPanel) {
-        return;
-      }
-  
-      this.instructionPanelView?.hide();
-      this.panelVisible = false;
-    },
-    closeInstructionPanel() {
-      this.hideInstructionPanel();
-      this.instructionPanelClosed = true;
-  
+  onRuntimeInitialized() {
+    if (this.tutorial && this.sessionMode !== "play") return;
+    if (this.xrSessionActive && this.instructionPanelClosed) {
       this.spawnDefaultInstrumentPreview();
-    },
-    updatePendingPanelPlacement() {
-      if (!this.pendingPanelPlacementFrames || !this.instructionPanel?.visible) {
-        return;
+    }
+  },
+  onXRSessionStart() {
+    this.xrSessionActive = true;
+    if (this.tutorial) {
+      this.tutorial.onXRStart();
+      return;
+    }
+    this.instructionPanelClosed = !SHOW_INSTRUCTION_PANEL;
+
+    if (SHOW_INSTRUCTION_PANEL) {
+      this.showInstructionPanel();
+    } else {
+      this.hideInstructionPanel();
+      this.spawnDefaultInstrumentPreview();
+    }
+  },
+  onXRSessionEnd(now = performance.now()) {
+    if (!this.xrSessionActive) return false;
+    this.xrSessionActive = false;
+    let didSave = false;
+    try {
+      this.hideInstructionPanel();
+      this.pendingPanelPlacementFrames = 0;
+      this.deletePendingSpawnPlacement();
+      for (const looper of this.instrumentRegistry.getByKind("looper")) {
+        if (looper.transport?.recording) {
+          looper.finishRecording(now);
+        }
+        looper.stop();
       }
-  
-      this.instructionPanelView?.positionInFrontOfCamera(this.getUserCamera(), 1.15);
-      this.pendingPanelPlacementFrames -= 1;
-    },
-    pollControllers(now = performance.now()) {
-      this.inputSourceManager.poll(now);
-    },
-    pollController(controller, now = performance.now()) {
-      this.inputSourceManager.pollController(controller, now);
-    },
-    findGamepad(handedness) {
-      return this.inputSourceManager.findGamepad(handedness);
-    },
-    getControllerGamepad(controller) {
-      return controller?.userData?.gamepad || this.findGamepad(controller?.userData?.handedness);
-    },
-    getThumbstickScaleDirection(gamepad) {
-      return this.inputSourceManager.getThumbstickScaleDirection(gamepad);
-    },
-    getRightController() {
-      return this.inputSourceManager.getRightController();
-    },
-    getControllerVoiceId(controller) {
-      return controller.userData.handedness || `controller-${controller.userData.index}`;
-    },
-    getInstrumentVoiceId(controllerVoiceId, instrumentState) {
-      return `${controllerVoiceId}:instrument-${instrumentState.id}`;
-    },
+      didSave = this.debugMode ? false : this.savePersistedSceneOnXRExit();
+    } finally {
+      this.resetSubsystemsAfterSession();
+      this.tutorial?.onXREnd();
+      this.audioSystem?.suspend?.()?.catch?.((error) => {
+        console.warn("Could not suspend audio after XR exit:", error);
+      });
+    }
+    return didSave;
+  },
+  showInstructionPanel() {
+    if (!this.instructionPanel) {
+      return;
+    }
+
+    this.instructionPanelView?.show();
+    this.panelVisible = true;
+    this.pendingPanelPlacementFrames = 4;
+  },
+  hideInstructionPanel() {
+    if (!this.instructionPanel) {
+      return;
+    }
+
+    this.instructionPanelView?.hide();
+    this.panelVisible = false;
+  },
+  closeInstructionPanel() {
+    this.hideInstructionPanel();
+    this.instructionPanelClosed = true;
+
+    this.spawnDefaultInstrumentPreview();
+  },
+  updatePendingPanelPlacement() {
+    if (!this.pendingPanelPlacementFrames || !this.instructionPanel?.visible) {
+      return;
+    }
+
+    this.instructionPanelView?.positionInFrontOfCamera(
+      this.getUserCamera(),
+      1.15,
+    );
+    this.pendingPanelPlacementFrames -= 1;
+  },
+  pollControllers(now = performance.now()) {
+    this.inputSourceManager.poll(now);
+  },
+  pollController(controller, now = performance.now()) {
+    this.inputSourceManager.pollController(controller, now);
+  },
+  findGamepad(handedness) {
+    return this.inputSourceManager.findGamepad(handedness);
+  },
+  getControllerGamepad(controller) {
+    return (
+      controller?.userData?.gamepad ||
+      this.findGamepad(controller?.userData?.handedness)
+    );
+  },
+  getThumbstickScaleDirection(gamepad) {
+    return this.inputSourceManager.getThumbstickScaleDirection(gamepad);
+  },
+  getRightController() {
+    return this.inputSourceManager.getRightController();
+  },
+  getControllerVoiceId(controller) {
+    const hand = controller.userData.handedness;
+    return hand && hand !== "none"
+      ? hand
+      : controller.userData.controllerId ||
+          `controller-${controller.userData.index}`;
+  },
+  getInstrumentVoiceId(controllerVoiceId, instrumentState) {
+    return `${controllerVoiceId}:instrument-${instrumentState.id}`;
+  },
 };

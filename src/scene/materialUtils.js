@@ -2,13 +2,21 @@ import * as THREE from "three";
 
 // Shared material helpers for runtime asset loading.
 
-export function applyStandardInstrumentMaterials(root, textures = {}, options = {}) {
+export function applyStandardInstrumentMaterials(
+  root,
+  textures = {},
+  options = {},
+) {
   root.traverse((object) => {
     if (!object.isMesh || object.userData.isHitTarget) {
       return;
     }
 
-    object.material = makeStandardInstrumentMaterial(object.material, textures, options);
+    object.material = makeStandardInstrumentMaterial(
+      object.material,
+      textures,
+      options,
+    );
     object.castShadow = true;
     object.receiveShadow = true;
   });
@@ -24,13 +32,33 @@ export function makeStandardInstrumentMaterial(
   } = {},
 ) {
   const map = applyTextureTransform(
-    getMaterialTexture(textures.baseMap, sourceMaterial?.map, useSourceMaterialMaps),
+    getMaterialTexture(
+      textures.baseMap,
+      sourceMaterial?.map,
+      useSourceMaterialMaps,
+    ),
     textureTransforms.baseMap,
   );
-  const normalMap = getMaterialTexture(textures.normalMap, sourceMaterial?.normalMap, useSourceMaterialMaps);
-  const roughnessMap = getMaterialTexture(textures.roughnessMap, sourceMaterial?.roughnessMap, useSourceMaterialMaps);
-  const metalnessMap = getMaterialTexture(textures.metalnessMap, sourceMaterial?.metalnessMap, useSourceMaterialMaps);
-  const bumpMap = getMaterialTexture(textures.heightMap, sourceMaterial?.bumpMap, useSourceMaterialMaps);
+  const normalMap = getMaterialTexture(
+    textures.normalMap,
+    sourceMaterial?.normalMap,
+    useSourceMaterialMaps,
+  );
+  const roughnessMap = getMaterialTexture(
+    textures.roughnessMap,
+    sourceMaterial?.roughnessMap,
+    useSourceMaterialMaps,
+  );
+  const metalnessMap = getMaterialTexture(
+    textures.metalnessMap,
+    sourceMaterial?.metalnessMap,
+    useSourceMaterialMaps,
+  );
+  const bumpMap = getMaterialTexture(
+    textures.heightMap,
+    sourceMaterial?.bumpMap,
+    useSourceMaterialMaps,
+  );
 
   return new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -40,8 +68,16 @@ export function makeStandardInstrumentMaterial(
     metalnessMap,
     bumpMap,
     bumpScale: bumpMap ? bumpScale : 1,
-    roughness: textures.roughnessMap ? 1 : useSourceMaterialMaps ? sourceMaterial?.roughness ?? 0.48 : 0.48,
-    metalness: textures.metalnessMap ? 1 : useSourceMaterialMaps ? sourceMaterial?.metalness ?? 0.02 : 0.02,
+    roughness: textures.roughnessMap
+      ? 1
+      : useSourceMaterialMaps
+        ? (sourceMaterial?.roughness ?? 0.48)
+        : 0.48,
+    metalness: textures.metalnessMap
+      ? 1
+      : useSourceMaterialMaps
+        ? (sourceMaterial?.metalness ?? 0.02)
+        : 0.02,
     side: THREE.DoubleSide,
   });
 }
@@ -53,24 +89,35 @@ function applyTextureTransform(texture, transform) {
 
   const transformedTexture = texture.clone();
   if (transform.center) {
-    transformedTexture.center.set(transform.center.x ?? 0.5, transform.center.y ?? 0.5);
+    transformedTexture.center.set(
+      transform.center.x ?? 0.5,
+      transform.center.y ?? 0.5,
+    );
   } else {
     transformedTexture.center.set(0.5, 0.5);
   }
   if (Number.isFinite(transform.rotationDegrees)) {
-    transformedTexture.rotation += THREE.MathUtils.degToRad(transform.rotationDegrees);
+    transformedTexture.rotation += THREE.MathUtils.degToRad(
+      transform.rotationDegrees,
+    );
   }
   transformedTexture.matrixAutoUpdate = true;
   transformedTexture.needsUpdate = true;
   return transformedTexture;
 }
 
-function getMaterialTexture(replacementTexture, sourceTexture, useSourceMaterialMaps) {
+function getMaterialTexture(
+  replacementTexture,
+  sourceTexture,
+  useSourceMaterialMaps,
+) {
   if (!replacementTexture) {
-    return useSourceMaterialMaps ? sourceTexture ?? null : null;
+    return useSourceMaterialMaps ? (sourceTexture ?? null) : null;
   }
 
-  return sourceTexture ? copyTextureMapping(replacementTexture, sourceTexture) : replacementTexture;
+  return sourceTexture
+    ? copyTextureMapping(replacementTexture, sourceTexture)
+    : replacementTexture;
 }
 
 function copyTextureMapping(texture, sourceTexture) {
@@ -93,7 +140,19 @@ function copyTextureMapping(texture, sourceTexture) {
 
 export async function loadMaterialTextureSet(textureLoader, texturePaths) {
   const entries = Object.entries(texturePaths);
-  const loaded = await Promise.all(entries.map(([, path]) => textureLoader.loadAsync(path)));
+  const results = await Promise.allSettled(
+    entries.map(([, path]) => textureLoader.loadAsync(path)),
+  );
+  const failure = results.find((r) => r.status === "rejected");
+  if (failure) {
+    for (const r of results)
+      if (r.status === "fulfilled") {
+        r.value.dispose();
+        r.value.source?.data?.close?.();
+      }
+    throw failure.reason;
+  }
+  const loaded = results.map((r) => r.value);
   const textures = {};
 
   entries.forEach(([key], index) => {

@@ -16,10 +16,15 @@ export class SceneSerializer {
   serialize() {
     const scene = createEmptySceneData();
     scene.instruments = [...this.registry.values()]
-      .filter((instrument) => instrument?.persistable !== false && !instrument.pendingPlacement)
+      .filter(
+        (instrument) =>
+          instrument?.persistable !== false && !instrument.pendingPlacement,
+      )
       .map((instrument) => this.serializeInstrument(instrument));
     scene.relationships.honkLocks = this.lockService?.serialize?.() || [];
-    scene.relationships.looperConnections = this.serializeLooperConnections(scene.instruments);
+    scene.relationships.looperConnections = this.serializeLooperConnections(
+      scene.instruments,
+    );
     const savedIds = new Set(scene.instruments.map(({ id }) => id));
     scene.relationships.metronomeConnections =
       this.metronomeConnectionManager?.serialize?.(savedIds) || [];
@@ -32,7 +37,9 @@ export class SceneSerializer {
       instrument.serialize?.() || {},
       instrument.kind,
     );
-    const scaleOverride = Number.isFinite(instrument.baseScale) ? instrument.baseScale : null;
+    const scaleOverride = Number.isFinite(instrument.baseScale)
+      ? instrument.baseScale
+      : null;
     return {
       ...serialized,
       id: instrument.id,
@@ -46,10 +53,17 @@ export class SceneSerializer {
     const connections = [];
     for (const looper of this.registry.getByKind("looper")) {
       if (!savedIds.has(looper.id)) continue;
-      for (const track of looper.getTracks?.() || looper.tracks || looper.looperData?.tracks || []) {
+      for (const track of looper.getTracks?.() ||
+        looper.tracks ||
+        looper.looperData?.tracks ||
+        []) {
         const honkId = track.connectedHonkId;
         if (honkId && savedIds.has(honkId)) {
-          connections.push({ looperId: looper.id, trackId: track.trackId, honkId });
+          connections.push({
+            looperId: looper.id,
+            trackId: track.trackId,
+            honkId,
+          });
         }
       }
     }
@@ -69,9 +83,8 @@ export function serializeTransform(root, scaleOverride = null) {
 }
 
 function assertPlainScene(scene) {
-  const serialized = JSON.stringify(scene);
-  if (!serialized) throw new TypeError("Scene did not serialize to JSON");
-  return JSON.parse(serialized);
+  // Entity serializers own plain-data output; clone once to detach timelines.
+  return structuredClone(scene);
 }
 
 const TRANSIENT_LOOPER_FIELDS = Object.freeze([
@@ -97,7 +110,8 @@ function omitTransientLooperState(serialized, kind) {
   for (const field of TRANSIENT_LOOPER_FIELDS) delete persistent[field];
   if (persistent.looper && typeof persistent.looper === "object") {
     persistent.looper = { ...persistent.looper };
-    for (const field of TRANSIENT_LOOPER_FIELDS) delete persistent.looper[field];
+    for (const field of TRANSIENT_LOOPER_FIELDS)
+      delete persistent.looper[field];
   }
   return persistent;
 }

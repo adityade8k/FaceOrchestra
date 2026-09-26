@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "id": "audit-midi-fixture",
+  "title": "Synthetic MIDI fixture",
+  "contentVersion": 1,
+  "bpm": 120,
+  "liveRole": "melody",
+  "source": {
+    "filename": "synthetic.mid",
+    "sha256": "09a36112561ed1bf7e37bfaf2c86308b3a10841bfc434c85850140b8b7d08441",
+    "byteLength": 53,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "synthetic.mid"
+    },
+    "format": 0,
+    "division": {
+      "kind": "ppq",
+      "ppq": 480
+    }
+  },
+  "importOptions": {
+    "id": "audit-midi-fixture",
+    "title": "Synthetic MIDI fixture",
+    "version": 1,
+    "live": {
+      "track": 0,
+      "channel": 0,
+      "port": 0
+    }
+  },
+  "normalizedSource": {
+    "file": "d998dab6b671a89c6a22fbaa38ca6028107f3d11a23ef8c62590b5ea53275f7a.normalized.json",
+    "sha256": "d998dab6b671a89c6a22fbaa38ca6028107f3d11a23ef8c62590b5ea53275f7a",
+    "sequence": 0
+  },
+  "score": {
+    "events": [
+      {
+        "id": "t0-e1",
+        "role": "pitch-60",
+        "midi": 60,
+        "velocity": 80,
+        "beat": 0.5,
+        "beats": 1,
+        "startSeconds": 0.25,
+        "durationSeconds": 0.5,
+        "bend": [
+          {
+            "seconds": 0,
+            "semitones": 0
+          }
+        ]
+      },
+      {
+        "id": "t0-e3",
+        "role": "pitch-64",
+        "midi": 64,
+        "velocity": 80,
+        "beat": 2,
+        "beats": 1,
+        "startSeconds": 1,
+        "durationSeconds": 0.5,
+        "bend": [
+          {
+            "seconds": 0,
+            "semitones": 0
+          }
+        ]
+      }
+    ],
+    "durationSeconds": 1.5,
+    "tempo": [
+      {
+        "tick": 0,
+        "us": 500000,
+        "seconds": 0
+      }
+    ],
+    "meter": []
+  },
+  "arrangement": {
+    "recipes": [
+      {
+        "kind": "honk",
+        "role": "pitch-60",
+        "midi": 60,
+        "position": [-0.66, 0.6, 0],
+        "scale": 1.2
+      },
+      {
+        "kind": "honk",
+        "role": "pitch-64",
+        "midi": 64,
+        "position": [-0.44, 0.6, 0],
+        "scale": 1.2
+      },
+      {
+        "kind": "metronome",
+        "role": "metronome",
+        "position": [-0.8, -0.5, 0],
+        "scale": 0.65
+      }
+    ],
+    "provenance": "MIDI 09a36112561ed1bf7e37bfaf2c86308b3a10841bfc434c85850140b8b7d08441",
+    "roleAssignments": [
+      {
+        "role": "melody",
+        "sequence": 0,
+        "source": {
+          "track": 0,
+          "channel": 0,
+          "port": 0
+        }
+      }
+    ],
+    "transformations": [
+      {
+        "type": "transpose",
+        "semitones": 0
+      }
+    ],
+    "exclusions": [],
+    "backing": [],
+    "decisions": [
+      "Numeric pitch identity retained",
+      "Velocity is presented as a cue; fixed Honk timbre substitutes the source program",
+      "One stable target per pitch; no quantization or trimming",
+      "Sustain sounding ends become held Honk durations; physical key releases remain in normalized source"
+    ]
+  },
+  "lessons": [
+    {
+      "id": "phrase-1",
+      "title": "Phrase 1",
+      "goal": "Follow the numeric pitch targets, prepare at the onset cue, sustain, bend in the indicated direction, release and observe rests.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startSeconds": 0,
+      "endSeconds": 1.5,
+      "eventIds": ["t0-e1", "t0-e3"],
+      "setup": "Prepared stable pitch bank; melody is the live role. Review the conversion report for supporting-part exclusions.",
+      "assessment": {
+        "pitchCents": 25,
+        "onsetSeconds": 0.15,
+        "durationSeconds": 0.2,
+        "bendCents": 50,
+        "extraPenalty": true
+      },
+      "success": "Matching live pitches, onsets, holds, releases and bends.",
+      "retry": "Release all notes, then Practice for a fresh count-in."
+    },
+    {
+      "id": "performance",
+      "title": "Complete guided performance",
+      "goal": "Follow the numeric pitch targets, prepare at the onset cue, sustain, bend in the indicated direction, release and observe rests.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": true,
+      "startSeconds": 0,
+      "endSeconds": 1.5,
+      "eventIds": ["t0-e1", "t0-e3"],
+      "setup": "Prepared stable pitch bank; melody is the live role. Review the conversion report for supporting-part exclusions.",
+      "assessment": {
+        "pitchCents": 25,
+        "onsetSeconds": 0.15,
+        "durationSeconds": 0.2,
+        "bendCents": 50,
+        "extraPenalty": true
+      },
+      "success": "Matching live pitches, onsets, holds, releases and bends.",
+      "retry": "Release all notes, then Practice for a fresh count-in."
+    }
+  ],
+  "recording": {
+    "countIn": 4,
+    "tailMs": 500,
+    "end": "manual",
+    "synchronization": "captured-noise-once"
+  },
+  "requirements": {
+    "maxHonks": 2,
+    "maxLoopers": 0,
+    "maxLiveVoices": 1
+  },
+  "warnings": [
+    {
+      "sequence": 0,
+      "issue": "no meter; teaching grid must be declared"
+    }
+  ],
+  "authored": {},
+  "contentHash": "37addde3942cda6ae865846ca483b07e184334646aa702e5d4f6449b95e55caf"
+}

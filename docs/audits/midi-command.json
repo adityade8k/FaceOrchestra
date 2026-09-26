@@ -1,0 +1,9 @@
+{
+  "synthetic": true,
+  "sourceSha256": "09a36112561ed1bf7e37bfaf2c86308b3a10841bfc434c85850140b8b7d08441",
+  "contentHash": "415bb1eec48f7750003db2744a234e4c98f1f2a3a3555d71eff490dba5daafc7",
+  "lessons": 2,
+  "bytePreservation": true,
+  "deterministicReimport": true,
+  "versionedProvenance": true
+}

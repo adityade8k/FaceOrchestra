@@ -1,11 +1,12 @@
 import { INSTRUMENT_CAPABILITIES } from "./capabilities.js";
 import { INSTRUMENT_LIFECYCLE } from "./InstrumentEntity.js";
-import { InstrumentAdmissionPolicy } from './InstrumentAdmissionPolicy.js';
+import { InstrumentAdmissionPolicy } from "./InstrumentAdmissionPolicy.js";
 
 export class InstrumentRegistry {
   constructor() {
     this.instruments = new Map();
     this.idsByKind = new Map();
+    this.kindViews = new Map();
     this.idByRoot = new WeakMap();
     this.listeners = new Set();
     this.admission = new InstrumentAdmissionPolicy(this);
@@ -13,7 +14,9 @@ export class InstrumentRegistry {
 
   add(instrument, { initialize = true } = {}) {
     if (!instrument?.id || !instrument?.kind || !instrument?.root) {
-      throw new TypeError("InstrumentRegistry accepts InstrumentEntity-like objects with id, kind, and root.");
+      throw new TypeError(
+        "InstrumentRegistry accepts InstrumentEntity-like objects with id, kind, and root.",
+      );
     }
     if (this.instruments.has(instrument.id)) {
       throw new Error(`Instrument already registered: ${instrument.id}`);
@@ -35,16 +38,22 @@ export class InstrumentRegistry {
       this.idsByKind.set(instrument.kind, kindIds);
     }
     kindIds.add(instrument.id);
+    this.kindViews.delete(instrument.kind);
 
     if (initialize && instrument.lifecycle === INSTRUMENT_LIFECYCLE.created) {
       instrument.initialize?.();
     }
-    this.emit({ type: "instrument.added", instrument, instrumentId: instrument.id });
+    this.emit({
+      type: "instrument.added",
+      instrument,
+      instrumentId: instrument.id,
+    });
     return instrument;
   }
 
   remove(instrumentOrId, { dispose = true } = {}) {
-    const instrumentId = typeof instrumentOrId === "string" ? instrumentOrId : instrumentOrId?.id;
+    const instrumentId =
+      typeof instrumentOrId === "string" ? instrumentOrId : instrumentOrId?.id;
     const instrument = this.instruments.get(instrumentId);
     if (!instrument) {
       return null;
@@ -54,10 +63,15 @@ export class InstrumentRegistry {
     this.idByRoot.delete(instrument.root);
     const kindIds = this.idsByKind.get(instrument.kind);
     kindIds?.delete(instrument.id);
+    this.kindViews.delete(instrument.kind);
     if (kindIds?.size === 0) {
       this.idsByKind.delete(instrument.kind);
     }
-    this.emit({ type: "instrument.removed", instrument, instrumentId: instrument.id });
+    this.emit({
+      type: "instrument.removed",
+      instrument,
+      instrumentId: instrument.id,
+    });
     if (dispose) {
       instrument.dispose?.();
     }
@@ -73,13 +87,24 @@ export class InstrumentRegistry {
   }
 
   getByKind(kind) {
-    return [...(this.idsByKind.get(kind) || [])]
-      .map((instrumentId) => this.instruments.get(instrumentId))
-      .filter(Boolean);
+    // Membership-only immutable view: pose/visibility/collider fields remain
+    // live on each entity and are checked by the interaction query itself.
+    if (!this.kindViews.has(kind))
+      this.kindViews.set(
+        kind,
+        Object.freeze(
+          [...(this.idsByKind.get(kind) || [])].map((id) =>
+            this.instruments.get(id),
+          ),
+        ),
+      );
+    return this.kindViews.get(kind);
   }
 
   getByCapability(capability) {
-    return [...this.instruments.values()].filter((instrument) => instrument.hasCapability?.(capability));
+    return [...this.instruments.values()].filter((instrument) =>
+      instrument.hasCapability?.(capability),
+    );
   }
 
   getTransformableInstruments() {
@@ -93,7 +118,9 @@ export class InstrumentRegistry {
   getFromObject3D(object3D) {
     let current = object3D;
     while (current) {
-      const descriptorId = current.userData?.interactionTarget?.ownerId || current.userData?.instrument?.id;
+      const descriptorId =
+        current.userData?.interactionTarget?.ownerId ||
+        current.userData?.instrument?.id;
       const instrumentId = descriptorId || this.idByRoot.get(current);
       if (instrumentId && this.instruments.has(instrumentId)) {
         return this.instruments.get(instrumentId);
@@ -104,7 +131,9 @@ export class InstrumentRegistry {
   }
 
   forEach(callback, thisArg = undefined) {
-    this.instruments.forEach((instrument, instrumentId) => callback.call(thisArg, instrument, instrumentId, this));
+    this.instruments.forEach((instrument, instrumentId) =>
+      callback.call(thisArg, instrument, instrumentId, this),
+    );
   }
 
   values() {

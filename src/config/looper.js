@@ -152,7 +152,7 @@ export const LOOPER_BUTTON_COLLIDERS = {
     morphTarget: LOOPER_BUTTON_MORPH_TARGETS.pause,
   },
   record: {
-    x: 0.10,
+    x: 0.1,
     y: -0.275,
     z: 0.28,
     rotationDegrees: { x: 0, y: 40, z: 0 },
@@ -171,7 +171,10 @@ export const LOOPER_BUTTON_COLLIDERS = {
 
 export const LOOPER_NODE_COLLIDER_LAYOUT = {
   center: { x: -0.068, y: -0.04, z: -0.05 },
-  wireDirection: { x: 0, y: 0, z: 1 },
+  banks: [
+    { id: "left", outward: { x: -1, y: 0, z: 0 } },
+    { id: "right", outward: { x: 1, y: 0, z: 0 } },
+  ],
   columns: 2,
   minColumns: 1,
   centerColumn: 0.5,

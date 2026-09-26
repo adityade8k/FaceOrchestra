@@ -1,3 +1,4 @@
+import { collectResources, releaseResources } from "./resourceOwnership.js";
 import * as THREE from "three";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -6,41 +7,105 @@ import { ASSET_PATHS } from "../config/assets.js";
 import { loadMaterialTextureSet } from "./materialUtils.js";
 
 export class AssetRepository {
-  constructor({ gltfLoader = new GLTFLoader(), textureLoader = new THREE.TextureLoader(), fontLoader = new FontLoader() } = {}) {
+  constructor({
+    gltfLoader = new GLTFLoader(),
+    textureLoader = new THREE.TextureLoader(),
+    fontLoader = new FontLoader(),
+  } = {}) {
     this.gltfLoader = gltfLoader;
     this.textureLoader = textureLoader;
     this.fontLoader = fontLoader;
+    this.owned = new Set();
+    this.disposed = false;
     this.models = new Map();
     this.textureSets = new Map();
     this.fonts = new Map();
   }
 
   async loadModel(key, path = ASSET_PATHS.models[key]) {
+    if (this.disposed) throw new Error("Asset repository disposed");
     if (!path) throw new Error(`No model asset configured for ${key}`);
     if (!this.models.has(key)) {
-      this.models.set(key, this.gltfLoader.loadAsync(path).then((gltf) => {
-        // Stable authored node paths let capture reference the installed asset once.
-        const visit = (node, nodePath = []) => {
-          const ref = { path: new URL(path, globalThis.location?.href || 'http://localhost/').pathname, nodePath };
-          if (node.geometry) node.geometry.userData.captureAsset = ref;
-          for (const [index, material] of (Array.isArray(node.material) ? node.material : node.material ? [node.material] : []).entries()) {
-            for (const slot of ['map','normalMap','roughnessMap','metalnessMap','emissiveMap','alphaMap','aoMap']) {
-              if (material[slot]) material[slot].userData.captureAsset = { ...ref, materialIndex: index, slot };
+      this.models.set(
+        key,
+        this.gltfLoader
+          .loadAsync(path)
+          .then((gltf) => {
+            collectResources(gltf.scene, this.owned);
+            if (this.disposed) {
+              releaseResources(this.owned);
+              throw new Error("Asset load completed after disposal");
             }
-          }
-          node.children.forEach((child, index) => visit(child, [...nodePath, index]));
-        };
-        visit(gltf.scene);
-        return gltf.scene;
-      }));
+            // Stable authored node paths let capture reference the installed asset once.
+            const visit = (node, nodePath = []) => {
+              const ref = {
+                path: new URL(
+                  path,
+                  globalThis.location?.href || "http://localhost/",
+                ).pathname,
+                nodePath,
+              };
+              if (node.geometry) node.geometry.userData.captureAsset = ref;
+              for (const [index, material] of (Array.isArray(node.material)
+                ? node.material
+                : node.material
+                  ? [node.material]
+                  : []
+              ).entries()) {
+                for (const slot of [
+                  "map",
+                  "normalMap",
+                  "roughnessMap",
+                  "metalnessMap",
+                  "emissiveMap",
+                  "alphaMap",
+                  "aoMap",
+                ]) {
+                  if (material[slot])
+                    material[slot].userData.captureAsset = {
+                      ...ref,
+                      materialIndex: index,
+                      slot,
+                    };
+                }
+              }
+              node.children.forEach((child, index) =>
+                visit(child, [...nodePath, index]),
+              );
+            };
+            visit(gltf.scene);
+            return gltf.scene;
+          })
+          .catch((error) => {
+            this.models.delete(key);
+            throw error;
+          }),
+      );
     }
     return this.models.get(key);
   }
 
   async loadTextureSet(key, paths = ASSET_PATHS.textures[key]) {
+    if (this.disposed) throw new Error("Asset repository disposed");
     if (!paths) return {};
     if (!this.textureSets.has(key)) {
-      this.textureSets.set(key, loadMaterialTextureSet(this.textureLoader, paths));
+      this.textureSets.set(
+        key,
+        loadMaterialTextureSet(this.textureLoader, paths)
+          .then((textures) => {
+            for (const texture of Object.values(textures))
+              this.owned.add(texture);
+            if (this.disposed) {
+              releaseResources(this.owned);
+              throw new Error("Texture load completed after disposal");
+            }
+            return textures;
+          })
+          .catch((error) => {
+            this.textureSets.delete(key);
+            throw error;
+          }),
+      );
     }
     return this.textureSets.get(key);
   }
@@ -48,7 +113,10 @@ export class AssetRepository {
   async loadFont(key, path = ASSET_PATHS.fonts[key]) {
     if (!path) return null;
     if (!this.fonts.has(key)) {
-      this.fonts.set(key, this.fontLoader.loadAsync(path).catch(() => null));
+      this.fonts.set(
+        key,
+        this.fontLoader.loadAsync(path).catch(() => null),
+      );
     }
     return this.fonts.get(key);
   }
@@ -57,7 +125,16 @@ export class AssetRepository {
     return cloneSkeletonAware(model);
   }
 
-  clear() {
+  async clear() {
+    this.disposed = true;
+    const models = await Promise.allSettled([
+      ...this.models.values(),
+      ...this.textureSets.values(),
+    ]);
+    for (const result of models)
+      if (result.status === "fulfilled")
+        collectResources(result.value, this.owned);
+    releaseResources(this.owned);
     this.models.clear();
     this.textureSets.clear();
     this.fonts.clear();

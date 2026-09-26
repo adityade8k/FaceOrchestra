@@ -1,6 +1,6 @@
-# Face Orchestra XR
+# Honk Orchestra XR
 
-Face Orchestra is a browser-based WebXR instrument for building music in space. Place expressive horn faces (“Honks”), arrange them into chords, record performances with Loopers, drive the room from one Metronome, and play percussion with a handheld Stick.
+Honk Orchestra (previously FaceOrchestra) is a browser-based WebXR instrument for building music in space. Place expressive horn faces (“Honks”), arrange them into chords, record performances with Loopers, drive the room from one Metronome, and play percussion with a handheld Stick.
 
 This page is the user manual. Developers should use [the architecture document](docs/architecture.md) and [the manual XR regression checklist](docs/manual-xr-regression.md).
 
@@ -48,7 +48,9 @@ npm run dev:https
 
 Open `https://YOUR_LAN_IP:8443` in the headset browser. The headset and computer must share a network, the firewall must allow port `8443`, and the headset must trust the certificate authority. Never commit the certificate or private key.
 
-When XR begins, Face Orchestra restores the last saved scene. If that scene has no Metronome, one Metronome is placed automatically in front of you. At most one Metronome can be active, including a pending preview. Delete or cancel it before placing another.
+The main menu contains **Play**, **Tutorials**, and **Record Songs**. Play restores the saved workspace or opens empty space. Instruments are placed explicitly; no default preview or Metronome is spawned. At most one Metronome can be active, including a pending preview. Tutorials starts with Basics and includes Raag Jog and Kuch To Hua Hai. Record Songs prepares either song for the shared receiver workflow.
+
+Click the left thumbstick to hide/show the menu. Point either controller at the header and hold Grip to move it; Trigger on the header opens Home. Recenter restores a comfortable pose. Desktop users can use Menu or M (outside text inputs). Hiding the menu preserves playback, lesson progress and recording. See the [local audit](docs/audits/implementation.md) and [MIDI import workflow](docs/midi-import.md).
 
 The optional in-headset instruction panel is currently disabled because `SHOW_INSTRUCTION_PANEL` is `false`. If a developer enables it, close it with Trigger before the automatic Metronome appears and the spawn menu becomes available.
 
@@ -56,20 +58,20 @@ The optional in-headset instruction panel is currently disabled because `SHOW_IN
 
 Trigger and Grip work on either hand. Right A and left Y open the menu on that hand; lock and delete keep their existing handedness.
 
-| Control | What it does |
-| --- | --- |
-| Hold **Right A** or **Left Y** | Open the category ring. Roll that controller to choose Instruments, Scales, Chords, or Presets; pull it toward you to open that category's item ring. |
-| Release **Right A** or **Left Y** | On the item ring, confirm the highlighted item and create its placement preview. On the category ring, close without a preview. |
-| **Trigger** during preview | Place the preview. |
-| **Grip** during menu or preview | Cancel it. |
-| Owning thumbstick left/right during preview | Scale the entire preview down/up in steps. |
-| Owning thumbstick down/up during preview | Move the entire preview closer to/farther from the controller in steps. |
-| Hold **Grip** on an instrument | Move and rotate it with that controller. |
-| Thumbstick left/right on the gripping hand | Scale the current instrument or locked Honk group down/up in steps. |
-| **Grip + Right A / Left Y** | Duplicate the unlocked Honk or Looper being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated. |
-| **Right B** | Lock or unlock the pointed Honk formation, Looper, or Metronome. During Practice, separate melody and percussion Honks can also be locked or unlocked. |
-| **Left X** | Delete the pointed instrument and clean up its audio and connections. |
-| Hold **Grip** where no transform target is pointed at | Equip the Stick; release Grip to put it away. |
+| Control                                               | What it does                                                                                                                                           |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Hold **Right A** or **Left Y**                        | Open the category ring. Roll that controller to choose Instruments, Scales, Chords, or Presets; pull it toward you to open that category's item ring.  |
+| Release **Right A** or **Left Y**                     | On the item ring, confirm the highlighted item and create its placement preview. On the category ring, close without a preview.                        |
+| **Trigger** during preview                            | Place the preview.                                                                                                                                     |
+| **Grip** during menu or preview                       | Cancel it.                                                                                                                                             |
+| Owning thumbstick left/right during preview           | Scale the entire preview down/up in steps.                                                                                                             |
+| Owning thumbstick down/up during preview              | Move the entire preview closer to/farther from the controller in steps.                                                                                |
+| Hold **Grip** on an instrument                        | Move and rotate it with that controller.                                                                                                               |
+| Thumbstick left/right on the gripping hand            | Scale the current instrument or locked Honk group down/up in steps.                                                                                    |
+| **Grip + Right A / Left Y**                           | Duplicate the unlocked Honk or Looper being gripped and transfer the grip to the copy. A locked Honk group is not partially duplicated.                |
+| **Right B**                                           | Lock or unlock the pointed Honk formation, Looper, or Metronome. During Practice, separate melody and percussion Honks can also be locked or unlocked. |
+| **Left X**                                            | Delete the pointed instrument and clean up its audio and connections.                                                                                  |
+| Hold **Grip** where no transform target is pointed at | Equip the Stick; release Grip to put it away.                                                                                                          |
 
 The radial menu is suppressed whenever Grip is active, including duplication. It pulses the initiating controller when the menu opens, selection or depth changes, or the menu is confirmed, dismissed, cancelled or closed. If placement is cancelled, every instrument in that preview is removed.
 
@@ -169,7 +171,7 @@ One continuous contact creates one strike and one haptic pulse. Separate the Sti
 
 ## Saving and restoring
 
-Face Orchestra saves once when you exit immersive XR. If a Looper is still recording, exit finalizes it through the same Stop path before serialization. The next load restores:
+Play checkpoints dirty changes outside the XR frame callback and before mode transitions, and saves on XR exit. IndexedDB stores large scenes/timelines and a previous recovery copy. Legacy localStorage scenes migrate without deleting the source. Tutorial and recording scenes do not overwrite Play; learning progress is separate. If a Looper is still recording, exit finalizes it through the same Stop path before serialization. The next load restores:
 
 - Honks, Loopers, and Metronomes with stable IDs, transforms, and scales;
 - Honk tuning, note defaults, ears, nose, and vowel;
@@ -178,11 +180,11 @@ Face Orchestra saves once when you exit immersive XR. If a Looper is still recor
 - Metronome BPM, Volume, target connections, and wires;
 - the preferred Stick type.
 
-Loopers restore stopped and unarmed. Metronomes restore paused and unlocked. Live Trigger holds, audio nodes, temporary contact formations, menu/placement previews, controller state, pendulum phase, and other transient XR state are not saved.
+Loopers restore stopped and unarmed. Metronomes restore paused. Editing locks are retained. Live Trigger holds, audio nodes, temporary contact formations, menu/placement previews, controller state, pendulum phase, and other transient XR state are not saved.
 
 Legacy scenes with several Metronomes restore the first in saved order and report skipped objects and affected connections. The original storage value stays untouched and autosave is blocked after a partial restore. Recovery data and details are available in `runtime.sceneRestorer.lastReport` / `runtime.scenePersistence.restoreReport`; export the original before deliberately replacing it.
 
-To clear only the current saved scene during development:
+The legacy source remains under the following key. Removing it does not clear the new IndexedDB workspace; use browser storage tools to inspect `honk-orchestra-workspaces` and export recovery data first:
 
 ```js
 localStorage.removeItem("face-orchestra:scene:v3");
@@ -199,7 +201,7 @@ localStorage.removeItem("face-orchestra:scene:v3");
 - **Cannot transform an object:** aim at its body transform target and hold Grip. If no target is selected, Grip intentionally equips the Stick.
 - **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Completed automatic takes retain all selected beats; manual Stop before the endpoint trims idle waiting.
 - **Looper is disconnected:** it uses the stable internal 70 BPM grid. Reconnect its Metronome cable to follow the lesson’s 80 BPM clock.
-- **Saved scene did not update:** saving occurs on immersive XR exit, not on each edit. Exit XR cleanly and inspect browser storage for `face-orchestra:scene:v3`.
+- **Saved scene did not update:** allow the debounced checkpoint to finish and check the storage feedback. Inspect IndexedDB `honk-orchestra-workspaces`; quota, unsupported data, or partial recovery can pause writes. The legacy localStorage key is retained as a recovery source.
 - **Metronome appearance changes after Right B:** that is a regression. Its map identity should remain authored through repeated lock/unlock; follow the Metronome section of the XR checklist.
 
 For automated checks:

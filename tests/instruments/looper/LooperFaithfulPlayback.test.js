@@ -25,15 +25,31 @@ test("a genuine squeeze release does not turn a held note into a fade", () => {
   timeline.finalizeDuration();
   const snapshot = createActionState();
 
-  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 250, snapshot).squeeze, 1);
-  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 499, snapshot).squeeze, 1);
-  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 500, snapshot).squeeze, 0);
+  assert.equal(
+    timeline.sampleTrack(timeline.getTrack("track-0"), 250, snapshot).squeeze,
+    1,
+  );
+  assert.equal(
+    timeline.sampleTrack(timeline.getTrack("track-0"), 499, snapshot).squeeze,
+    1,
+  );
+  assert.equal(
+    timeline.sampleTrack(timeline.getTrack("track-0"), 500, snapshot).squeeze,
+    0,
+  );
 });
 
 test("standalone 70 BPM reference preserves off-grid attacks and releases exactly", () => {
   const { controller, looper, input } = createRecordingHarness();
   controller.startRecording(looper, 0);
-  for (const [timeMs, squeeze] of [[0, 1], [80, 0], [510, 1], [590, 0], [1000, 1], [1080, 0]]) {
+  for (const [timeMs, squeeze] of [
+    [0, 1],
+    [80, 0],
+    [510, 1],
+    [590, 0],
+    [1000, 1],
+    [1080, 0],
+  ]) {
     input.squeeze = squeeze;
     input.musicalOnset = squeeze > 0;
     controller.updateRecordings([looper], timeMs);
@@ -41,8 +57,11 @@ test("standalone 70 BPM reference preserves off-grid attacks and releases exactl
   controller.stopRecording(looper, 1400);
 
   const gates = looper.looperData.timeline.getTrack("track-0").gateEvents;
-  assert.deepEqual(gates.map(({ timeMs }) => timeMs), [0, 80, 510, 590, 1000, 1080]);
-  assert.equal(looper.looperData.timeline.sourceBeatIntervalMs, 60000/70);
+  assert.deepEqual(
+    gates.map(({ timeMs }) => timeMs),
+    [0, 80, 510, 590, 1000, 1080],
+  );
+  assert.equal(looper.looperData.timeline.sourceBeatIntervalMs, 60000 / 70);
   assert.equal(looper.looperData.timeline.beatAnalysis, null);
 });
 
@@ -53,7 +72,16 @@ test("frame capture retains repeated local bend turns and exact plateaus", () =>
   let action = { squeeze: 1, musicalOnset: true, bend: 0 };
   const capture = () => action;
   recorder.start(timeline, [track], 0, capture);
-  for (const [timeMs, bend] of [[0, 0], [11, 0.9], [22, 0], [33, 0], [44, 0.6], [55, 0], [66, 0.4], [77, 0]]) {
+  for (const [timeMs, bend] of [
+    [0, 0],
+    [11, 0.9],
+    [22, 0],
+    [33, 0],
+    [44, 0.6],
+    [55, 0],
+    [66, 0.4],
+    [77, 0],
+  ]) {
     action = { ...action, bend };
     recorder.updateTrack(timeline, track, timeMs, capture);
   }
@@ -62,7 +90,15 @@ test("frame capture retains repeated local bend turns and exact plateaus", () =>
   recorder.stop(timeline, [track], 100, 1, capture);
 
   const snapshot = createActionState();
-  for (const [timeMs, expected] of [[11, 0.9], [22, 0], [33, 0], [44, 0.6], [55, 0], [66, 0.4], [77, 0]]) {
+  for (const [timeMs, expected] of [
+    [11, 0.9],
+    [22, 0],
+    [33, 0],
+    [44, 0.6],
+    [55, 0],
+    [66, 0.4],
+    [77, 0],
+  ]) {
     timeline.sampleTrack(timeline.getTrack("track-0"), timeMs, snapshot);
     assert.equal(snapshot.bend, expected);
   }
@@ -82,7 +118,10 @@ test("a baseline never defines standalone pre-roll and held-at-Stop preserves du
   assert.deepEqual(timeline.getMusicalOnsetTimes(), [0]);
   assert.equal(timeline.getTrack("track-0").baselineActionState.bend, 0);
   assert.equal(timeline.recordedDurationMs, 200);
-  assert.equal(timeline.getTrack("track-0").gateEvents.at(-1).preserveDuration, true);
+  assert.equal(
+    timeline.getTrack("track-0").gateEvents.at(-1).preserveDuration,
+    true,
+  );
 });
 
 test("audio lookahead schedules a complete short note between visual frames", () => {
@@ -94,9 +133,11 @@ test("audio lookahead schedules a complete short note between visual frames", ()
     getTimingForLooper: () => ({ connected: false }),
     isPlayableHonkId: () => true,
     getPlaybackTargetIds: (_track, honkId) => [honkId],
-    startActionVoice: (voiceId, _honkId, options) => calls.push(["start", voiceId, options.scheduledTime]),
+    startActionVoice: (voiceId, _honkId, options) =>
+      calls.push(["start", voiceId, options.scheduledTime]),
     updateActionVoiceByHonkId() {},
-    releaseActionVoice: (voiceId, _honkId, options) => calls.push(["end", voiceId, options.scheduledTime]),
+    releaseActionVoice: (voiceId, _honkId, options) =>
+      calls.push(["end", voiceId, options.scheduledTime]),
     cancelActionVoice: (voiceId) => calls.push(["cancel", voiceId]),
     updateVisuals() {},
   };
@@ -144,12 +185,15 @@ test("audio lookahead schedules a complete short note between visual frames", ()
   controller.schedulePlaybackAudioForLooper(looper, 1000);
   controller.stopAudioScheduler(looper, { release: false });
 
-  assert.deepEqual(calls.map(([kind, _voiceId, time]) => [kind, time]), [
-    ["start", 10],
-    ["end", 10.02],
-    ["start", 10.04],
-    ["end", 10.05],
-  ]);
+  assert.deepEqual(
+    calls.map(([kind, _voiceId, time]) => [kind, time]),
+    [
+      ["start", 10],
+      ["end", 10.02],
+      ["start", 10.04],
+      ["end", 10.05],
+    ],
+  );
   assert.equal(calls[0][1], calls[1][1]);
   assert.equal(calls[2][1], calls[3][1]);
   assert.notEqual(calls[0][1], calls[2][1]);
@@ -167,7 +211,8 @@ test("60 to 200 BPM maps one shared 1000 ms source event to 300 ms", () => {
     getTimingForLooper: () => ({ connected: false }),
     isPlayableHonkId: () => true,
     getPlaybackTargetIds: (_track, honkId) => [honkId],
-    startActionVoice: (_voiceId, _honkId, options) => calls.push(options.scheduledTime),
+    startActionVoice: (_voiceId, _honkId, options) =>
+      calls.push(options.scheduledTime),
     updateActionVoiceByHonkId() {},
   };
   const controller = new LooperController(adapter);
@@ -207,3 +252,35 @@ function createRecordingHarness() {
   looper.looperData.tracks[0].connectedHonkId = "honk-a";
   return { controller, looper, input };
 }
+
+test("long suspension skips missed percussion cycles and resumes at musical phase", async () => {
+  const { LooperPlaybackEngine } = await import(
+    "../../../src/instruments/looper/LooperPlaybackEngine.js"
+  );
+  const engine = new LooperPlaybackEngine();
+  let resets = 0,
+    boundaries = 0,
+    hits = 0;
+  const timeline = {
+    durationMs: 1000,
+    tracks: new Map(),
+    getDrumHitEventsBetween: () => {
+      hits++;
+      return [];
+    },
+    getDrumHitEventsAt: () => {
+      hits++;
+      return [];
+    },
+  };
+  engine.elapsedMs = 250;
+  engine.advanceBy(600125, timeline, {
+    maxCatchupMs: 1000,
+    onLoopBoundary: () => boundaries++,
+    onDrumHit() {},
+    onTrackReset: () => resets++,
+  });
+  assert.equal(engine.elapsedMs, 375);
+  assert.equal(boundaries, 1);
+  assert.equal(hits, 0);
+});

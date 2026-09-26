@@ -1,185 +1,652 @@
-import { JogRecordingSession } from '../performance/JogRecordingSession.js';
-import { JogEnsemble } from '../performance/JogEnsemble.js';
-import { recordingGuidance } from './recordingGuidance.js';
-import * as THREE from 'three';
-import { TutorialAdapter } from './TutorialAdapter.js';
-import { TutorialSession } from './TutorialSession.js';
-import { TutorialPanel } from './TutorialPanel.js';
-import { CompositionConductor } from './CompositionConductor.js';
-import { COMPOSITION as C, describeNote, TUTORIAL_LOOPERS } from './composition.js';
-import { scoreForStep } from './scoring.js';
-import { TutorialLessonFlow } from './TutorialLessonFlow.js';
-import { TutorialTimingCues } from './TutorialTimingCues.js';
-import { LESSON_CONTROL_IDS, setupStatus } from './TutorialLessonPolicy.js';
-import { KuchTutorial } from './kuch/KuchTutorial.js';
+import { LearningProgress } from "../persistence/LearningProgress.js";
+import { SongRecordingSession } from "../performance/SongRecordingSession.js";
+import {
+  compositionRegistry,
+  libraryPage,
+} from "../compositions/CompositionRegistry.js";
+import { ApplicationModeRouter } from "../navigation/ApplicationModeRouter.js";
+import { MenuController } from "../navigation/MenuController.js";
+import { BasicsTutorial } from "./BasicsTutorial.js";
+import { recordingGuidance } from "./recordingGuidance.js";
+import * as THREE from "three";
+import { TutorialAdapter } from "./TutorialAdapter.js";
+import { TutorialSession } from "./TutorialSession.js";
+import { TutorialPanel } from "./TutorialPanel.js";
+import { CompositionConductor } from "./CompositionConductor.js";
+import {
+  COMPOSITION as C,
+  describeNote,
+  TUTORIAL_LOOPERS,
+} from "./composition.js";
+import { scoreForStep } from "./scoring.js";
+import { TutorialLessonFlow } from "./TutorialLessonFlow.js";
+import { TutorialTimingCues } from "./TutorialTimingCues.js";
+import { LESSON_CONTROL_IDS, setupStatus } from "./TutorialLessonPolicy.js";
 
 export class TutorialRuntime {
   constructor(runtime) {
-    this.r=runtime;this.adapter=new TutorialAdapter(runtime,e=>this.accept(e));
-    this.cues=new TutorialTimingCues(this.adapter);this.flow=new TutorialLessonFlow(this);
-    this.session=null;this.conductor=null;this.demo=null;this.freePlayScene=null;this.busy=false;
-    this.screen='launch';this.ready=false;this.disposed=false;this.lastDraw=-Infinity;this.diagnostics=[];
-    this.ray=new THREE.Raycaster();this.ray.far=2.5;this.position=new THREE.Vector3();this.quaternion=new THREE.Quaternion();this.rayDirection=new THREE.Vector3();
-    this.report=null;this.practiceProgress=null;this.simulationProgress=null;this.uiFeedback='';
-    this.pendingXRPlacementFrames=0;
-    this.onVisibility=()=>{if(document.hidden){
-      this.jogRecording?.interrupt('visibility-interruption');
-      this.kuch?.cancel('Tab hidden. Choose an action for a fresh count-in.');
-      this.conductor?.pause('Tab hidden. Resume restarts the current action.');
-      if(this.session?.mode==='practice')this.flow.cancelOutgoing({keepResult:this.session.phase==='results'});
-      this.uiFeedback='Tab hidden. Choose Practice or Demonstrate again.';this.adapter.releaseAll();this.cues.reset();
-    }};
+    this.r = runtime;
+    this.adapter = new TutorialAdapter(runtime, (e) => this.accept(e));
+    this.cues = new TutorialTimingCues(this.adapter);
+    this.flow = new TutorialLessonFlow(this);
+    this.session = null;
+    this.conductor = null;
+    this.demo = null;
+    this.freePlayScene = null;
+    this.busy = false;
+    this.screen = "launch";
+    this.ready = false;
+    this.disposed = false;
+    this.lastDraw = -Infinity;
+    this.diagnostics = [];
+    this.ray = new THREE.Raycaster();
+    this.ray.far = 2.5;
+    this.position = new THREE.Vector3();
+    this.quaternion = new THREE.Quaternion();
+    this.rayDirection = new THREE.Vector3();
+    this.report = null;
+    this.practiceProgress = null;
+    this.simulationProgress = null;
+    this.uiFeedback = "";
+    this.learningProgress = new LearningProgress();
+    this.navigationScreen = "launch";
+    this.libraryPage = 0;
+    this.catalog = compositionRegistry;
+    this.pendingXRPlacementFrames = 0;
+    this.onVisibility = () => {
+      if (document.hidden) {
+        this.jogRecording?.interrupt("visibility-interruption");
+        this.kuch?.cancel("Tab hidden. Choose an action for a fresh count-in.");
+        this.conductor?.pause(
+          "Tab hidden. Resume restarts the current action.",
+        );
+        if (this.session?.mode === "practice")
+          this.flow.cancelOutgoing({
+            keepResult: this.session.phase === "results",
+          });
+        this.uiFeedback = "Tab hidden. Choose Practice or Demonstrate again.";
+        this.adapter.releaseAll();
+        this.cues.reset();
+      }
+    };
   }
   initialize() {
-    if(this.ready)return;
-    this.ready=true;this.adapter.initialize();this.r.hideInstructionPanel();this.r.instructionPanelClosed=true;
-    this.panel=new TutorialPanel({scene:this.r.scene,camera:this.r.camera,renderer:this.r.renderer,onAction:(id)=>this.action(id)});
-    if(this.r.xrSessionActive)this.onXRStart();
-    document.addEventListener('visibilitychange',this.onVisibility);this.render(performance.now());
+    if (this.ready) return;
+    this.ready = true;
+    this.adapter.initialize();
+    this.r.hideInstructionPanel();
+    this.r.instructionPanelClosed = true;
+    this.panel = new TutorialPanel({
+      scene: this.r.scene,
+      camera: this.r.camera,
+      renderer: this.r.renderer,
+      onAction: (id) => this.action(id),
+    });
+    this.menu = new MenuController({
+      panel: this.panel,
+      states: this.r.controllerStates,
+      hit: (c) =>
+        this.nearestPanelHit(c, this.r.raycastSystem.getCurrentHit(c)),
+      quiesce: (c) => {
+        this.r.clearControllerTriggerInteraction(
+          this.r.controllerStates.get(c),
+        );
+        this.r.handleGripEndIntent(c);
+        this.r.closeRadialMenu(c);
+        if (this.r.controllerStates.get(c)?.stickActive)
+          this.r.deactivateStick(c);
+      },
+      onEvent: (kind) => this.basics?.accept({ kind, origin: "learner" }),
+    });
+    this.router = new ApplicationModeRouter({
+      checkpoint: async () => {
+        if (!["play", "launch"].includes(this.r.sessionMode)) return;
+        this.flow.cancelOutgoing();
+        this.freePlayScene = this.r.sceneSerializer.serialize();
+        if (
+          !this.r.debugMode &&
+          !(await this.r.scenePersistence.checkpoint({ force: true }))
+        )
+          throw new Error(
+            "Play checkpoint failed. Your scene remains open; free storage or enable site storage, then Retry.",
+          );
+      },
+      quiesce: () => {
+        this.menu.cancelDrag();
+        for (const [c, s] of this.r.controllerStates)
+          if (s.trigger || s.grip || s.primary || s.secondary)
+            this.menu.blocked.add(c);
+      },
+      rollback: async () => {
+        if (this.freePlayScene) await this.enterPlay();
+      },
+      onChange: (state) => {
+        this.navigationStatus = state;
+        this.render(performance.now());
+      },
+    });
+    this.toolbar = document.createElement("nav");
+    this.toolbar.className = "orchestra-utilities";
+    for (const [id, label] of [
+      ["menu-toggle", "Menu"],
+      ["menu-home", "Home"],
+      ["recenter", "Recenter"],
+    ]) {
+      const b = document.createElement("button");
+      b.textContent = label;
+      b.onclick = () => this.action(id);
+      this.toolbar.append(b);
+    }
+    const editor = document.createElement("a");
+    editor.href = "/capture/";
+    editor.target = "_blank";
+    editor.rel = "noopener";
+    editor.textContent = "Open Editor";
+    this.toolbar.append(editor);
+    document.body.append(this.toolbar);
+    this.keydown = (e) => {
+      if (
+        e.key.toLowerCase() === "m" &&
+        !e.repeat &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !e.target.isContentEditable &&
+        !e.target.closest?.('input,textarea,select,[contenteditable="true"]')
+      ) {
+        e.preventDefault();
+        this.menu.toggle();
+      }
+    };
+    document.addEventListener("keydown", this.keydown);
+    for (const c of this.r.controllers)
+      c.addEventListener("disconnected", () => this.menu.disconnect(c));
+    if (this.r.xrSessionActive) this.onXRStart();
+    document.addEventListener("visibilitychange", this.onVisibility);
+    this.render(performance.now());
   }
   accept(event) {
-    if(this.kuch){this.kuch.accept(event);return;}
-    this.session?.accept(event);this.demo?.session.accept(event);
-    if(this.session && ['note','strike'].includes(event.kind)) {
-      this.diagnostics.push({id:event.id,kind:event.kind,role:event.role,origin:event.origin,
-        beat:this.session.anchorMs===null?null:(event.startMs-this.session.anchorMs)/this.session.beatMs,
-        durationBeats:event.durationBeats,midis:event.midis,lane:event.lane,recordedCount:event.recordedCount,
-        voiced:event.voiced,invalidMembers:event.invalidMembers,maxAbsBend:event.maxAbsBend});
-      if(this.diagnostics.length>256)this.diagnostics.shift();
-    }
-  }
-  observeStrike(event,context,recordedCount) {if(this.session||this.kuch)this.adapter.observeStrike(event,context,recordedCount);}
-  onPreview(preview,entry,controller) {if(this.session)this.adapter.bindPreview(preview,entry,controller);}
-  onPlaced(instruments,preview) {if(this.session)this.adapter.placed(instruments,preview);}
-  onSpawnCancelled() {this.adapter.snapshotAt=-Infinity;this.lastDraw=-Infinity;}
-  async action(id,controller=null) {
-    if(this.busy||this.disposed)return;
-    if(this.jogRecording){await this.jogRecording.action(id.replace('jog-record-',''));this.render(performance.now());return;}
-    if(id==='record-jog'&&!this.session&&!this.kuch){await this.enterJogRecording();return;}
-    if(this.kuch){
-      try{await this.kuch.action(id);}catch(error){this.kuch?.cancel(error.message);}
-      this.render(performance.now());return;
-    }
-    if(this.session){
-      // No hidden Spawn, Prepare, connection or backing-generation routes.
-      if(!LESSON_CONTROL_IDS.includes(id))return;
-      if(id==='exit'){await this.enterPlay();return;}
-      if(id==='recenter'){this.panel.recenter(this.r.getUserCamera(),true);return;}
-      try{
-        if(this.session.mode==='simulation'){
-          if(id==='step-demo'&&!this.session.complete){
-            if(this.conductor?.paused)this.conductor.resume(performance.now());else this.conductor?.pause();
-          }
-        }else await this.flow.action(id);
-      }catch(error){this.flow.fail(error.message);}
-      this.render(performance.now());return;
-    }
-    if(id==='tutorial'){this.screen='tutorial';this.render(performance.now());return;}
-    if(id==='jog'||id==='kuch'){this.screen=id;this.uiFeedback='';this.render(performance.now());return;}
-    if(id==='kuch-practice'||id==='kuch-simulate'){
-      try{await this.r.audioSystem.ensureAudio();await this.enterKuch(id==='kuch-simulate');}
-      catch(error){this.uiFeedback=error.message;this.render(performance.now());}
+    if (this.dataTutorial) {
+      this.dataTutorial.accept(event);
       return;
     }
-    if(id==='back'){this.screen='launch';this.render(performance.now());return;}
-    if(id==='play'){await this.enterPlay();return;}
-    if(id==='practice'||id==='simulate'){
-      try{await this.r.audioSystem.ensureAudio();await this.enter(id==='simulate'?'simulation':'practice');}
-      catch(error){this.uiFeedback=error.message;this.render(performance.now());}
+    if (this.basics) {
+      this.basics.accept(event);
+      return;
+    }
+    if (this.kuch) {
+      this.kuch.accept(event);
+      return;
+    }
+    this.session?.accept(event);
+    this.demo?.session.accept(event);
+    if (this.session && ["note", "strike"].includes(event.kind)) {
+      this.diagnostics.push({
+        id: event.id,
+        kind: event.kind,
+        role: event.role,
+        origin: event.origin,
+        beat:
+          this.session.anchorMs === null
+            ? null
+            : (event.startMs - this.session.anchorMs) / this.session.beatMs,
+        durationBeats: event.durationBeats,
+        midis: event.midis,
+        lane: event.lane,
+        recordedCount: event.recordedCount,
+        voiced: event.voiced,
+        invalidMembers: event.invalidMembers,
+        maxAbsBend: event.maxAbsBend,
+      });
+      if (this.diagnostics.length > 256) this.diagnostics.shift();
     }
   }
-  async enterJogRecording() {
+  observeStrike(event, context, recordedCount) {
+    if (this.session || this.kuch || this.basics || this.dataTutorial)
+      this.adapter.observeStrike(event, context, recordedCount);
+  }
+  onPreview(preview, entry, controller) {
+    if (this.session) this.adapter.bindPreview(preview, entry, controller);
+  }
+  onPlaced(instruments, preview) {
+    this.basics?.placed(instruments);
+    if (this.session) this.adapter.placed(instruments, preview);
+  }
+  onSpawnCancelled() {
+    this.adapter.snapshotAt = -Infinity;
+    this.lastDraw = -Infinity;
+  }
+  async action(id, controller = null) {
+    if (this.disposed) return;
+    if (id === "menu-toggle") {
+      this.menu.toggle();
+      return;
+    }
+    if (id === "menu-home") {
+      this.navigationScreen = "launch";
+      this.menu.setVisible(true);
+      this.render(performance.now());
+      return;
+    }
+    if (id === "recenter") {
+      this.menu.recenter(this.r.getUserCamera());
+      return;
+    }
+    if (
+      [
+        "tutorial",
+        "tutorials",
+        "record-songs",
+        "back",
+        "library-prev",
+        "library-next",
+      ].includes(id)
+    ) {
+      if (id === "back") this.navigationScreen = "launch";
+      else if (id === "library-prev") this.libraryPage--;
+      else if (id === "library-next") this.libraryPage++;
+      else {
+        this.navigationScreen =
+          id === "record-songs" ? "record-songs" : "tutorials";
+        this.libraryPage = 0;
+      }
+      this.render(performance.now());
+      return;
+    }
+    if (id === "resume-mode") {
+      this.navigationScreen = null;
+      this.render(performance.now());
+      return;
+    }
+    if (id === "retry-load" && this.lastSelection)
+      return this.selectComposition(...this.lastSelection);
+    if (id.startsWith("composition:"))
+      return this.selectComposition(id.slice(12), this.navigationScreen);
+    if (id === "basics") return this.selectComposition("basics", "tutorials");
+    if (["play", "exit", "jog-record-exit"].includes(id) && this.router) {
+      if (
+        id === "exit" &&
+        this.basics?.step.id === "finish" &&
+        this.basics.practicing
+      ) {
+        this.basics.outcomes.finish = "passed";
+        this.basics.persist();
+      }
+      try {
+        await this.router.enter(
+          "play",
+          async () => null,
+          () => this.enterPlay(),
+        );
+        this.navigationScreen = null;
+      } catch (error) {
+        this.uiFeedback = error.message;
+      }
+      this.render(performance.now());
+      return;
+    }
+    if (this.busy) return;
+    if (this.dataTutorial) {
+      await this.dataTutorial.action(id);
+      this.render(performance.now());
+      return;
+    }
+    if (this.basics) {
+      await this.basics.action(id);
+      this.render(performance.now());
+      return;
+    }
+    if (this.jogRecording) {
+      await this.jogRecording.action(id.replace("jog-record-", ""));
+      this.render(performance.now());
+      return;
+    }
+    if (id === "record-jog" && !this.session && !this.kuch) {
+      await this.selectComposition("virag-2-jog-study", "record-songs");
+      return;
+    }
+    if (this.kuch) {
+      try {
+        await this.kuch.action(id);
+      } catch (error) {
+        this.kuch?.cancel(error.message);
+      }
+      this.render(performance.now());
+      return;
+    }
+    if (this.session) {
+      // No hidden Spawn, Prepare, connection or backing-generation routes.
+      if (!LESSON_CONTROL_IDS.includes(id)) return;
+      if (id === "exit") {
+        await this.enterPlay();
+        return;
+      }
+      if (id === "recenter") {
+        this.panel.recenter(this.r.getUserCamera(), true);
+        return;
+      }
+      try {
+        if (this.session.mode === "simulation") {
+          if (id === "step-demo" && !this.session.complete) {
+            if (this.conductor?.paused)
+              this.conductor.resume(performance.now());
+            else this.conductor?.pause();
+          }
+        } else await this.flow.action(id);
+      } catch (error) {
+        this.flow.fail(error.message);
+      }
+      this.render(performance.now());
+      return;
+    }
+    if (id === "tutorial") {
+      this.screen = "tutorial";
+      this.render(performance.now());
+      return;
+    }
+    if (id === "jog" || id === "kuch") {
+      this.screen = id;
+      this.uiFeedback = "";
+      this.render(performance.now());
+      return;
+    }
+    if (id === "kuch-practice" || id === "kuch-simulate") {
+      try {
+        await this.r.audioSystem.ensureAudio();
+        await this.enterKuch(id === "kuch-simulate");
+      } catch (error) {
+        this.uiFeedback = error.message;
+        this.render(performance.now());
+      }
+      return;
+    }
+    if (id === "back") {
+      this.screen = "launch";
+      this.render(performance.now());
+      return;
+    }
+    if (id === "play") {
+      await this.enterPlay();
+      return;
+    }
+    if (id === "practice" || id === "simulate") {
+      try {
+        await this.r.audioSystem.ensureAudio();
+        await this.enter(id === "simulate" ? "simulation" : "practice");
+      } catch (error) {
+        this.uiFeedback = error.message;
+        this.render(performance.now());
+      }
+    }
+  }
+  async selectComposition(id, library) {
+    this.lastSelection = [id, library];
     try {
-      const ensemble=new JogEnsemble(this);
-      const mode=new JogRecordingSession({recorder:this.r.capture,ensemble,
-        ensureAudio:()=>this.r.audioSystem.ensureAudio(),
-        trackingReady:()=>Boolean(this.r.xrSessionActive&&this.r.renderer.xr.getReferenceSpace()&&performance.now()-(this.lastTrackedFrame??-Infinity)<250),
-        onChange:()=>this.render(performance.now()),
-        onExit:async()=>{this.jogRecording.restoring=true;try{await this.enterPlay();this.jogRecording=null;this.render(performance.now());}finally{mode.restoring=false;}},
+      await this.router.enter(
+        `${library}:${id}`,
+        (signal) =>
+          id === "basics"
+            ? Promise.resolve(null)
+            : this.catalog.load(id, { signal }),
+        async (module) => {
+          if (
+            this.session ||
+            this.kuch ||
+            this.basics ||
+            this.dataTutorial ||
+            this.jogRecording
+          )
+            await this.enterPlay();
+          await this.r.audioSystem.ensureAudio();
+          this.navigationScreen = null;
+          if (id === "basics") {
+            this.freePlayScene ??= this.r.sceneSerializer.serialize();
+            this.adapter.clear();
+            this.adapter.begin("learner");
+            this.basics = new BasicsTutorial(this);
+            this.r.sessionMode = "basics";
+          } else if (library === "record-songs")
+            await this.enterSongRecording(module);
+          else await module.enterTutorial(this);
+        },
+      );
+    } catch (error) {
+      this.uiFeedback = error.message;
+      this.navigationScreen = library;
+    }
+    this.render(performance.now());
+  }
+  async enterJogRecording() {
+    return this.selectComposition("virag-2-jog-study", "record-songs");
+  }
+  async enterSongRecording(module) {
+    try {
+      const ensemble = module.createEnsemble(this);
+      const mode = new SongRecordingSession({
+        composition: module.definition,
+        createGuidance: module.createGuidance,
+        recorder: this.r.capture,
+        ensemble,
+        ensureAudio: () => this.r.audioSystem.ensureAudio(),
+        trackingReady: () =>
+          Boolean(
+            this.r.xrSessionActive &&
+              this.r.renderer.xr.getReferenceSpace() &&
+              performance.now() - (this.lastTrackedFrame ?? -Infinity) < 250,
+          ),
+        onChange: () => this.render(performance.now()),
+        onExit: async () => {
+          this.jogRecording.restoring = true;
+          try {
+            ensemble.dispose?.();
+            await this.enterPlay();
+            this.jogRecording = null;
+            this.render(performance.now());
+          } finally {
+            mode.restoring = false;
+          }
+        },
       });
-      this.freePlayScene??=this.r.sceneSerializer.serialize();
-      this.jogRecording=mode;this.r.sessionMode='jog-recording';
-      this.placeRecordingPanel();this.render(performance.now());
-      await mode.action('prepare');
-    }catch(error){this.uiFeedback=error.message;this.render(performance.now());}
+      this.freePlayScene ??= this.r.sceneSerializer.serialize();
+      this.jogRecording = mode;
+      this.r.sessionMode = "song-recording";
+      this.render(performance.now());
+      await mode.action("prepare");
+    } catch (error) {
+      this.uiFeedback = error.message;
+      this.render(performance.now());
+    }
   }
   placeRecordingPanel() {
-    const camera=this.r.getUserCamera(),position=new THREE.Vector3(),rotation=new THREE.Quaternion();
-    camera.getWorldPosition(position);camera.getWorldQuaternion(rotation);
-    const right=new THREE.Vector3(1,0,0).applyQuaternion(rotation);right.y=0;right.normalize();
-    this.panel.recenter(camera,true);this.panel.group.position.addScaledVector(right,-.45);
-    this.panel.group.lookAt(position.x,this.panel.group.position.y,position.z);this.panel.group.updateMatrixWorld(true);
+    const camera = this.r.getUserCamera(),
+      position = new THREE.Vector3(),
+      rotation = new THREE.Quaternion();
+    camera.getWorldPosition(position);
+    camera.getWorldQuaternion(rotation);
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(rotation);
+    right.y = 0;
+    right.normalize();
+    this.panel.recenter(camera, true);
+    this.panel.group.position.addScaledVector(right, -0.45);
+    this.panel.group.lookAt(
+      position.x,
+      this.panel.group.position.y,
+      position.z,
+    );
+    this.panel.group.updateMatrixWorld(true);
   }
-  observeXRFrame(now,frame) {
-    const reference=this.r.renderer.xr.getReferenceSpace();
-    if(frame&&reference&&frame.getViewerPose(reference))this.lastTrackedFrame=now;
-    else if(this.r.xrSessionActive){this.lastTrackedFrame=null;this.jogRecording?.interrupt('tracking-lost');}
+  observeXRFrame(now, frame) {
+    const reference = this.r.renderer.xr.getReferenceSpace();
+    if (frame && reference && frame.getViewerPose(reference))
+      this.lastTrackedFrame = now;
+    else if (this.r.xrSessionActive) {
+      this.lastTrackedFrame = null;
+      this.jogRecording?.interrupt("tracking-lost");
+    }
   }
   async enter(mode) {
+    this.navigationScreen = null;
     this.flow.cancelOutgoing();
-    this.busy=true;this.r.sessionMode='transition';
+    this.busy = true;
+    this.r.sessionMode = "transition";
     try {
-      if(!this.freePlayScene)this.freePlayScene=this.r.sceneSerializer.serialize();
-      if(this.session?.mode==='practice')this.practiceProgress=this.session.exportProgress();
-      if(this.session?.mode==='simulation')this.simulationProgress=this.session.exportProgress();
-      this.conductor?.stop();this.stopDemo();this.adapter.clear();
-      this.session=new TutorialSession({mode,now:performance.now()});this.r.sessionMode=mode;
-      this.screen='lesson';this.uiFeedback='';this.diagnostics=[];this.report=null;
-      this.r.hideInstructionPanel();this.r.instructionPanelClosed=true;this.adapter.begin(this.session.origin);
-      this.conductor=mode==='simulation'?new CompositionConductor(this.adapter,this.session):null;
-      this.panel.recenter(this.r.getUserCamera(),true);
+      if (!this.freePlayScene)
+        this.freePlayScene = this.r.sceneSerializer.serialize();
+      if (this.session?.mode === "practice")
+        this.practiceProgress = this.session.exportProgress();
+      if (this.session?.mode === "simulation")
+        this.simulationProgress = this.session.exportProgress();
+      this.conductor?.stop();
+      this.stopDemo();
+      this.adapter.clear();
+      this.session = new TutorialSession({ mode, now: performance.now() });
+      this.r.sessionMode = mode;
+      const progress =
+        mode === "practice" && this.learningProgress.load(C.id, C.version);
+      if (progress?.index >= 0 && progress.index < this.session.steps.length) {
+        this.session.index = progress.index;
+        this.session.outcomes = new Map(
+          Object.entries(progress.progress?.outcomes || {}),
+        );
+        this.session.demonstrated = new Set(
+          progress.progress?.demonstrated || [],
+        );
+        this.session.phrasesPassed = progress.progress?.phrasesPassed || [];
+      }
+      this.screen = "lesson";
+      this.uiFeedback = "";
+      this.diagnostics = [];
+      this.report = null;
+      this.r.hideInstructionPanel();
+      this.r.instructionPanelClosed = true;
+      this.adapter.begin(this.session.origin);
+      this.conductor =
+        mode === "simulation"
+          ? new CompositionConductor(this.adapter, this.session)
+          : null;
       this.render(performance.now());
-    } finally {this.busy=false;}
+    } finally {
+      this.busy = false;
+    }
   }
-  async enterKuch(simulate=false) {
-    this.flow.cancelOutgoing();this.busy=true;this.r.sessionMode='transition';
-    try{
-      if(!this.freePlayScene)this.freePlayScene=this.r.sceneSerializer.serialize();
-      this.conductor?.stop();this.conductor=null;this.stopDemo();this.adapter.clear();this.session=null;
-      this.kuch=new KuchTutorial(this);this.r.sessionMode=simulate?'simulation':'practice';
-      this.kuch.setup();this.screen='lesson';this.uiFeedback='';this.panel.recenter(this.r.getUserCamera(),true);
-      if(simulate)this.kuch.start(this.kuch.step,false,{full:true});
+  async enterKuch(simulate = false, KuchTutorialClass = null) {
+    this.navigationScreen = null;
+    KuchTutorialClass ||= (await import("./kuch/KuchTutorial.js")).KuchTutorial;
+    this.flow.cancelOutgoing();
+    this.busy = true;
+    this.r.sessionMode = "transition";
+    try {
+      if (!this.freePlayScene)
+        this.freePlayScene = this.r.sceneSerializer.serialize();
+      this.conductor?.stop();
+      this.conductor = null;
+      this.stopDemo();
+      this.adapter.clear();
+      this.session = null;
+      this.kuch = new KuchTutorialClass(this);
+      this.r.sessionMode = simulate ? "simulation" : "practice";
+      this.kuch.setup();
+      const progress = this.learningProgress.load("kuch-to-hua-hai", 1);
+      if (progress) {
+        this.kuch.index = Math.min(8, progress.index || 0);
+        this.kuch.results = progress.results || {};
+      }
+      this.screen = "lesson";
+      this.uiFeedback = "";
+      if (simulate) this.kuch.start(this.kuch.step, false, { full: true });
       this.render(performance.now());
-    }catch(error){this.kuch?.dispose();this.kuch=null;await this.enterPlay();throw error;}
-    finally{this.busy=false;}
+    } catch (error) {
+      this.kuch?.dispose();
+      this.kuch = null;
+      await this.enterPlay();
+      throw error;
+    } finally {
+      this.busy = false;
+    }
   }
   async enterPlay() {
-    if(this.jogRecording&&!this.jogRecording.restoring)return this.jogRecording.action('exit');
+    if (this.jogRecording && !this.jogRecording.restoring) {
+      const mode = this.jogRecording;
+      await mode.transition;
+      if (mode.disposed) return;
+      await mode.action("exit");
+      if (!mode.disposed)
+        throw new Error(
+          mode.feedback || "Recording finalization is still pending.",
+        );
+      return;
+    }
     this.flow.cancelOutgoing();
-    this.kuch?.dispose();this.kuch=null;
-    const firstPlay=!this.freePlayScene&&!this.session;
-    this.busy=true;this.r.sessionMode='transition';
+    await this.basics?.cancelDemo();
+    this.dataTutorial?.dispose();
+    this.dataTutorial = null;
+    this.basics?.dispose();
+    this.basics = null;
+    this.kuch?.dispose();
+    this.kuch = null;
+    const firstPlay = !this.freePlayScene && !this.session;
+    this.busy = true;
+    this.r.sessionMode = "transition";
     try {
-      this.conductor?.stop();this.conductor=null;this.stopDemo();
-      if(this.session?.mode==='practice')this.practiceProgress=this.session.exportProgress();
-      if(this.session?.mode==='simulation')this.simulationProgress=this.session.exportProgress();
-      this.session=null;
-      if(this.freePlayScene) {
+      this.conductor?.stop();
+      this.conductor = null;
+      this.stopDemo();
+      if (this.session?.mode === "practice")
+        this.practiceProgress = this.session.exportProgress();
+      if (this.session?.mode === "simulation")
+        this.simulationProgress = this.session.exportProgress();
+      this.session = null;
+      if (this.freePlayScene) {
         this.adapter.clear();
-        const restored=await this.r.sceneRestorer.restore(this.freePlayScene);
-        if(restored.skipped.length) {
-          this.recoveryScene=structuredClone(this.freePlayScene);
-          this.r.scenePersistence.restoreReport=restored;
-          this.r.showRuntimeFeedback(`Scene recovery: ${restored.skipped.length} skipped objects, ${restored.skippedConnections?.length || 0} affected clock connections. Original preserved.`);
+        const restored = await this.r.sceneRestorer.restore(this.freePlayScene);
+        if (restored.skipped.length) {
+          this.recoveryScene = structuredClone(this.freePlayScene);
+          this.r.scenePersistence.restoreReport = restored;
+          this.r.showRuntimeFeedback(
+            `Scene recovery: ${restored.skipped.length} skipped objects, ${restored.skippedConnections?.length || 0} affected clock connections. Original preserved.`,
+          );
         }
-        this.freePlayScene=null;
+        this.freePlayScene = null;
       }
-      if(firstPlay&&this.r.xrSessionActive)this.r.spawnDefaultInstrumentPreview();
-      this.r.sessionMode='play';this.screen='play';this.r.instructionPanelClosed=true;this.r.hideInstructionPanel();
-      this.panel.recenter(this.r.getUserCamera());this.render(performance.now());
-    } catch(error) {this.uiFeedback=error.message;this.render(performance.now());throw error;}
-    finally {this.busy=false;}
+
+      this.r.sessionMode = "play";
+      if (this.router) this.router.identity = "play";
+      this.screen = "play";
+      this.r.instructionPanelClosed = true;
+      this.r.hideInstructionPanel();
+      this.navigationScreen = null;
+      this.render(performance.now());
+    } catch (error) {
+      this.uiFeedback = error.message;
+      this.render(performance.now());
+      throw error;
+    } finally {
+      this.busy = false;
+    }
   }
   retry(now) {
-    if(this.session?.mode==='practice'){this.flow.practice();return;}
-    this.stopDemo();this.adapter.releaseAll();
-    const step=this.session?.step;
-    if(!step)return;
-    const recording=['record','finalize'].includes(step.type);
-    this.session.retry(now,{recording});
-    if(['performance','phrase'].includes(step.type) && !this.adapter.get('metronome')?.playing) this.adapter.command('tempo',now,this.session.origin);
-    if(this.conductor){this.conductor.stepId=null;this.conductor.lastNow=now;this.conductor.paused=false;}
-    this.uiFeedback='';this.adapter.snapshotAt=-Infinity;
+    if (this.session?.mode === "practice") {
+      this.flow.practice();
+      return;
+    }
+    this.stopDemo();
+    this.adapter.releaseAll();
+    const step = this.session?.step;
+    if (!step) return;
+    const recording = ["record", "finalize"].includes(step.type);
+    this.session.retry(now, { recording });
+    if (
+      ["performance", "phrase"].includes(step.type) &&
+      !this.adapter.get("metronome")?.playing
+    )
+      this.adapter.command("tempo", now, this.session.origin);
+    if (this.conductor) {
+      this.conductor.stepId = null;
+      this.conductor.lastNow = now;
+      this.conductor.paused = false;
+    }
+    this.uiFeedback = "";
+    this.adapter.snapshotAt = -Infinity;
   }
   demonstrate(now) {
     return this.flow.demonstrate();
@@ -188,182 +655,735 @@ export class TutorialRuntime {
     this.flow.stopDemo(false);
   }
   beforeFrame(now) {
-    if(!this.ready||this.busy||this.disposed)return;
-    if(this.jogRecording){if(this.pendingXRPlacementFrames>0){this.placeRecordingPanel();this.pendingXRPlacementFrames--;}this.jogRecording.update(now);return;}
-    if(this.kuch){
-      if(this.pendingXRPlacementFrames>0){this.panel.recenter(this.r.getUserCamera(),true);this.pendingXRPlacementFrames--;}
-      try{this.kuch.update(now);}catch(error){this.kuch.cancel(error.message);console.error('Kuch tutorial:',error);}
+    this.menu?.update();
+    if (!this.ready || this.busy || this.disposed) return;
+    if (this.dataTutorial) {
+      this.dataTutorial.update(now);
       return;
     }
-    if(this.pendingXRPlacementFrames>0) {this.panel.recenter(this.r.getUserCamera(),Boolean(this.session));this.pendingXRPlacementFrames--;}
-    if(this.demo&&!this.flow.demoOwnsTakes(this.demo))this.flow.stopDemo(false,'Example stopped because an instrument changed. Your current take is kept.');
-    try {this.conductor?.update(now);this.demo?.conductor.update(now);}
-    catch(error){this.flow.fail(error.message);if(this.session?.mode==='simulation'){this.session.reject(error.message);this.conductor?.pause(error.message);}this.adapter.releaseVirtuals();console.error('Tutorial conductor:',error);}
+    if (this.basics) {
+      this.basics.update(now);
+      return;
+    }
+    if (this.jogRecording) {
+      if (this.pendingXRPlacementFrames > 0) {
+        this.placeRecordingPanel();
+        this.pendingXRPlacementFrames--;
+      }
+      this.jogRecording.update(now);
+      return;
+    }
+    if (this.kuch) {
+      if (this.pendingXRPlacementFrames > 0) {
+        this.panel.recenter(this.r.getUserCamera(), true);
+        this.pendingXRPlacementFrames--;
+      }
+      try {
+        this.kuch.update(now);
+      } catch (error) {
+        this.kuch.cancel(error.message);
+        console.error("Kuch tutorial:", error);
+      }
+      return;
+    }
+    if (this.pendingXRPlacementFrames > 0) {
+      this.panel.recenter(this.r.getUserCamera(), Boolean(this.session));
+      this.pendingXRPlacementFrames--;
+    }
+    if (this.demo && !this.flow.demoOwnsTakes(this.demo))
+      this.flow.stopDemo(
+        false,
+        "Example stopped because an instrument changed. Your current take is kept.",
+      );
+    try {
+      this.conductor?.update(now);
+      this.demo?.conductor.update(now);
+    } catch (error) {
+      this.flow.fail(error.message);
+      if (this.session?.mode === "simulation") {
+        this.session.reject(error.message);
+        this.conductor?.pause(error.message);
+      }
+      this.adapter.releaseVirtuals();
+      console.error("Tutorial conductor:", error);
+    }
     // The score's final rest stops backing; the attempt retains release grace.
-    if(this.session?.step?.type==='performance'&&this.session.anchorMs!==null && now>=this.session.anchorMs+95*this.session.beatMs && !this.session.failed&&!this.session.finalRestApplied&&(this.session.mode!=='practice'||this.session.phase==='practicing')) {
-      this.adapter.stopSound();this.session.finalRestApplied=true;
+    if (
+      this.session?.step?.type === "performance" &&
+      this.session.anchorMs !== null &&
+      now >= this.session.anchorMs + 95 * this.session.beatMs &&
+      !this.session.failed &&
+      !this.session.finalRestApplied &&
+      (this.session.mode !== "practice" || this.session.phase === "practicing")
+    ) {
+      this.adapter.stopSound();
+      this.session.finalRestApplied = true;
     }
   }
   afterFrame(now) {
-    if(!this.ready||this.busy||this.disposed)return;
-    if(this.jogRecording){
+    if (now - (this.progressSavedAt || 0) > 1500) {
+      this.progressSavedAt = now;
+      if (this.session?.mode === "practice")
+        this.learningProgress.save(C.id, C.version, {
+          index: this.session.index,
+          progress: this.session.exportProgress(),
+        });
+      if (this.kuch)
+        this.learningProgress.save("kuch-to-hua-hai", 1, {
+          index: this.kuch.index,
+          results: this.kuch.results,
+        });
+    }
+    if (this.dataTutorial) {
       this.adapter.observe(now);
-      const guide=this.jogRecording.guidance(now);
-      this.cues.update(guide,now,{active:Boolean(guide&&!guide.complete(now))});
-      if(now-this.lastDraw>=50){this.render(now);this.lastDraw=now;}
-      if(this.panel.xr){const hit=this.r.controllers.filter(c=>!c.userData.virtualTutorial).map(c=>this.panelHit(c)).find(h=>h?.object.userData.action);this.panel.hover(hit?.object);}
+      this.cues.update(
+        this.dataTutorial.phase ? this.dataTutorial.guide : null,
+        now,
+      );
+      if (now - this.lastDraw > 100) {
+        this.render(now);
+        this.lastDraw = now;
+      }
       return;
     }
-    if(this.kuch){
-      this.kuch.afterFrame(now);this.panel.animate?.(now);
-      if(now-this.lastDraw>=100){this.render(now);this.lastDraw=now;}
-      if(this.panel.xr){const hit=this.r.controllers.filter(c=>!c.userData.virtualTutorial).map(c=>this.panelHit(c)).find(h=>h?.object.userData.action);this.panel.hover(hit?.object);}
+    if (this.basics) {
+      this.adapter.observe(now);
+      if (now - this.lastDraw > 100) {
+        this.render(now);
+        this.lastDraw = now;
+      }
       return;
     }
-    if(this.session) {
-      this.adapter.observe(now);const snapshot=this.adapter.snapshot(now);
-      if(this.session.mode==='simulation')Object.assign(this.adapter.takeEvidence,this.session.takeEvidence);
-      if(snapshot.aligned) this.alignmentEvidence={atMs:now,loopers:snapshot.loopers.chordLooper.startBeat,phaseDifference:Math.abs(snapshot.loopers.chordLooper.phase-snapshot.loopers.percussionLooper.phase)};
-      if(this.demo) {
-        this.demo.session.update(snapshot,now);
-        const ds=this.demo.session,limit=ds.step?.timed?(ds.step.beats+24)*ds.beatMs+5000:ds.step?.type==='switch'?90000:['playback','start-all'].includes(ds.step?.type)?30000:10000;
-        if(ds.complete||ds.failed||this.demo.conductor.paused)this.flow.stopDemo(ds.complete,ds.failed||this.demo.conductor.paused?ds.feedback:'');
-        else if(now-ds.enteredAt>limit)this.flow.stopDemo(false,`${ds.step.title} could not complete. Check the instruments, then press Demonstrate again.`);
-      } else if(!this.conductor?.paused) {
-        const previous=this.session.step?.id;
-        const previousPhase=this.session.phase;
-        this.session.update(snapshot,now);
-        if(this.session.pendingAssessment){
-          const {reason}=this.session.pendingAssessment;
-          this.session.finishAttempt(snapshot,now,reason);
+    if (!this.ready || this.busy || this.disposed) return;
+    if (this.jogRecording) {
+      this.adapter.observe(now);
+      const guide = this.jogRecording.guidance(now);
+      this.cues.update(guide, now, {
+        active: Boolean(guide && !guide.complete(now)),
+      });
+      if (now - this.lastDraw >= 50) {
+        this.render(now);
+        this.lastDraw = now;
+      }
+      if (this.panel.xr) {
+        const hit = this.r.controllers
+          .filter((c) => !c.userData.virtualTutorial)
+          .map((c) => this.panelHit(c))
+          .find((h) => h?.object.userData.action);
+        this.panel.hover(hit?.object);
+      }
+      return;
+    }
+    if (this.kuch) {
+      this.kuch.afterFrame(now);
+      this.panel.animate?.(now);
+      if (now - this.lastDraw >= 100) {
+        this.render(now);
+        this.lastDraw = now;
+      }
+      if (this.panel.xr) {
+        const hit = this.r.controllers
+          .filter((c) => !c.userData.virtualTutorial)
+          .map((c) => this.panelHit(c))
+          .find((h) => h?.object.userData.action);
+        this.panel.hover(hit?.object);
+      }
+      return;
+    }
+    if (this.session) {
+      this.adapter.observe(now);
+      const snapshot = this.adapter.snapshot(now);
+      if (this.session.mode === "simulation")
+        Object.assign(this.adapter.takeEvidence, this.session.takeEvidence);
+      if (snapshot.aligned)
+        this.alignmentEvidence = {
+          atMs: now,
+          loopers: snapshot.loopers.chordLooper.startBeat,
+          phaseDifference: Math.abs(
+            snapshot.loopers.chordLooper.phase -
+              snapshot.loopers.percussionLooper.phase,
+          ),
+        };
+      if (this.demo) {
+        this.demo.session.update(snapshot, now);
+        const ds = this.demo.session,
+          limit = ds.step?.timed
+            ? (ds.step.beats + 24) * ds.beatMs + 5000
+            : ds.step?.type === "switch"
+              ? 90000
+              : ["playback", "start-all"].includes(ds.step?.type)
+                ? 30000
+                : 10000;
+        if (ds.complete || ds.failed || this.demo.conductor.paused)
+          this.flow.stopDemo(
+            ds.complete,
+            ds.failed || this.demo.conductor.paused ? ds.feedback : "",
+          );
+        else if (now - ds.enteredAt > limit)
+          this.flow.stopDemo(
+            false,
+            `${ds.step.title} could not complete. Check the instruments, then press Demonstrate again.`,
+          );
+      } else if (!this.conductor?.paused) {
+        const previous = this.session.step?.id;
+        const previousPhase = this.session.phase;
+        this.session.update(snapshot, now);
+        if (this.session.pendingAssessment) {
+          const { reason } = this.session.pendingAssessment;
+          this.session.finishAttempt(snapshot, now, reason);
         }
-        if(previousPhase!=='results'&&this.session.phase==='results')this.flow.finishPractice();
-        if(this.session.step?.id!==previous) {
-          this.uiFeedback='';this.lastDraw=-Infinity;
-          if(this.session.feedback.startsWith('Repair:')) {this.adapter.releaseAll();this.conductor?.pause(this.session.feedback);}
+        if (previousPhase !== "results" && this.session.phase === "results")
+          this.flow.finishPractice();
+        if (this.session.step?.id !== previous) {
+          this.uiFeedback = "";
+          this.lastDraw = -Infinity;
+          if (this.session.feedback.startsWith("Repair:")) {
+            this.adapter.releaseAll();
+            this.conductor?.pause(this.session.feedback);
+          }
         }
-        if(this.session.complete&&!this.report) {
-          this.conductor?.stop();this.adapter.releaseAll();this.adapter.stopSound();
-          this.report={...this.session.exportProgress(),durationSeconds:this.conductor?this.conductor.elapsedMs/1000:null,
-            takes:this.adapter.takes,liveTakes:this.session.takeEvidence,
-            launches:Object.fromEntries(TUTORIAL_LOOPERS.map(l=>[l.role,[...(this.adapter.get(l.role)?.looperData.launchHistory || [])]])),
-            startAll:this.adapter.startAllRequest,alignment:this.alignmentEvidence,audioState:this.r.audioSystem.audioContextService.context?.state};
-          if(this.session.mode==='practice')this.practiceProgress=this.session.exportProgress();else this.simulationProgress=this.session.exportProgress();
+        if (this.session.complete && !this.report) {
+          this.conductor?.stop();
+          this.adapter.releaseAll();
+          this.adapter.stopSound();
+          this.report = {
+            ...this.session.exportProgress(),
+            durationSeconds: this.conductor
+              ? this.conductor.elapsedMs / 1000
+              : null,
+            takes: this.adapter.takes,
+            liveTakes: this.session.takeEvidence,
+            launches: Object.fromEntries(
+              TUTORIAL_LOOPERS.map((l) => [
+                l.role,
+                [...(this.adapter.get(l.role)?.looperData.launchHistory || [])],
+              ]),
+            ),
+            startAll: this.adapter.startAllRequest,
+            alignment: this.alignmentEvidence,
+            audioState: this.r.audioSystem.audioContextService.context?.state,
+          };
+          if (this.session.mode === "practice")
+            this.practiceProgress = this.session.exportProgress();
+          else this.simulationProgress = this.session.exportProgress();
         }
       }
     }
-    this.adapter.focusRing.visible=false;
-    this.cues.update(this.demo?.session||this.session,now,{active:!this.conductor?.paused&&(Boolean(this.demo)||this.session?.phase!=='results')});
+    this.adapter.focusRing.visible = false;
+    this.cues.update(this.demo?.session || this.session, now, {
+      active:
+        !this.conductor?.paused &&
+        (Boolean(this.demo) || this.session?.phase !== "results"),
+    });
     this.panel.animate?.(now);
-    if(now-this.lastDraw>=100&&(this.session||this.lastPendingPreview!==this.r.pendingSpawnPlacement)){
-      this.render(now);this.lastDraw=now;this.lastPendingPreview=this.r.pendingSpawnPlacement;
+    if (
+      now - this.lastDraw >= 100 &&
+      (this.session || this.lastPendingPreview !== this.r.pendingSpawnPlacement)
+    ) {
+      this.render(now);
+      this.lastDraw = now;
+      this.lastPendingPreview = this.r.pendingSpawnPlacement;
     }
-    if(this.panel.xr) {
-      const hit=this.r.controllers.filter(c=>!c.userData.virtualTutorial).map(c=>this.panelHit(c)).find(hit=>hit?.object.userData.action);
+    if (this.panel.xr) {
+      const hit = this.r.controllers
+        .filter((c) => !c.userData.virtualTutorial)
+        .map((c) => this.panelHit(c))
+        .find((hit) => hit?.object.userData.action);
       this.panel.hover(hit?.object);
     }
   }
-  blocksController(controller) {return Boolean(this.busy || ((this.session?.mode==='simulation'||this.demo||this.kuch?.demonstrating)&&!controller.userData.virtualTutorial));}
-  panelHit(controller) {
-    if(!this.panel?.group.visible)return null;
-    controller.getWorldPosition(this.position);controller.getWorldQuaternion(this.quaternion);
-    this.ray.set(this.position,this.rayDirection.set(0,0,-1).applyQuaternion(this.quaternion));return this.panel.hit(this.ray);
+  blocksController(controller) {
+    return Boolean(
+      this.busy ||
+        this.menu?.blocked.has(controller) ||
+        ((this.session?.mode === "simulation" ||
+          this.demo ||
+          this.kuch?.demonstrating ||
+          this.basics?.demo ||
+          this.dataTutorial?.phase === "demo") &&
+          !controller.userData.virtualTutorial),
+    );
   }
-  nearestPanelHit(controller,instrumentHit) {
-    const hit=this.panelHit(controller);
-    return hit && (!instrumentHit||hit.distance<=instrumentHit.distance) ? hit : null;
+  panelHit(controller) {
+    if (!this.panel?.group.visible) return null;
+    controller.getWorldPosition(this.position);
+    controller.getWorldQuaternion(this.quaternion);
+    this.ray.set(
+      this.position,
+      this.rayDirection.set(0, 0, -1).applyQuaternion(this.quaternion),
+    );
+    return this.panel.hit(this.ray);
+  }
+  nearestPanelHit(controller, instrumentHit) {
+    const hit = this.panelHit(controller);
+    return hit && (!instrumentHit || hit.distance <= instrumentHit.distance)
+      ? hit
+      : null;
   }
   capturePanelTrigger(controller) {
-    const hit=this.nearestPanelHit(controller,this.r.raycastSystem.getCurrentHit(controller));
-    if(!hit)return false;
-    const state=this.r.controllerStates.get(controller);this.r.clearControllerTriggerInteraction(state);
-    state.tutorialPanelCapture=true;state.suppressTriggerUntilRelease=true;
-    if(hit.object.userData.action&&!hit.object.userData.disabled)this.action(hit.object.userData.action,controller);
+    const hit = this.nearestPanelHit(
+      controller,
+      this.r.raycastSystem.getCurrentHit(controller),
+    );
+    if (!hit) return false;
+    const state = this.r.controllerStates.get(controller);
+    this.r.clearControllerTriggerInteraction(state);
+    state.tutorialPanelCapture = true;
+    state.suppressTriggerUntilRelease = true;
+    if (hit.object.userData.action && !hit.object.userData.disabled)
+      this.action(hit.object.userData.action, controller);
     return true;
   }
   releasePanelTrigger(controller) {
-    const state=this.r.controllerStates.get(controller);
-    if(!state?.tutorialPanelCapture)return false;
-    state.tutorialPanelCapture=false;state.suppressTriggerUntilRelease=false;this.r.releaseRaySqueeze(state);return true;
+    const state = this.r.controllerStates.get(controller);
+    if (!state?.tutorialPanelCapture) return false;
+    state.tutorialPanelCapture = false;
+    state.suppressTriggerUntilRelease = false;
+    this.r.releaseRaySqueeze(state);
+    return true;
   }
-  onXRStart() {this.pendingXRPlacementFrames=4;this.lastTrackedFrame=null;
-    this.jogReference?.removeEventListener('reset',this.jogReset);this.jogReference=this.r.renderer.xr.getReferenceSpace();this.jogReset=()=>this.jogRecording?.interrupt('reference-space-reset');this.jogReference?.addEventListener('reset',this.jogReset);if(this.r.sessionMode==='play')this.r.spawnDefaultInstrumentPreview();this.r.hideInstructionPanel();this.r.instructionPanelClosed=true;this.panel?.setXR(true,this.r.getUserCamera());this.panel?.recenter(this.r.getUserCamera(),Boolean(this.session||this.jogRecording));}
-  onXREnd() {this.pendingXRPlacementFrames=0;this.lastTrackedFrame=null;this.jogRecording?.interrupt('session-end');this.conductor?.stop();this.flow.cancelOutgoing();this.adapter.releaseAll();this.panel?.setXR(false);if(this.session||this.kuch)this.enterPlay().catch(error=>console.error(error));}
+  onXRStart() {
+    this.pendingXRPlacementFrames = 4;
+    this.lastTrackedFrame = null;
+    this.jogReference?.removeEventListener("reset", this.jogReset);
+    this.jogReference = this.r.renderer.xr.getReferenceSpace();
+    this.jogReset = () => {
+      this.menu?.referenceChanged(this.r.getUserCamera());
+      this.jogRecording?.interrupt("reference-space-reset");
+    };
+    this.jogReference?.addEventListener("reset", this.jogReset);
+    this.r.hideInstructionPanel();
+    this.r.instructionPanelClosed = true;
+    this.panel?.setXR(true, this.r.getUserCamera());
+    this.panel?.recenter(
+      this.r.getUserCamera(),
+      Boolean(this.session || this.jogRecording),
+    );
+  }
+  onXREnd() {
+    this.dataTutorial?.cancel();
+    if (this.basics) {
+      this.basics.practicing = false;
+      this.basics.cancelDemo().catch((error) => {
+        this.uiFeedback = error.message;
+      });
+    }
+    this.menu?.cancelDrag();
+    this.pendingXRPlacementFrames = 0;
+    this.lastTrackedFrame = null;
+    this.jogRecording?.interrupt("session-end");
+    this.conductor?.stop();
+    this.flow.cancelOutgoing();
+    this.adapter.releaseAll();
+    this.panel?.setXR(false);
+    if (this.session || this.kuch)
+      this.enterPlay().catch((error) => console.error(error));
+  }
   render(now) {
-    if(!this.panel)return;
-    if(this.jogRecording){
-      if(!this.jogRecording.guidance(now))this.cues.reset();
-      const model=this.jogRecording.model(now);this.panel.setTransport(model.transport);this.panel.render(model);return;
+    if (!this.panel || this.disposed) return;
+    if (this.navigationScreen) {
+      this.renderNavigation();
+      return;
     }
-    if(this.kuch){this.panel.render(this.kuch.model(now));return;}
-    const button=(id,label,disabled=false,extra={})=>({id,label,disabled,...extra});
+    if (this.dataTutorial) {
+      this.panel.render(this.dataTutorial.model(now));
+      return;
+    }
+    if (this.basics) {
+      this.panel.render(this.basics.model());
+      return;
+    }
+    if (this.jogRecording) {
+      if (!this.jogRecording.guidance(now)) this.cues.reset();
+      const model = this.jogRecording.model(now);
+      this.panel.setTransport(model.transport);
+      this.panel.render(model);
+      return;
+    }
+    if (this.kuch) {
+      this.panel.render(this.kuch.model(now));
+      return;
+    }
+    const button = (id, label, disabled = false, extra = {}) => ({
+      id,
+      label,
+      disabled,
+      ...extra,
+    });
     let model;
-    if(!this.session){
-      if(this.screen==='launch')model={title:'Honk Orchestra',instruction:'Play freely, or learn a piece with a guided tutorial.',actions:[button('play','Play'),button('tutorial','Tutorials'),button('record-jog','Record Raag Jog in mixed reality')]};
-      else if(this.screen==='tutorial')model={title:'Choose a study',instruction:'Listen to an example, practice each part, then perform with recorded backing.',actions:[button('jog','Rag Jog Study'),button('kuch','Kuch To Hua Hai'),button('back','Back')]};
-      else if(this.screen==='jog')model={title:C.title,instruction:'Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.',feedback:'Full simulation builds and performs the composition automatically; allow several minutes.',actions:[button('practice','Start Lesson'),button('simulate','Full Simulation'),button('tutorial','All Tutorials')]};
-      else if(this.screen==='kuch')model={title:'Kuch To Hua Hai',instruction:'Learn two chord patterns and a stick groove, then practice the melody in four separate lessons. Finish with All together to play the complete song over separate D and Change pattern loopers sharing one output, with percussion on another. The ensemble is prepared for you.',feedback:'Nine lessons · 92 BPM · 4/4 · Eight-beat verse breaks. Full simulation records the backing, then performs the song once (about two minutes). Your free-play scene returns on Exit.',actions:[button('kuch-practice','Start Lesson'),button('kuch-simulate','Full Simulation'),button('tutorial','All Tutorials')]};
-      else model={title:'Free play',instruction:'Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.',actions:[button('tutorial','Tutorial'),button('record-jog','Record Raag Jog in mixed reality')]};
-      if(this.uiFeedback)model.feedback=this.uiFeedback;
-      this.panel.setTransport('');
-    }else{
-      const s=this.session,simulation=s.mode==='simulation',step=s.step,shown=this.demo?.session||s;
-      const activeDemo=Boolean(this.demo),activePractice=s.phase==='practicing';
-      const snapshot=this.adapter.snapshot(now),setup=step&&setupStatus(step,snapshot);
-      const reason=s.complete?'The study is complete.':simulation?'':this.flow.unavailable();
-      const nextDisabled=simulation||s.complete||Boolean(setup&&!setup.ok);
-      const navigation=[
-        button('previous-step','Previous Step',simulation||s.index===0),
-        button('next-step','Next Step',nextDisabled,{primary:!nextDisabled&&s.phase==='results',reason:setup&&!setup.ok?setup.message:''}),
-        button('step-demo','Demonstrate',s.complete||(!simulation&&!activeDemo&&(activePractice||Boolean(reason))),{active:simulation?!this.conductor?.paused:activeDemo,primary:!reason&&s.phase==='ready'&&!s.demonstrated.has(step?.id),reason:activePractice?'Press Practice to stop the attempt.':reason}),
-        button('step-practice','Practice',simulation||s.complete||(!activePractice&&(activeDemo||Boolean(reason))),{active:activePractice,primary:!reason&&!activeDemo&&(s.phase==='results'||s.demonstrated.has(step?.id)),reason:activeDemo?'Press Demonstrate to stop the example.':reason}),
+    if (!this.session) {
+      if (this.screen === "launch")
+        model = {
+          title: "Honk Orchestra",
+          instruction: "Play freely, or learn a piece with a guided tutorial.",
+          actions: [
+            button("play", "Play"),
+            button("tutorials", "Tutorials"),
+            button("record-songs", "Record Songs"),
+          ],
+        };
+      else if (this.screen === "tutorial")
+        model = {
+          title: "Choose a study",
+          instruction:
+            "Listen to an example, practice each part, then perform with recorded backing.",
+          actions: [
+            button("jog", "Rag Jog Study"),
+            button("kuch", "Kuch To Hua Hai"),
+            button("back", "Back"),
+          ],
+        };
+      else if (this.screen === "jog")
+        model = {
+          title: C.title,
+          instruction:
+            "Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.",
+          feedback:
+            "Full simulation builds and performs the composition automatically; allow several minutes.",
+          actions: [
+            button("practice", "Start Lesson"),
+            button("simulate", "Full Simulation"),
+            button("tutorial", "All Tutorials"),
+          ],
+        };
+      else if (this.screen === "kuch")
+        model = {
+          title: "Kuch To Hua Hai",
+          instruction:
+            "Learn two chord patterns and a stick groove, then practice the melody in four separate lessons. Finish with All together to play the complete song over separate D and Change pattern loopers sharing one output, with percussion on another. The ensemble is prepared for you.",
+          feedback:
+            "Nine lessons · 92 BPM · 4/4 · Eight-beat verse breaks. Full simulation records the backing, then performs the song once (about two minutes). Your free-play scene returns on Exit.",
+          actions: [
+            button("kuch-practice", "Start Lesson"),
+            button("kuch-simulate", "Full Simulation"),
+            button("tutorial", "All Tutorials"),
+          ],
+        };
+      else
+        model = {
+          title: "Free play",
+          instruction:
+            "Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.",
+          actions: [
+            button("tutorials", "Tutorials"),
+            button("record-songs", "Record Songs"),
+          ],
+        };
+      if (this.uiFeedback) model.feedback = this.uiFeedback;
+      this.panel.setTransport("");
+    } else {
+      const s = this.session,
+        simulation = s.mode === "simulation",
+        step = s.step,
+        shown = this.demo?.session || s;
+      const activeDemo = Boolean(this.demo),
+        activePractice = s.phase === "practicing";
+      const snapshot = this.adapter.snapshot(now),
+        setup = step && setupStatus(step, snapshot);
+      const reason = s.complete
+        ? "The study is complete."
+        : simulation
+          ? ""
+          : this.flow.unavailable();
+      const nextDisabled =
+        simulation || s.complete || Boolean(setup && !setup.ok);
+      const navigation = [
+        button("previous-step", "Previous Step", simulation || s.index === 0),
+        button("next-step", "Next Step", nextDisabled, {
+          primary: !nextDisabled && s.phase === "results",
+          reason: setup && !setup.ok ? setup.message : "",
+        }),
+        button(
+          "step-demo",
+          "Demonstrate",
+          s.complete ||
+            (!simulation && !activeDemo && (activePractice || Boolean(reason))),
+          {
+            active: simulation ? !this.conductor?.paused : activeDemo,
+            primary:
+              !reason && s.phase === "ready" && !s.demonstrated.has(step?.id),
+            reason: activePractice
+              ? "Press Practice to stop the attempt."
+              : reason,
+          },
+        ),
+        button(
+          "step-practice",
+          "Practice",
+          simulation ||
+            s.complete ||
+            (!activePractice && (activeDemo || Boolean(reason))),
+          {
+            active: activePractice,
+            primary:
+              !reason &&
+              !activeDemo &&
+              (s.phase === "results" || s.demonstrated.has(step?.id)),
+            reason: activeDemo
+              ? "Press Demonstrate to stop the example."
+              : reason,
+          },
+        ),
       ];
-      let target='';
-      if(shown.step?.timed&&shown.anchorMs!==null&&(activeDemo||s.phase!=='results')){
-        const beat=shown.beatAt(now);
-        if(beat<0)target='Count in: '+Math.ceil(-beat);
-        else{
-          target='Beat '+Math.min(shown.step.beats,Math.floor(beat)+1)+' / '+shown.step.beats;
-          const note=scoreForStep(shown.step).find(e=>e.beat+(e.beats??.4)>beat);
-          if(note?.pitch)target+='\n'+describeNote(note);
-          else if(note?.role)target+='\n'+(C.backing.find(g=>g.role===note.role)?.label||({percussion:'Honk · boink',metronome:'Metronome · wood',percussionLooper:'Looper · hihat'}[note.role])||note.role);
+      let target = "";
+      if (
+        shown.step?.timed &&
+        shown.anchorMs !== null &&
+        (activeDemo || s.phase !== "results")
+      ) {
+        const beat = shown.beatAt(now);
+        if (beat < 0) target = "Count in: " + Math.ceil(-beat);
+        else {
+          target =
+            "Beat " +
+            Math.min(shown.step.beats, Math.floor(beat) + 1) +
+            " / " +
+            shown.step.beats;
+          const note = scoreForStep(shown.step).find(
+            (e) => e.beat + (e.beats ?? 0.4) > beat,
+          );
+          if (note?.pitch) target += "\n" + describeNote(note);
+          else if (note?.role)
+            target +=
+              "\n" +
+              (C.backing.find((g) => g.role === note.role)?.label ||
+                {
+                  percussion: "Honk · boink",
+                  metronome: "Metronome · wood",
+                  percussionLooper: "Looper · hihat",
+                }[note.role] ||
+                note.role);
         }
       }
-      if(shown.step?.type==='record') {
-        const progress=this.adapter.get(shown.step.looperRole)?.looperController.getRecordingProgress(this.adapter.get(shown.step.looperRole),now);
-        target=recordingGuidance(progress,shown.anchorMs===null?null:shown.beatAt(now))||target;
+      if (shown.step?.type === "record") {
+        const progress = this.adapter
+          .get(shown.step.looperRole)
+          ?.looperController.getRecordingProgress(
+            this.adapter.get(shown.step.looperRole),
+            now,
+          );
+        target =
+          recordingGuidance(
+            progress,
+            shown.anchorMs === null ? null : shown.beatAt(now),
+          ) || target;
       }
-      if(this.cues.bendInstruction)target+=(target?'\n':'')+this.cues.bendInstruction;
+      if (this.cues.bendInstruction)
+        target += (target ? "\n" : "") + this.cues.bendInstruction;
       this.panel.setTransport(target);
-      let feedback=simulation?(this.conductor?.paused?'Simulation paused. Press Demonstrate to resume.':'Full simulation running. Press Demonstrate to pause.'):
-        setup?.message||this.uiFeedback||s.feedback||reason||'Demonstrate or Practice. Next Step skips this exercise.';
-      if(!simulation&&!activeDemo&&!activePractice&&reason&&!setup)feedback=reason;
-      if(s.result&&!activeDemo&&!setup&&reason!=='No recording yet; you can skip this step'){
-        const result=s.result,names={targets:'Targets',timing:'Onsets',holdRelease:'Hold/release',bend:'Bend'};
-        feedback=(result.score===undefined?(result.ok?'Completed':'Try again'):result.score+'/100'+(result.ok?' · Well played':''))+'\n';
-        if(result.components)feedback+=Object.entries(result.components).map(([key,value])=>names[key]+' '+value).join(' · ')+'\n';
-        feedback+=result.message;
-        const mismatch=result.details?.find(d=>d.heard==='missing'||d.extra||d.correct===false);
-        const name=role=>C.backing.find(g=>g.role===role)?.label||role?.replace('melody-','')||'rest';
-        if(mismatch)feedback+='\nExpected '+name(mismatch.expected)+'; heard '+name(mismatch.heard)+'.';
-        else{
-          const timing=result.details?.find(d=>d.onsetErrorBeats>.12||d.holdErrorBeats>.175);
-          if(timing)feedback+=step.timed?'\n'+name(timing.expected)+': expected beat '+(timing.beat+1).toFixed(1)+', heard '+(timing.heardBeat+1).toFixed(1)+'.':'\nExpected a '+Math.round(timing.expectedHold)+' ms hold; heard '+Math.round(timing.heardHold)+' ms.';
+      let feedback = simulation
+        ? this.conductor?.paused
+          ? "Simulation paused. Press Demonstrate to resume."
+          : "Full simulation running. Press Demonstrate to pause."
+        : setup?.message ||
+          this.uiFeedback ||
+          s.feedback ||
+          reason ||
+          "Demonstrate or Practice. Next Step skips this exercise.";
+      if (!simulation && !activeDemo && !activePractice && reason && !setup)
+        feedback = reason;
+      if (
+        s.result &&
+        !activeDemo &&
+        !setup &&
+        reason !== "No recording yet; you can skip this step"
+      ) {
+        const result = s.result,
+          names = {
+            targets: "Targets",
+            timing: "Onsets",
+            holdRelease: "Hold/release",
+            bend: "Bend",
+          };
+        feedback =
+          (result.score === undefined
+            ? result.ok
+              ? "Completed"
+              : "Try again"
+            : result.score + "/100" + (result.ok ? " · Well played" : "")) +
+          "\n";
+        if (result.components)
+          feedback +=
+            Object.entries(result.components)
+              .map(([key, value]) => names[key] + " " + value)
+              .join(" · ") + "\n";
+        feedback += result.message;
+        const mismatch = result.details?.find(
+          (d) => d.heard === "missing" || d.extra || d.correct === false,
+        );
+        const name = (role) =>
+          C.backing.find((g) => g.role === role)?.label ||
+          role?.replace("melody-", "") ||
+          "rest";
+        if (mismatch)
+          feedback +=
+            "\nExpected " +
+            name(mismatch.expected) +
+            "; heard " +
+            name(mismatch.heard) +
+            ".";
+        else {
+          const timing = result.details?.find(
+            (d) => d.onsetErrorBeats > 0.12 || d.holdErrorBeats > 0.175,
+          );
+          if (timing)
+            feedback += step.timed
+              ? "\n" +
+                name(timing.expected) +
+                ": expected beat " +
+                (timing.beat + 1).toFixed(1) +
+                ", heard " +
+                (timing.heardBeat + 1).toFixed(1) +
+                "."
+              : "\nExpected a " +
+                Math.round(timing.expectedHold) +
+                " ms hold; heard " +
+                Math.round(timing.heardHold) +
+                " ms.";
         }
-        feedback+='\nPractice retries; Next Step continues.';
+        feedback += "\nPractice retries; Next Step continues.";
       }
-      if(s.complete)feedback=simulation?'Simulation complete in '+(this.report?.durationSeconds||0).toFixed(1)+' seconds.':
-        [...s.outcomes.values()].filter(o=>o.status==='passed').length+' completed · '+[...s.outcomes.values()].filter(o=>o.status==='skipped').length+' skipped.';
-      model={title:s.complete?'Study complete':step.title,instruction:s.complete?'VIRAG 2 · A, B, A, C, B, D.':step.instruction,
-        navigation,actions:[...(step?.type==='switch'?[button('play-alternativeLooper','Play Alternative',!activePractice),button('play-chordLooper','Play Chords',!activePractice)]:[]),button('recenter','Recenter'),button('exit','Exit')],feedback,
-        result:!activeDemo&&s.phase==='results'?(s.result?.ok?'passed':'retry'):null,
-        progress:(simulation?'Simulation':activeDemo?'Demonstration':'Lesson')+' · '+Math.min(s.index+1,s.steps.length)+'/'+s.steps.length+(activePractice?' · Practice':s.phase==='results'?' · Results':'')};
+      if (s.complete)
+        feedback = simulation
+          ? "Simulation complete in " +
+            (this.report?.durationSeconds || 0).toFixed(1) +
+            " seconds."
+          : [...s.outcomes.values()].filter((o) => o.status === "passed")
+              .length +
+            " completed · " +
+            [...s.outcomes.values()].filter((o) => o.status === "skipped")
+              .length +
+            " skipped.";
+      model = {
+        title: s.complete ? "Study complete" : step.title,
+        instruction: s.complete
+          ? "VIRAG 2 · A, B, A, C, B, D."
+          : step.instruction,
+        navigation,
+        actions: [
+          ...(step?.type === "switch"
+            ? [
+                button(
+                  "play-alternativeLooper",
+                  "Play Alternative",
+                  !activePractice,
+                ),
+                button("play-chordLooper", "Play Chords", !activePractice),
+              ]
+            : []),
+          button("recenter", "Recenter"),
+          button("exit", "Exit"),
+        ],
+        feedback,
+        result:
+          !activeDemo && s.phase === "results"
+            ? s.result?.ok
+              ? "passed"
+              : "retry"
+            : null,
+        progress:
+          (simulation
+            ? "Simulation"
+            : activeDemo
+              ? "Demonstration"
+              : "Lesson") +
+          " · " +
+          Math.min(s.index + 1, s.steps.length) +
+          "/" +
+          s.steps.length +
+          (activePractice
+            ? " · Practice"
+            : s.phase === "results"
+              ? " · Results"
+              : ""),
+      };
     }
-    this.panel.render({visible:true,...model});
+    this.panel.render({ visible: true, ...model });
+  }
+  renderNavigation() {
+    const button = (id, label, disabled = false) => ({ id, label, disabled });
+    const status = this.navigationStatus;
+    if (status?.state === "loading") {
+      this.panel.render({
+        visible: true,
+        title: "Loading composition…",
+        instruction: "Preparing the selected composition.",
+        actions: [button("back", "Back")],
+      });
+      return;
+    }
+    const error =
+      status?.state === "error" ? this.uiFeedback || status.error.message : "";
+    if (this.navigationScreen === "launch") {
+      this.panel.render({
+        visible: true,
+        title: "Honk Orchestra",
+        instruction:
+          "Play freely, learn an instrument or composition, or record a song.",
+        feedback: error,
+        actions: [
+          button("play", "Play"),
+          button("tutorials", "Tutorials"),
+          button("record-songs", "Record Songs"),
+        ],
+      });
+      return;
+    }
+    const page = libraryPage(
+      this.catalog,
+      this.navigationScreen,
+      this.libraryPage,
+    );
+    this.libraryPage = page.index;
+    this.panel.render({
+      visible: true,
+      title:
+        this.navigationScreen === "tutorials" ? "Tutorials" : "Record Songs",
+      instruction:
+        this.navigationScreen === "tutorials"
+          ? "Start with Basics, then learn a complete composition."
+          : "Prepare the selected song. Pair the desktop receiver first; use Open Editor on the desktop to edit takes.",
+      feedback: error,
+      progress: `LIBRARY · ${page.index + 1}/${page.pages}`,
+      navigation: [
+        ...page.rows.map((row) =>
+          button(
+            row.id === "basics" ? "basics" : `composition:${row.id}`,
+            row.title,
+          ),
+        ),
+        button("library-prev", "Previous", page.index === 0),
+        button("library-next", "Next", page.index + 1 === page.pages),
+      ],
+      actions: [
+        button("back", "Back"),
+        button(
+          error ? "retry-load" : "resume-mode",
+          error ? "Retry" : "Current session",
+        ),
+      ],
+    });
   }
   dispose() {
-    if(this.disposed)return;this.disposed=true;this.conductor?.stop();this.stopDemo();
-    this.kuch?.dispose();this.kuch=null;this.jogRecording?.interrupt('disposed');this.jogReference?.removeEventListener('reset',this.jogReset);
-    this.flow.cancelOutgoing();document.removeEventListener('visibilitychange',this.onVisibility);this.cues.dispose();this.adapter.dispose();this.panel?.dispose();
+    if (this.disposed) return;
+    this.disposed = true;
+    this.router?.dispose();
+    this.dataTutorial?.dispose();
+    this.dataTutorial = null;
+    this.conductor?.stop();
+    this.stopDemo();
+    this.basics?.dispose();
+    this.basics = null;
+    this.toolbar?.remove();
+    document.removeEventListener("keydown", this.keydown);
+    this.kuch?.dispose();
+    this.kuch = null;
+    this.jogRecording?.interrupt("disposed");
+    this.jogReference?.removeEventListener("reset", this.jogReset);
+    this.flow.cancelOutgoing();
+    document.removeEventListener("visibilitychange", this.onVisibility);
+    this.cues.dispose();
+    this.adapter.dispose();
+    this.panel?.dispose();
   }
 }

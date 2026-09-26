@@ -1,0 +1,41 @@
+{
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "scenes": [
+    {
+      "id": "virag-2-jog-study",
+      "instruments": 24,
+      "render": {
+        "frame": 6,
+        "calls": 264,
+        "triangles": 296902,
+        "points": 0,
+        "lines": 34
+      },
+      "memory": {
+        "geometries": 213,
+        "textures": 27
+      }
+    },
+    {
+      "id": "kuch-to-hua-hai",
+      "instruments": 25,
+      "render": {
+        "frame": 8,
+        "calls": 271,
+        "triangles": 305094,
+        "points": 0,
+        "lines": 34
+      },
+      "memory": {
+        "geometries": 219,
+        "textures": 29
+      }
+    }
+  ],
+  "transitions": 50,
+  "instrumentsAfter": 0,
+  "xrClockPersistence": true,
+  "indexedDBRecovery": true,
+  "basicsDemoPreservation": true,
+  "errors": []
+}

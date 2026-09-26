@@ -8,7 +8,11 @@ test("default controls initialize the handle rig at both value-range midpoints",
   const metronome = new MetronomeInstrument({
     id: "metro-default-handles",
     root: object3D(),
-    handleRig: { setValue: (parameter, value) => { values[parameter] = value; } },
+    handleRig: {
+      setValue: (parameter, value) => {
+        values[parameter] = value;
+      },
+    },
   });
 
   assert.equal(metronome.bpm, 135);
@@ -87,7 +91,10 @@ test("pause silences clicks but preserves a phase-continuous clock for linked Lo
 });
 
 test("BPM changes preserve the silent paused clock phase", () => {
-  const metronome = new MetronomeInstrument({ id: "metro-paused-bpm", root: object3D() });
+  const metronome = new MetronomeInstrument({
+    id: "metro-paused-bpm",
+    root: object3D(),
+  });
   const originalNow = performance.now;
   performance.now = () => 1750;
   try {
@@ -107,7 +114,10 @@ test("BPM changes preserve the silent paused clock phase", () => {
 });
 
 test("metronome persists BPM and volume but restores paused", () => {
-  const metronome = new MetronomeInstrument({ id: "metro-2", root: object3D() });
+  const metronome = new MetronomeInstrument({
+    id: "metro-2",
+    root: object3D(),
+  });
   metronome.restore({ bpm: 999, volume: -2 });
   assert.equal(metronome.bpm, 240);
   assert.equal(metronome.volume, 0);
@@ -115,6 +125,24 @@ test("metronome persists BPM and volume but restores paused", () => {
   assert.deepEqual(
     { bpm: metronome.serialize().bpm, volume: metronome.serialize().volume },
     { bpm: 240, volume: 0 },
+  );
+  metronome.locked = true;
+  const restored = new MetronomeInstrument({
+    id: "metro-restored",
+    root: object3D(),
+  });
+  restored.restore(metronome.serialize());
+  assert.equal(
+    restored.locked,
+    true,
+    "Restoration preserves the user's editing lock",
+  );
+  assert.equal(restored.playing, false);
+  restored.restore({ bpm: 90 });
+  assert.equal(
+    restored.locked,
+    false,
+    "Historical scenes without a lock remain compatible",
   );
 });
 
@@ -271,15 +299,33 @@ test("metronome drives and resets its pendulum rig with playback lifecycle", () 
 });
 
 test("a duplicated metronome copies controls and scale but starts paused with independent rigs", () => {
-  const sourceRig = { values: {}, setValue(parameter, value) { this.values[parameter] = value; } };
-  const duplicateRig = { values: {}, setValue(parameter, value) { this.values[parameter] = value; } };
+  const sourceRig = {
+    values: {},
+    setValue(parameter, value) {
+      this.values[parameter] = value;
+    },
+  };
+  const duplicateRig = {
+    values: {},
+    setValue(parameter, value) {
+      this.values[parameter] = value;
+    },
+  };
   const source = new MetronomeInstrument({
-    id: "metro-source", root: object3D(), bpm: 175, volume: 0.35, handleRig: sourceRig,
+    id: "metro-source",
+    root: object3D(),
+    bpm: 175,
+    volume: 0.35,
+    handleRig: sourceRig,
   });
   source.baseScale = 3.25;
   source.play(1000);
   const duplicate = new MetronomeInstrument({
-    id: "metro-copy", root: object3D(), bpm: source.bpm, volume: source.volume, handleRig: duplicateRig,
+    id: "metro-copy",
+    root: object3D(),
+    bpm: source.bpm,
+    volume: source.volume,
+    handleRig: duplicateRig,
   });
   duplicate.baseScale = source.baseScale;
   duplicate.setBpm(duplicate.bpm);
@@ -313,9 +359,15 @@ test("metronome playback keeps its schedule while the scene is in placement mode
 test("Play eye latches without restarting cadence and Pause eye resets playback", () => {
   const events = [];
   const buttonRig = {
-    setPressed(action, pressed) { events.push(`set:${action}:${pressed}`); },
-    press(action, now) { events.push(`press:${action}:${now}`); },
-    reset() { events.push("reset"); },
+    setPressed(action, pressed) {
+      events.push(`set:${action}:${pressed}`);
+    },
+    press(action, now) {
+      events.push(`press:${action}:${now}`);
+    },
+    reset() {
+      events.push("reset");
+    },
     update() {},
   };
   const metronome = new MetronomeInstrument({
@@ -363,5 +415,10 @@ function object3D() {
 }
 
 function tuple(...values) {
-  return { toArray: () => [...values], fromArray(next) { values = [...next]; } };
+  return {
+    toArray: () => [...values],
+    fromArray(next) {
+      values = [...next];
+    },
+  };
 }

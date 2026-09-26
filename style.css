@@ -43,33 +43,211 @@ canvas {
   font-size: 13px;
 }
 
-.tutorial-panel { position: fixed; z-index: 20; left: 24px; top: 90px; width: min(480px, calc(100vw - 48px)); height: min(820px, calc(100vh - 114px)); display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; box-sizing: border-box; padding: 22px; color: #edf4eb; background: rgba(12,32,29,.96); border: 1px solid #42685b; border-radius: 20px; box-shadow: 0 16px 60px #0006; font: 20px/1.45 system-ui,sans-serif; }
-.tutorial-copy { overflow: auto; padding-right: 6px; }
-.tutorial-panel[hidden] { display: none; }
-.tutorial-panel h1 { font: 650 30px/1.15 system-ui,sans-serif; color: #fff3d9; margin: 8px 0 18px; }
-.tutorial-eyebrow { font-size: 14px; color: #86d9bb; letter-spacing: .10em; text-transform: uppercase; margin: 0; }
-.tutorial-target { color: #ffd18b; white-space: pre-line; }
-.tutorial-feedback { color: #8de5c7; min-height: 24px; }
-.tutorial-navigation { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 20px; }
-.tutorial-navigation[hidden] { display: none; }
-.tutorial-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 14px; border-top: 1px solid #42685b; }
-.tutorial-navigation button { color: #fff6e3; background: #30574b; border: 1px solid #558474; min-height: 56px; border-radius: 10px; font: 600 18px/1.25 system-ui,sans-serif; cursor: pointer; }
-.tutorial-navigation button:disabled { opacity: .45; cursor: default; }
-.tutorial-panel button[data-primary="true"] { background: #57784a; border-color: #cad796; }
-.tutorial-panel button[data-active="true"] { background: #52774a; border-color: #b5ef99; box-shadow: inset 0 0 0 2px #b5ef99; }
-.tutorial-panel[data-result="passed"] .tutorial-feedback { color: #b4f2c6; }
-.tutorial-panel .tutorial-feedback { white-space: pre-line; }
-.tutorial-complete { animation: tutorial-completion 850ms ease-out; }
-@keyframes tutorial-completion { 40% { box-shadow: 0 0 0 4px #83dfbd88, 0 16px 60px #0006; } }
-.tutorial-actions button { color: #fff6e3; background: #30574b; border: 1px solid #558474; padding: 10px 14px; min-height: 56px; border-radius: 10px; font: 600 18px/1.25 system-ui,sans-serif; cursor: pointer; }
-.tutorial-actions button:hover, .tutorial-actions button:focus-visible { background: #497b66; outline: 2px solid #b4ecd3; }
-.tutorial-actions button:disabled { opacity: .4; cursor: default; }
-@media(max-width: 650px) { .tutorial-panel { left: 12px; top: 76px; width: calc(100vw - 24px); padding: 16px; height: calc(100dvh - 100px); } }
+.tutorial-panel {
+  position: fixed;
+  z-index: 20;
+  left: 24px;
+  top: 90px;
+  width: min(480px, calc(100vw - 48px));
+  height: min(820px, calc(100vh - 114px));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  box-sizing: border-box;
+  padding: 22px;
+  color: #edf4eb;
+  background: rgba(12, 32, 29, 0.96);
+  border: 1px solid #42685b;
+  border-radius: 20px;
+  box-shadow: 0 16px 60px #0006;
+  font:
+    20px/1.45 system-ui,
+    sans-serif;
+}
+.tutorial-copy {
+  overflow: auto;
+  padding-right: 6px;
+}
+.tutorial-panel[hidden] {
+  display: none;
+}
+.tutorial-panel h1 {
+  font:
+    650 30px/1.15 system-ui,
+    sans-serif;
+  color: #fff3d9;
+  margin: 8px 0 18px;
+}
+.tutorial-eyebrow {
+  font-size: 14px;
+  color: #86d9bb;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.tutorial-target {
+  color: #ffd18b;
+  white-space: pre-line;
+}
+.tutorial-feedback {
+  color: #8de5c7;
+  min-height: 24px;
+}
+.tutorial-navigation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+.tutorial-navigation[hidden] {
+  display: none;
+}
+.tutorial-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #42685b;
+}
+.tutorial-navigation button {
+  color: #fff6e3;
+  background: #30574b;
+  border: 1px solid #558474;
+  min-height: 56px;
+  border-radius: 10px;
+  font:
+    600 18px/1.25 system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.tutorial-navigation button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tutorial-panel button[data-primary="true"] {
+  background: #57784a;
+  border-color: #cad796;
+}
+.tutorial-panel button[data-active="true"] {
+  background: #52774a;
+  border-color: #b5ef99;
+  box-shadow: inset 0 0 0 2px #b5ef99;
+}
+.tutorial-panel[data-result="passed"] .tutorial-feedback {
+  color: #b4f2c6;
+}
+.tutorial-panel .tutorial-feedback {
+  white-space: pre-line;
+}
+.tutorial-complete {
+  animation: tutorial-completion 850ms ease-out;
+}
+@keyframes tutorial-completion {
+  40% {
+    box-shadow:
+      0 0 0 4px #83dfbd88,
+      0 16px 60px #0006;
+  }
+}
+.tutorial-actions button {
+  color: #fff6e3;
+  background: #30574b;
+  border: 1px solid #558474;
+  padding: 10px 14px;
+  min-height: 56px;
+  border-radius: 10px;
+  font:
+    600 18px/1.25 system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.tutorial-actions button:hover,
+.tutorial-actions button:focus-visible {
+  background: #497b66;
+  outline: 2px solid #b4ecd3;
+}
+.tutorial-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (max-width: 650px) {
+  .tutorial-panel {
+    left: 12px;
+    top: 76px;
+    width: calc(100vw - 24px);
+    padding: 16px;
+    height: calc(100dvh - 100px);
+  }
+}
 /* Desktop counterparts of the lesson's ordinary squeeze and stick gestures. */
-.kuch-keyboard { position: fixed; bottom: 16px; left: max(360px, 28vw); right: 16px; z-index: 20; padding: 12px; border-radius: 14px; background: #102321ed; color: #fff4dd; }
-.kuch-keyboard[hidden] { display: none; }
-.kuch-keyboard p { margin: 0 0 8px; font: 13px/1.4 sans-serif; }
-.kuch-keyboard button { margin: 3px; padding: 9px 12px; border: 1px solid #638879; border-radius: 7px; background: #2e5149; color: #fff4dd; touch-action: none; }
-.kuch-keyboard button[data-active="true"] { background: #756035; outline: 2px solid #ffd591; }
-.kuch-keyboard button:disabled { opacity: .6; }
-@media (max-width: 700px) { .kuch-keyboard { left: 12px; right: 12px; bottom: 8px; } .kuch-keyboard button { padding: 6px; } }
+.kuch-keyboard {
+  position: fixed;
+  bottom: 16px;
+  left: max(360px, 28vw);
+  right: 16px;
+  z-index: 20;
+  padding: 12px;
+  border-radius: 14px;
+  background: #102321ed;
+  color: #fff4dd;
+}
+.kuch-keyboard[hidden] {
+  display: none;
+}
+.kuch-keyboard p {
+  margin: 0 0 8px;
+  font: 13px/1.4 sans-serif;
+}
+.kuch-keyboard button {
+  margin: 3px;
+  padding: 9px 12px;
+  border: 1px solid #638879;
+  border-radius: 7px;
+  background: #2e5149;
+  color: #fff4dd;
+  touch-action: none;
+}
+.kuch-keyboard button[data-active="true"] {
+  background: #756035;
+  outline: 2px solid #ffd591;
+}
+.kuch-keyboard button:disabled {
+  opacity: 0.6;
+}
+@media (max-width: 700px) {
+  .kuch-keyboard {
+    left: 12px;
+    right: 12px;
+    bottom: 8px;
+  }
+  .kuch-keyboard button {
+    padding: 6px;
+  }
+}
+
+.orchestra-utilities {
+  position: fixed;
+  z-index: 1100;
+  top: 0.7rem;
+  left: 420px;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.orchestra-utilities button,
+.orchestra-utilities a {
+  background: #2e5149;
+  color: #fff4dd;
+  border: 1px solid #83dfbd;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+@media (max-width: 1000px) {
+  .orchestra-utilities {
+    top: auto;
+    bottom: 0.7rem;
+    left: 0.7rem;
+    flex-wrap: wrap;
+    max-width: calc(100vw - 1.4rem);
+  }
+}

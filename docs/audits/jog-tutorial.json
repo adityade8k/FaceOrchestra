@@ -1,0 +1,749 @@
+{
+  "passed": true,
+  "simulation": {
+    "composition": "virag-2-jog-study",
+    "version": 3,
+    "mode": "simulation",
+    "complete": true,
+    "checkpoints": [
+      "intro",
+      "metronome",
+      "chordLooper",
+      "percussionLooper",
+      "alternativeLooper",
+      "clock-chordLooper",
+      "clock-percussionLooper",
+      "clock-alternativeLooper",
+      "tempo",
+      "spawn-group-1",
+      "wire-group-1",
+      "spawn-group-2",
+      "wire-group-2",
+      "spawn-group-3",
+      "wire-group-3",
+      "spawn-group-4",
+      "wire-group-4",
+      "audition-E",
+      "audition-O",
+      "timbre",
+      "chord",
+      "length-chords",
+      "record-chords",
+      "finalize-chords",
+      "playback-chords",
+      "wire-alternative",
+      "length-alternative",
+      "record-alternative",
+      "finalize-alternative",
+      "switch-patterns",
+      "percussion",
+      "percussion-wire",
+      "stick",
+      "tap-percussion",
+      "tap-metronome",
+      "tap-percussionLooper",
+      "length-percussion",
+      "record-percussion",
+      "finalize-percussion",
+      "playback-percussion",
+      "start-all",
+      "unequip",
+      "melody",
+      "performance"
+    ],
+    "outcomes": {},
+    "demonstrated": [],
+    "phrasesPassed": ["A", "B", "A", "C", "B", "D"],
+    "durationSeconds": 208.025,
+    "takes": {
+      "chordLooper": {
+        "durationMs": 12000,
+        "gapBeats": 0,
+        "timingMode": "metronome",
+        "sourceBeatIntervalMs": 750,
+        "pitchedOnsets": 4,
+        "percussionHits": 0
+      },
+      "percussionLooper": {
+        "durationMs": 12000,
+        "gapBeats": 0,
+        "timingMode": "metronome",
+        "sourceBeatIntervalMs": 750,
+        "pitchedOnsets": 0,
+        "percussionHits": 12
+      },
+      "alternativeLooper": {
+        "durationMs": 12000,
+        "gapBeats": 0,
+        "timingMode": "metronome",
+        "sourceBeatIntervalMs": 750,
+        "pitchedOnsets": 4,
+        "percussionHits": 0
+      }
+    },
+    "launches": {
+      "chordLooper": [
+        {
+          "beat": 36,
+          "requestedAtMs": 32808.9,
+          "observedAtMs": 33208.9,
+          "audioPreparedAtMs": 33086.5,
+          "audioOriginTime": 26.85514829931973,
+          "lateMs": 15.599999999998545
+        },
+        {
+          "beat": 74,
+          "requestedAtMs": 60991.1,
+          "observedAtMs": 61707.7,
+          "audioPreparedAtMs": 61592.60000002384,
+          "audioOriginTime": 55.35616825396825,
+          "lateMs": 14.39999999999418
+        },
+        {
+          "beat": 106,
+          "requestedAtMs": 76707.1,
+          "observedAtMs": 85706.7,
+          "audioPreparedAtMs": 85584.79999995232,
+          "audioOriginTime": 79.35616825396825,
+          "lateMs": 13.39999999999418
+        },
+        {
+          "beat": 151,
+          "requestedAtMs": 119055.4,
+          "observedAtMs": 119455.4,
+          "audioPreparedAtMs": 119332.70000004768,
+          "audioOriginTime": 113.10916984126985,
+          "lateMs": 12.099999999991269
+        }
+      ],
+      "percussionLooper": [
+        {
+          "beat": 134,
+          "requestedAtMs": 106289.3,
+          "observedAtMs": 106705.9,
+          "audioPreparedAtMs": 106591.60000002384,
+          "audioOriginTime": 100.35429478458049,
+          "lateMs": 12.599999999991269
+        },
+        {
+          "beat": 151,
+          "requestedAtMs": 119055.4,
+          "observedAtMs": 119455.4,
+          "audioPreparedAtMs": 119332.89999997616,
+          "audioOriginTime": 113.10916984126985,
+          "lateMs": 12.099999999991269
+        }
+      ],
+      "alternativeLooper": [
+        {
+          "beat": 90,
+          "requestedAtMs": 64707.5,
+          "observedAtMs": 73707.2,
+          "audioPreparedAtMs": 73584.70000004768,
+          "audioOriginTime": 67.35616825396825,
+          "lateMs": 13.89999999999418
+        }
+      ]
+    },
+    "startAll": {
+      "ok": true,
+      "message": "Playing one selected looper on each of 2 output groups",
+      "targetBeat": 151,
+      "requestedAtMs": 119055.4,
+      "looperIds": [
+        "looper-eeabf7f2-166f-4552-9fe2-1c4e5edd5877",
+        "looper-70e0d382-19f1-4642-9739-dbce61188d10"
+      ],
+      "starts": [
+        {
+          "looperId": "looper-eeabf7f2-166f-4552-9fe2-1c4e5edd5877",
+          "metronomeId": "metronome-9b7a0176-4eca-425b-a152-bdf681a6072c",
+          "portId": "port-0",
+          "targetBeat": 151
+        },
+        {
+          "looperId": "looper-70e0d382-19f1-4642-9739-dbce61188d10",
+          "metronomeId": "metronome-9b7a0176-4eca-425b-a152-bdf681a6072c",
+          "portId": "port-1",
+          "targetBeat": 151
+        }
+      ]
+    },
+    "alignment": {
+      "atMs": 207935.2,
+      "loopers": 151,
+      "phaseDifference": 0
+    },
+    "audioState": "running",
+    "counts": {
+      "honk": 4,
+      "looper": 4,
+      "metronome": 4
+    }
+  },
+  "recordingDemonstrations": {
+    "chordLooper": {
+      "complete": true,
+      "learnerCredit": false,
+      "takesRestored": true,
+      "realEvents": 4
+    },
+    "percussionLooper": {
+      "complete": true,
+      "learnerCredit": false,
+      "takesRestored": true,
+      "realEvents": 12
+    }
+  },
+  "clockAndShake": {
+    "singleton": true,
+    "selectiveRealGripShake": true,
+    "formationSource": true,
+    "cooldown": true,
+    "recordingsRetained": true,
+    "silentClickPeak": 0,
+    "mutedClockLoopPeak": 0.34014129462387666,
+    "mutedClockPercussionPeak": 0.7412792937099589,
+    "sharedAudioOrigin": true
+  },
+  "allChordMembersRelease": true,
+  "learnerFlow": {
+    "checks": [
+      "Exactly six lesson controls before the switching exercise",
+      "Correct setup enables Next without Practice",
+      "Setup disables Demonstrate and Practice",
+      "Setup feedback remains until Next",
+      "Six fixed labels and positions at intro",
+      "Canvas text fits its region at intro",
+      "next-step available: ",
+      "Next advances once",
+      "Six fixed labels and positions at metronome",
+      "Canvas text fits its region at metronome",
+      "Removed hidden lesson actions cannot spawn or prepare",
+      "left opens radial menu",
+      "metronome is visible in the radial catalog",
+      "Controller pull enters category",
+      "Preview belongs to selecting left controller",
+      "Menu release leaves an uncommitted preview",
+      "Uncommitted Metronome has no role",
+      "Held selection Trigger cannot commit",
+      "Grip cancels preview and deletes all members",
+      "right opens radial menu",
+      "Preview belongs to selecting right controller",
+      "Fresh Trigger commits placement",
+      "Six fixed labels and positions at chordLooper",
+      "Canvas text fits its region at chordLooper",
+      "looper is visible in the radial catalog",
+      "Cancelled Looper consumes neither role",
+      "Six fixed labels and positions at percussionLooper",
+      "Canvas text fits its region at percussionLooper",
+      "Replacement fills missing first role without renaming survivor",
+      "Both standard Loopers receive role billboards",
+      "Six fixed labels and positions at alternativeLooper",
+      "Canvas text fits its region at alternativeLooper",
+      "Six fixed labels and positions at clock-chordLooper",
+      "Canvas text fits its region at clock-chordLooper",
+      "Six fixed labels and positions at clock-percussionLooper",
+      "Canvas text fits its region at clock-percussionLooper",
+      "Six fixed labels and positions at clock-alternativeLooper",
+      "Canvas text fits its region at clock-alternativeLooper",
+      "Six fixed labels and positions at tempo",
+      "Canvas text fits its region at tempo",
+      "Six fixed labels and positions at spawn-group-1",
+      "Canvas text fits its region at spawn-group-1",
+      "jog-group-1 is visible in the radial catalog",
+      "All group-1 members use existing locked appearance",
+      "Existing lock group owns all three voices",
+      "Chord tuning matches canonical recipe",
+      "Six fixed labels and positions at wire-group-1",
+      "Canvas text fits its region at wire-group-1",
+      "Six fixed labels and positions at spawn-group-2",
+      "Canvas text fits its region at spawn-group-2",
+      "jog-group-2 is visible in the radial catalog",
+      "All group-2 members use existing locked appearance",
+      "Six fixed labels and positions at wire-group-2",
+      "Canvas text fits its region at wire-group-2",
+      "Six fixed labels and positions at spawn-group-3",
+      "Canvas text fits its region at spawn-group-3",
+      "jog-group-3 is visible in the radial catalog",
+      "All group-3 members use existing locked appearance",
+      "Six fixed labels and positions at wire-group-3",
+      "Canvas text fits its region at wire-group-3",
+      "Six fixed labels and positions at spawn-group-4",
+      "Canvas text fits its region at spawn-group-4",
+      "jog-group-4 is visible in the radial catalog",
+      "All group-4 members use existing locked appearance",
+      "Six fixed labels and positions at wire-group-4",
+      "Canvas text fits its region at wire-group-4",
+      "Six fixed labels and positions at audition-E",
+      "Canvas text fits its region at audition-E",
+      "Non-anchor body grab ray for left",
+      "Locked body grab remains silent",
+      "Grab moves entire chord with unchanged offsets",
+      "Real squeeze ray: group-1",
+      "Normal squeeze sounds exactly three locked voices",
+      "Non-anchor body grab ray for right",
+      "Real squeeze ray: group-2",
+      "Intentional unlock persists through tutorial updates",
+      "Right B relocks the whole tutorial chord",
+      "step-demo available: ",
+      "Current musical demonstration starts",
+      "Demonstration restores checkpoint without credit",
+      "Note demonstration restores settings and releases voices",
+      "Six fixed labels and positions at audition-O",
+      "Canvas text fits its region at audition-O",
+      "Six fixed labels and positions at timbre",
+      "Canvas text fits its region at timbre",
+      "Six fixed labels and positions at chord",
+      "Canvas text fits its region at chord",
+      "step-practice available: ",
+      "Practice works without a demonstration and retains honest scoring",
+      "Six fixed labels and positions at chords-rehearse",
+      "Canvas text fits its region at chords-rehearse",
+      "Six fixed labels and positions at length-chords",
+      "Canvas text fits its region at length-chords",
+      "Chord length checkpoint reached",
+      "Default chord selector passes at 16 without movement",
+      "Six fixed labels and positions at record-chords",
+      "Canvas text fits its region at record-chords",
+      "First recording reached",
+      "Six fixed labels and positions at finalize-chords",
+      "Canvas text fits its region at finalize-chords",
+      "Six fixed labels and positions at playback-chords",
+      "Canvas text fits its region at playback-chords",
+      "Empty chord playback explains skip",
+      "Six fixed labels and positions at wire-alternative",
+      "Canvas text fits its region at wire-alternative",
+      "Six fixed labels and positions at length-alternative",
+      "Canvas text fits its region at length-alternative",
+      "Six fixed labels and positions at record-alternative",
+      "Canvas text fits its region at record-alternative",
+      "Six fixed labels and positions at finalize-alternative",
+      "Canvas text fits its region at finalize-alternative",
+      "Six fixed labels and positions at switch-patterns",
+      "Canvas text fits its region at switch-patterns",
+      "Six fixed labels and positions at percussion",
+      "Canvas text fits its region at percussion",
+      "honk is visible in the radial catalog",
+      "Ordinary Honk at another pitch is accepted for percussion",
+      "Real squeeze ray: percussion",
+      "Right B toggles the separate percussion Honk",
+      "Six fixed labels and positions at percussion-wire",
+      "Canvas text fits its region at percussion-wire",
+      "Six fixed labels and positions at stick",
+      "Canvas text fits its region at stick",
+      "Six fixed labels and positions at tap-percussion",
+      "Canvas text fits its region at tap-percussion",
+      "Navigation preserves the held physical stick",
+      "Starting percussion Practice preserves the held stick",
+      "Six fixed labels and positions at tap-metronome",
+      "Canvas text fits its region at tap-metronome",
+      "Six fixed labels and positions at tap-percussionLooper",
+      "Canvas text fits its region at tap-percussionLooper",
+      "Six fixed labels and positions at drums-rehearse",
+      "Canvas text fits its region at drums-rehearse",
+      "Six fixed labels and positions at length-percussion",
+      "Canvas text fits its region at length-percussion",
+      "Six fixed labels and positions at record-percussion",
+      "Canvas text fits its region at record-percussion",
+      "Six fixed labels and positions at finalize-percussion",
+      "Canvas text fits its region at finalize-percussion",
+      "Six fixed labels and positions at playback-percussion",
+      "Canvas text fits its region at playback-percussion",
+      "Empty percussion playback explains skip",
+      "Six fixed labels and positions at start-all",
+      "Canvas text fits its region at start-all",
+      "Six fixed labels and positions at unequip",
+      "Canvas text fits its region at unequip",
+      "Six fixed labels and positions at melody",
+      "Canvas text fits its region at melody",
+      "jog-melody is visible in the radial catalog",
+      "Six fixed labels and positions at learn-C4",
+      "Canvas text fits its region at learn-C4",
+      "Jog Study has seven separate unlocked melody notes",
+      "Both skipped recordings are honestly marked skipped",
+      "Navigation generated no backing recordings",
+      "Real squeeze ray: melody-C4",
+      "Right B toggles an individual melody Honk during active Practice",
+      "Locking one melody Honk leaves its neighbours independent",
+      "Lock toggles preserve visible pitch text",
+      "Melody note practice succeeds without backing",
+      "Practice results retain the learner lock",
+      "Practice retry retains the learner lock",
+      "Practice cancellation retains the learner unlock",
+      "Six fixed labels and positions at learn-Eb4",
+      "Canvas text fits its region at learn-Eb4",
+      "Six fixed labels and positions at learn-E4",
+      "Canvas text fits its region at learn-E4",
+      "Six fixed labels and positions at learn-F4",
+      "Canvas text fits its region at learn-F4",
+      "Six fixed labels and positions at learn-G4",
+      "Canvas text fits its region at learn-G4",
+      "Six fixed labels and positions at learn-Bb4",
+      "Canvas text fits its region at learn-Bb4",
+      "Six fixed labels and positions at learn-C5",
+      "Canvas text fits its region at learn-C5",
+      "Six fixed labels and positions at learn-bend",
+      "Canvas text fits its region at learn-bend",
+      "Six fixed labels and positions at phrase-A",
+      "Canvas text fits its region at phrase-A",
+      "Navigation reaches phrase-A",
+      "No-backing phrase gets a finite Metronome count-in",
+      "Phrase begins against Metronome alone",
+      "Practice button safely cancels its own attempt",
+      "previous-step available: ",
+      "Navigation reaches record-chords",
+      "Real squeeze ray: group-3",
+      "Real squeeze ray: group-4",
+      "Real four-chord learner recording passes: Well played. The notes, timing and releases fit the phrase.",
+      "Successful intentional recording remains as the only backing",
+      "Navigation preserves recorded content and settings",
+      "One-backing phrase receives a finite boundary",
+      "Phrase uses the one existing backing without waiting for two-loop alignment",
+      "Cancelling phrase preserves the learner take",
+      "step-demo available: Stop the current recording on its Looper before starting an example.",
+      "Cancelling recording demo restores both takes and releases voices",
+      "Navigation cancels pending demonstration and preserves takes",
+      "Navigation reaches audition-E",
+      "Demo restores an existing playing transport",
+      "Playback resumes near saved source without changing recording",
+      "Paused transport checkpoint is restored",
+      "A preview can precede native font readiness",
+      "Font arrival creates visible text at the shared tutorial size",
+      "Retuning updates native pitch text without resizing it",
+      "Native notes remain visible on all tutorial Honks",
+      "One consistent base note-text scale across chords, melody and percussion",
+      "Repeated note refresh is idempotent",
+      "Exactly one billboard per chord group, clock and Looper",
+      "metronome billboard clears complete visual bounds",
+      "Billboard cannot intercept rays",
+      "chordLooper billboard clears complete visual bounds",
+      "percussionLooper billboard clears complete visual bounds",
+      "alternativeLooper billboard clears complete visual bounds",
+      "group-1 billboard clears complete visual bounds",
+      "group-2 billboard clears complete visual bounds",
+      "group-3 billboard clears complete visual bounds",
+      "group-4 billboard clears complete visual bounds",
+      "Repeated label updates reuse cached mesh collections",
+      "Idle panel incurs no DOM mutations",
+      "Navigation reaches learn-C4"
+    ],
+    "hands": ["left", "right"],
+    "headsetTested": false,
+    "acousticListeningTested": false,
+    "routes": {
+      "chords": {
+        "group-1": {
+          "looperId": "looper-865738af-1573-4cb1-b7fa-433850c21106",
+          "trackId": "track-6",
+          "trackIndex": 6,
+          "honkId": "honk-b09a0aec-aaca-4647-af1d-247adff709ad"
+        },
+        "group-2": {
+          "looperId": "looper-865738af-1573-4cb1-b7fa-433850c21106",
+          "trackId": "track-2",
+          "trackIndex": 2,
+          "honkId": "honk-d3922470-c3a8-489f-9b1e-bfaba4405960"
+        },
+        "group-3": {
+          "looperId": "looper-865738af-1573-4cb1-b7fa-433850c21106",
+          "trackId": "track-7",
+          "trackIndex": 7,
+          "honkId": "honk-888ab560-b1e7-48bf-a4d6-18a708593ab2"
+        },
+        "group-4": {
+          "looperId": "looper-865738af-1573-4cb1-b7fa-433850c21106",
+          "trackId": "track-4",
+          "trackIndex": 4,
+          "honkId": "honk-f466ae1e-0528-4abf-a1dc-6aa98b1fee9c"
+        }
+      },
+      "alternatives": {},
+      "percussion": {
+        "metronome": {
+          "looperId": "looper-d8f4fcd0-d2a5-4ec8-bcaa-fa8ec37a283a",
+          "trackId": "track-3",
+          "trackIndex": 3
+        },
+        "percussionLooper": {
+          "looperId": "looper-d8f4fcd0-d2a5-4ec8-bcaa-fa8ec37a283a",
+          "trackId": "looper-self-percussion"
+        }
+      },
+      "clocks": {
+        "chordLooper": {
+          "metronomeId": "metronome-121536c1-83fe-47e1-a71d-4927b804b197",
+          "portId": "port-2",
+          "targetKind": "looper",
+          "targetId": "looper-865738af-1573-4cb1-b7fa-433850c21106",
+          "targetPortId": "track-5"
+        },
+        "percussionLooper": {
+          "metronomeId": "metronome-121536c1-83fe-47e1-a71d-4927b804b197",
+          "portId": "port-3",
+          "targetKind": "looper",
+          "targetId": "looper-d8f4fcd0-d2a5-4ec8-bcaa-fa8ec37a283a",
+          "targetPortId": "track-3"
+        },
+        "alternativeLooper": {
+          "metronomeId": "metronome-121536c1-83fe-47e1-a71d-4927b804b197",
+          "portId": "port-2",
+          "targetKind": "looper",
+          "targetId": "looper-6a40c05a-7a18-4a6d-8e61-41a92f16f715",
+          "targetPortId": "track-5"
+        }
+      },
+      "wires": {
+        "group-1": true,
+        "group-2": true,
+        "group-3": true,
+        "group-4": true,
+        "percussion": false
+      }
+    },
+    "recording": {
+      "score": 100,
+      "timeline": {
+        "schemaVersion": 8,
+        "lengthMode": "fixed-window",
+        "fixedWindowBeats": 16,
+        "onsetOffsetMs": 0,
+        "durationMs": 12000,
+        "contentEndMs": 11808.8,
+        "recordedDurationMs": 12000,
+        "beatIntervalMs": 750,
+        "sourceBeatIntervalMs": 750,
+        "timingMode": "metronome",
+        "beatAnalysis": null,
+        "gapBeats": 0,
+        "tracks": [
+          {
+            "trackId": "track-2",
+            "nodeId": "HIT_looper_node_2",
+            "trackIndex": 2,
+            "baselineActionState": {
+              "squeeze": 1.974418051053375e-117,
+              "bend": 0,
+              "earLeft": 0,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "eventCount": 528,
+            "eventTypes": {
+              "squeezeStart": 1,
+              "gestureSnapshot": 526,
+              "squeezeEnd": 1
+            }
+          },
+          {
+            "trackId": "track-4",
+            "nodeId": "HIT_looper_node_4",
+            "trackIndex": 4,
+            "baselineActionState": {
+              "squeeze": 0,
+              "bend": 0,
+              "earLeft": -1,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "eventCount": 181,
+            "eventTypes": {
+              "squeezeStart": 1,
+              "gestureSnapshot": 179,
+              "squeezeEnd": 1
+            }
+          },
+          {
+            "trackId": "track-6",
+            "nodeId": "HIT_looper_node_6",
+            "trackIndex": 6,
+            "baselineActionState": {
+              "squeeze": 0.17934882250194895,
+              "bend": 0,
+              "earLeft": 0.2857142857142857,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "eventCount": 689,
+            "eventTypes": {
+              "squeezeStart": 1,
+              "gestureSnapshot": 687,
+              "squeezeEnd": 1
+            }
+          },
+          {
+            "trackId": "track-7",
+            "nodeId": "HIT_looper_node_7",
+            "trackIndex": 7,
+            "baselineActionState": {
+              "squeeze": 0,
+              "bend": 0,
+              "earLeft": -1,
+              "earRight": -0.5,
+              "nose": 0.35,
+              "vowel": "O"
+            },
+            "eventCount": 361,
+            "eventTypes": {
+              "squeezeStart": 1,
+              "gestureSnapshot": 359,
+              "squeezeEnd": 1
+            }
+          }
+        ]
+      }
+    },
+    "labels": [
+      {
+        "role": "metronome",
+        "clearance": 0.03500001241578499,
+        "position": [-0.3629045126524859, 1.473386236230946, 1.1181164750626211]
+      },
+      {
+        "role": "chordLooper",
+        "clearance": 0.06433329250164177,
+        "position": [
+          -0.030000000000000027, 1.5806486176513572, 1.1324738244759385
+        ]
+      },
+      {
+        "role": "percussionLooper",
+        "clearance": 0.05923489558121764,
+        "position": [0.55, 1.5755502217327055, 1.1324738254651536]
+      },
+      {
+        "role": "alternativeLooper",
+        "clearance": 0.05923489558121764,
+        "position": [0.25, 1.2255502217327054, 1.1324738254651536]
+      },
+      {
+        "role": "group-1",
+        "clearance": 0.03499999999999992,
+        "position": [
+          -0.16526128904078516, 1.9879407955758461, 0.5206684927759633
+        ]
+      },
+      {
+        "role": "group-2",
+        "clearance": 0.03499999999999992,
+        "position": [0.8247888059375914, 1.9879366748829368, 0.5206685565509905]
+      },
+      {
+        "role": "group-3",
+        "clearance": 0.03499999999999992,
+        "position": [
+          -0.2647202055271988, 1.5179366748829368, 0.5211557765605596
+        ]
+      },
+      {
+        "role": "group-4",
+        "clearance": 0.03499999999999992,
+        "position": [0.7480887476249851, 1.5179366748829368, 0.5206958350814845]
+      }
+    ],
+    "labelCpuMs": {
+      "median": 0,
+      "p95": 0.10000002384185791,
+      "collections": 33
+    },
+    "noteTexts": [
+      {
+        "text": "C3",
+        "scale": 0.4
+      },
+      {
+        "text": "G3",
+        "scale": 0.4
+      },
+      {
+        "text": "C4",
+        "scale": 0.4
+      },
+      {
+        "text": "C3",
+        "scale": 0.4
+      },
+      {
+        "text": "F3",
+        "scale": 0.4
+      },
+      {
+        "text": "G3",
+        "scale": 0.4
+      },
+      {
+        "text": "A#2",
+        "scale": 0.4
+      },
+      {
+        "text": "C3",
+        "scale": 0.4
+      },
+      {
+        "text": "G3",
+        "scale": 0.4
+      },
+      {
+        "text": "G2",
+        "scale": 0.4
+      },
+      {
+        "text": "C3",
+        "scale": 0.4
+      },
+      {
+        "text": "C4",
+        "scale": 0.4
+      },
+      {
+        "text": "F4",
+        "scale": 0.4
+      },
+      {
+        "text": "C4",
+        "scale": 0.4
+      },
+      {
+        "text": "D#4",
+        "scale": 0.4
+      },
+      {
+        "text": "E4",
+        "scale": 0.4
+      },
+      {
+        "text": "F4",
+        "scale": 0.4
+      },
+      {
+        "text": "G4",
+        "scale": 0.4
+      },
+      {
+        "text": "A#4",
+        "scale": 0.4
+      },
+      {
+        "text": "C5",
+        "scale": 0.4
+      }
+    ],
+    "checkCount": 903
+  },
+  "launchChoices": true,
+  "wrongActionRejected": true,
+  "evidenceOriginsIsolated": true,
+  "persistenceUnchanged": true,
+  "repeatedCleanup": true,
+  "xrPlaneCapture": true,
+  "sound": "Web Audio state verified; sound not monitored",
+  "headset": "unverified",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+  },
+  "rawEvidence": "test-results/guided/jog.json"
+}

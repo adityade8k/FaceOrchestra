@@ -1,19 +1,42 @@
 import { LEGACY_SCENE_STORAGE_KEYS, SCENE_STORAGE_KEY } from "./schema.js";
 import { migrateSceneData } from "./migrations/index.js";
 
+// Legacy synchronous store. Never remove the previous valid value on a failed
+// write or migration; callers can surface status without crashing startup.
 export class PersistenceStore {
-  constructor({ storage = globalThis.localStorage, key = SCENE_STORAGE_KEY, legacyKeys = LEGACY_SCENE_STORAGE_KEYS } = {}) {
-    this.storage = storage;
+  constructor({
+    storage,
+    key = SCENE_STORAGE_KEY,
+    legacyKeys = LEGACY_SCENE_STORAGE_KEYS,
+  } = {}) {
+    try {
+      this.storage = storage === undefined ? globalThis.localStorage : storage;
+    } catch (error) {
+      this.status = { state: "unavailable", error };
+    }
     this.key = key;
     this.legacyKeys = [...legacyKeys];
+    this.status ||= { state: this.storage ? "empty" : "unavailable" };
   }
 
   save(data) {
-    if (!this.storage) return false;
+    if (!this.storage || this.protected) return false;
     try {
-      this.storage.setItem(this.key, JSON.stringify(data));
+      const serialized = JSON.stringify(data);
+      const previous = this.storage.getItem(this.key);
+      if (previous && migrateSceneData(JSON.parse(previous))) {
+        this.storage.setItem(`${this.key}:recovery`, previous);
+      }
+      this.storage.setItem(this.key, serialized);
+      if (this.storage.getItem(this.key) !== serialized)
+        throw new Error("Save verification failed");
+      this.status = { state: "saved" };
       return true;
     } catch (error) {
+      this.status = {
+        state: error.name === "QuotaExceededError" ? "quota" : "unavailable",
+        error,
+      };
       console.warn(`Could not persist scene at ${this.key}:`, error);
       return false;
     }
@@ -21,29 +44,52 @@ export class PersistenceStore {
 
   load() {
     if (!this.storage) return null;
-    const current = this.read(this.key);
-    if (current) return migrateSceneData(current);
-
-    for (const legacyKey of this.legacyKeys) {
-      const legacy = this.read(legacyKey);
-      if (!legacy) continue;
-      const migrated = migrateSceneData(legacy);
-      if (migrated) return migrated;
+    for (const key of [this.key, `${this.key}:recovery`, ...this.legacyKeys]) {
+      const data = this.read(key);
+      if (!data) continue;
+      let migrated;
+      try {
+        migrated = migrateSceneData(data);
+      } catch (error) {
+        this.protected = true;
+        this.status = { state: "corrupt", key, error };
+        continue;
+      }
+      if (!migrated) {
+        this.protected = true;
+        this.status = { state: "unsupported", key };
+        continue;
+      }
+      this.status = { state: key === this.key ? "loaded" : "recovered", key };
+      return migrated;
     }
     return null;
   }
 
   clear() {
-    this.storage?.removeItem(this.key);
+    try {
+      this.storage?.removeItem(this.key);
+      this.protected = false;
+      return true;
+    } catch (error) {
+      this.status = { state: "unavailable", error };
+      return false;
+    }
   }
 
   read(key) {
-    const serialized = this.storage?.getItem(key);
-    if (!serialized) return null;
     try {
-      return JSON.parse(serialized);
+      const serialized = this.storage?.getItem(key);
+      if (!serialized) return null;
+      try {
+        return JSON.parse(serialized);
+      } catch (error) {
+        this.protected = true;
+        this.status = { state: "corrupt", key, error };
+        return null;
+      }
     } catch (error) {
-      console.warn(`Could not parse persisted scene at ${key}:`, error);
+      this.status = { state: "unavailable", key, error };
       return null;
     }
   }

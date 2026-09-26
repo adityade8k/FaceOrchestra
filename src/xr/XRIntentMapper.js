@@ -1,4 +1,5 @@
 export const XRIntentType = Object.freeze({
+  MenuToggle: "menu.toggle",
   SpawnMenuOpen: "spawn.menu.open",
   SpawnMenuConfirm: "spawn.menu.confirm",
   ContextSecondary: "context.secondary",
@@ -22,10 +23,22 @@ export class XRIntentMapper {
 
     if (inputEvent.type === "axis.step") {
       if (inputEvent.axis === "thumbstickX") {
-        return [{ ...base, type: XRIntentType.HorizontalScaleStep, direction: inputEvent.direction }];
+        return [
+          {
+            ...base,
+            type: XRIntentType.HorizontalScaleStep,
+            direction: inputEvent.direction,
+          },
+        ];
       }
       if (inputEvent.axis === "thumbstickY") {
-        return [{ ...base, type: XRIntentType.PreviewDistanceStep, direction: inputEvent.direction }];
+        return [
+          {
+            ...base,
+            type: XRIntentType.PreviewDistanceStep,
+            direction: inputEvent.direction,
+          },
+        ];
       }
       return [];
     }
@@ -34,16 +47,40 @@ export class XRIntentMapper {
     }
 
     const { button, pressed, handedness } = inputEvent;
+    if (button === "thumbstick")
+      return pressed && handedness === "left"
+        ? [{ ...base, type: XRIntentType.MenuToggle }]
+        : [];
     if (button === "trigger") {
-      return [{ ...base, type: pressed ? XRIntentType.TriggerBegin : XRIntentType.TriggerEnd }];
+      return [
+        {
+          ...base,
+          type: pressed ? XRIntentType.TriggerBegin : XRIntentType.TriggerEnd,
+        },
+      ];
     }
     if (button === "grip") {
-      return [{ ...base, type: pressed ? XRIntentType.GripBegin : XRIntentType.GripEnd }];
+      return [
+        {
+          ...base,
+          type: pressed ? XRIntentType.GripBegin : XRIntentType.GripEnd,
+        },
+      ];
     }
     // A on the right and the previously unused Y on the left open the same
     // placement menu. X keeps its existing delete action; B keeps lock/context.
-    if (button === "primary" && handedness === "right" || button === "secondary" && handedness === "left") {
-      return [{ ...base, type: pressed ? XRIntentType.SpawnMenuOpen : XRIntentType.SpawnMenuConfirm }];
+    if (
+      (button === "primary" && handedness === "right") ||
+      (button === "secondary" && handedness === "left")
+    ) {
+      return [
+        {
+          ...base,
+          type: pressed
+            ? XRIntentType.SpawnMenuOpen
+            : XRIntentType.SpawnMenuConfirm,
+        },
+      ];
     }
     if (button === "primary" && handedness === "left" && pressed) {
       return [{ ...base, type: XRIntentType.InstrumentDelete }];

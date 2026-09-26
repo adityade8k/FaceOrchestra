@@ -86,7 +86,10 @@ export class LooperPlaybackEngine {
 
   updateFromClock(totalElapsedMs, timeline, handlers = {}) {
     if (!this.playing || this.paused || !timeline?.hasRecording()) return false;
-    const authoritativeElapsedMs = Math.max(Number.isFinite(totalElapsedMs) ? totalElapsedMs : 0, 0);
+    const authoritativeElapsedMs = Math.max(
+      Number.isFinite(totalElapsedMs) ? totalElapsedMs : 0,
+      0,
+    );
     if (!this.started) {
       this.elapsedMs = 0;
       this.emitSnapshots(timeline, handlers);
@@ -95,18 +98,35 @@ export class LooperPlaybackEngine {
       this.clockElapsedMs = 0;
     }
     const previousClockElapsedMs = Math.max(this.clockElapsedMs ?? 0, 0);
-    const deltaMs = Math.max(authoritativeElapsedMs - previousClockElapsedMs, 0);
+    const deltaMs = Math.max(
+      authoritativeElapsedMs - previousClockElapsedMs,
+      0,
+    );
     this.clockElapsedMs = authoritativeElapsedMs;
     if (deltaMs <= 0) return false;
     const wrapped = this.advanceBy(deltaMs, timeline, handlers);
     const durationMs = Math.max(timeline.durationMs, 1);
-    this.elapsedMs = ((authoritativeElapsedMs % durationMs) + durationMs) % durationMs;
+    this.elapsedMs =
+      ((authoritativeElapsedMs % durationMs) + durationMs) % durationMs;
     this.emitSnapshots(timeline, handlers);
     return wrapped;
   }
 
   advanceBy(deltaMs, timeline, handlers = {}) {
     const durationMs = Math.max(timeline.durationMs, 1);
+    // Suspension is a phase jump, not a backlog of percussion attacks. Keep
+    // normal frame/loop-boundary semantics, but bound catch-up after a hiatus.
+    if (deltaMs > (handlers.maxCatchupMs ?? Infinity)) {
+      const wrapped = this.elapsedMs + deltaMs >= durationMs;
+      this.resetTracksAtLoop(handlers);
+      this.elapsedMs = (this.elapsedMs + deltaMs) % durationMs;
+      if (wrapped) handlers.onLoopBoundary?.();
+      handlers.onInterruption?.({
+        skippedMs: deltaMs,
+        phaseMs: this.elapsedMs,
+      });
+      return wrapped;
+    }
     let remainingMs = deltaMs;
     let nextElapsedMs = this.elapsedMs;
     let wrapped = false;
@@ -122,7 +142,12 @@ export class LooperPlaybackEngine {
         continue;
       }
       const segmentEndMs = nextElapsedMs + segmentMs;
-      this.emitDrumHitEventsBetween(timeline, nextElapsedMs, segmentEndMs, handlers);
+      this.emitDrumHitEventsBetween(
+        timeline,
+        nextElapsedMs,
+        segmentEndMs,
+        handlers,
+      );
       remainingMs -= segmentMs;
 
       if (segmentEndMs >= durationMs) {
@@ -142,14 +167,18 @@ export class LooperPlaybackEngine {
 
   emitDrumHitEventsAt(timeline, timeMs, handlers = {}) {
     if (!handlers.onDrumHit) return;
-    for (const { track, event } of timeline.getDrumHitEventsAt?.(timeMs) || []) {
+    for (const { track, event } of timeline.getDrumHitEventsAt?.(timeMs) ||
+      []) {
       handlers.onDrumHit?.(track, event, timeMs);
     }
   }
 
   emitDrumHitEventsBetween(timeline, startMs, endMs, handlers = {}) {
     if (!handlers.onDrumHit) return;
-    for (const { track, event } of timeline.getDrumHitEventsBetween?.(startMs, endMs) || []) {
+    for (const { track, event } of timeline.getDrumHitEventsBetween?.(
+      startMs,
+      endMs,
+    ) || []) {
       handlers.onDrumHit?.(track, event, event.timeMs);
     }
   }

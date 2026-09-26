@@ -1,0 +1,144 @@
+{
+  "source": "2845e7027883883d62dceb508509b85da82584f3",
+  "dirtyImplementation": true,
+  "environment": {
+    "node": "v24.7.0",
+    "platform": "darwin",
+    "release": "25.6.0",
+    "cpu": "Apple M4 Pro"
+  },
+  "units": "milliseconds",
+  "samples": 1000,
+  "refreshRate": null,
+  "activeVoices": 0,
+  "capture": false,
+  "rendering": false,
+  "scenarios": [
+    {
+      "count": 0,
+      "distribution": "separated row, radius .25 m, spacing .8 m",
+      "originalCommit": {
+        "p50": 0.00020900000000523278,
+        "p95": 0.0006669999999999732,
+        "p99": 0.0021249999999994884,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      },
+      "sweep": {
+        "p50": 0.00033299999999769625,
+        "p95": 0.0005410000000054538,
+        "p99": 0.0014589999999969905,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      }
+    },
+    {
+      "count": 3,
+      "distribution": "separated row, radius .25 m, spacing .8 m",
+      "originalCommit": {
+        "p50": 0.0011669999999952552,
+        "p95": 0.0021249999999994884,
+        "p99": 0.008791999999999689,
+        "pairMeasurements": 3,
+        "retainedPairs": 3
+      },
+      "sweep": {
+        "p50": 0.0007920000000041227,
+        "p95": 0.0014170000000035543,
+        "p99": 0.004083999999998866,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      }
+    },
+    {
+      "count": 10,
+      "distribution": "separated row, radius .25 m, spacing .8 m",
+      "originalCommit": {
+        "p50": 0.006416000000001532,
+        "p95": 0.01012500000000216,
+        "p99": 0.043708999999999776,
+        "pairMeasurements": 45,
+        "retainedPairs": 45
+      },
+      "sweep": {
+        "p50": 0.0018749999999982947,
+        "p95": 0.0024169999999941183,
+        "p99": 0.011665999999998178,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      }
+    },
+    {
+      "count": 30,
+      "distribution": "separated row, radius .25 m, spacing .8 m",
+      "originalCommit": {
+        "p50": 0.05104199999999537,
+        "p95": 0.07629200000000935,
+        "p99": 0.09216699999998923,
+        "pairMeasurements": 435,
+        "retainedPairs": 435
+      },
+      "sweep": {
+        "p50": 0.003249999999994202,
+        "p95": 0.003417000000013104,
+        "p99": 0.004499999999993065,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      }
+    },
+    {
+      "count": 60,
+      "distribution": "separated row, radius .25 m, spacing .8 m",
+      "originalCommit": {
+        "p50": 0.24075000000001978,
+        "p95": 0.2831250000000409,
+        "p99": 0.3220829999999921,
+        "pairMeasurements": 1770,
+        "retainedPairs": 1770
+      },
+      "sweep": {
+        "p50": 0.006624999999985448,
+        "p95": 0.006916999999987183,
+        "p99": 0.008291000000042459,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      }
+    },
+    {
+      "count": 100,
+      "distribution": "separated row, radius .25 m, spacing .8 m",
+      "originalCommit": {
+        "p50": 0.750583000000006,
+        "p95": 0.9256249999999682,
+        "p99": 1.0454170000000431,
+        "pairMeasurements": 4950,
+        "retainedPairs": 4950
+      },
+      "sweep": {
+        "p50": 0.008583999999927983,
+        "p95": 0.010915999999951964,
+        "p99": 0.012292000000115877,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      }
+    },
+    {
+      "count": 200,
+      "distribution": "separated row, radius .25 m, spacing .8 m",
+      "originalCommit": {
+        "p50": 3.4078750000001037,
+        "p95": 4.199708000000101,
+        "p99": 4.570499999999811,
+        "pairMeasurements": 19900,
+        "retainedPairs": 19900
+      },
+      "sweep": {
+        "p50": 0.016999999999825377,
+        "p95": 0.0184159999998883,
+        "p99": 0.02491600000030303,
+        "pairMeasurements": 0,
+        "retainedPairs": 0
+      }
+    }
+  ]
+}

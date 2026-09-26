@@ -4,9 +4,15 @@ import { FrameScheduler } from "./FrameScheduler.js";
 const userPosition = new THREE.Vector3();
 
 export class FaceOrchestraApp {
-  constructor({ sceneRuntime, runtime, frameScheduler = new FrameScheduler() } = {}) {
+  constructor({
+    sceneRuntime,
+    runtime,
+    frameScheduler = new FrameScheduler(),
+  } = {}) {
     if (!sceneRuntime || !runtime) {
-      throw new TypeError("FaceOrchestraApp requires sceneRuntime and the composed runtime services.");
+      throw new TypeError(
+        "FaceOrchestraApp requires sceneRuntime and the composed runtime services.",
+      );
     }
     this.sceneRuntime = sceneRuntime;
     this.runtime = runtime;
@@ -34,7 +40,10 @@ export class FaceOrchestraApp {
     this.sceneRuntime.renderer.setAnimationLoop((frameMs, xrFrame) => {
       if (this.computeSuspended) return;
       const now = Number.isFinite(frameMs) ? frameMs : performance.now();
-      const delta = this.lastFrameMs === null ? 0 : Math.max((now - this.lastFrameMs) / 1000, 0);
+      const delta =
+        this.lastFrameMs === null
+          ? 0
+          : Math.max((now - this.lastFrameMs) / 1000, 0);
       this.lastFrameMs = now;
       this.elapsedSeconds += delta;
       this.runtime.tutorial?.observeXRFrame?.(now, xrFrame);
@@ -73,7 +82,11 @@ export class FaceOrchestraApp {
     this.computeSuspended = true;
     const teardownGeneration = ++this.teardownGeneration;
     setTimeout(() => {
-      if (teardownGeneration !== this.teardownGeneration || !this.computeSuspended) return;
+      if (
+        teardownGeneration !== this.teardownGeneration ||
+        !this.computeSuspended
+      )
+        return;
       this.stopCompute();
       try {
         this.runtime.onXRSessionEnd();
@@ -96,10 +109,10 @@ export class FaceOrchestraApp {
     else this.onXRSessionEnd();
   }
 
-  dispose() {
+  async dispose() {
     if (!this.initialized && !this.running) return;
     this.stopCompute();
-    this.runtime.dispose();
+    await this.runtime.dispose();
     this.sceneRuntime.dispose();
     this.initialized = false;
   }
@@ -107,63 +120,91 @@ export class FaceOrchestraApp {
   configureFramePhases() {
     const runtime = this.runtime;
 
-    this.frameScheduler.add("INPUT", (frame) => {
-      frame.hadPendingSpawn = Boolean(runtime.pendingSpawnPlacement);
-      runtime.pollControllers(frame.now);
-      runtime.tutorial?.beforeFrame(frame.now);
-    }, { label: "poll XR hardware" });
+    this.frameScheduler.add(
+      "INPUT",
+      (frame) => {
+        frame.hadPendingSpawn = Boolean(runtime.pendingSpawnPlacement);
+        runtime.pollControllers(frame.now);
+        runtime.tutorial?.beforeFrame(frame.now);
+      },
+      { label: "poll XR hardware" },
+    );
 
-    this.frameScheduler.add("INTENT", () => {
-      runtime.interactionCoordinator.flushInputs();
-    }, { label: "route semantic intents" });
+    this.frameScheduler.add(
+      "INTENT",
+      () => {
+        runtime.interactionCoordinator.flushInputs();
+      },
+      { label: "route semantic intents" },
+    );
 
-    this.frameScheduler.add("TRANSFORM", (frame) => {
-      runtime.updatePendingPanelPlacement();
-      if (runtime.pendingSpawnPlacement) {
-        runtime.updatePendingSpawnPreview();
-        runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
+    this.frameScheduler.add(
+      "TRANSFORM",
+      (frame) => {
+        runtime.updatePendingPanelPlacement();
+        if (runtime.pendingSpawnPlacement) {
+          runtime.updatePendingSpawnPreview();
+          runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
+          runtime.tutorial?.afterFrame(frame.now);
+          frame.skipRemaining = true;
+          return;
+        }
+        if (frame.hadPendingSpawn) {
+          runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
+          runtime.tutorial?.afterFrame(frame.now);
+          frame.skipRemaining = true;
+          return;
+        }
+        runtime.updateRadialMenus();
+        runtime.updateRaycastHover();
+        runtime.updateTriggerInteraction();
+        runtime.updateGripTransform();
+      },
+      { label: "preview, ray, and grip transforms" },
+    );
+
+    this.frameScheduler.add(
+      "COLLISION",
+      (frame) => {
+        runtime.honkContactSystem.update();
+        runtime.getUserCamera().getWorldPosition(userPosition);
+        runtime.stickCollisionSystem.update(frame.now, { userPosition });
+      },
+      { label: "honk contacts and stick strikes" },
+    );
+
+    this.frameScheduler.add(
+      "RELATIONSHIPS",
+      (frame) => {
+        runtime.validateMetronomeConnections();
+        runtime.updateLooperFollowerTransforms();
+        runtime.updateLockedHonkGroupTransforms();
+        runtime.updateShakeDisconnect(frame.now);
+        runtime.updateMetronomes(frame.now);
+        runtime.updateClockedLooperTransports(frame.now);
+      },
+      { label: "locks and looper assignments" },
+    );
+
+    this.frameScheduler.add(
+      "PERFORMANCE",
+      (frame) => {
+        runtime.updateMetronomeConnections(frame.now);
+        runtime.updateHorn(frame.now);
+        runtime.updateLooperRecordings(frame.now);
+      },
+      { label: "resolve current live input, then record its canonical state" },
+    );
+
+    this.frameScheduler.add(
+      "PRESENTATION",
+      (frame) => {
+        runtime.updateLooperMorphAnimations(frame.now);
+        runtime.updateLooperWires();
+        runtime.updateMetronomeConnectionWires();
         runtime.tutorial?.afterFrame(frame.now);
-        frame.skipRemaining = true;
-        return;
-      }
-      if (frame.hadPendingSpawn) {
-        runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
-        runtime.tutorial?.afterFrame(frame.now);
-        frame.skipRemaining = true;
-        return;
-      }
-      runtime.updateRadialMenus();
-      runtime.updateRaycastHover();
-      runtime.updateTriggerInteraction();
-      runtime.updateGripTransform();
-    }, { label: "preview, ray, and grip transforms" });
-
-    this.frameScheduler.add("COLLISION", (frame) => {
-      runtime.honkContactSystem.update();
-      runtime.getUserCamera().getWorldPosition(userPosition);
-      runtime.stickCollisionSystem.update(frame.now, { userPosition });
-    }, { label: "honk contacts and stick strikes" });
-
-    this.frameScheduler.add("RELATIONSHIPS", (frame) => {
-      runtime.validateMetronomeConnections();
-      runtime.updateLooperFollowerTransforms();
-      runtime.updateLockedHonkGroupTransforms();
-      runtime.updateShakeDisconnect(frame.now);
-      runtime.updateMetronomes(frame.now);
-      runtime.updateClockedLooperTransports(frame.now);
-    }, { label: "locks and looper assignments" });
-
-    this.frameScheduler.add("PERFORMANCE", (frame) => {
-      runtime.updateMetronomeConnections(frame.now);
-      runtime.updateHorn(frame.now);
-      runtime.updateLooperRecordings(frame.now);
-    }, { label: "resolve current live input, then record its canonical state" });
-
-    this.frameScheduler.add("PRESENTATION", (frame) => {
-      runtime.updateLooperMorphAnimations(frame.now);
-      runtime.updateLooperWires();
-      runtime.updateMetronomeConnectionWires();
-      runtime.tutorial?.afterFrame(frame.now);
-    }, { label: "morphs, audio, wires, and UI" });
+      },
+      { label: "morphs, audio, wires, and UI" },
+    );
   }
 }

@@ -1,0 +1,207 @@
+{
+  "source": {
+    "filename": "synthetic.mid",
+    "sha256": "09a36112561ed1bf7e37bfaf2c86308b3a10841bfc434c85850140b8b7d08441",
+    "byteLength": 53,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "synthetic.mid"
+    },
+    "format": 0,
+    "division": {
+      "kind": "ppq",
+      "ppq": 480
+    }
+  },
+  "sequences": [
+    {
+      "id": "sequence-0",
+      "events": [
+        {
+          "deltaTime": 0,
+          "meta": true,
+          "type": "setTempo",
+          "microsecondsPerBeat": 500000,
+          "id": "t0-e0",
+          "track": 0,
+          "index": 0,
+          "port": 0,
+          "tick": 0,
+          "seconds": 0,
+          "quarterBeat": 0
+        },
+        {
+          "deltaTime": 240,
+          "channel": 0,
+          "type": "noteOn",
+          "noteNumber": 60,
+          "velocity": 80,
+          "id": "t0-e1",
+          "track": 0,
+          "index": 1,
+          "port": 0,
+          "tick": 240,
+          "seconds": 0.25,
+          "quarterBeat": 0.5
+        },
+        {
+          "deltaTime": 480,
+          "channel": 0,
+          "type": "noteOff",
+          "noteNumber": 60,
+          "velocity": 40,
+          "id": "t0-e2",
+          "track": 0,
+          "index": 2,
+          "port": 0,
+          "tick": 720,
+          "seconds": 0.75,
+          "quarterBeat": 1.5
+        },
+        {
+          "deltaTime": 240,
+          "channel": 0,
+          "type": "noteOn",
+          "noteNumber": 64,
+          "velocity": 80,
+          "id": "t0-e3",
+          "track": 0,
+          "index": 3,
+          "port": 0,
+          "tick": 960,
+          "seconds": 1,
+          "quarterBeat": 2
+        },
+        {
+          "deltaTime": 480,
+          "channel": 0,
+          "type": "noteOff",
+          "noteNumber": 64,
+          "velocity": 40,
+          "id": "t0-e4",
+          "track": 0,
+          "index": 4,
+          "port": 0,
+          "tick": 1440,
+          "seconds": 1.5,
+          "quarterBeat": 3
+        },
+        {
+          "deltaTime": 0,
+          "meta": true,
+          "type": "endOfTrack",
+          "id": "t0-e5",
+          "track": 0,
+          "index": 5,
+          "port": 0,
+          "tick": 1440,
+          "seconds": 1.5,
+          "quarterBeat": 3
+        }
+      ],
+      "notes": [
+        {
+          "id": "t0-e1",
+          "track": 0,
+          "port": 0,
+          "channel": 0,
+          "midi": 60,
+          "velocity": 80,
+          "startTick": 240,
+          "releaseTick": 720,
+          "releaseVelocity": 40,
+          "soundingEndTick": 720,
+          "bend": [
+            {
+              "tick": 240,
+              "value14": 8192,
+              "range": 2,
+              "semitones": 0,
+              "assumedRange": true,
+              "seconds": 0.25
+            }
+          ],
+          "expression": [],
+          "startSeconds": 0.25,
+          "releaseSeconds": 0.75,
+          "endSeconds": 0.75,
+          "durationSeconds": 0.5,
+          "beat": 0.5,
+          "beats": 1
+        },
+        {
+          "id": "t0-e3",
+          "track": 0,
+          "port": 0,
+          "channel": 0,
+          "midi": 64,
+          "velocity": 80,
+          "startTick": 960,
+          "releaseTick": 1440,
+          "releaseVelocity": 40,
+          "soundingEndTick": 1440,
+          "bend": [
+            {
+              "tick": 960,
+              "value14": 8192,
+              "range": 2,
+              "semitones": 0,
+              "assumedRange": true,
+              "seconds": 1
+            }
+          ],
+          "expression": [],
+          "startSeconds": 1,
+          "releaseSeconds": 1.5,
+          "endSeconds": 1.5,
+          "durationSeconds": 0.5,
+          "beat": 2,
+          "beats": 1
+        }
+      ],
+      "tempo": [
+        {
+          "tick": 0,
+          "us": 500000,
+          "seconds": 0
+        }
+      ],
+      "meter": [],
+      "durationSeconds": 1.5,
+      "soundingEndSeconds": 1.5
+    }
+  ],
+  "inventory": [
+    {
+      "sequence": "sequence-0",
+      "duration": 1.5,
+      "soundingEnd": 1.5,
+      "tracks": [
+        {
+          "track": 0,
+          "name": "",
+          "channels": [0],
+          "ports": [0],
+          "notes": 2,
+          "pitchRange": [60, 64],
+          "maximumPolyphony": 1,
+          "density": 1.3333333333333333,
+          "programs": [],
+          "likelyRole": "melody-or-bass (confirm)"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "sequence": 0,
+      "issue": "no meter; teaching grid must be declared"
+    }
+  ],
+  "capabilities": {
+    "mpe": "channel and expression events preserved; zone-aware rendering requires an explicit arrangement decision",
+    "percussion": "source pitches retained; map before compiling",
+    "smpte": "seconds preserved; no invented PPQ"
+  }
+}

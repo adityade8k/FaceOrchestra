@@ -16,11 +16,28 @@ export const METRONOME_INTERACTION_ROLES = Object.freeze({
 });
 
 export class MetronomeInstrument extends InstrumentEntity {
-  constructor({ id, root, interactionTargetRegistry = null, targets = {}, audioSystem = null,
-    bpm = METRONOME_SETTINGS.defaultBpm, volume = METRONOME_SETTINGS.defaultVolume,
-    componentId = "metronome", handleRig = null, buttonRig = null, pendulumRig = null,
-    onTransportChange = null, metadata = {} } = {}) {
-    super({ id, kind: INSTRUMENT_KINDS.metronome, root, interactionTargetRegistry, metadata });
+  constructor({
+    id,
+    root,
+    interactionTargetRegistry = null,
+    targets = {},
+    audioSystem = null,
+    bpm = METRONOME_SETTINGS.defaultBpm,
+    volume = METRONOME_SETTINGS.defaultVolume,
+    componentId = "metronome",
+    handleRig = null,
+    buttonRig = null,
+    pendulumRig = null,
+    onTransportChange = null,
+    metadata = {},
+  } = {}) {
+    super({
+      id,
+      kind: INSTRUMENT_KINDS.metronome,
+      root,
+      interactionTargetRegistry,
+      metadata,
+    });
     this.componentId = componentId;
     this.audioSystem = audioSystem;
     this.handleRig = handleRig;
@@ -28,7 +45,11 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.pendulumRig = pendulumRig;
     this.onTransportChange = onTransportChange;
     this.bpm = clamp(bpm, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm);
-    this.volume = clamp(volume, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
+    this.volume = clamp(
+      volume,
+      METRONOME_SETTINGS.minVolume,
+      METRONOME_SETTINGS.maxVolume,
+    );
     this.handleRig?.setValue("bpm", this.bpm);
     this.handleRig?.setValue("volume", this.volume);
     this.playing = false;
@@ -43,16 +64,22 @@ export class MetronomeInstrument extends InstrumentEntity {
       if (!target) continue;
       const interactionRole = target.userData?.interactionRole || role;
       this.targetsByRole.set(role, target);
-      if (target.userData?.isMetronomeConnectionPort && target.userData.metronomePortId) {
+      if (
+        target.userData?.isMetronomeConnectionPort &&
+        target.userData.metronomePortId
+      ) {
         this.connectionPorts.set(target.userData.metronomePortId, target);
       }
-      if (interactionTargetRegistry) this.registerInteractionTarget(interactionRole, target);
+      if (interactionTargetRegistry)
+        this.registerInteractionTarget(interactionRole, target);
     }
   }
 
   setBpm(value) {
     const previousBpm = this.bpm;
-    const nextBpm = Math.round(clamp(value, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm));
+    const nextBpm = Math.round(
+      clamp(value, METRONOME_SETTINGS.minBpm, METRONOME_SETTINGS.maxBpm),
+    );
     let now = null;
     if (Number.isFinite(this.beatOriginMs)) {
       now = performance.now();
@@ -72,7 +99,11 @@ export class MetronomeInstrument extends InstrumentEntity {
   }
 
   setVolume(value) {
-    this.volume = clamp(value, METRONOME_SETTINGS.minVolume, METRONOME_SETTINGS.maxVolume);
+    this.volume = clamp(
+      value,
+      METRONOME_SETTINGS.minVolume,
+      METRONOME_SETTINGS.maxVolume,
+    );
     this.handleRig?.setValue("volume", this.volume);
     return this.volume;
   }
@@ -113,7 +144,8 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.lastEmittedBeatOrdinal = null;
     this.buttonRig?.reset();
     this.pendulumRig?.reset();
-    if (wasPlaying) this.onTransportChange?.({ metronome: this, playing: false, now });
+    if (wasPlaying)
+      this.onTransportChange?.({ metronome: this, playing: false, now });
     return false;
   }
 
@@ -158,12 +190,14 @@ export class MetronomeInstrument extends InstrumentEntity {
   }
 
   updatePendulum(now = performance.now()) {
-    return this.pendulumRig?.update({
-      nowMs: now,
-      bpm: this.bpm,
-      beatOriginMs: this.beatOriginMs,
-      playing: this.playing,
-    }) ?? 0;
+    return (
+      this.pendulumRig?.update({
+        nowMs: now,
+        bpm: this.bpm,
+        beatOriginMs: this.beatOriginMs,
+        playing: this.playing,
+      }) ?? 0
+    );
   }
 
   getBeatTiming(now = performance.now()) {
@@ -206,13 +240,20 @@ export class MetronomeInstrument extends InstrumentEntity {
   }
 
   serialize() {
-    return { ...super.serialize(), componentId: this.componentId, bpm: this.bpm, volume: this.volume };
+    return {
+      ...super.serialize(),
+      componentId: this.componentId,
+      bpm: this.bpm,
+      volume: this.volume,
+      appearance: { locked: Boolean(this.locked) },
+    };
   }
 
   restore(saved = {}) {
     this.restoreTransform(saved.transform);
     this.setBpm(saved.bpm ?? this.bpm);
     this.setVolume(saved.volume ?? this.volume);
+    this.locked = Boolean(saved.appearance?.locked ?? saved.locked);
     this.pause();
     return this;
   }
@@ -231,9 +272,15 @@ export class MetronomeInstrument extends InstrumentEntity {
     this.metronomeLabelTexture = null;
     this.metronomeLabelCanvas = null;
     this.root.traverse?.((object) => {
-      if (object.geometry?.userData?.disposeWithOwner) object.geometry.dispose?.();
-      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-        if (material?.userData?.disposeWithOwner || material?.userData?.disposeOnInstrumentDelete) {
+      if (object.geometry?.userData?.disposeWithOwner)
+        object.geometry.dispose?.();
+      for (const material of Array.isArray(object.material)
+        ? object.material
+        : [object.material]) {
+        if (
+          material?.userData?.disposeWithOwner ||
+          material?.userData?.disposeOnInstrumentDelete
+        ) {
           material.dispose?.();
         }
       }

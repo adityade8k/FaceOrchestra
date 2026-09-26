@@ -1,0 +1,15 @@
+{
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "fixtureSeconds": 1799.9,
+  "frames": 18000,
+  "chunks": 1800,
+  "loadMs": 567.7000000476837,
+  "seeks": 66,
+  "seekP50": 2,
+  "seekP95": 73.70000004768372,
+  "seekP99": 201.59999990463257,
+  "cachedChunks": 3,
+  "heapBytes": 14116058,
+  "bytes": 39307894,
+  "realTimeSoak": false
+}

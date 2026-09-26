@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "postinstall": "node scripts/capture/setup.mjs",
     "capture:setup": "node scripts/capture/setup.mjs",
@@ -19,10 +21,17 @@
     "verify": "npm run check && npm test",
     "test:tutorial:browser": "node scripts/run-tutorial-browser.mjs",
     "test:kuch:browser": "TUTORIAL_TEST=kuch node scripts/run-tutorial-browser.mjs",
-    "test:ports:browser": "TUTORIAL_TEST=ports node scripts/run-tutorial-browser.mjs"
+    "test:ports:browser": "TUTORIAL_TEST=ports node scripts/run-tutorial-browser.mjs",
+    "midi:import": "node scripts/midi/import.mjs",
+    "test:audit:browser": "node scripts/audit-browser.mjs",
+    "test:capture:long": "node scripts/capture/check-long-editor.mjs",
+    "test:guided:browser": "node scripts/capture/check-kuch-tutorial.mjs"
   },
   "dependencies": {
     "three": "0.164.1",
     "ws": "8.21.3"
+  },
+  "devDependencies": {
+    "midi-file": "1.2.4"
   }
 }

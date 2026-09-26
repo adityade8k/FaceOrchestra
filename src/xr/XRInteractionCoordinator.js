@@ -47,6 +47,7 @@ export class XRInteractionCoordinator {
   }
 
   route(intent, state) {
+    if (this.handlers.captureIntent?.(intent, state)) return;
     const controller = intent.controller;
     switch (intent.type) {
       case XRIntentType.SpawnMenuOpen:
@@ -94,7 +95,8 @@ export class XRInteractionCoordinator {
     const previous = this.controllerStates.get(controller);
     if (!previous) return;
     const replacement = createControllerInteractionState();
-    if (previous.gripOffsetMatrix) replacement.gripOffsetMatrix.copy(previous.gripOffsetMatrix.identity());
+    if (previous.gripOffsetMatrix)
+      replacement.gripOffsetMatrix.copy(previous.gripOffsetMatrix.identity());
     this.controllerStates.set(controller, replacement);
   }
 
