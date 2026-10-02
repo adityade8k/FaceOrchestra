@@ -29,6 +29,8 @@ try {
     check(['recenter','exit','play-alternativeLooper','play-chordLooper'].every(id=>t.panel.buttons.some(b=>b.visible&&b.userData.action===id)),'Switching exercise displaced XR session controls');
     await t.enterPlay();await t.action('tutorials');
     await t.action('composition:kuch-to-hua-hai');
+    check(t.compositionOptions?.arrangementId==='easier-bends','Default Kuch arrangement');
+    await t.action('composition-start');
     check(t.kuch,'Kuch tutorial failed: '+t.uiFeedback);
     const count=r.instrumentRegistry.size;
     t.menu.toggle();check(!t.panel.group.visible&&t.panel.dom.hidden,'Menu hide');t.menu.toggle();check(r.instrumentRegistry.size===count,'Menu must preserve scene');
@@ -71,7 +73,8 @@ try {
     check(t.adapter.get('chordLooper').timeline.hasRecording(),'Basics demonstration did not record through live input');
     await t.basics.cancelDemo();check(JSON.stringify(r.sceneSerializer.serialize())===JSON.stringify(before),'Recording example changed the prior take');
     check(Object.values(t.basics.outcomes).every(v=>v!=='passed'),'Demo awarded mastery');await t.enterPlay();
-    return {userAgent:navigator.userAgent,scenes,transitions:50,instrumentsAfter:r.instrumentRegistry.size,xrClockPersistence:true,indexedDBRecovery:true,basicsDemoPreservation:true,errors:[]};
+    const manualHonkRegression=await (await import('/scripts/validate-manual-honks-browser.mjs')).validate();
+    return {userAgent:navigator.userAgent,scenes,transitions:50,instrumentsAfter:r.instrumentRegistry.size,xrClockPersistence:true,indexedDBRecovery:true,basicsDemoPreservation:true,manualHonkRegression,errors:[]};
   })()`);
   result.errors = browser.errors;
   await writeFile("docs/audits/browser.json", JSON.stringify(result, null, 2));

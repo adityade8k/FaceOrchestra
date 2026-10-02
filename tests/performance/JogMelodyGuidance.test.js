@@ -1,3 +1,4 @@
+import { cueCanvas } from "../helpers/cueCanvas.js";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
@@ -23,7 +24,7 @@ test('recording guidance follows the complete canonical score on the supplied pe
   assert.match(guide.model(at(96)).feedback,/Continue playing freely/);
 });
 
-test('visible timing and bend rings never enter capture data, including when UI capture is enabled',()=>{
+test('timing and bend guidance is excluded from clean capture and included only with explicit UI capture',()=>{
   for(const includeUI of [false,true]) {
     const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(),root=new THREE.Group(),panel=new THREE.Group();
     root.add(new THREE.Mesh(new THREE.BoxGeometry(),new THREE.MeshBasicMaterial()));
@@ -31,7 +32,7 @@ test('visible timing and bend rings never enter capture data, including when UI 
     const honk={id:'melody',kind:'honk',root},events=[];
     const runtime={scene,getUserCamera:()=>camera,controllers:[],controllerStates:new Map(),instrumentRegistry:new Map([[honk.id,honk]])};
     const adapter={r:runtime,get:()=>honk,gestures:new Map()};
-    const cues=new TutorialTimingCues(adapter);
+    const cues=new TutorialTimingCues(adapter, { createCanvas: cueCanvas });
     runtime.tutorial={adapter,cues,panel:{group:panel}};
     const capture=new PresentationCapture(runtime,(kind,data)=>events.push({kind,data}),{includeUI});
     try {
@@ -42,10 +43,10 @@ test('visible timing and bend rings never enter capture data, including when UI 
         const sample=capture.sample(beat+4);capture.recycle(sample.buffer);
         assert.ok(sample.nodes.length>=2,'Actual instrument presentation is captured');
         assert.equal(capture.ids.has(panel),includeUI);
-        for(const ring of rings){assert.equal(capture.ids.has(ring),false);assert.equal(capture.resources.has(ring.material),false);}
-        assert.equal(capture.resources.has(cues.geometry),false);
+        for(const ring of rings){assert.equal(capture.ids.has(ring),includeUI);assert.equal(capture.resources.has(ring.material),includeUI);}
+        assert.equal(capture.resources.has(cues.geometry),includeUI);
       }
-      assert.ok(events.every(e=>e.data.name!=='Tutorial timing ring'));
+      assert.equal(events.some(e=>e.data.name==='Tutorial timing ring'),includeUI);
     }finally{cues.dispose();root.children[0].geometry.dispose();root.children[0].material.dispose();}
   }
 });
@@ -56,7 +57,7 @@ test('current note, upcoming note, rest and held Eb-to-C glide instructions adva
   assert.match(guide.model(at(0)).feedback,/Hold Trigger.*\nNext: G = E4/);
   assert.match(guide.model(at(11.1)).feedback,/Keep Trigger held · Hold level/);
   assert.match(guide.model(at(12.5)).feedback,/Keep Trigger held · Hold · roll down toward C/);
-  assert.match(guide.model(at(13.5)).feedback,/Settle on C · then release/);
+  assert.match(guide.model(at(13.5)).feedback,/Settle on C4.*then release/);
   assert.match(guide.model(at(14)).feedback,/Next: Rest/);
   assert.match(guide.model(at(15)).feedback,/Release Trigger · rest.\nNext: S = C4/);
   assert.match(guide.model(at(16)).transport,/B \(2\/6\) · Beat 1\/16/);
@@ -69,7 +70,7 @@ test('the existing tutorial renderer follows moved melody targets, previews onse
     instruments.set(`melody-${pitch}`,{root,getSqueezeColliderSphere:()=>({center:root.position,radius:.065})});
   });
   const cues=new TutorialTimingCues({r:{scene,getUserCamera:()=>camera,controllers:[],controllerStates:new Map()},
-    get:role=>instruments.get(role),gestures:new Map()});
+    get:role=>instruments.get(role),gestures:new Map()}, { createCanvas: cueCanvas });
   try {
     const guide=new JogMelodyGuidance(anchor),first=instruments.get('melody-C4');
     first.root.position.x+=.12;
@@ -81,9 +82,10 @@ test('the existing tutorial renderer follows moved melody targets, previews onse
     assert.ok(cues.pool[0].yellow.scale.x>.065);
     cues.update(guide,at(12.5));
     assert.match(cues.bendInstruction,/roll down toward C/);
-    const bend=cues.pool.find(p=>p.bend.visible);
+    const bend=cues.pool.find(p=>p.yellow.visible);
     assert.deepEqual(bend.reference.position.toArray(),instruments.get('melody-Eb4').root.position.toArray());
-    assert.notEqual(bend.bend.position.x,bend.reference.position.x);
+    assert.ok(cues.gauge.root.visible);
+    assert.notEqual(cues.gauge.expected.position.x,0);
     cues.update(guide,at(96),{active:!guide.complete(at(96))});
     assert.ok(cues.pool.every(p=>Object.values(p).every(m=>!m.visible)));
     cues.update(guide,at(0));cues.reset();

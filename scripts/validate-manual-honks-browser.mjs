@@ -27,6 +27,15 @@ export async function validate() {
     r.lockConnectedChordStates(h);
     await r.audioSystem.ensureAudio();
     point(h.getSqueezeColliderSphere().center);
+    let squeezeBodyQueries = 0;
+    const bodyRaycasts = h.gripTargetList.map(mesh => [mesh, mesh.raycast]);
+    for (const [mesh, original] of bodyRaycasts) mesh.raycast = function (...args) {
+      squeezeBodyQueries++; return original.apply(this, args);
+    };
+    try {
+      check(r.getCurrentHit(controller)?.object === h.squeezeCollider, 'control-first sphere selection');
+      check(squeezeBodyQueries === 0, 'squeeze selection does not traverse authored body triangles');
+    } finally { for (const [mesh, original] of bodyRaycasts) mesh.raycast = original; }
     check(r.getCurrentHit(controller)?.object === h.squeezeCollider, 'real sphere ray selection');
     state.trigger = true; r.handleTriggerBeginIntent(controller); r.updateHorn(0);
     await new Promise(resolve => setTimeout(resolve, 0));
@@ -52,6 +61,15 @@ export async function validate() {
         THREE.MathUtils.lerp(box.min.x, box.max.x, (x + 0.5) / 7),
         THREE.MathUtils.lerp(box.min.y, box.max.y, (y + 0.5) / 7), box.max.z);
       point(position);
+      const selected = r.raycastSystem.getCurrentHit(controller);
+      const classify = r.raycastSystem.isFallbackBody;
+      let completeSelection;
+      try {
+        r.raycastSystem.isFallbackBody = () => false;
+        completeSelection = r.raycastSystem.getCurrentHit(controller);
+      } finally { r.raycastSystem.isFallbackBody = classify; }
+      check(selected?.object === completeSelection?.object, 'staged/full actual-mesh selection parity');
+      if (selected) check(Math.abs(selected.distance - completeSelection.distance) < 1e-9, 'staged/full selection distance parity');
       const hit = r.getGripHit(controller);
       const expected = h.withInteractionPose(() => {
         const found = [];
@@ -97,7 +115,7 @@ export async function validate() {
     await new Promise(resolve => setTimeout(resolve, 0));
     r.deleteInstrument(h);
     check(!state.raySqueezeTarget && r.audioSystem.honkVoices.voices.size === 0, 'delete releases captured chord');
-    return { comparisons, hits, visualScale, lockedSphereVoices: 3, groupMovement: true,
+    return { comparisons, hits, visualScale, squeezeBodyQueries, selectionParity: true, lockedSphereVoices: 3, groupMovement: true,
       sameFrameTransforms: true, holdRollUnlockDelete: true };
   } finally {
     const context = r.audioSystem.audioContextService.context;

@@ -46,7 +46,7 @@ add('unequip','unequip','Put away the stick','Release Grip to unequip the stick 
 add('melody','spawn','Place the seven melody Honks','Radial menu → Scales → Jog Study. Keep C4, Eb4, E4, F4, G4, Bb4, C5 separate from each other and the backing. Point and press right B to lock or unlock any Honk during Practice.',{role:'melody',kind:'honk',catalogId:'jog-melody'});
 for (const [pitch,p] of Object.entries(PITCHES)) add(`learn-${pitch}`,'note',`${p.syllable} — ${pitch} · ${p.name}`,
   `Play ${pitch} at the yellow ring. Hold at least half a second, then release. Take your time.`,{role:`melody-${pitch}`,midis:[p.midi],minimumMs:450});
-add('learn-bend','note','One voice: g → S','Squeeze Eb4 at the stationary ring. The small amber marker guides wrist roll, not sideways movement. Hold · roll down toward C · settle · release. Keep one continuously held voice. Take about 2¼ seconds.',{role:'melody-Eb4',midis:[63],minimumMs:1500,bend:DESCENDING_BEND});
+add('learn-bend','note','One voice: g → S','Preview Eb4 → C4 on the green radial gauge. Squeeze to start yellow; hold level, then follow the wrist-roll target down toward C. Settle and release when yellow reaches white. Keep one continuously held voice. Take about 2¼ seconds.',{role:'melody-Eb4',midis:[63],minimumMs:1500,bend:DESCENDING_BEND});
 for (const phrase of Object.keys(C.phrases)) add(`phrase-${phrase}`,'phrase',`Practice phrase ${phrase}`,
   `Follow the next note and rings. Practice counts in with your available backing, or the Metronome alone. ${phrase==='D'?'Let the final C linger.':'Keep each descending Eb → C glide in one voice.'}`,
   {phrase,timed:true,beats:16});

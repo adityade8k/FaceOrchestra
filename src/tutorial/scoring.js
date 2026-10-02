@@ -45,7 +45,7 @@ export function scoreAttempt(step,events,{timed=Boolean(step.timed),reason=''}={
   const score=Math.round(Object.entries(components).reduce((n,[key,value])=>n+value*weights[key],0)/weight);
   const suggestions=[];
   if(correct<expected.length||extra)suggestions.push(`${correct}/${expected.length} correct targets${extra?`, ${extra} extra`:''}. Follow the highlighted target and leave rests clear.`);
-  if(timed&&components.timing<85)suggestions.push('Prepare while green shrinks; start when yellow opens.');
+  if(timed&&components.timing<85)suggestions.push('Prepare while green shrinks; start as it closes, then release when yellow reaches white.');
   if(kind==='note'&&components.holdRelease<85)suggestions.push('Hold through the expanded yellow ring; let go as it shrinks.');
   if(bendCount&&components.bend<85)suggestions.push('Begin on Eb, glide down smoothly, and settle on C before release.');
   if(reason)suggestions.unshift(reason);

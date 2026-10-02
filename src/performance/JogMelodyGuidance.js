@@ -18,7 +18,7 @@ export class JogMelodyGuidance {
     if(beat<0)return {instruction:MELODY_HELP,transport:`${Math.ceil(-beat)} · Prepare\nFirst: ${describeNote(EVENTS[0])}`,
       feedback:'Wait for Play. Prepare the first highlighted Honk; squeeze Trigger when its yellow ring opens.'};
     const index=EVENTS.findIndex(event=>beat<event.beat+event.beats),event=EVENTS[index],next=EVENTS[index+1];
-    const bend=bendCueState(event.bend,(beat-event.beat)/event.beats);
+    const bend=bendCueState(event.bend,(beat-event.beat)/event.beats,event);
     const action=!event.pitch?'Release Trigger · rest.':bend
       ?`Keep Trigger held · ${bend.instruction}.`
       :'Hold Trigger while yellow stays open; release as it shrinks.';

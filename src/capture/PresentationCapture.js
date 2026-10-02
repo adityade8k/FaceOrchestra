@@ -97,8 +97,9 @@ export class PresentationCapture {
       if (/^(LOOPER|METRONOME|CONNECTION)_wire/.test(node.name))
         candidates.push([`wire-${node.id}`, node, "wires", null]);
     if (this.includeUI) {
-      // Timing/bend rings are headset-only direct scene children. Deliberately
-      // omit them even with UI enabled, so replay/export cannot include them.
+      // Guidance is opt-in alongside UI; clean MR never binds these roots.
+      for (const node of this.runtime.tutorial?.cues?.captureRoots?.() || [])
+        candidates.push([`guidance-${node.id}`, node, "tutorial", null]);
       for (const [index, c] of this.runtime.controllers.entries()) {
         if (c.userData.radialMenu)
           candidates.push([

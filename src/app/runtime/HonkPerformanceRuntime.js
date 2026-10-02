@@ -9,7 +9,7 @@ import {
 } from "../../config/honk.js";
 import { LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD } from "../../config/looper.js";
 import { isHonkSqueezeTarget } from "../../instruments/honk/HonkInteractionProfile.js";
-import { releaseControllerHonkVoice } from "./ControllerHonkRelease.js";
+import { releaseControllerHonkVoice, prepareControllerHonkAttack } from "./ControllerHonkRelease.js";
 import {
   REFERENCE_FRAME_MS,
   captureCanonicalHonkPerformance,
@@ -97,6 +97,7 @@ export const HonkPerformanceRuntimeMethods = {
           chainState.hornHolders.add(voiceId);
           chainState.activeBends.set(voiceId, bendAmount);
           if (!interaction.activeVoiceIds?.has(voiceId) || !chainState.hasAudioVoice(voiceId)) {
+            prepareControllerHonkAttack(chainState,voiceId);
             // The service is authoritative for pending/failed/cancelled starts;
             // membership alone is insufficient after an asynchronous failure.
             Promise.resolve(chainState.startAudioVoice(voiceId)).catch(() => {

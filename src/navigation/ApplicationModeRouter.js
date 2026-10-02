@@ -20,12 +20,14 @@ export class ApplicationModeRouter {
       this.cancellation = cancellation;
       const previous = this.identity;
       this.onChange({ state: "loading", id });
-      let prepared;
+      let prepared,
+        quiesced = false;
       try {
         prepared = await prepare(cancellation.signal);
         cancellation.signal.throwIfAborted();
         if (previous === "play") await this.checkpoint();
         cancellation.signal.throwIfAborted();
+        quiesced = true;
         await this.quiesce();
         cancellation.signal.throwIfAborted();
         await commit(prepared);
@@ -34,8 +36,14 @@ export class ApplicationModeRouter {
         return true;
       } catch (error) {
         await prepared?.disposeAbandoned?.();
-        if (!this.disposed) await this.rollback(previous);
-        this.onChange({ state: "error", id, error });
+        // A cancelled/failed loader has not touched the outgoing workspace.
+        // Restoring Play here would discard a still-active lesson's takes.
+        if (!this.disposed && quiesced) await this.rollback(previous);
+        this.onChange(
+          error.name === "AbortError"
+            ? { state: "ready", id: previous }
+            : { state: "error", id, error },
+        );
         throw error;
       }
     };

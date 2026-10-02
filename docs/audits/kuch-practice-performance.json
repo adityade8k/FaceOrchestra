@@ -1,0 +1,330 @@
+{
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+  },
+  "headset": false,
+  "cpuThrottle": 1,
+  "warmSequence": {
+    "rawEvidence": "test-results/practice-new-features.json",
+    "results": {
+      "idle-desktop": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.699999999999818,
+          "p95": 16.700000000000728,
+          "p99": 16.800000000000182,
+          "max": 16.800000000000182,
+          "total": 5983.2
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "updateCpuP95Ms": 0.8999999761581421,
+        "renderSubmissionP95Ms": 1.1999999284744263,
+        "cueCpuP95Ms": 0,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 271,
+          "p95": 271,
+          "p99": 271,
+          "max": 271,
+          "total": 97560
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 305094,
+          "p95": 305094,
+          "p99": 305094,
+          "max": 305094,
+          "total": 109833840
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 0
+      },
+      "melody-desktop": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.69999999999891,
+          "p95": 16.799999999999272,
+          "p99": 16.80000000000109,
+          "max": 16.80000000000291,
+          "total": 5983.0999999999985
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "updateCpuP95Ms": 1.2999999523162842,
+        "renderSubmissionP95Ms": 1.1999999284744263,
+        "cueCpuP95Ms": 0.10000002384185791,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 287,
+          "p95": 331,
+          "p99": 331,
+          "max": 331,
+          "total": 105124
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306414,
+          "p95": 307182,
+          "p99": 307182,
+          "max": 307566,
+          "total": 110306648
+        },
+        "keyboardMutations": 13,
+        "longTaskCount": 0
+      },
+      "melody-xr-panel": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.69999999999709,
+          "p95": 16.799999999999272,
+          "p99": 16.799999999999272,
+          "max": 16.80000000000291,
+          "total": 5983.0999999999985
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "updateCpuP95Ms": 1.100000023841858,
+        "renderSubmissionP95Ms": 1.100000023841858,
+        "cueCpuP95Ms": 0.10000002384185791,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 304,
+          "p95": 348,
+          "p99": 348,
+          "max": 348,
+          "total": 111244
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306446,
+          "p95": 307214,
+          "p99": 307214,
+          "max": 307598,
+          "total": 110318168
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 0
+      },
+      "melody-menu-hidden": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.69999999999709,
+          "p95": 16.700000000004366,
+          "p99": 16.799999999999272,
+          "max": 16.80000000000291,
+          "total": 5983.200000000001
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "updateCpuP95Ms": 1.0999999046325684,
+        "renderSubmissionP95Ms": 1.100000023841858,
+        "cueCpuP95Ms": 0.10000002384185791,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 287,
+          "p95": 331,
+          "p99": 331,
+          "max": 331,
+          "total": 105124
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306414,
+          "p95": 307182,
+          "p99": 307182,
+          "max": 307566,
+          "total": 110306652
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 0
+      },
+      "full-song-backing-xr-panel": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.69999999999709,
+          "p95": 16.799999999995634,
+          "p99": 16.80000000000291,
+          "max": 16.80000000000291,
+          "total": 5983.199999999997
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "updateCpuP95Ms": 1.2000000476837158,
+        "renderSubmissionP95Ms": 1.100000023841858,
+        "cueCpuP95Ms": 0.10000002384185791,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 304,
+          "p95": 348,
+          "p99": 348,
+          "max": 348,
+          "total": 111244
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306446,
+          "p95": 307214,
+          "p99": 307214,
+          "max": 307598,
+          "total": 110318160
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 0
+      },
+      "full-song-backing-hidden": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.69999999999709,
+          "p95": 16.700000000004366,
+          "p99": 16.80000000000291,
+          "max": 16.80000000000291,
+          "total": 5983.0999999999985
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "updateCpuP95Ms": 1.1999999284744263,
+        "renderSubmissionP95Ms": 1.100000023841858,
+        "cueCpuP95Ms": 0.10000002384185791,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 287,
+          "p95": 331,
+          "p99": 331,
+          "max": 331,
+          "total": 105110
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306414,
+          "p95": 307182,
+          "p99": 307182,
+          "max": 307566,
+          "total": 110305332
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 0
+      },
+      "chord-recording": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.69999999999709,
+          "p95": 16.799999999995634,
+          "p99": 16.80000000000291,
+          "max": 16.80000000000291,
+          "total": 5983
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "updateCpuP95Ms": 1.2999999523162842,
+        "renderSubmissionP95Ms": 1.0999999046325684,
+        "cueCpuP95Ms": 0.10000002384185791,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 292,
+          "p95": 292,
+          "p99": 292,
+          "max": 292,
+          "total": 104692
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306050,
+          "p95": 306050,
+          "p99": 306050,
+          "max": 306050,
+          "total": 110138184
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 0
+      }
+    }
+  },
+  "freshFullSongSequence": {
+    "rawEvidence": "test-results/practice-full-backing-final.json",
+    "results": {
+      "full-song-backing-xr-panel": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.700000000000728,
+          "p95": 150,
+          "p99": 266.7000000000007,
+          "max": 283.3000000000029,
+          "total": 17082.600000000002
+        },
+        "over25ms": 136,
+        "over50ms": 101,
+        "updateCpuP95Ms": 53.799999952316284,
+        "renderSubmissionP95Ms": 57.89999997615814,
+        "cueCpuP95Ms": 0.7000000476837158,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 302,
+          "p95": 344,
+          "p99": 347,
+          "max": 347,
+          "total": 110255
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306446,
+          "p95": 307214,
+          "p99": 307598,
+          "max": 307598,
+          "total": 110299128
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 59
+      },
+      "full-song-backing-hidden": {
+        "frames": 360,
+        "frameIntervalMs": {
+          "samples": 359,
+          "p50": 16.700000000004366,
+          "p95": 116.69999999999709,
+          "p99": 116.79999999999563,
+          "max": 133.40000000000146,
+          "total": 18715.9
+        },
+        "over25ms": 156,
+        "over50ms": 141,
+        "updateCpuP95Ms": 9.799999952316284,
+        "renderSubmissionP95Ms": 10.599999904632568,
+        "cueCpuP95Ms": 0.40000009536743164,
+        "drawCalls": {
+          "samples": 360,
+          "p50": 285,
+          "p95": 329,
+          "p99": 330,
+          "max": 330,
+          "total": 104353
+        },
+        "triangles": {
+          "samples": 360,
+          "p50": 306414,
+          "p95": 307182,
+          "p99": 307566,
+          "max": 307566,
+          "total": 110288336
+        },
+        "keyboardMutations": 0,
+        "longTaskCount": 0
+      }
+    }
+  },
+  "interpretation": "Inconsistent frame pacing. A later read-only process check observed unrelated high CPU consumers (about 127%, 99%, and 99%). This is evidence of possible contention, not proof of its cause. No unrelated processes were modified. The warm sequence predates the final capture-compatible arc pooling; the fresh sequence includes it. No measured headset improvement is claimed.",
+  "unrun": [
+    "Physical headset compositor/GPU measurements",
+    "Headset readability and bend comfort",
+    "Acoustic timing/listening review"
+  ]
+}

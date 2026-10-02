@@ -122,7 +122,7 @@ export const compositionRegistry = new CompositionRegistry([
   {
     id: "kuch-to-hua-hai",
     title: "Kuch To Hua Hai",
-    version: 1,
+    version: 2,
     load: () => import("./kuch.js"),
   },
 ]);

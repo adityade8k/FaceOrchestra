@@ -29,7 +29,7 @@ test('four melody drills cover every note without splitting holds and keep their
       assert.equal(part.backingChanges.filter(([beat])=>beat<=n.beat).at(-1)[1],expected);
     }
   }
-  assert.deepEqual(MELODY_PARTS[2].backingChanges,[[0,'change'],[16,'D']]);
+  assert.deepEqual(MELODY_PARTS[2].backingChanges,[[0,'D'],[16,'change'],[32,'D']]);
 });
 test('four-bar guitar patterns use original simultaneous voicings; drum identifiers map only to stick targets',()=>{
   assert.equal(CHORDS.D.length,12);assert.equal(CHORDS.change.length,10);

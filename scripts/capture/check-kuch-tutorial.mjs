@@ -6,7 +6,9 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import { writeGuidedAudit } from "./audit-report.mjs";
 const root = await mkdtemp(join(tmpdir(), "honk-kuch-"));
-const song = ["jog", "radial"].includes(process.env.TUTORIAL_TEST)
+const song = ["jog", "radial", "kuch-targeted", "kuch-practice"].includes(
+  process.env.TUTORIAL_TEST,
+)
   ? process.env.TUTORIAL_TEST
   : "kuch";
 const validator =
@@ -14,7 +16,13 @@ const validator =
     ? "validate-tutorial-browser"
     : song === "radial"
       ? "validate-tutorial-radial-browser"
-      : "validate-kuch-browser";
+      : song === "kuch-practice"
+        ? "validate-kuch-practice"
+        : song === "kuch-targeted"
+          ? "validate-kuch-improvements"
+          : "validate-kuch-browser";
+const arrangementId = process.env.KUCH_ARRANGEMENT || "easier-bends";
+const reportName = song === "kuch" ? `kuch-${arrangementId}` : song;
 let service, browser;
 let environment;
 try {
@@ -37,7 +45,7 @@ try {
     expression: `(async()=>{
       const {app}=await import('/src/main.js');
       while(!app.initialized)await new Promise(resolve=>setTimeout(resolve,100));
-      return (await import('/scripts/${validator}.mjs')).${song === "radial" ? "validateStandalone" : "validate"}(app);
+      return (await import('/scripts/${validator}.mjs')).${song === "radial" ? "validateStandalone" : "validate"}(app,${JSON.stringify({ arrangementId })});
     })()`,
     awaitPromise: true,
     returnByValue: true,
@@ -50,17 +58,17 @@ try {
         result.exceptionDetails.text,
     );
   assert.deepEqual(browser.errors, []);
-  await writeGuidedAudit(song, {
+  await writeGuidedAudit(reportName, {
     passed: true,
     ...result.result.value,
     environment,
   });
   console.log(
-    `Passed complete ${song} tutorial regression. See docs/audits/${song}-tutorial.json.`,
+    `Passed complete ${reportName} tutorial regression. See docs/audits/${reportName}-tutorial.json.`,
   );
 } catch (error) {
   await writeFile(
-    `docs/audits/${song}-tutorial.json`,
+    `docs/audits/${reportName}-tutorial.json`,
     JSON.stringify(
       {
         passed: false,

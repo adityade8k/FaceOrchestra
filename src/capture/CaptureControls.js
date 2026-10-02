@@ -1,5 +1,78 @@
 import * as THREE from "three";
 
+// One presentation-only predicate, shared by immediate events and refreshes.
+// Physical controller connection state is independent of tutorial virtual hands.
+export function bindCaptureStatusVisibility({
+  runtime,
+  menu,
+  mesh,
+  onRefresh = () => {},
+  isApplicable = () => true,
+}) {
+  const xr = runtime.renderer.xr,
+    disconnected = new Set(),
+    listeners = [];
+  let active = Boolean(runtime.xrSessionActive || xr.isPresenting),
+    disposed = false;
+  const refresh = () => {
+    if (disposed) return;
+    const controller = active
+      ? runtime.controllers.find(
+          (c) =>
+            !c.userData.virtualTutorial &&
+            !disconnected.has(c) &&
+            c.userData.gamepad &&
+            c.visible !== false,
+        )
+      : null;
+    if (controller && mesh.parent !== controller) controller.add(mesh);
+    if (!controller) mesh.removeFromParent();
+    mesh.visible = Boolean(
+      active && controller && menu?.visible && isApplicable(controller),
+    );
+  };
+  const changed = () => {
+    onRefresh();
+    refresh();
+  };
+  const listen = (target, event, fn) => {
+    target?.addEventListener(event, fn);
+    listeners.push(() => target?.removeEventListener(event, fn));
+  };
+  for (const controller of runtime.controllers.filter(
+    (c) => !c.userData.virtualTutorial,
+  )) {
+    listen(controller, "connected", () => {
+      disconnected.delete(controller);
+      changed();
+    });
+    listen(controller, "disconnected", () => {
+      disconnected.add(controller);
+      changed();
+    });
+  }
+  listen(xr, "sessionstart", () => {
+    active = true;
+    changed();
+  });
+  listen(xr, "sessionend", () => {
+    active = false;
+    changed();
+  });
+  const unsubscribe = menu?.subscribeVisibility(changed);
+  refresh();
+  return {
+    refresh,
+    dispose() {
+      disposed = true;
+      unsubscribe?.();
+      listeners.forEach((remove) => remove());
+      mesh.visible = false;
+      mesh.removeFromParent();
+    },
+  };
+}
+
 export function installCaptureControls(recorder) {
   const panel = document.createElement("details");
   panel.className = "capture-controls";
@@ -81,12 +154,7 @@ export function installCaptureControls(recorder) {
       ctx.fillText(recorder.message.slice(0, 75), 20, 106);
       texture.needsUpdate = true;
     }
-    const controller = recorder.runtime.controllers[0];
-    if (controller && statusMesh.parent !== controller)
-      controller.add(statusMesh);
-    statusMesh.visible =
-      recorder.state !== "idle" ||
-      Boolean(controller?.userData.radialMenu?.visible);
+    badge?.refresh();
     for (const c of recorder.runtime.controllers) {
       const ring =
         c.userData.radialMenu?.userData.childRings?.get("category-capture");
@@ -142,12 +210,22 @@ export function installCaptureControls(recorder) {
     recorder.includeUI = e.target.checked;
   };
   recorder.addEventListener("change", refresh);
+  const badge = bindCaptureStatusVisibility({
+    runtime: recorder.runtime,
+    menu: recorder.runtime.tutorial?.menu,
+    mesh: statusMesh,
+    onRefresh: refresh,
+    isApplicable: (controller) =>
+      recorder.state !== "idle" ||
+      Boolean(controller.userData.radialMenu?.visible),
+  });
   const timer = setInterval(refresh, 500);
   recorder.readiness();
   refresh();
   return () => {
     clearInterval(timer);
     recorder.removeEventListener("change", refresh);
+    badge.dispose();
     panel.remove();
     style.remove();
     statusMesh.removeFromParent();

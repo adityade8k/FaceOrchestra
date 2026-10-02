@@ -67,6 +67,32 @@ canvas {
   overflow: auto;
   padding-right: 6px;
 }
+.tutorial-panel:has(.practice-tempo:not([hidden])) {
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+}
+.practice-tempo {
+  min-width: 0;
+  margin: 10px 0 0;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid #42685b;
+  background: #0c201d;
+  font: 16px/1.4 system-ui, sans-serif;
+}
+.practice-tempo input { accent-color: #83dfbd; }
+.practice-tempo input[type="range"] { display: block; margin: 12px 0; }
+.practice-tempo > div { display: flex; gap: 8px; margin-bottom: 10px; }
+.practice-tempo button {
+  flex: 1;
+  padding: 6px;
+  color: #fff4dd;
+  background: #30574b;
+  border: 1px solid #558474;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.practice-tempo :focus-visible { outline: 2px solid #b4ecd3; outline-offset: 2px; }
 .tutorial-panel[hidden] {
   display: none;
 }

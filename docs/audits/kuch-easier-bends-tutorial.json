@@ -1,0 +1,289 @@
+{
+  "passed": true,
+  "melodyNotes": 167,
+  "arrangementId": "easier-bends",
+  "sourcePitchLandmarks": 185,
+  "ringChecks": 2965,
+  "bendRingChecks": 740,
+  "audible": [
+    {
+      "id": "lead-3+lead-4",
+      "landmark": 66,
+      "landingMs": 142.67826079803524,
+      "settledMs": 166.30000007152557
+    },
+    {
+      "id": "lead-14+lead-15",
+      "landmark": 66,
+      "landingMs": 157.2869564502097,
+      "settledMs": 166.80000007152557
+    },
+    {
+      "id": "lead-41+lead-42",
+      "landmark": 66,
+      "landingMs": 156.1043477783977,
+      "settledMs": 166.30000007152557
+    },
+    {
+      "id": "lead-52+lead-53",
+      "landmark": 66,
+      "landingMs": 155.11304340673166,
+      "settledMs": 166.40000009536743
+    },
+    {
+      "id": "lead-61+lead-62",
+      "landmark": 66,
+      "landingMs": 151.84782608695178,
+      "settledMs": 166.79999995231628
+    },
+    {
+      "id": "lead-64+lead-65",
+      "landmark": 66,
+      "landingMs": 156.9869564978938,
+      "settledMs": 466.5
+    },
+    {
+      "id": "lead-72+lead-73",
+      "landmark": 66,
+      "landingMs": 150.05652176296945,
+      "settledMs": 166.69999992847443
+    },
+    {
+      "id": "lead-75+lead-76",
+      "landmark": 66,
+      "landingMs": 155.29565219775333,
+      "settledMs": 467.39999997615814
+    },
+    {
+      "id": "lead-83+lead-84",
+      "landmark": 66,
+      "landingMs": 83.46521736746155,
+      "settledMs": 233
+    },
+    {
+      "id": "lead-102+lead-103",
+      "landmark": 66,
+      "landingMs": 150.45652173912538,
+      "settledMs": 166.10000002384186
+    },
+    {
+      "id": "lead-113+lead-114",
+      "landmark": 66,
+      "landingMs": 149.26521731977562,
+      "settledMs": 167.10000002384186
+    },
+    {
+      "id": "lead-126+lead-127",
+      "landmark": 71,
+      "landingMs": 148.08260864796182,
+      "settledMs": 499.7000000476837
+    },
+    {
+      "id": "lead-128+lead-129",
+      "landmark": 73,
+      "landingMs": 154.10434777840135,
+      "settledMs": 166.89999997615814
+    },
+    {
+      "id": "lead-138+lead-139",
+      "landmark": 71,
+      "landingMs": 146.09130427630305,
+      "settledMs": 500.3000000715256
+    },
+    {
+      "id": "lead-140+lead-141",
+      "landmark": 73,
+      "landingMs": 153.01304350210273,
+      "settledMs": 166.5
+    },
+    {
+      "id": "lead-146+lead-147",
+      "landmark": 66,
+      "landingMs": 60.217391304351,
+      "settledMs": 267.5
+    },
+    {
+      "id": "lead-165+lead-166",
+      "landmark": 66,
+      "landingMs": 144.70869567600755,
+      "settledMs": 166.89999997615814
+    },
+    {
+      "id": "lead-176+lead-177",
+      "landmark": 66,
+      "landingMs": 144.2173913043415,
+      "settledMs": 166
+    }
+  ],
+  "menuHiddenGuidance": true,
+  "demonstrationCredit": false,
+  "percussionHits": 20,
+  "patternSwitches": [
+    {
+      "pattern": "D",
+      "beat": -4.973500000000007
+    },
+    {
+      "pattern": "change",
+      "beat": 12.019820000036551
+    },
+    {
+      "pattern": "D",
+      "beat": 28.016779999963436
+    },
+    {
+      "pattern": "change",
+      "beat": 60.01162000003655
+    },
+    {
+      "pattern": "D",
+      "beat": 76.00812000003656
+    },
+    {
+      "pattern": "change",
+      "beat": 108.02703333333332
+    },
+    {
+      "pattern": "D",
+      "beat": 124.02583333333332
+    }
+  ],
+  "switches": [
+    {
+      "id": 1,
+      "fromId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "toId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "requestedAtMs": 46998.1,
+      "requestedBeat": 71.01357333336989,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.2508483333356182,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 83,
+      "completedAtMs": 54824.299999952316,
+      "phase": "switch-patterns"
+    },
+    {
+      "id": 2,
+      "fromId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "toId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "requestedAtMs": 57431,
+      "requestedBeat": 87.01068666670322,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.2506679166689515,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 99,
+      "completedAtMs": 65258.09999990463,
+      "phase": "switch-patterns"
+    },
+    {
+      "id": 3,
+      "fromId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "toId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "requestedAtMs": 76346.9,
+      "requestedBeat": 116.01506666670322,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7509416666689502,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 120,
+      "completedAtMs": 78946.8,
+      "phase": "performance"
+    },
+    {
+      "id": 4,
+      "fromId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "toId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "requestedAtMs": 86779.9,
+      "requestedBeat": 132.0123333333699,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7507708333356187,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 136,
+      "completedAtMs": 89382.29999995232,
+      "phase": "performance"
+    },
+    {
+      "id": 5,
+      "fromId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "toId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "requestedAtMs": 107645.6,
+      "requestedBeat": 164.00640666670324,
+      "boundarySourceMs": 20869.565217391304,
+      "origin": "demonstration",
+      "requestedPhase": 0.7504004166689527,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 168,
+      "completedAtMs": 110255.89999997616,
+      "phase": "performance"
+    },
+    {
+      "id": 6,
+      "fromId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "toId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "requestedAtMs": 118078.5,
+      "requestedBeat": 180.00352000003656,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7502200000022848,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 184,
+      "completedAtMs": 120695.1,
+      "phase": "performance"
+    },
+    {
+      "id": 7,
+      "fromId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "toId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "requestedAtMs": 138961.1,
+      "requestedBeat": 212.02350666670324,
+      "boundarySourceMs": 20869.565217391304,
+      "origin": "demonstration",
+      "requestedPhase": 0.7514691666689525,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 216,
+      "completedAtMs": 141556.39999997616,
+      "phase": "performance"
+    },
+    {
+      "id": 8,
+      "fromId": "looper-60e208f9-f632-45f4-a46d-ffb5e4b01b32",
+      "toId": "looper-b5d66c35-b6eb-40f0-ad42-9e139bcca0b5",
+      "requestedAtMs": 149394,
+      "requestedBeat": 228.02062000003656,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7512887500022849,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 232,
+      "completedAtMs": 151993.8,
+      "phase": "performance"
+    }
+  ],
+  "queuedSeen": true,
+  "peak": 0.6618574261665344,
+  "phases": [
+    "D",
+    "change",
+    "drums",
+    "switch-patterns",
+    "performance"
+  ],
+  "sceneRestored": true,
+  "cancelPreservedTake": true,
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+  },
+  "rawEvidence": "test-results/guided/kuch-easier-bends.json"
+}

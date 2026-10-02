@@ -1,3 +1,4 @@
+import { PracticeProgress } from "./kuch/PracticeProgress.js";
 import { LearningProgress } from "../persistence/LearningProgress.js";
 import { SongRecordingSession } from "../performance/SongRecordingSession.js";
 import {
@@ -223,6 +224,7 @@ export class TutorialRuntime {
       return;
     }
     if (id === "menu-home") {
+      this.selectionGeneration = (this.selectionGeneration || 0) + 1;
       this.navigationScreen = "launch";
       this.menu.setVisible(true);
       this.render(performance.now());
@@ -242,7 +244,12 @@ export class TutorialRuntime {
         "library-next",
       ].includes(id)
     ) {
-      if (id === "back") this.navigationScreen = "launch";
+      this.selectionGeneration = (this.selectionGeneration || 0) + 1;
+      if (id === "back")
+        this.navigationScreen =
+          this.navigationScreen === "composition-options"
+            ? this.compositionOptions?.library || "tutorials"
+            : "launch";
       else if (id === "library-prev") this.libraryPage--;
       else if (id === "library-next") this.libraryPage++;
       else {
@@ -260,8 +267,47 @@ export class TutorialRuntime {
     }
     if (id === "retry-load" && this.lastSelection)
       return this.selectComposition(...this.lastSelection);
+    if (id === "retry-options" && this.compositionOptions)
+      return this.openCompositionOptions(
+        this.compositionOptions.id,
+        this.compositionOptions.library,
+      );
+    if (id.startsWith("arrangement:") && this.compositionOptions?.module) {
+      const choice = id.slice(12);
+      if (
+        this.compositionOptions.module.arrangements.some((a) => a.id === choice)
+      )
+        this.compositionOptions.arrangementId = choice;
+      this.render(performance.now());
+      return;
+    }
+    if (
+      ["composition-start", "composition-quick-practice"].includes(id) &&
+      this.compositionOptions?.module
+    ) {
+      const {
+        id: compositionId,
+        library,
+        arrangementId,
+      } = this.compositionOptions;
+      if (id === "composition-quick-practice") {
+        if (this.quickEntryPending) return;
+        this.quickEntryPending = true;
+        try {
+          return await this.selectComposition(
+            compositionId,
+            library,
+            arrangementId,
+            { quick: true },
+          );
+        } finally {
+          this.quickEntryPending = false;
+        }
+      }
+      return this.selectComposition(compositionId, library, arrangementId);
+    }
     if (id.startsWith("composition:"))
-      return this.selectComposition(id.slice(12), this.navigationScreen);
+      return this.openCompositionOptions(id.slice(12), this.navigationScreen);
     if (id === "basics") return this.selectComposition("basics", "tutorials");
     if (["play", "exit", "jog-record-exit"].includes(id) && this.router) {
       if (
@@ -350,10 +396,13 @@ export class TutorialRuntime {
       this.render(performance.now());
       return;
     }
-    if (id === "kuch-practice" || id === "kuch-simulate") {
+    if (
+      ["kuch-practice", "kuch-simulate", "kuch-quick-practice"].includes(id)
+    ) {
       try {
         await this.r.audioSystem.ensureAudio();
         await this.enterKuch(id === "kuch-simulate");
+        if (id === "kuch-quick-practice") this.kuch.quickPractice();
       } catch (error) {
         this.uiFeedback = error.message;
         this.render(performance.now());
@@ -379,16 +428,57 @@ export class TutorialRuntime {
       }
     }
   }
-  async selectComposition(id, library) {
-    this.lastSelection = [id, library];
+  async openCompositionOptions(id, library) {
+    const generation = (this.selectionGeneration =
+      (this.selectionGeneration || 0) + 1);
+    this.compositionOptions = { id, library };
+    this.navigationScreen = "composition-options";
+    this.optionsError = "";
+    this.render(performance.now());
+    try {
+      const module = await this.catalog.load(id);
+      if (this.disposed || generation !== this.selectionGeneration) return;
+      if (!module.arrangements?.length)
+        return this.selectComposition(id, library);
+      this.compositionOptions = {
+        id,
+        library,
+        module,
+        arrangementId: module.defaultArrangement,
+      };
+    } catch (error) {
+      if (generation !== this.selectionGeneration || this.disposed) return;
+      this.optionsError = error.message;
+    }
+    this.render(performance.now());
+  }
+  async selectComposition(id, library, arrangementId, { quick = false } = {}) {
+    const generation = (this.selectionGeneration =
+      (this.selectionGeneration || 0) + 1);
+    this.lastSelection = [id, library, arrangementId];
     try {
       await this.router.enter(
         `${library}:${id}`,
-        (signal) =>
-          id === "basics"
-            ? Promise.resolve(null)
-            : this.catalog.load(id, { signal }),
+        async (signal) => {
+          if (id === "basics") return null;
+          const module = await this.catalog.load(id, { signal });
+          if (quick && generation !== this.selectionGeneration)
+            throw new DOMException("Preparation cancelled", "AbortError");
+          const selected = module.selectArrangement
+            ? await module.selectArrangement(
+                arrangementId || module.defaultArrangement,
+              )
+            : module;
+          if (quick) {
+            await this.r.audioSystem.ensureAudio();
+            if (generation !== this.selectionGeneration)
+              throw new DOMException("Preparation cancelled", "AbortError");
+          }
+          return selected;
+        },
         async (module) => {
+          if (quick && generation !== this.selectionGeneration)
+            throw new DOMException("Preparation cancelled", "AbortError");
           if (
             this.session ||
             this.kuch ||
@@ -398,6 +488,8 @@ export class TutorialRuntime {
           )
             await this.enterPlay();
           await this.r.audioSystem.ensureAudio();
+          if (quick && generation !== this.selectionGeneration)
+            throw new DOMException("Preparation cancelled", "AbortError");
           this.navigationScreen = null;
           if (id === "basics") {
             this.freePlayScene ??= this.r.sceneSerializer.serialize();
@@ -407,10 +499,14 @@ export class TutorialRuntime {
             this.r.sessionMode = "basics";
           } else if (library === "record-songs")
             await this.enterSongRecording(module);
-          else await module.enterTutorial(this);
+          else {
+            await module.enterTutorial(this);
+            if (quick) this.kuch?.quickPractice();
+          }
         },
       );
     } catch (error) {
+      if (quick && error.name === "AbortError") return;
       this.uiFeedback = error.message;
       this.navigationScreen = library;
     }
@@ -481,7 +577,10 @@ export class TutorialRuntime {
       this.lastTrackedFrame = now;
     else if (this.r.xrSessionActive) {
       this.lastTrackedFrame = null;
+      this.menu?.cancelDrag();
       this.jogRecording?.interrupt("tracking-lost");
+      if (this.kuch?.running)
+        this.kuch.cancel("Tracking lost. Restart for a fresh count-in.");
     }
   }
   async enter(mode) {
@@ -529,7 +628,7 @@ export class TutorialRuntime {
       this.busy = false;
     }
   }
-  async enterKuch(simulate = false, KuchTutorialClass = null) {
+  async enterKuch(simulate = false, KuchTutorialClass = null, arrangement) {
     this.navigationScreen = null;
     KuchTutorialClass ||= (await import("./kuch/KuchTutorial.js")).KuchTutorial;
     this.flow.cancelOutgoing();
@@ -543,13 +642,21 @@ export class TutorialRuntime {
       this.stopDemo();
       this.adapter.clear();
       this.session = null;
-      this.kuch = new KuchTutorialClass(this);
+      this.kuch = new KuchTutorialClass(this, arrangement);
       this.r.sessionMode = simulate ? "simulation" : "practice";
       this.kuch.setup();
-      const progress = this.learningProgress.load("kuch-to-hua-hai", 1);
+      const progress = this.learningProgress.load(
+        this.kuch.progressId,
+        this.kuch.progressVersion,
+      );
       if (progress) {
-        this.kuch.index = Math.min(8, progress.index || 0);
+        this.kuch.index = Math.min(
+          this.kuch.steps.length - 1,
+          progress.index || 0,
+        );
         this.kuch.results = progress.results || {};
+        this.kuch.practiceProgress = new PracticeProgress(progress.practice);
+        this.kuch.applyTempo();
       }
       this.screen = "lesson";
       this.uiFeedback = "";
@@ -729,10 +836,15 @@ export class TutorialRuntime {
           progress: this.session.exportProgress(),
         });
       if (this.kuch)
-        this.learningProgress.save("kuch-to-hua-hai", 1, {
-          index: this.kuch.index,
-          results: this.kuch.results,
-        });
+        this.learningProgress.save(
+          this.kuch.progressId,
+          this.kuch.progressVersion,
+          {
+            index: this.kuch.index,
+            results: this.kuch.results,
+            practice: this.kuch.practiceProgress.export(),
+          },
+        );
     }
     if (this.dataTutorial) {
       this.adapter.observe(now);
@@ -776,6 +888,9 @@ export class TutorialRuntime {
     }
     if (this.kuch) {
       this.kuch.afterFrame(now);
+      this.cues.update(this.kuch.guide, now, {
+        active: Boolean(this.kuch.guide && !this.kuch.guide.complete(now)),
+      });
       this.panel.animate?.(now);
       if (now - this.lastDraw >= 100) {
         this.render(now);
@@ -950,6 +1065,10 @@ export class TutorialRuntime {
     this.jogReset = () => {
       this.menu?.referenceChanged(this.r.getUserCamera());
       this.jogRecording?.interrupt("reference-space-reset");
+      if (this.kuch?.running)
+        this.kuch.cancel(
+          "Reference space changed. Restart for a fresh count-in.",
+        );
     };
     this.jogReference?.addEventListener("reset", this.jogReset);
     this.r.hideInstructionPanel();
@@ -961,6 +1080,7 @@ export class TutorialRuntime {
     );
   }
   onXREnd() {
+    this.menu?.cancelDrag();
     this.dataTutorial?.cancel();
     if (this.basics) {
       this.basics.practicing = false;
@@ -1056,6 +1176,7 @@ export class TutorialRuntime {
           actions: [
             button("kuch-practice", "Start Lesson"),
             button("kuch-simulate", "Full Simulation"),
+            button("kuch-quick-practice", "Practice full song — backing ready"),
             button("tutorial", "All Tutorials"),
           ],
         };
@@ -1309,6 +1430,51 @@ export class TutorialRuntime {
         title: "Loading composition…",
         instruction: "Preparing the selected composition.",
         actions: [button("back", "Back")],
+      });
+      return;
+    }
+    if (this.navigationScreen === "composition-options") {
+      const selection = this.compositionOptions,
+        module = selection?.module;
+      const choice = module?.arrangements.find(
+        (a) => a.id === selection.arrangementId,
+      );
+      this.panel.render({
+        visible: true,
+        title: module?.definition.title || "Loading composition…",
+        progress: choice ? `ARRANGEMENT · ${choice.title}` : "",
+        instruction: choice
+          ? `${choice.description} Selection stays fixed throughout the session.`
+          : "Loading song options.",
+        feedback: this.optionsError || "",
+        navigation:
+          module?.arrangements.map((a) =>
+            button(
+              `arrangement:${a.id}`,
+              `${a.id === choice?.id ? "✓ " : ""}${a.title}`,
+            ),
+          ) || [],
+        actions: [
+          button(
+            "composition-start",
+            selection?.library === "record-songs"
+              ? "Prepare Recording"
+              : "Start Tutorial",
+            !module,
+          ),
+          ...(selection?.library === "tutorials" &&
+          selection?.id === "kuch-to-hua-hai"
+            ? [
+                button(
+                  "composition-quick-practice",
+                  "Practice full song — backing ready",
+                  !module,
+                ),
+              ]
+            : []),
+          button("back", "Back"),
+          ...(this.optionsError ? [button("retry-options", "Retry")] : []),
+        ],
       });
       return;
     }

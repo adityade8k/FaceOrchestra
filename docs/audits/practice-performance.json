@@ -1,0 +1,1282 @@
+{
+  "source": "e6fd0a068d0fa957492d9fb8979c685f26f91695",
+  "branch": "ver-12",
+  "baseline": "Includes the prior local Kuch arrangement/cue/badge implementation; before this performance audit.",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+  },
+  "units": "milliseconds",
+  "headset": false,
+  "adbDevices": 0,
+  "capture": false,
+  "syntheticLearner": true,
+  "cpuScope": "Instrumented desktop scheduler and render submission; no GPU completion or XR compositor measurement.",
+  "normalSpeed": {
+    "framesPerScenario": 360,
+    "cpuThrottle": 1,
+    "scenarios": {
+      "idle-desktop": {
+        "before": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.699999999999818,
+            "p95": 16.700000000000728,
+            "p99": 16.800000000000182,
+            "max": 16.800000000000182,
+            "total": 5983.099999999999
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 0.6000000238418579,
+            "p95": 0.7999999523162842,
+            "p99": 0.9000000953674316,
+            "max": 1.100000023841858,
+            "total": 219.89999949932098
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1.0999999046325684,
+            "p99": 1.2999999523162842,
+            "max": 2.100000023841858,
+            "total": 302.5999995470047
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 0.2999999523162842,
+            "p95": 0.3999999761581421,
+            "p99": 0.3999999761581421,
+            "max": 0.40000009536743164,
+            "total": 94.39999997615814
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 1.100000023841858
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 10.299999952316284
+          },
+          "keyboardMutations": 5400,
+          "panelTextureUpdates": 0,
+          "statusTextureUpdates": 0,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 271,
+            "p95": 271,
+            "p99": 271,
+            "max": 271,
+            "total": 97560
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 305094,
+            "p95": 305094,
+            "p99": 305094,
+            "max": 305094,
+            "total": 109833840
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "total": 0
+          },
+          "longTasksMs": []
+        },
+        "after": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.699999999999818,
+            "p95": 16.700000000000728,
+            "p99": 16.800000000000182,
+            "max": 16.800000000000182,
+            "total": 5983.099999999999
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 0.6000000238418579,
+            "p95": 0.8000000715255737,
+            "p99": 1,
+            "max": 1.2000000476837158,
+            "total": 221.50000476837158
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1.100000023841858,
+            "p99": 1.399999976158142,
+            "max": 1.7999999523162842,
+            "total": 312.4999953508377
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 0.2999999523162842,
+            "p95": 0.40000009536743164,
+            "p99": 0.40000009536743164,
+            "max": 0.5,
+            "total": 108.39999759197235
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 1.4000000953674316
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 8.80000126361847
+          },
+          "keyboardMutations": 0,
+          "panelTextureUpdates": 0,
+          "statusTextureUpdates": 0,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 271,
+            "p95": 271,
+            "p99": 271,
+            "max": 271,
+            "total": 97560
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 305094,
+            "p95": 305094,
+            "p99": 305094,
+            "max": 305094,
+            "total": 109833840
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "total": 0
+          },
+          "longTasksMs": []
+        }
+      },
+      "melody-desktop": {
+        "before": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.69999999999891,
+            "p95": 16.700000000000728,
+            "p99": 16.80000000000109,
+            "max": 16.80000000000291,
+            "total": 5983.1
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 2.200000047683716,
+            "p95": 2.600000023841858,
+            "p99": 4.799999952316284,
+            "max": 11,
+            "total": 668.4999982118607
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1,
+            "p99": 1.100000023841858,
+            "max": 5.299999952316284,
+            "total": 307.3999993801117
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 1.100000023841858,
+            "p95": 1.2999999523162842,
+            "p99": 1.3000000715255737,
+            "max": 1.399999976158142,
+            "total": 307.09999907016754
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.19999992847442627,
+            "total": 8.200000405311584
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 11.299999594688416
+          },
+          "keyboardMutations": 5400,
+          "panelTextureUpdates": 4,
+          "statusTextureUpdates": 15,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 283,
+            "p95": 293,
+            "p99": 293,
+            "max": 297,
+            "total": 102062
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306246,
+            "p95": 307182,
+            "p99": 307182,
+            "max": 307566,
+            "total": 110260512
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "total": 230
+          },
+          "longTasksMs": []
+        },
+        "after": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.69999999999891,
+            "p95": 16.700000000000728,
+            "p99": 16.80000000000109,
+            "max": 16.80000000000109,
+            "total": 5983.1
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 0.8999999761581421,
+            "p95": 1.2999999523162842,
+            "p99": 1.899999976158142,
+            "max": 12.5,
+            "total": 355.9000002145767
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8999999761581421,
+            "p95": 1,
+            "p99": 1.1999999284744263,
+            "max": 5,
+            "total": 322.7999974489212
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 0.5,
+            "p95": 0.6000000238418579,
+            "p99": 0.6999999284744263,
+            "max": 0.7000000476837158,
+            "total": 173.80000007152557
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 9.200000286102295
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 11.300000071525574
+          },
+          "keyboardMutations": 21,
+          "panelTextureUpdates": 4,
+          "statusTextureUpdates": 15,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 283,
+            "p95": 293,
+            "p99": 293,
+            "max": 297,
+            "total": 102062
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306246,
+            "p95": 307182,
+            "p99": 307182,
+            "max": 307566,
+            "total": 110260512
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "total": 230
+          },
+          "longTasksMs": []
+        }
+      },
+      "melody-xr-panel": {
+        "before": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.700000000000728,
+            "p95": 16.799999999999272,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291,
+            "total": 5983.200000000001
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 2.1999999284744263,
+            "p95": 2.5,
+            "p99": 4.600000023841858,
+            "max": 5.100000023841858,
+            "total": 637.5
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1,
+            "p99": 1,
+            "max": 1.1999999284744263,
+            "total": 303.50000071525574
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 1.0999999046325684,
+            "p95": 1.2000000476837158,
+            "p99": 1.2999999523162842,
+            "max": 1.3000000715255737,
+            "total": 304.19999849796295
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 5.199999570846558
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 9.599999785423279
+          },
+          "keyboardMutations": 5760,
+          "panelTextureUpdates": 4,
+          "statusTextureUpdates": 15,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 293,
+            "p95": 303,
+            "p99": 303,
+            "max": 307,
+            "total": 105662
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306264,
+            "p95": 307200,
+            "p99": 307200,
+            "max": 307584,
+            "total": 110266992
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "total": 230
+          },
+          "longTasksMs": []
+        },
+        "after": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.700000000000728,
+            "p95": 16.700000000000728,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291,
+            "total": 5983.0999999999985
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1.100000023841858,
+            "p99": 1.2999999523162842,
+            "max": 1.399999976158142,
+            "total": 310.20000088214874
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8999999761581421,
+            "p95": 1,
+            "p99": 1.100000023841858,
+            "max": 1.2000000476837158,
+            "total": 315.399999499321
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 0.5,
+            "p95": 0.5,
+            "p99": 0.6000000238418579,
+            "max": 0.6999999284744263,
+            "total": 162.90000021457672
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 6.699999928474426
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 8.9000004529953
+          },
+          "keyboardMutations": 0,
+          "panelTextureUpdates": 4,
+          "statusTextureUpdates": 15,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 293,
+            "p95": 303,
+            "p99": 303,
+            "max": 307,
+            "total": 105648
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306264,
+            "p95": 307200,
+            "p99": 307200,
+            "max": 307584,
+            "total": 110265672
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "total": 229
+          },
+          "longTasksMs": []
+        }
+      },
+      "melody-menu-hidden": {
+        "before": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.69999999999709,
+            "p95": 16.700000000004366,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291,
+            "total": 5983.100000000002
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 2.1999999284744263,
+            "p95": 2.4000000953674316,
+            "p99": 4.700000047683716,
+            "max": 4.800000071525574,
+            "total": 626.6000007390976
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 0.9000000953674316,
+            "p99": 1,
+            "max": 1.100000023841858,
+            "total": 295.30000138282776
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 1.0999999046325684,
+            "p95": 1.2000000476837158,
+            "p99": 1.2999999523162842,
+            "max": 1.3000000715255737,
+            "total": 297.5000013113022
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.20000004768371582,
+            "total": 6.700000524520874
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 8.99999988079071
+          },
+          "keyboardMutations": 5760,
+          "panelTextureUpdates": 4,
+          "statusTextureUpdates": 15,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 283,
+            "p95": 293,
+            "p99": 293,
+            "max": 297,
+            "total": 102066
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306246,
+            "p95": 307182,
+            "p99": 307182,
+            "max": 307566,
+            "total": 110260968
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "total": 227
+          },
+          "longTasksMs": []
+        },
+        "after": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.69999999999709,
+            "p95": 16.700000000004366,
+            "p99": 16.799999999999272,
+            "max": 16.80000000000291,
+            "total": 5983.0999999999985
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1,
+            "p99": 1.2000000476837158,
+            "max": 1.7999999523162842,
+            "total": 303.70000779628754
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1,
+            "p99": 1.100000023841858,
+            "max": 1.100000023841858,
+            "total": 304.3999967575073
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 0.40000009536743164,
+            "p95": 0.5,
+            "p99": 0.6000000238418579,
+            "max": 0.7000000476837158,
+            "total": 161.60000038146973
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 5.299999952316284
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 11.200000762939453
+          },
+          "keyboardMutations": 0,
+          "panelTextureUpdates": 4,
+          "statusTextureUpdates": 14,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 283,
+            "p95": 293,
+            "p99": 293,
+            "max": 297,
+            "total": 102066
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306246,
+            "p95": 307182,
+            "p99": 307182,
+            "max": 307566,
+            "total": 110260968
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "total": 227
+          },
+          "longTasksMs": []
+        }
+      },
+      "chord-recording": {
+        "before": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.69999999999709,
+            "p95": 16.700000000004366,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291,
+            "total": 5983
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 3.700000047683716,
+            "p95": 4,
+            "p99": 8.399999976158142,
+            "max": 9,
+            "total": 1232.4000009298325
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8000000715255737,
+            "p95": 1,
+            "p99": 1,
+            "max": 1.100000023841858,
+            "total": 301.1999989748001
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 1.899999976158142,
+            "p95": 2,
+            "p99": 2.100000023841858,
+            "max": 2.100000023841858,
+            "total": 592.3000001907349
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.19999992847442627,
+            "total": 5.299999713897705
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 9.699999570846558
+          },
+          "keyboardMutations": 5760,
+          "panelTextureUpdates": 0,
+          "statusTextureUpdates": 9,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 291,
+            "p95": 291,
+            "p99": 291,
+            "max": 291,
+            "total": 104328
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306048,
+            "p95": 306048,
+            "p99": 306048,
+            "max": 306048,
+            "total": 110137104
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 4,
+            "p95": 4,
+            "p99": 4,
+            "max": 4,
+            "total": 1224
+          },
+          "longTasksMs": []
+        },
+        "after": {
+          "frames": 360,
+          "frameIntervalMs": {
+            "samples": 359,
+            "p50": 16.69999999999709,
+            "p95": 16.700000000004366,
+            "p99": 16.80000000000291,
+            "max": 16.80000000000291,
+            "total": 5983.0999999999985
+          },
+          "over25ms": 0,
+          "over50ms": 0,
+          "frameCpuMs": {
+            "samples": 360,
+            "p50": 1,
+            "p95": 1.3000000715255737,
+            "p99": 1.5,
+            "max": 1.5999999046325684,
+            "total": 358.50000512599945
+          },
+          "renderCpuMs": {
+            "samples": 360,
+            "p50": 0.8999999761581421,
+            "p95": 1.100000023841858,
+            "p99": 1.2000000476837158,
+            "max": 1.4000000953674316,
+            "total": 318.10000026226044
+          },
+          "hoverCpuMs": {
+            "samples": 360,
+            "p50": 0.5,
+            "p95": 0.6000000238418579,
+            "p99": 0.6999999284744263,
+            "max": 0.7000000476837158,
+            "total": 170.60000252723694
+          },
+          "timingCueCpuMs": {
+            "samples": 360,
+            "p50": 0,
+            "p95": 0.10000002384185791,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 5.999999403953552
+          },
+          "labelBoundsCpuMs": {
+            "samples": 5040,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000002384185791,
+            "max": 0.10000002384185791,
+            "total": 12.09999942779541
+          },
+          "keyboardMutations": 0,
+          "panelTextureUpdates": 0,
+          "statusTextureUpdates": 9,
+          "drawCalls": {
+            "samples": 360,
+            "p50": 291,
+            "p95": 291,
+            "p99": 291,
+            "max": 291,
+            "total": 104330
+          },
+          "triangles": {
+            "samples": 360,
+            "p50": 306048,
+            "p95": 306048,
+            "p99": 306048,
+            "max": 306048,
+            "total": 110137296
+          },
+          "voices": {
+            "samples": 360,
+            "p50": 4,
+            "p95": 4,
+            "p99": 4,
+            "max": 4,
+            "total": 1224
+          },
+          "longTasksMs": []
+        }
+      }
+    }
+  },
+  "stress": {
+    "cpuThrottle": 4,
+    "framesPerScenario": 180,
+    "stage": "After raycast and keyboard changes, before deferred hidden-menu drawing",
+    "scenarios": {
+      "idle-desktop": {
+        "frames": 180,
+        "frameIntervalMs": {
+          "samples": 179,
+          "p50": 16.699999999999818,
+          "p95": 16.800000000000182,
+          "p99": 16.800000000000182,
+          "max": 33.30000000000018,
+          "total": 2999.8999999999996
+        },
+        "over25ms": 1,
+        "over50ms": 0,
+        "frameCpuMs": {
+          "samples": 180,
+          "p50": 2.8000000715255737,
+          "p95": 3.899999976158142,
+          "p99": 5.5,
+          "max": 7.400000095367432,
+          "total": 525.3000004291534
+        },
+        "renderCpuMs": {
+          "samples": 180,
+          "p50": 4.699999928474426,
+          "p95": 6.699999928474426,
+          "p99": 7.399999976158142,
+          "max": 11.099999904632568,
+          "total": 901.0999987125397
+        },
+        "hoverCpuMs": {
+          "samples": 180,
+          "p50": 1.3000000715255737,
+          "p95": 1.8000000715255737,
+          "p99": 2.600000023841858,
+          "max": 3.3000000715255737,
+          "total": 246.30000007152557
+        },
+        "timingCueCpuMs": {
+          "samples": 180,
+          "p50": 0,
+          "p95": 0.10000002384185791,
+          "p99": 0.3999999761581421,
+          "max": 0.3999999761581421,
+          "total": 2.200000047683716
+        },
+        "labelBoundsCpuMs": {
+          "samples": 2520,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.6000000238418579,
+          "max": 1.399999976158142,
+          "total": 32.799999833106995
+        },
+        "keyboardMutations": 0,
+        "panelTextureUpdates": 0,
+        "statusTextureUpdates": 0,
+        "drawCalls": {
+          "samples": 180,
+          "p50": 271,
+          "p95": 271,
+          "p99": 271,
+          "max": 271,
+          "total": 48780
+        },
+        "triangles": {
+          "samples": 180,
+          "p50": 305094,
+          "p95": 305094,
+          "p99": 305094,
+          "max": 305094,
+          "total": 54916920
+        },
+        "voices": {
+          "samples": 180,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "total": 0
+        },
+        "longTasksMs": []
+      },
+      "melody-desktop": {
+        "frames": 180,
+        "frameIntervalMs": {
+          "samples": 179,
+          "p50": 16.69999999999891,
+          "p95": 16.799999999999272,
+          "p99": 33.30000000000109,
+          "max": 133.29999999999927,
+          "total": 3116.6000000000004
+        },
+        "over25ms": 2,
+        "over50ms": 1,
+        "frameCpuMs": {
+          "samples": 180,
+          "p50": 4.100000023841858,
+          "p95": 6.5,
+          "p99": 21.299999952316284,
+          "max": 129.39999997615814,
+          "total": 901.7999993562698
+        },
+        "renderCpuMs": {
+          "samples": 180,
+          "p50": 4.699999928474426,
+          "p95": 6.199999928474426,
+          "p99": 7.899999976158142,
+          "max": 14.800000071525574,
+          "total": 863.3999993801117
+        },
+        "hoverCpuMs": {
+          "samples": 180,
+          "p50": 2.100000023841858,
+          "p95": 2.8000000715255737,
+          "p99": 4.399999976158142,
+          "max": 4.800000071525574,
+          "total": 392.00000059604645
+        },
+        "timingCueCpuMs": {
+          "samples": 180,
+          "p50": 0,
+          "p95": 0.5999999046325684,
+          "p99": 0.7999999523162842,
+          "max": 0.8000000715255737,
+          "total": 22.300000071525574
+        },
+        "labelBoundsCpuMs": {
+          "samples": 2520,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.40000009536743164,
+          "max": 1.8000000715255737,
+          "total": 33.299999594688416
+        },
+        "keyboardMutations": 9,
+        "panelTextureUpdates": 4,
+        "statusTextureUpdates": 6,
+        "drawCalls": {
+          "samples": 180,
+          "p50": 283,
+          "p95": 291,
+          "p99": 291,
+          "max": 291,
+          "total": 50798
+        },
+        "triangles": {
+          "samples": 180,
+          "p50": 306246,
+          "p95": 306990,
+          "p99": 306990,
+          "max": 306990,
+          "total": 55108080
+        },
+        "voices": {
+          "samples": 180,
+          "p50": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "total": 107
+        },
+        "longTasksMs": [138]
+      },
+      "melody-xr-panel": {
+        "frames": 180,
+        "frameIntervalMs": {
+          "samples": 179,
+          "p50": 16.69999999999709,
+          "p95": 16.799999999999272,
+          "p99": 16.799999999999272,
+          "max": 16.80000000000109,
+          "total": 2983.2000000000007
+        },
+        "over25ms": 0,
+        "over50ms": 0,
+        "frameCpuMs": {
+          "samples": 180,
+          "p50": 4,
+          "p95": 6.799999952316284,
+          "p99": 9.600000023841858,
+          "max": 10.399999976158142,
+          "total": 780.9000002145767
+        },
+        "renderCpuMs": {
+          "samples": 180,
+          "p50": 5.299999952316284,
+          "p95": 7.200000047683716,
+          "p99": 10,
+          "max": 11,
+          "total": 988.4999996423721
+        },
+        "hoverCpuMs": {
+          "samples": 180,
+          "p50": 2.1999999284744263,
+          "p95": 3,
+          "p99": 4.899999976158142,
+          "max": 5.299999952316284,
+          "total": 405.19999945163727
+        },
+        "timingCueCpuMs": {
+          "samples": 180,
+          "p50": 0,
+          "p95": 0.7000000476837158,
+          "p99": 0.8000000715255737,
+          "max": 0.9000000953674316,
+          "total": 19.999999523162842
+        },
+        "labelBoundsCpuMs": {
+          "samples": 2520,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.2999999523162842,
+          "max": 1,
+          "total": 25
+        },
+        "keyboardMutations": 0,
+        "panelTextureUpdates": 4,
+        "statusTextureUpdates": 6,
+        "drawCalls": {
+          "samples": 180,
+          "p50": 293,
+          "p95": 301,
+          "p99": 301,
+          "max": 301,
+          "total": 52584
+        },
+        "triangles": {
+          "samples": 180,
+          "p50": 306240,
+          "p95": 307008,
+          "p99": 307008,
+          "max": 307008,
+          "total": 55109952
+        },
+        "voices": {
+          "samples": 180,
+          "p50": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "total": 108
+        },
+        "longTasksMs": []
+      },
+      "melody-menu-hidden": {
+        "frames": 180,
+        "frameIntervalMs": {
+          "samples": 179,
+          "p50": 33.29999999999927,
+          "p95": 133.29999999999927,
+          "p99": 166.70000000000073,
+          "max": 250.10000000000218,
+          "total": 9616.300000000003
+        },
+        "over25ms": 101,
+        "over50ms": 66,
+        "frameCpuMs": {
+          "samples": 180,
+          "p50": 7.600000023841858,
+          "p95": 29.800000071525574,
+          "p99": 42.10000002384186,
+          "max": 66.70000004768372,
+          "total": 1813.9000005722046
+        },
+        "renderCpuMs": {
+          "samples": 180,
+          "p50": 9.100000023841858,
+          "p95": 28,
+          "p99": 39.09999990463257,
+          "max": 54.299999952316284,
+          "total": 1997.9000004529953
+        },
+        "hoverCpuMs": {
+          "samples": 180,
+          "p50": 3.3000000715255737,
+          "p95": 13.200000047683716,
+          "p99": 29.299999952316284,
+          "max": 48.700000047683716,
+          "total": 901.9999998807907
+        },
+        "timingCueCpuMs": {
+          "samples": 180,
+          "p50": 0.09999990463256836,
+          "p95": 0.20000004768371582,
+          "p99": 3.299999952316284,
+          "max": 3.5,
+          "total": 24.700000286102295
+        },
+        "labelBoundsCpuMs": {
+          "samples": 2520,
+          "p50": 0,
+          "p95": 0.10000002384185791,
+          "p99": 0.19999992847442627,
+          "max": 6.599999904632568,
+          "total": 52.700000286102295
+        },
+        "keyboardMutations": 0,
+        "panelTextureUpdates": 8,
+        "statusTextureUpdates": 24,
+        "drawCalls": {
+          "samples": 180,
+          "p50": 283,
+          "p95": 293,
+          "p99": 293,
+          "max": 297,
+          "total": 51038
+        },
+        "triangles": {
+          "samples": 180,
+          "p50": 306246,
+          "p95": 307182,
+          "p99": 307182,
+          "max": 307566,
+          "total": 55130880
+        },
+        "voices": {
+          "samples": 180,
+          "p50": 1,
+          "p95": 1,
+          "p99": 1,
+          "max": 1,
+          "total": 117
+        },
+        "longTasksMs": [51, 53, 78, 58, 56, 65, 55, 142, 51, 54, 50, 53]
+      },
+      "chord-recording": {
+        "frames": 180,
+        "frameIntervalMs": {
+          "samples": 179,
+          "p50": 33.299999999995634,
+          "p95": 133.29999999999563,
+          "p99": 150,
+          "max": 150.09999999999854,
+          "total": 9649.599999999999
+        },
+        "over25ms": 98,
+        "over50ms": 64,
+        "frameCpuMs": {
+          "samples": 180,
+          "p50": 8,
+          "p95": 19.700000047683716,
+          "p99": 24.399999976158142,
+          "max": 25.5,
+          "total": 1618.9000002145767
+        },
+        "renderCpuMs": {
+          "samples": 180,
+          "p50": 8.400000095367432,
+          "p95": 17.100000023841858,
+          "p99": 22,
+          "max": 47.40000009536743,
+          "total": 1671.0999995470047
+        },
+        "hoverCpuMs": {
+          "samples": 180,
+          "p50": 2.899999976158142,
+          "p95": 10.599999904632568,
+          "p99": 17.200000047683716,
+          "max": 20,
+          "total": 790.8000000715256
+        },
+        "timingCueCpuMs": {
+          "samples": 180,
+          "p50": 0,
+          "p95": 0.7000000476837158,
+          "p99": 3.200000047683716,
+          "max": 3.3000000715255737,
+          "total": 26.100001215934753
+        },
+        "labelBoundsCpuMs": {
+          "samples": 2520,
+          "p50": 0,
+          "p95": 0.10000002384185791,
+          "p99": 0.2999999523162842,
+          "max": 5.5,
+          "total": 66.39999890327454
+        },
+        "keyboardMutations": 0,
+        "panelTextureUpdates": 0,
+        "statusTextureUpdates": 15,
+        "drawCalls": {
+          "samples": 180,
+          "p50": 291,
+          "p95": 291,
+          "p99": 291,
+          "max": 291,
+          "total": 52222
+        },
+        "triangles": {
+          "samples": 180,
+          "p50": 306048,
+          "p95": 306048,
+          "p99": 306048,
+          "max": 306048,
+          "total": 55073856
+        },
+        "voices": {
+          "samples": 180,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4,
+          "max": 4,
+          "total": 656
+        },
+        "longTasksMs": [58]
+      }
+    }
+  },
+  "validation": {
+    "nodeTests": {
+      "passed": 649,
+      "failed": 0
+    },
+    "browserSceneAndGeometry": {
+      "passed": true,
+      "actualMeshComparisons": 49,
+      "squeezeBodyTriangleQueries": 0
+    },
+    "rayPriorityCases": 1500,
+    "guidedPractice": {
+      "passed": false,
+      "reason": "Sparse 100–133 ms pitch observations fail the unchanged onset/start-hold policy; one run also missed the initial green window.",
+      "controlRun": {
+        "baselinePassed": false,
+        "currentPassed": false,
+        "description": "Same-session control restoring original ray/panel methods and redundant keyboard writes; production files unchanged."
+      }
+    },
+    "hiddenMenuDeferredStateChecks": "Passed before the later guided-practice failure"
+  },
+  "rawEvidence": [
+    "test-results/practice-before.json",
+    "test-results/practice-after.json",
+    "test-results/practice-stress.json",
+    "test-results/practice-control-run.json"
+  ],
+  "remaining": "Actual headset frame pacing, GPU load, full-song/backing performance, acoustic quality. Desktop normal-speed CPU savings do not prove the headset issue is resolved."
+}

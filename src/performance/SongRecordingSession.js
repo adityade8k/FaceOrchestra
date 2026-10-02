@@ -208,6 +208,8 @@ export class SongRecordingSession {
         compositionHash: this.composition.contentHash || null,
         sourceMidiHash: this.composition.source?.sha256 || null,
         arrangementProvenance: this.composition.arrangement?.provenance || null,
+        arrangementId: this.composition.arrangement?.id || null,
+        arrangementVersion: this.composition.arrangement?.version || null,
         groupId: this.groupId,
         attempt,
         label: `${this.composition.title} — Take ${String(attempt).padStart(2, "0")}`,
@@ -358,7 +360,7 @@ export class SongRecordingSession {
         : null;
     return {
       visible: true,
-      title: `${this.composition.title} · Mixed reality`,
+      title: `${this.composition.title} · ${this.composition.arrangement?.title || "Mixed reality"}`,
       progress: this.attempt
         ? `${this.composition.title} — TAKE ${String(this.attempt).padStart(2, "0")}`
         : `${this.composition.title} · ${this.composition.bpm} BPM`,

@@ -1,0 +1,180 @@
+{
+  "passed": true,
+  "melodyNotes": 185,
+  "arrangementId": "original",
+  "sourcePitchLandmarks": 185,
+  "ringChecks": 1612,
+  "bendRingChecks": 0,
+  "audible": [],
+  "menuHiddenGuidance": true,
+  "demonstrationCredit": false,
+  "percussionHits": 20,
+  "patternSwitches": [
+    {
+      "pattern": "D",
+      "beat": -4.933286666703222
+    },
+    {
+      "pattern": "change",
+      "beat": 12.033506666556995
+    },
+    {
+      "pattern": "D",
+      "beat": 28.030926666593555
+    },
+    {
+      "pattern": "change",
+      "beat": 60.02576666666667
+    },
+    {
+      "pattern": "D",
+      "beat": 76.0216533333699
+    },
+    {
+      "pattern": "change",
+      "beat": 108.01557333322367
+    },
+    {
+      "pattern": "D",
+      "beat": 124.0134533333699
+    }
+  ],
+  "switches": [
+    {
+      "id": 1,
+      "fromId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "toId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "requestedAtMs": 47595.6,
+      "requestedBeat": 72.0022666666301,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.25014166666438165,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 84,
+      "completedAtMs": 55423.39999997616,
+      "phase": "switch-patterns"
+    },
+    {
+      "id": 2,
+      "fromId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "toId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "requestedAtMs": 58061.8,
+      "requestedBeat": 88.05043999996344,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.2531524999977153,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 100,
+      "completedAtMs": 65861.5,
+      "phase": "switch-patterns"
+    },
+    {
+      "id": 3,
+      "fromId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "toId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "requestedAtMs": 76961.1,
+      "requestedBeat": 117.02936666663012,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7518354166643829,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 121,
+      "completedAtMs": 79560.9,
+      "phase": "performance"
+    },
+    {
+      "id": 4,
+      "fromId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "toId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "requestedAtMs": 87394,
+      "requestedBeat": 133.02647999996344,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7516549999977153,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 137,
+      "completedAtMs": 89988.20000004768,
+      "phase": "performance"
+    },
+    {
+      "id": 5,
+      "fromId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "toId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "requestedAtMs": 108259.9,
+      "requestedBeat": 165.02085999996345,
+      "boundarySourceMs": 20869.565217391304,
+      "origin": "demonstration",
+      "requestedPhase": 0.7513037499977154,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 169,
+      "completedAtMs": 110859.7,
+      "phase": "performance"
+    },
+    {
+      "id": 6,
+      "fromId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "toId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "requestedAtMs": 118692.8,
+      "requestedBeat": 181.0179733332968,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7511233333310496,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 185,
+      "completedAtMs": 121292.7,
+      "phase": "performance"
+    },
+    {
+      "id": 7,
+      "fromId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "toId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "requestedAtMs": 139558.5,
+      "requestedBeat": 213.0120466666301,
+      "boundarySourceMs": 20869.565217391304,
+      "origin": "demonstration",
+      "requestedPhase": 0.750752916664382,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 217,
+      "completedAtMs": 142160.29999995232,
+      "phase": "performance"
+    },
+    {
+      "id": 8,
+      "fromId": "looper-9374c095-fb94-45d5-9fbf-463f3a50d227",
+      "toId": "looper-55eb6a77-5859-4d6c-b28e-7235d442e343",
+      "requestedAtMs": 149991.5,
+      "requestedBeat": 229.00931333329677,
+      "boundarySourceMs": 10434.782608695652,
+      "origin": "demonstration",
+      "requestedPhase": 0.7505820833310484,
+      "fromRevision": 2,
+      "toRevision": 2,
+      "beat": 233,
+      "completedAtMs": 152610.10000002384,
+      "phase": "performance"
+    }
+  ],
+  "queuedSeen": true,
+  "peak": 0.6887107491493225,
+  "phases": [
+    "D",
+    "change",
+    "drums",
+    "switch-patterns",
+    "performance"
+  ],
+  "sceneRestored": true,
+  "cancelPreservedTake": true,
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+  },
+  "rawEvidence": "test-results/guided/kuch-original.json"
+}

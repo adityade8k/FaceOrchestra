@@ -1,3 +1,4 @@
+import { PracticeTempoControls } from "./PracticeTempoControls.js";
 import * as THREE from "three";
 const WIDTH = 1.05,
   HEIGHT = 1.42,
@@ -124,6 +125,7 @@ export class TutorialPanel {
       this.nodes[key] = this.dom.querySelector(".tutorial-" + key);
     this.nodes.title = this.dom.querySelector("h1");
     document.body.appendChild(this.dom);
+    this.tempoControls = new PracticeTempoControls(this);
     this.click = (e) => {
       const b = e.target.closest("button[data-action]");
       if (b && !b.disabled) this.onAction(b.dataset.action);
@@ -154,8 +156,12 @@ export class TutorialPanel {
     if (key === this.key) return;
     this.key = key;
     this.model = model;
-    this.dom.hidden = !this.menuVisible || !model.visible || this.xr;
+    const domHidden = !this.menuVisible || !model.visible || this.xr;
+    if (this.dom.hidden !== domHidden) this.dom.hidden = domHidden;
     this.group.visible = Boolean(this.menuVisible && model.visible && this.xr);
+    // Keep the latest model while hidden. Reopening renders it synchronously;
+    // invisible menu updates need no text layout, DOM edits or texture redraw.
+    if (!this.menuVisible) return;
     for (const [name, value] of Object.entries({
       eyebrow: model.progress || "HONK ORCHESTRA",
       title: model.title,
@@ -163,6 +169,7 @@ export class TutorialPanel {
       feedback: model.feedback,
     }))
       this.setText(this.nodes[name], value);
+    this.tempoControls.setModel(model.practiceTempo);
     this.nodes.navigation.hidden = !model.navigation?.length;
     this.dom.dataset.result = model.result || "";
     const actions = [...(model.navigation || []), ...(model.actions || [])],
@@ -221,9 +228,11 @@ export class TutorialPanel {
     this.layout = [];
     for (const [name, originalRegion] of Object.entries(regions)) {
       const region =
-        name === "feedback" && extended
-          ? { ...originalRegion, h: 454 }
-          : originalRegion;
+        name === "feedback" && model.practiceTempo
+          ? { ...originalRegion, h: 252 }
+          : name === "feedback" && extended
+            ? { ...originalRegion, h: 454 }
+            : originalRegion;
       const text = model[name] || "",
         color =
           name === "title"
@@ -277,12 +286,14 @@ export class TutorialPanel {
       this.handle,
       this.surface,
       ...this.buttons.filter((b) => b.visible),
+      ...(model.practiceTempo ? this.tempoControls.targets : []),
     ];
     this.texture.needsUpdate = true;
   }
   setTransport(text = "") {
-    if (this.transportText === text) return;
     this.transportText = text;
+    if (!this.menuVisible || this.renderedTransportText === text) return;
+    this.renderedTransportText = text;
     this.setText(this.nodes.target, text);
     const ctx = this.statusCanvas.getContext("2d");
     ctx.clearRect(0, 0, 1072, 108);
@@ -304,9 +315,11 @@ export class TutorialPanel {
       phase < 1 ? Math.sin(Math.max(phase, 0) * Math.PI) * 0.95 : 0;
   }
   setVisible(visible) {
+    if (!visible) this.tempoControls.cancel();
     this.menuVisible = visible;
     this.key = "";
     if (this.model) this.render(this.model);
+    if (visible) this.setTransport(this.transportText || "");
   }
   setXR(active, camera = this.camera) {
     this.xr = active;
@@ -349,6 +362,7 @@ export class TutorialPanel {
       this.onAction(object.userData.action);
   }
   dispose() {
+    this.tempoControls.dispose();
     this.dom.removeEventListener("click", this.click);
     this.renderer.domElement.removeEventListener("pointermove", this.move);
     this.dom.remove();

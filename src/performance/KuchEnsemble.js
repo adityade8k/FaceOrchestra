@@ -1,61 +1,31 @@
-import { KuchTutorial } from "../tutorial/kuch/KuchTutorial.js";
-import {
-  BPM,
-  BEAT_MS,
-  CHORDS,
-  DRUMS,
-  MELODY,
-  PATTERN_CHANGES,
-} from "../tutorial/kuch/score.js";
-import { compilePattern } from "../compositions/CompositionCompiler.js";
+import { KuchLayout } from "../tutorial/kuch/KuchLayout.js";
+import { prepareKuchBacking } from "../tutorial/kuch/prepareBacking.js";
+import { kuchTiming } from "../tutorial/kuch/timing.js";
+import { BPM, PATTERN_CHANGES } from "../tutorial/kuch/score.js";
+import { kuchArrangement } from "../tutorial/kuch/arrangements.js";
 const roles = ["chordLooper", "alternativeLooper", "percussionLooper"];
 
 // Compatibility adapter: preserve the authored setup, score and port arbiter.
 // Tutorial lesson execution is never started in recording mode.
 export class KuchEnsemble {
-  constructor(host) {
+  constructor(host, arrangement = kuchArrangement()) {
     this.host = host;
     this.r = host.r;
     this.a = host.adapter;
+    this.arrangement = arrangement;
   }
   prepare() {
     this.dispose();
     this.a.clear();
-    this.layout = new KuchTutorial(this.host);
+    this.layout = new KuchLayout(this.host);
     this.layout.setup();
-    this.expected = new Map();
-    for (const [index, role] of roles.entries()) {
-      const h = this.a.get(role),
-        routes = {};
-      for (const name of ["D", "C", "percussion"]) {
-        const track = h.tracks.find((t) =>
-          this.a.ids(name).includes(t.connectedHonkId),
-        );
-        if (track)
-          routes[name] = { trackId: track.trackId, trackIndex: track.index };
-      }
-      routes.percussionLooper = { trackId: "looper-self-percussion" };
-      const timeline = compilePattern({
-        events: [CHORDS.D, CHORDS.change, DRUMS][index],
-        beats: 16,
-        beatMs: BEAT_MS,
-        routes,
-        defaults: { vowel: "O", nose: (1 - 80 / 127) / 0.78 },
-      });
-      h.looperController.restoreState(
-        h,
-        {
-          timeline: timeline.toJSON(),
-          controls: {
-            recordBeats: 16,
-            gap: -1,
-            volume: index < 2 ? -0.62 : -0.66,
-          },
-        },
-        { preserveConnections: true },
-      );
-      this.expected.set(role, JSON.stringify(h.timeline.toJSON()));
-    }
+    const metro = this.a.get("metronome");
+    this.originalSetBpm = metro.setBpm;
+    metro.setBpm = (value) =>
+      this.r.capture?.active || this.beatZero != null
+        ? metro.bpm
+        : this.originalSetBpm.call(metro, value);
+    this.expected = prepareKuchBacking(this.a);
     for (
       let i = 0;
       i < this.r.honkContactSystem.settings.consecutiveEntryFrames;
@@ -80,18 +50,19 @@ export class KuchEnsemble {
       )
         throw new Error(`Reconnect ${role}`);
     }
-    for (const event of MELODY)
+    for (const event of this.arrangement.events)
       if (!this.a.get(event.role))
         throw new Error(`Missing melody target ${event.role}`);
     return true;
   }
-  schedule({ countAt, beatZero, wallNow, audioNow }) {
+  schedule({ countAt, beatZero, wallNow, audioNow, bpm = BPM }) {
     this.validate();
     this.beatZero = beatZero;
     this.activePattern = "D";
     const metro = this.a.get("metronome");
     this.volume = metro.volume;
-    metro.setBpm(BPM);
+    this.timing = kuchTiming(bpm, beatZero);
+    this.originalSetBpm.call(metro, bpm);
     metro.beatOriginMs = null;
     metro.setVolume(0);
     metro.play(countAt);
@@ -100,7 +71,7 @@ export class KuchEnsemble {
         c = h.looperController;
       if (
         !c.armPlayback(h, wallNow, c.getTimingForLooper(h, wallNow), {
-          targetBeat: (beatZero - countAt) / BEAT_MS,
+          targetBeat: (beatZero - countAt) / this.timing.beatMs,
           audioAnchor: { wallMs: wallNow, audioSeconds: audioNow },
           origin: "performance",
         })
@@ -115,7 +86,7 @@ export class KuchEnsemble {
   update(now) {
     this.layout?.afterFrame(now);
     if (this.beatZero == null) return;
-    const beat = (now - this.beatZero) / BEAT_MS;
+    const beat = (now - this.beatZero) / this.timing.beatMs;
     const next = PATTERN_CHANGES.find(([at]) => at > beat && at - beat <= 4);
     if (next && next[1] !== this.activePattern) {
       const h = this.a.get(
@@ -124,10 +95,8 @@ export class KuchEnsemble {
       h.looperController.startPlayback(h, now, { origin: "performance" });
       this.activePattern = next[1];
     }
-    const target = MELODY.find(
-      (e) => beat >= e.beat - 0.25 && beat < e.beat + e.beats,
-    );
-    this.a.focus(target?.role);
+    // Recording guidance is owned by TutorialTimingCues, including bend holds.
+    this.a.focus(null);
     if (beat >= 136) this.cancel();
   }
   cancel() {
@@ -138,6 +107,11 @@ export class KuchEnsemble {
     this.play();
   }
   dispose() {
+    if (this.layout) {
+      this.cancel();
+      const metro = this.a.get("metronome");
+      if (metro && this.originalSetBpm) metro.setBpm = this.originalSetBpm;
+    }
     this.layout?.dispose();
     this.layout = null;
     this.prepared = false;

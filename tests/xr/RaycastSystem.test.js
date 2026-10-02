@@ -74,3 +74,40 @@ test('existing connector, looper, procedural and body hit priorities survive bat
   f.targets[0].userData.isCloseButton = true;
   assert.equal(f.system.getCurrentHit({}).object, f.targets[0]);
 });
+
+test('control selection skips fallback body triangles; grip and body-only queries remain exact', () => {
+  const f = setup(), visited = [];
+  const control = { parent: f.root, visible: true, distance: 4, userData: {} };
+  f.targets.push(control);
+  const intersect = f.raycaster.intersectObjects;
+  f.raycaster.intersectObjects = (objects, ...args) => {
+    visited.push(...objects); return intersect(objects, ...args);
+  };
+  assert.equal(f.system.getCurrentHit({}).object, control);
+  assert.deepEqual(visited, [control], 'nearer fallback bodies cannot win over a control');
+  visited.length = 0;
+  assert.equal(f.system.getGripHit({}).object, f.targets[0]);
+  assert.ok(visited.includes(f.targets[0]), 'grip still checks the authored body');
+  control.visible = false;
+  f.targets[1].children = [{}];
+  assert.equal(f.system.getCurrentHit({}).object, f.targets[0], 'a recursive body must not mask a nearer deferred body');
+});
+
+test('staged selection matches the complete query across priorities and exact-distance ties', () => {
+  const f = setup();
+  let seed = 19;
+  const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
+  const flags = [ {}, {isBodyGripTarget:true}, {isHonkConnectionTarget:true},
+    {isLooperCollider:true}, {isProceduralMorphTarget:true}, {isCloseButton:true},
+    {isBodyGripTarget:true,isHonkConnectionTarget:true}, {isBodyGripTarget:true,isProceduralMorphTarget:true} ];
+  for (let attempt = 0; attempt < 1500; attempt++) {
+    f.targets.length = 0;
+    for (let i = 0; i < 9; i++) f.targets.push({parent:f.root,visible:true,
+      distance:(random() >>> 8)%5, userData:flags[(random() >>> 8)%flags.length], children:(random() >>> 8)%7===0?[{}]:[]});
+    const hits = f.targets.map(object => ({object,distance:object.distance})).sort((a,b)=>a.distance-b.distance);
+    const first=hits[0], expected=(first.object.userData.isCloseButton||first.object.userData.isLooperCollider?first:null)||
+      hits.find(h=>h.object.userData.isHonkConnectionTarget)||hits.find(h=>h.object.userData.isLooperCollider)||
+      hits.find(h=>h.object.userData.isProceduralMorphTarget)||hits.find(h=>!h.object.userData.isBodyGripTarget)||first;
+    assert.equal(f.system.getCurrentHit({}).object, expected.object, `priority parity ${attempt}`);
+  }
+});

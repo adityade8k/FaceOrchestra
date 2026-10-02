@@ -254,3 +254,28 @@ test("mode preparation is serialized and failed commit rolls back to the outgoin
   assert.equal(calls.at(-1), "restore:song");
   assert.equal(router.identity, "song");
 });
+
+test("cancelled preparation preserves an outgoing lesson and its takes before any scene mutation", async () => {
+  const calls = [],
+    states = [];
+  const router = new ApplicationModeRouter({
+    identity: "tutorials:kuch",
+    checkpoint: async () => calls.push("checkpoint"),
+    quiesce: async () => calls.push("quiesce"),
+    rollback: async () => calls.push("rollback"),
+    onChange: (state) => states.push(state),
+  });
+  await assert.rejects(
+    router.enter(
+      "quick",
+      async () => {
+        throw new DOMException("Cancelled", "AbortError");
+      },
+      async () => calls.push("commit"),
+    ),
+    { name: "AbortError" },
+  );
+  assert.deepEqual(calls, []);
+  assert.equal(router.identity, "tutorials:kuch");
+  assert.deepEqual(states.at(-1), { state: "ready", id: "tutorials:kuch" });
+});

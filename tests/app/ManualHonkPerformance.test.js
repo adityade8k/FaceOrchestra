@@ -2,6 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fixture, flushAudio } from '../support/manualHonkFixture.mjs';
 
+test('a separately articulated attack resets stale live bend without altering a held second owner or release tails',async()=>{
+  const f=fixture(),h=f.honks[0],[left,right]=f.controllers;
+  f.press();f.frame();await flushAudio();left.roll=.5;
+  for(let i=0;i<50;i++)f.frame();
+  assert.ok(h.processedLivePerformance.bend>.49);
+  const first=f.audio.voices.get('left:h0');
+  f.release();f.press();f.frame();await flushAudio();
+  assert.equal(h.processedLivePerformance.bend,0,'same-Honk reattack uses the new relative wrist zero');
+  assert.notEqual(f.audio.voices.get('left:h0'),first);
+  assert.ok(f.audio.releasingVoices.get('left:h0').has(first),'old release tail keeps its own voice');
+  left.roll=1;for(let i=0;i<50;i++)f.frame();
+  assert.ok(h.processedLivePerformance.bend>.49);
+  f.press(h.squeezeCollider,right);f.frame();await flushAudio();
+  assert.ok(h.processedLivePerformance.bend>.49,'new second hand cannot reset the held first hand');
+  const second=f.audio.voices.get('right:h0');
+  f.release(left);f.frame();
+  assert.equal(f.audio.voices.get('right:h0'),second);
+  assert.ok(h.processedLivePerformance.bend>0,'remaining owner keeps normal release smoothing');
+  f.release(right);
+});
+
 for (const locked of [false, true]) test(`one versus three ${locked ? 'locked' : 'unlocked'} honks: aligned real voice onsets, one processing pass, bounded starts`, async () => {
   const solo = fixture({ locked }); const chord = fixture({ count: 3, locked });
   assert.equal(chord.contact.graph.hasContact('h0', 'h2'), false, 'C is reachable only through B');

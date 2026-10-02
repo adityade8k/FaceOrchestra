@@ -11,7 +11,7 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 const tick = () => new Promise((resolve) => setImmediate(resolve));
-function fixture() {
+function fixture(options = {}) {
   const log = [],
     saved = [];
   let time = 1000,
@@ -118,6 +118,7 @@ function fixture() {
     onExit: async () => log.push("restore-scene"),
     now: () => time,
     uuid: () => "session-1",
+    ...options,
   });
   return {
     mode,
@@ -138,6 +139,27 @@ function fixture() {
     blockSave: () => (saveGate = deferred()),
   };
 }
+
+test('Kuch take metadata, count-in and restart retain the selected arrangement without changing old capture identity',async()=>{
+  const {selectArrangement}=await import('../../src/compositions/kuch.js');
+  for(const id of ['original','easier-bends']) {
+    const module=await selectArrangement(id),f=fixture({composition:module.definition,createGuidance:module.createGuidance});
+    await f.mode.action('prepare');await f.mode.action('start');
+    const before=f.recorder.metadata.performance,guide=f.mode.guidance(f.mode.anchor.beatZero);
+    assert.equal(before.arrangementId,id);assert.equal(before.arrangementVersion,1);
+    assert.equal(before.compositionVersion,2);assert.equal(before.compositionHash,module.definition.contentHash);
+    assert.equal(guide.step.events.length,id==='original'?185:167);
+    assert.equal(guide.beatMs,60000/92);
+    await selectArrangement(id==='original'?'easier-bends':'original');
+    await f.mode.action('restart');
+    assert.equal(f.recorder.metadata.performance.arrangementId,id);
+    assert.equal(f.recorder.metadata.performance.compositionHash,before.compositionHash);
+    assert.equal(f.saved[0].performance.completionAction,'restarted');
+    assert.notEqual(f.recorder.metadata.id,f.saved[0].id);
+    await f.mode.action('stop');await f.mode.action('exit');
+    assert.equal(f.recorder.owner,null);
+  }
+});
 
 test("Start waits for capture/audio readiness, then emits exactly one sync and shared count-in anchor", async () => {
   const f = fixture();

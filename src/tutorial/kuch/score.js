@@ -1,7 +1,6 @@
 import { MIDI_REFERENCE as source } from './midiReference.js';
 
-export const BPM = 92;
-export const BEAT_MS = 60000 / BPM;
+export { BPM, BEAT_MS } from './timing.js';
 export const LOOP_BEATS = 16;
 export const PERFORMANCE_BEATS = 136;
 export const VOICINGS = { D: [50,57,62,66], C: [48,52,55,60,64] };
@@ -25,10 +24,16 @@ export const DRUMS = notes('Drumset').filter(n=>n.beat>=24&&n.beat<40).map((n,i)
   role:n.midi===36?'percussion':'percussionLooper',sound:n.midi===36?'boink':'hihat',
 }));
 export const PATTERN_CHANGES = [[0,'D'],[16,'change'],[32,'D'],[64,'change'],[80,'D'],[112,'change'],[128,'D']];
-// Cut on phrase/loop boundaries without splitting notes. The interlude after
-// part 3 belongs to the joined performance, rather than the end of that drill.
-export const MELODY_PARTS = [[0,32],[32,64],[64,88],[96,136]].map(([start,end],i)=>({
-  id:`melody-${i+1}`,title:`${i+5} · Melody, part ${i+1}`,kind:'melody',sourceStart:start,beats:end-start,
+// Phrase boundaries and rests are source data; the extra training bridge is not MIDI.
+export const SECTION_VERSION = 2;
+export const INTERLUDES = Object.freeze([[40,48],[88,96]].map(Object.freeze));
+export const PRACTICE_BREAKS = Object.freeze([
+  { after: "melody-1", beats: 8, kind: "practice-only", next: "Part 2" },
+  { after: "melody-2", beats: 8, kind: "source", next: "Part 3" },
+  { after: "melody-3", beats: 8, kind: "source", next: "Part 4" },
+].map(Object.freeze));
+export const MELODY_PARTS = [[0,16],[16,40],[48,88],[96,136]].map(([start,end],i)=>({
+  id:`melody-${i+1}`,title:`${i+5} · Melody, part ${i+1}`,kind:'melody',sectionVersion:SECTION_VERSION,sourceStart:start,beats:end-start,
   events:MELODY.filter(n=>n.beat>=start&&n.beat<end).map(n=>({...n,beat:n.beat-start})),
   backingChanges:[[0,PATTERN_CHANGES.filter(([beat])=>beat<=start).at(-1)[1]],
     ...PATTERN_CHANGES.filter(([beat])=>beat>start&&beat<end).map(([beat,pattern])=>[beat-start,pattern])],
@@ -44,20 +49,8 @@ export const STEPS = [
   {id:'switch-patterns',title:'4 · Switch patterns at the boundary',kind:'switch',beats:36,events:[],instruction:'Practice starts D Pattern Looper. Mid-cycle press Play Change and watch QUEUED: it starts when D finishes all 16 beats. Mid-cycle press Play D to switch back. Both recordings remain available. Use these buttons or the Looper Play controls.'},
   ...MELODY_PARTS,
   {id:'performance',title:'9 · All together — Kuch To Hua Hai',kind:'performance',beats:PERFORMANCE_BEATS,events:MELODY,
-    instruction:'Join all four melody parts into one complete performance over your two alternative pattern loopers and separate percussion looper. Keep the eight-beat interludes between verses. The conductor selects the next separate pattern mid-cycle; the shared transport switches at its boundary. All loopers stop after the final phrase.'},
+    instruction:'Play all four melody parts with the backing. Parts 1 and 2 join directly. Rest for eight beats between Parts 2–3 and Parts 3–4. Follow each attack, hold and release. The backing stops after the final phrase.'},
 ];
 
-// Only observed learner gestures count. Demonstrations never award practice credit.
-export function assess(events, heard, anchorMs) {
-  const remaining=heard.filter(e=>e.origin==='learner'&&(e.kind==='note'||e.kind==='strike'));
-  let correct=0;
-  for(const expected of events) {
-    const i=remaining.findIndex(e=>e.role===expected.role && Math.abs((e.startMs-anchorMs)/BEAT_MS-expected.beat)<.4 &&
-      (e.kind==='strike'?e.withdrawn:e.released&&e.voiced&&!e.invalidMembers&&
-        Math.abs((e.endMs-e.startMs)/BEAT_MS-expected.beats)<.45&&
-        (expected.midi===undefined||e.midis?.length===1&&Math.abs(e.midis[0]-expected.midi)<.2)&&
-        (!expected.midis||expected.midis.length===e.midis?.length&&expected.midis.every(m=>e.midis.some(p=>Math.abs(p-m)<.2)))));
-    if(i>=0){correct++;remaining.splice(i,1);}
-  }
-  return {correct,total:events.length,extra:remaining.length,score:Math.round(100*correct/Math.max(events.length+remaining.length,1))};
-}
+// Arrangement-aware assessment remains available through the original score API.
+export { assess } from './assessment.js';

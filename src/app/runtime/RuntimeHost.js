@@ -563,6 +563,7 @@ export class RuntimeHost {
         this.interactionCoordinator.resetController(controller);
         this.tutorial?.menu?.disconnect(controller);
         this.tutorial?.jogRecording?.interrupt("controller-disconnected");
+        if(this.tutorial?.kuch?.running)this.tutorial.kuch.cancel('Controller disconnected. Restart for a fresh count-in.');
       };
       controller.addEventListener("disconnected", disconnected);
       (this.controllerDisposers ||= []).push(() =>

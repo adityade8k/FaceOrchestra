@@ -68,10 +68,11 @@ test('rings shrink in preparation, signal the exact onset, hold and visibly rele
   const event={beat:4,beats:3};
   assert.ok(timingCueState(3.9,event).green<timingCueState(3.2,event).green);
   assert.equal(timingCueState(4-1e-6,event).phase,'prepare');
-  assert.equal(timingCueState(4,event).phase,'hold');assert.ok(timingCueState(4,event).yellow>=1.2);
+  assert.equal(timingCueState(4,event).phase,'hold');assert.equal(timingCueState(4,event).yellow,0);
   assert.equal(timingCueState(6.99,event).phase,'hold');
-  assert.ok(timingCueState(7.2,event).yellow<timingCueState(7,event).yellow);
-  assert.equal(timingCueState(4.11,event,{percussion:true}).phase,'withdraw');
+  assert.ok(timingCueState(6.9,event).yellow>timingCueState(5,event).yellow);
+  assert.equal(timingCueState(7,event),null);
+  assert.equal(timingCueState(4.11,event,{percussion:true}),null);
   assert.equal(timingCueState(8,event),null);
 });
 function routing(){

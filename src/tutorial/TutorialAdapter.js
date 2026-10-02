@@ -349,7 +349,9 @@ export class TutorialAdapter {
       const last=gesture.bendSamples.at(-1);
       if (!last || now-gesture.startMs-last.offsetMs >= 30) gesture.bendSamples.push({offsetMs:now-gesture.startMs,semitones});
       if(gesture.bendSamples.length>320) gesture.bendSamples.splice(1,1);
-      if (members.every(m=>m.hasAudioVoice(this.r.getInstrumentVoiceId(this.r.getControllerVoiceId(controller),m)))) gesture.voiced=true;
+      const sounding=members.every(m=>m.hasAudioVoice(this.r.getInstrumentVoiceId(this.r.getControllerVoiceId(controller),m)));
+      if(gesture.voiced&&!sounding)gesture.voiceInterrupted=true;
+      if(sounding)gesture.voiced=true;
     }
     for(const e of [...this.pendingStrikes]) {
       const stick=this.r.instrumentRegistry.get(e.stickId);

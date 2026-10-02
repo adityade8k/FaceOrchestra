@@ -12,10 +12,10 @@ export function pitchesMatch(actual = [], expected = []) {
 export function validateBend(event, curve = DESCENDING_BEND) {
   const samples = event.bendSamples || [];
   const initial=curve[0].semitones,endpoint=curve.at(-1).semitones,direction=Math.sign(endpoint-initial);
-  if (!event.released || samples.length < 3) return fail('Hold one Eb voice through the glide, then release.');
+  if (!event.released || samples.length < 3) return fail('Hold one starting voice through the glide, then release.');
   const duration = event.endMs - event.startMs;
   const opening = samples.filter(s => s.offsetMs < duration * 0.15);
-  if (!opening.length || opening.some(s => Math.abs(s.semitones-initial) > 0.5)) return fail('Begin the held voice on Eb with a level wrist.');
+  if (!opening.length || opening.some(s => Math.abs(s.semitones-initial) > 0.5)) return fail('Establish the written starting pitch before rolling.');
   if (samples.some(s => (s.semitones-initial)*direction < -0.75)) return fail('Roll toward the target pitch shown by the wrist guide.');
   let settledSince = null, bestSettle = 0;
   for (const s of samples) {
@@ -26,7 +26,7 @@ export function validateBend(event, curve = DESCENDING_BEND) {
   }
   const last = samples.at(-1);
   if (bestSettle < T.bendSettleMs || Math.abs(last.semitones-endpoint) * 100 > T.bendEndpointCents)
-    return fail('Settle on C (three semitones down) for at least 150 ms before releasing.');
+    return fail(`Settle ${Math.abs(endpoint-initial)} semitones ${direction>0?'up':'down'} from the starting pitch for at least ${T.bendSettleMs} ms before releasing.`);
   if (!samples.some(s => (s.semitones-initial)*direction > 0.5 && (endpoint-s.semitones)*direction > 0.5)) return fail('Glide continuously; do not jump straight to the endpoint.');
   return pass();
 }
