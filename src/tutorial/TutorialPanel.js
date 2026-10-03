@@ -15,6 +15,15 @@ const regions = {
   instruction: { x: 40, y: 490, w: 1072, h: 226, font: 38 },
   feedback: { x: 40, y: 854, w: 1072, h: 546, font: 36 },
 };
+const compactHeight = 0.66, compactCanvasHeight = 720;
+const compactRects = Array.from({ length: 8 }, (_, i) => ({
+  x: 32 + (i % 4) * 276, y: 518 + Math.floor(i / 4) * 96, w: 260, h: 76,
+}));
+const compactRegions = {
+  title: { x: 40, y: 86, w: 1072, h: 52, font: 38 },
+  instruction: { x: 40, y: 150, w: 1072, h: 164, font: 40 },
+  feedback: { x: 40, y: 332, w: 1072, h: 172, font: 31 },
+};
 export class TutorialPanel {
   constructor({ scene, camera, renderer, onAction }) {
     Object.assign(this, {
@@ -152,6 +161,7 @@ export class TutorialPanel {
     if (node.textContent !== value) node.textContent = value;
   }
   render(model) {
+    this.setCompact(Boolean(model.compact));
     const key = JSON.stringify(model);
     if (key === this.key) return;
     this.key = key;
@@ -174,7 +184,7 @@ export class TutorialPanel {
     this.dom.dataset.result = model.result || "";
     const actions = [...(model.navigation || []), ...(model.actions || [])],
       ids = new Set(actions.map((a) => a.id));
-    const extended = Boolean(
+    const extended = !this.compact && Boolean(
       model.navigation?.length === 4 && actions.length > 6,
     );
     // Keep Recenter/Exit at their established XR locations; contextual pattern
@@ -217,7 +227,7 @@ export class TutorialPanel {
       });
     const ctx = this.canvas.getContext("2d");
     ctx.fillStyle = "#102321";
-    ctx.fillRect(0, 0, CW, CH);
+    ctx.fillRect(0, 0, CW, this.canvas.height);
     ctx.fillStyle = "#83dfbd";
     ctx.font = "600 32px sans-serif";
     ctx.fillText(
@@ -226,7 +236,7 @@ export class TutorialPanel {
       66,
     );
     this.layout = [];
-    for (const [name, originalRegion] of Object.entries(regions)) {
+    for (const [name, originalRegion] of Object.entries(this.compact ? compactRegions : regions)) {
       const region =
         name === "feedback" && model.practiceTempo
           ? { ...originalRegion, h: 252 }
@@ -260,7 +270,7 @@ export class TutorialPanel {
       b.userData.action = a?.id;
       b.userData.disabled = Boolean(a?.disabled);
       if (!a) return;
-      const rect = buttonRects[i];
+      const rect = (this.compact ? compactRects : buttonRects)[i];
       ctx.fillStyle = a.disabled
         ? "#233430"
         : a.active
@@ -277,7 +287,7 @@ export class TutorialPanel {
           y: rect.y + 4,
           w: rect.w - 28,
           h: rect.h - 8,
-          font: 38,
+          font: this.compact ? 31 : 38,
         },
         { color: a.disabled ? "#9bada5" : "#fff4dd", weight: 600 },
       );
@@ -288,6 +298,27 @@ export class TutorialPanel {
       ...this.buttons.filter((b) => b.visible),
       ...(model.practiceTempo ? this.tempoControls.targets : []),
     ];
+    this.texture.needsUpdate = true;
+  }
+  setCompact(compact) {
+    if (this.compact === compact) return;
+    this.compact = compact;
+    this.key = '';
+    const height = compact ? compactHeight : HEIGHT;
+    const ch = compact ? compactCanvasHeight : CH;
+    this.group.scale.setScalar(compact ? 0.8 : 1);
+    this.canvas.height = ch;
+    this.surface.scale.y = height / HEIGHT;
+    this.effect.scale.y = height / HEIGHT;
+    this.statusPlane.visible = !compact;
+    this.handle.position.y = height / 2 - (compact ? 0.025 : 0.04);
+    this.handle.scale.y = compact ? 0.45 : 1;
+    this.buttons.forEach((b, i) => {
+      const rect = (compact ? compactRects : buttonRects)[i];
+      b.scale.set(rect.w / buttonRects[i].w, (rect.h / ch * height) / (buttonRects[i].h / CH * HEIGHT), 1);
+      b.position.set(((rect.x + rect.w / 2) / CW - 0.5) * WIDTH,
+        (0.5 - (rect.y + rect.h / 2) / ch) * height, 0.003);
+    });
     this.texture.needsUpdate = true;
   }
   setTransport(text = "") {

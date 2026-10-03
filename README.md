@@ -50,6 +50,8 @@ Open `https://YOUR_LAN_IP:8443` in the headset browser. The headset and computer
 
 The main menu contains **Play**, **Tutorials**, and **Record Songs**. Play restores the saved workspace or opens empty space. Instruments are placed explicitly; no default preview or Metronome is spawned. At most one Metronome can be active, including a pending preview. Tutorials starts with Basics and includes Raag Jog and Kuch To Hua Hai. Record Songs prepares either song for the shared receiver workflow.
 
+**Basics** is a separate, protected 29-step onboarding session. It starts with one default horn, advances only after real playing or interaction, and restores your Play workspace on Exit. Back reviews completed lessons; Help and Reset lesson never award completion. See [the onboarding sequence, controls, and verification](docs/onboarding.md). Run its browser walkthrough with `npm run test:basics:browser`.
+
 Click the left thumbstick to hide/show the menu. Point either controller at the header and hold Grip to move it; Trigger on the header opens Home. Recenter restores a comfortable pose. Desktop users can use Menu or M (outside text inputs). Hiding the menu preserves playback, lesson progress and recording. See the [local audit](docs/audits/implementation.md) and [MIDI import workflow](docs/midi-import.md).
 
 The optional in-headset instruction panel is currently disabled because `SHOW_INSTRUCTION_PANEL` is `false`. If a developer enables it, close it with Trigger before the automatic Metronome appears and the spawn menu becomes available.

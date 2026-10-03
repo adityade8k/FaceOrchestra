@@ -84,6 +84,7 @@ export class XRInteractionCoordinator {
       default:
         this.handlers.onIntent?.(intent);
     }
+    this.handlers.onIntentHandled?.(intent, state);
   }
 
   setMode(controller, mode) {

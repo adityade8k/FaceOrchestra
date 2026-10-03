@@ -301,7 +301,8 @@ export class RuntimeHost {
       intentMapper: this.intentMapper,
       handlers: {
         captureIntent: (intent, state) =>
-          this.tutorial?.menu?.capture(intent, state),
+          this.tutorial?.menu?.capture(intent, state) || this.tutorial?.basics?.captureIntent(intent, state),
+        onIntentHandled: (intent) => this.tutorial?.basics?.onIntent(intent),
         onSpawnMenuOpen: (controller, gripPressed) =>
           this.handleSpawnMenuOpenIntent(controller, gripPressed),
         onSpawnMenuConfirm: (controller) =>

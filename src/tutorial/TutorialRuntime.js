@@ -56,6 +56,7 @@ export class TutorialRuntime {
     this.pendingXRPlacementFrames = 0;
     this.onVisibility = () => {
       if (document.hidden) {
+        this.basics?.suspend();
         this.jogRecording?.interrupt("visibility-interruption");
         this.kuch?.cancel("Tab hidden. Choose an action for a fresh count-in.");
         this.conductor?.pause(
@@ -210,7 +211,7 @@ export class TutorialRuntime {
     if (this.session) this.adapter.bindPreview(preview, entry, controller);
   }
   onPlaced(instruments, preview) {
-    this.basics?.placed(instruments);
+    this.basics?.placed(instruments, preview);
     if (this.session) this.adapter.placed(instruments, preview);
   }
   onSpawnCancelled() {
@@ -232,6 +233,7 @@ export class TutorialRuntime {
     }
     if (id === "recenter") {
       this.menu.recenter(this.r.getUserCamera());
+      this.basics?.recenter();
       return;
     }
     if (
@@ -310,14 +312,6 @@ export class TutorialRuntime {
       return this.openCompositionOptions(id.slice(12), this.navigationScreen);
     if (id === "basics") return this.selectComposition("basics", "tutorials");
     if (["play", "exit", "jog-record-exit"].includes(id) && this.router) {
-      if (
-        id === "exit" &&
-        this.basics?.step.id === "finish" &&
-        this.basics.practicing
-      ) {
-        this.basics.outcomes.finish = "passed";
-        this.basics.persist();
-      }
       try {
         await this.router.enter(
           "play",
@@ -769,6 +763,10 @@ export class TutorialRuntime {
       return;
     }
     if (this.basics) {
+      if (this.pendingXRPlacementFrames > 0) {
+        this.pendingXRPlacementFrames--;
+        if (this.pendingXRPlacementFrames === 0) this.basics.relocateToViewer();
+      }
       this.basics.update(now);
       return;
     }
@@ -860,6 +858,7 @@ export class TutorialRuntime {
     }
     if (this.basics) {
       this.adapter.observe(now);
+      this.basics.sample(now);
       if (now - this.lastDraw > 100) {
         this.render(now);
         this.lastDraw = now;
@@ -1083,7 +1082,7 @@ export class TutorialRuntime {
     this.menu?.cancelDrag();
     this.dataTutorial?.cancel();
     if (this.basics) {
-      this.basics.practicing = false;
+      this.basics.suspend();
       this.basics.cancelDemo().catch((error) => {
         this.uiFeedback = error.message;
       });
