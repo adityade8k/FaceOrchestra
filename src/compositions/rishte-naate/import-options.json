@@ -1,0 +1,31 @@
+{
+  "id": "rishte-naate",
+  "title": "rishte naate.mid",
+  "version": 1,
+  "sequence": 0,
+  "live": {
+    "track": 0,
+    "channel": 0,
+    "port": 0
+  },
+  "transpose": 0,
+  "melody": {
+    "minimumMidi": 68,
+    "accompanimentExceptions": [
+      "t0-e12",
+      "t0-e66",
+      "t0-e92",
+      "t0-e124",
+      "t0-e178",
+      "t0-e208",
+      "t0-e285",
+      "t0-e290",
+      "t0-e295",
+      "t0-e298",
+      "t0-e306",
+      "t0-e352",
+      "t0-e382"
+    ]
+  },
+  "rolePolicy": "Inferred upper piano line; MIDI contains no separate part labels. MIDI below 60 is bass, remaining non-melody notes are harmony."
+}

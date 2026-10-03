@@ -1,0 +1,46 @@
+{
+  "source": {
+    "filename": "rishte naate.mid",
+    "sha256": "b5f63cb589b93c0bdab89edbcdaf44a1b0ce6ad4e3e72b6575cf0b96d70eea35",
+    "byteLength": 2662,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "rishte naate.mid"
+    },
+    "format": 0,
+    "division": {
+      "kind": "ppq",
+      "ppq": 960
+    }
+  },
+  "inventory": [
+    {
+      "sequence": "sequence-0",
+      "duration": 74.046177140625,
+      "soundingEnd": 74.046177140625,
+      "tracks": [
+        {
+          "track": 0,
+          "name": "Pianoteq 6.7",
+          "channels": [
+            0
+          ],
+          "ports": [
+            0
+          ],
+          "notes": 296,
+          "pitchRange": [
+            40,
+            83
+          ],
+          "maximumPolyphony": 31,
+          "density": 3.997505494954193,
+          "programs": [],
+          "likelyRole": "chords/support"
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

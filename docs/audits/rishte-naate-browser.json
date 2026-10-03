@@ -1,0 +1,32 @@
+{
+  "title": "rishte naate.mid",
+  "honks": 30,
+  "instruments": 31,
+  "controls": [
+    "previous-step",
+    "next-step",
+    "step-demo",
+    "step-practice",
+    "midi-pause",
+    "midi-stop",
+    "recenter",
+    "exit"
+  ],
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+  "notes": 296,
+  "peakVoices": 31,
+  "peakAmplitude": 0.4626300036907196,
+  "maxRms": 0.194463526626349,
+  "maximumTimingError": 7.105427357601002e-15,
+  "minimumScheduleLead": 0.13186200592403452,
+  "durationSeconds": 74.046177140625,
+  "pausedAt": 0.5151439999940394,
+  "sectionTransitions": true,
+  "practiceMelodyExcluded": true,
+  "recordSongsRegistered": true,
+  "endFeedback": "Performance complete. Practice to play the upper line.",
+  "voicesAtEnd": 0,
+  "workspaceRestored": true,
+  "frames": 1831,
+  "errors": []
+}

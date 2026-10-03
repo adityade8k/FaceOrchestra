@@ -215,3 +215,8 @@ npm run verify
 ```
 
 The opening **Tutorials** chooser includes **Rag Jog Study** (VIRAG 2) and **Kuch To Hua Hai**. Both offer demonstrations and practice in the main app. See [Jog controls and verification](docs/tutorial.md) and [Kuch To Hua Hai lesson](docs/kuch-tutorial.md).
+
+**rishte naate.mid** is also available in Tutorials and Record Songs. Its full
+demonstration preserves all 296 notes and the original piano MIDI's timing,
+velocity and pedal sustain using Honk voices. See the [arrangement, controls and
+verification](docs/rishte-naate.md).

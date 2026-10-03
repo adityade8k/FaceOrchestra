@@ -125,6 +125,15 @@ export const compositionRegistry = new CompositionRegistry([
     version: 2,
     load: () => import("./kuch.js"),
   },
+  {
+    id: "rishte-naate",
+    title: "rishte naate.mid",
+    version: 1,
+    load: () => Promise.all([
+      import("./MidiPerformance.js"),
+      import("./rishte-naate/composition.json", { with: { type: "json" } }),
+    ]).then(([runtime, score]) => runtime.midiPerformance(score.default)),
+  },
 ]);
 export function libraryPage(registry, mode, page = 0, size = 2) {
   const rows =
