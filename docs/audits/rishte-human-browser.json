@@ -1,0 +1,465 @@
+{
+  "prepared": {
+    "title": "rishte naate.mid",
+    "controls": {
+      "visible": true,
+      "title": "Phrase 1",
+      "instruction": "75 BPM · 7 melody notes · 2 bars.\nPlay the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.\nUse Tempo −/+ or the Metronome handle to adjust speed.",
+      "feedback": "Preview the whole arrangement, then try a short melody phrase. Backing is prepared in the Loopers.",
+      "progress": "rishte naate.mid · 1/23",
+      "navigation": [
+        {
+          "id": "rishte-preview",
+          "label": "Preview full arrangement",
+          "disabled": false
+        },
+        {
+          "id": "step-practice",
+          "label": "Practice / Retry",
+          "disabled": false
+        },
+        {
+          "id": "previous-step",
+          "label": "Previous",
+          "disabled": true
+        },
+        {
+          "id": "next-step",
+          "label": "Next phrase",
+          "disabled": false
+        }
+      ],
+      "actions": [
+        {
+          "id": "tempo-down",
+          "label": "Tempo −5",
+          "disabled": false
+        },
+        {
+          "id": "tempo-up",
+          "label": "Tempo +5",
+          "disabled": false
+        },
+        {
+          "id": "rishte-stop",
+          "label": "Stop",
+          "disabled": true
+        },
+        {
+          "id": "exit",
+          "label": "Exit",
+          "disabled": false
+        }
+      ]
+    },
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "instruments": 40,
+    "loopers": 4,
+    "contacts": [
+      {
+        "role": "lead-68",
+        "chain": []
+      },
+      {
+        "role": "lead-70",
+        "chain": []
+      },
+      {
+        "role": "lead-71",
+        "chain": [
+          "honk-770eb74f-971e-4cbf-aaf5-3a59c248cd3e"
+        ]
+      },
+      {
+        "role": "lead-72",
+        "chain": []
+      },
+      {
+        "role": "lead-73",
+        "chain": [
+          "honk-731ae216-b015-4319-b91e-698f5df817f6"
+        ]
+      },
+      {
+        "role": "lead-75",
+        "chain": [
+          "honk-81dcc79a-bb00-4218-a05d-2527eb22a37d"
+        ]
+      },
+      {
+        "role": "lead-76",
+        "chain": []
+      },
+      {
+        "role": "lead-78",
+        "chain": []
+      },
+      {
+        "role": "lead-80",
+        "chain": []
+      },
+      {
+        "role": "backing-40",
+        "chain": [
+          "honk-157eaa38-85fe-4ca0-b007-20d86de8054b"
+        ]
+      },
+      {
+        "role": "backing-42",
+        "chain": [
+          "honk-0bf406e2-a6bf-402d-b939-76c1e92c432c"
+        ]
+      },
+      {
+        "role": "backing-44",
+        "chain": [
+          "honk-dfcc6a3c-30ef-4e0f-9da6-1c67e46e7577"
+        ]
+      },
+      {
+        "role": "backing-47",
+        "chain": [
+          "honk-3fb78124-5c56-4a40-aaaa-45904648f2e3"
+        ]
+      },
+      {
+        "role": "backing-49",
+        "chain": [
+          "honk-60c34793-3de6-457f-9c04-d2acc1a67148"
+        ]
+      },
+      {
+        "role": "backing-51",
+        "chain": [
+          "honk-51989b65-a8d8-4d04-8d4d-1a3734432685"
+        ]
+      },
+      {
+        "role": "backing-52",
+        "chain": [
+          "honk-2dc1db99-2af2-402b-b93d-ceb0421bb573"
+        ]
+      },
+      {
+        "role": "backing-54",
+        "chain": [
+          "honk-61177633-9ac1-4cb9-8377-59b336b2cbc9"
+        ]
+      },
+      {
+        "role": "backing-56",
+        "chain": [
+          "honk-f5b3da97-d96e-4624-a681-7b573e96134e"
+        ]
+      },
+      {
+        "role": "backing-58",
+        "chain": [
+          "honk-048d8e49-e94b-4aaf-93ae-a580e30a9535"
+        ]
+      },
+      {
+        "role": "backing-59",
+        "chain": [
+          "honk-adcba4f1-f814-4b73-9720-2ef793f0b9f3"
+        ]
+      },
+      {
+        "role": "backing-61",
+        "chain": [
+          "honk-fbb416c2-6c67-4667-a3a8-786456807bf3"
+        ]
+      },
+      {
+        "role": "backing-63",
+        "chain": [
+          "honk-451e0149-045a-4159-b0d6-ffb69b57b45e"
+        ]
+      },
+      {
+        "role": "backing-64",
+        "chain": [
+          "honk-46c32be1-db69-48b3-9b11-c264f246415e"
+        ]
+      },
+      {
+        "role": "backing-66",
+        "chain": [
+          "honk-2e80524d-d947-4bb0-b731-8a50996252da"
+        ]
+      },
+      {
+        "role": "backing-68",
+        "chain": [
+          "honk-68a109a1-be1e-4c6a-bee2-ce053692dbde"
+        ]
+      },
+      {
+        "role": "backing-70",
+        "chain": [
+          "honk-7c1c03a5-1408-4a9c-a735-a6f8a4887b2a"
+        ]
+      },
+      {
+        "role": "backing-71",
+        "chain": [
+          "honk-43bb556e-8070-4c79-ad21-02b90824ff45"
+        ]
+      },
+      {
+        "role": "backing-72",
+        "chain": [
+          "honk-b4bcdfb2-a8a4-4e14-a067-c4ce568bd3be"
+        ]
+      },
+      {
+        "role": "backing-73",
+        "chain": [
+          "honk-3cbc943b-d82f-43e6-b290-fb23fef02c1b"
+        ]
+      },
+      {
+        "role": "backing-75",
+        "chain": [
+          "honk-23c19ae1-962f-4a13-ace7-a459245d9fb8"
+        ]
+      },
+      {
+        "role": "backing-76",
+        "chain": [
+          "honk-8015ec00-33e8-4a11-a2e6-4279b8799648"
+        ]
+      },
+      {
+        "role": "backing-78",
+        "chain": [
+          "honk-82381235-f850-4aeb-9dc3-aa6bcda80213"
+        ]
+      },
+      {
+        "role": "backing-80",
+        "chain": [
+          "honk-44c4e967-8347-4b10-b385-79f1b6c390f9"
+        ]
+      },
+      {
+        "role": "backing-82",
+        "chain": [
+          "honk-6702ac9f-ed1c-41e9-89e2-e00e97ba7d6e"
+        ]
+      },
+      {
+        "role": "backing-83",
+        "chain": [
+          "honk-037fd2b2-d322-4237-ae9d-6d2e44fbee94"
+        ]
+      }
+    ]
+  },
+  "smoke": {
+    "controls": [
+      "rishte-preview",
+      "step-practice",
+      "previous-step",
+      "next-step",
+      "tempo-down",
+      "tempo-up",
+      "rishte-stop",
+      "exit"
+    ],
+    "actualLoopers": 2,
+    "handoffs": [
+      {
+        "from": "block-1",
+        "to": "block-2",
+        "beat": 8
+      },
+      {
+        "from": "block-2",
+        "to": "block-3",
+        "beat": 16
+      }
+    ],
+    "takesRestored": true,
+    "previewNoCredit": true,
+    "practiceBackingOnly": true,
+    "retry": true
+  },
+  "parity": {
+    "normalTrigger": {
+      "role": "lead-71",
+      "voiceId": "tutorial-0:instrument-honk-770eb74f-971e-4cbf-aaf5-3a59c248cd3e",
+      "values": {
+        "squeeze": 0.9914585331989947,
+        "bend": 0,
+        "earLeft": 0.8571428571428571,
+        "earRight": 0,
+        "nose": 0,
+        "vowel": "neutral"
+      },
+      "options": {
+        "gain": 0.78
+      }
+    },
+    "ordinaryLooper": {
+      "role": "backing-71",
+      "voiceId": "looper-looper-972ec974-2a73-4a50-b03c-10a40a5ce4b4:track-1:instrument-honk-43bb556e-8070-4c79-ad21-02b90824ff45:action:scheduled-6",
+      "values": {
+        "squeeze": 1,
+        "bend": 0,
+        "earLeft": 0.8571428571428571,
+        "earRight": 0,
+        "nose": 0,
+        "vowel": "neutral"
+      },
+      "options": {
+        "gain": 0.282945,
+        "scheduledTime": 19.300498866213154
+      }
+    },
+    "defaultLooperVolume": 0.36275
+  },
+  "full": {
+    "melodyNotes": 107,
+    "backingNotes": 160,
+    "harmonicBlocks": 26,
+    "maximumConcurrentLoopers": 2,
+    "maximumClockDriftBeats": 0,
+    "peakAmplitude": 0.9565492272377014,
+    "maximumRms": 0.6687631865766022,
+    "durationBeats": 176,
+    "soundParity": true,
+    "normalRelease": true,
+    "takesRestored": true,
+    "noPreviewCredit": true,
+    "cleanEnding": true,
+    "handoffs": [
+      {
+        "from": "block-1",
+        "to": "block-2",
+        "beat": 8
+      },
+      {
+        "from": "block-2",
+        "to": "block-3",
+        "beat": 16
+      },
+      {
+        "from": "block-3",
+        "to": "block-4",
+        "beat": 24
+      },
+      {
+        "from": "block-4",
+        "to": "block-5",
+        "beat": 32
+      },
+      {
+        "from": "block-5",
+        "to": "block-6",
+        "beat": 40
+      },
+      {
+        "from": "block-6",
+        "to": "block-7",
+        "beat": 48
+      },
+      {
+        "from": "block-7",
+        "to": "block-8",
+        "beat": 56
+      },
+      {
+        "from": "block-8",
+        "to": "block-9",
+        "beat": 64
+      },
+      {
+        "from": "block-9",
+        "to": "block-10",
+        "beat": 72
+      },
+      {
+        "from": "block-10",
+        "to": "block-11",
+        "beat": 80
+      },
+      {
+        "from": "block-11",
+        "to": "block-12",
+        "beat": 88
+      },
+      {
+        "from": "block-12",
+        "to": "block-13",
+        "beat": 96
+      },
+      {
+        "from": "block-13",
+        "to": "block-14",
+        "beat": 104
+      },
+      {
+        "from": "block-14",
+        "to": "block-15",
+        "beat": 112
+      },
+      {
+        "from": "block-15",
+        "to": "block-16",
+        "beat": 116
+      },
+      {
+        "from": "block-16",
+        "to": "block-17",
+        "beat": 120
+      },
+      {
+        "from": "block-17",
+        "to": "block-18",
+        "beat": 128
+      },
+      {
+        "from": "block-18",
+        "to": "block-19",
+        "beat": 132
+      },
+      {
+        "from": "block-19",
+        "to": "block-20",
+        "beat": 136
+      },
+      {
+        "from": "block-20",
+        "to": "block-21",
+        "beat": 144
+      },
+      {
+        "from": "block-21",
+        "to": "block-22",
+        "beat": 148
+      },
+      {
+        "from": "block-22",
+        "to": "block-23",
+        "beat": 152
+      },
+      {
+        "from": "block-23",
+        "to": "block-24",
+        "beat": 160
+      },
+      {
+        "from": "block-24",
+        "to": "block-25",
+        "beat": 164
+      },
+      {
+        "from": "block-25",
+        "to": "block-26",
+        "beat": 168
+      }
+    ]
+  },
+  "errors": []
+}

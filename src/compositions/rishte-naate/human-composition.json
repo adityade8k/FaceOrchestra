@@ -1,0 +1,6302 @@
+{
+  "schemaVersion": 1,
+  "id": "rishte-naate",
+  "title": "rishte naate.mid",
+  "contentVersion": 2,
+  "bpm": 75,
+  "liveRole": "melody",
+  "playback": "honk-looper-human-v1",
+  "source": {
+    "filename": "rishte naate.mid",
+    "sha256": "b5f63cb589b93c0bdab89edbcdaf44a1b0ce6ad4e3e72b6575cf0b96d70eea35",
+    "byteLength": 2662,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "rishte naate.mid"
+    },
+    "format": 0,
+    "division": {
+      "kind": "ppq",
+      "ppq": 960
+    }
+  },
+  "normalizedSource": {
+    "file": "d5de48bac6332cbfe51ad3d9d6d3ab983e4a39fa4836f0fe6a058067af02369f.normalized.json",
+    "sha256": "d5de48bac6332cbfe51ad3d9d6d3ab983e4a39fa4836f0fe6a058067af02369f",
+    "sequence": 0
+  },
+  "score": {
+    "events": [
+      {
+        "id": "live-6",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 0,
+        "beats": 0.7,
+        "sourceIds": [
+          "t0-e6"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-11",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 1,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e11"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-14",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 2,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e14",
+          "t0-e16"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-19",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 3.5,
+        "beats": 0.6,
+        "sourceIds": [
+          "t0-e19"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-22",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 4.5,
+        "beats": 1.1,
+        "sourceIds": [
+          "t0-e22"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-25",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 6,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e25"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-27",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 7,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e27"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-32",
+        "role": "lead-70",
+        "midi": 70,
+        "beat": 8,
+        "beats": 0.7,
+        "sourceIds": [
+          "t0-e32"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-40",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 9,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e40"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-44",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 10,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e44",
+          "t0-e47"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-51",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 12,
+        "beats": 2.2,
+        "sourceIds": [
+          "t0-e51"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-53",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 15,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e53"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-64",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 17,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e64",
+          "t0-e68"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-71",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 19,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e71",
+          "t0-e73"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-75",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 21,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e75"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-79",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 22,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e79"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-81",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 23,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e81"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-83",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 24,
+        "beats": 0.7,
+        "sourceIds": [
+          "t0-e83"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-89",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 25,
+        "beats": 1.1,
+        "sourceIds": [
+          "t0-e89"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-95",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 26.5,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e95"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-96",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 27.5,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e96"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-99",
+        "role": "lead-70",
+        "midi": 70,
+        "beat": 28.5,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e99"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-115",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 32,
+        "beats": 0.7,
+        "sourceIds": [
+          "t0-e115"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-123",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 33,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e123"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-126",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 34,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e126",
+          "t0-e131"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-132",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 35.5,
+        "beats": 0.6,
+        "sourceIds": [
+          "t0-e132"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-135",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 36.5,
+        "beats": 1.1,
+        "sourceIds": [
+          "t0-e135"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-137",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 38,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e137"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-139",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 39,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e139"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-142",
+        "role": "lead-70",
+        "midi": 70,
+        "beat": 40,
+        "beats": 0.7,
+        "sourceIds": [
+          "t0-e142"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-152",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 41,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e152"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-156",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 42,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e156",
+          "t0-e159"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-163",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 44,
+        "beats": 2.2,
+        "sourceIds": [
+          "t0-e163"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-165",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 47,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e165"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-176",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 49,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e176",
+          "t0-e180"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-183",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 51,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e183",
+          "t0-e185"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-187",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 53,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e187"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-191",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 54,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e191"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-193",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 55,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e193"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-196",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 56,
+        "beats": 0.7,
+        "sourceIds": [
+          "t0-e196"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-206",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 57,
+        "beats": 1.1,
+        "sourceIds": [
+          "t0-e206"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-211",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 58.5,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e211"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-212",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 59.5,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e212"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-214",
+        "role": "lead-70",
+        "midi": 70,
+        "beat": 60.5,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e214"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-227",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 64,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e227",
+          "t0-e235"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-237",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 66,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e237",
+          "t0-e241"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-243",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 68,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e243",
+          "t0-e245"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-247",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 70,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e247"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-249",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 71,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e249"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-252",
+        "role": "lead-70",
+        "midi": 70,
+        "beat": 72,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e252",
+          "t0-e262"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-267",
+        "role": "lead-70",
+        "midi": 70,
+        "beat": 74.5,
+        "beats": 0.9,
+        "sourceIds": [
+          "t0-e267"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-271",
+        "role": "lead-70",
+        "midi": 70,
+        "beat": 76,
+        "beats": 2.2,
+        "sourceIds": [
+          "t0-e271"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-273",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 79,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e273"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-278",
+        "role": "lead-68",
+        "midi": 68,
+        "beat": 80,
+        "beats": 1,
+        "sourceIds": [
+          "t0-e278"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-286",
+        "role": "lead-72",
+        "midi": 72,
+        "beat": 82,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e286",
+          "t0-e288"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-291",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 84,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e291",
+          "t0-e294"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-299",
+        "role": "lead-80",
+        "midi": 80,
+        "beat": 86,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e299",
+          "t0-e305"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-312",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 88,
+        "beats": 2.2,
+        "sourceIds": [
+          "t0-e312",
+          "t0-e322",
+          "t0-e327"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-329",
+        "role": "lead-78",
+        "midi": 78,
+        "beat": 91,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e329"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-333",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 92,
+        "beats": 2.2,
+        "sourceIds": [
+          "t0-e333"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-335",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 95,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e335"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-342",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 96,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e342",
+          "t0-e350"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-354",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 98,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e354"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-357",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 99,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e357"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-361",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 100,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e361",
+          "t0-e363"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-365",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 102,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e365"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-367",
+        "role": "lead-78",
+        "midi": 78,
+        "beat": 103,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e367"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-372",
+        "role": "lead-78",
+        "midi": 78,
+        "beat": 104,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e372",
+          "t0-e379"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-385",
+        "role": "lead-80",
+        "midi": 80,
+        "beat": 106.5,
+        "beats": 0.9,
+        "sourceIds": [
+          "t0-e385",
+          "t0-e389"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-391",
+        "role": "lead-78",
+        "midi": 78,
+        "beat": 108,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e391"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-395",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 110,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e395"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-397",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 111,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e397"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-404",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 112,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e404",
+          "t0-e411"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-417",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 114,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e417"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-421",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 115,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e421"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-427",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 116,
+        "beats": 1.4,
+        "sourceIds": [
+          "t0-e427",
+          "t0-e436"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-443",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 118,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e443"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-445",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 119,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e445"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-449",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 120,
+        "beats": 2.2,
+        "sourceIds": [
+          "t0-e449"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-463",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 123,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e463"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-467",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 124,
+        "beats": 1.4,
+        "sourceIds": [
+          "t0-e467"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-469",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 127,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e469"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-476",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 128,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e476",
+          "t0-e484"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-489",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 130,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e489"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-495",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 131,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e495"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-502",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 132,
+        "beats": 1.4,
+        "sourceIds": [
+          "t0-e502",
+          "t0-e510"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-517",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 134.5,
+        "beats": 0.5,
+        "sourceIds": [
+          "t0-e517"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-519",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 135.25,
+        "beats": 0.5,
+        "sourceIds": [
+          "t0-e519"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-524",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 136,
+        "beats": 1.5,
+        "sourceIds": [
+          "t0-e524"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-547",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 143,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e547"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-554",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 144,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e554",
+          "t0-e562"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-567",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 146,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e567"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-571",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 147,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e571"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-578",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 148,
+        "beats": 1.4,
+        "sourceIds": [
+          "t0-e578",
+          "t0-e586"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-593",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 150,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e593"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-595",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 151,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e595"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-601",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 152,
+        "beats": 2.2,
+        "sourceIds": [
+          "t0-e601"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-613",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 155,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e613"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-617",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 156,
+        "beats": 1.4,
+        "sourceIds": [
+          "t0-e617"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-619",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 159,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e619"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-627",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 160,
+        "beats": 1.2,
+        "sourceIds": [
+          "t0-e627",
+          "t0-e634"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-639",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 162,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e639"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-644",
+        "role": "lead-76",
+        "midi": 76,
+        "beat": 163,
+        "beats": 0.65,
+        "sourceIds": [
+          "t0-e644"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-653",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 164,
+        "beats": 1.4,
+        "sourceIds": [
+          "t0-e653",
+          "t0-e660"
+        ],
+        "decision": "combine repeated attacks into a singable hold"
+      },
+      {
+        "id": "live-665",
+        "role": "lead-75",
+        "midi": 75,
+        "beat": 166.5,
+        "beats": 0.5,
+        "sourceIds": [
+          "t0-e665"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-669",
+        "role": "lead-73",
+        "midi": 73,
+        "beat": 167.25,
+        "beats": 0.5,
+        "sourceIds": [
+          "t0-e669"
+        ],
+        "decision": "retain melodic anchor"
+      },
+      {
+        "id": "live-676",
+        "role": "lead-71",
+        "midi": 71,
+        "beat": 168,
+        "beats": 2,
+        "sourceIds": [
+          "t0-e676"
+        ],
+        "decision": "retain melodic anchor"
+      }
+    ],
+    "durationBeats": 176,
+    "sourceTempo": [
+      {
+        "tick": 0,
+        "us": 521739,
+        "seconds": 0
+      }
+    ],
+    "sourceMeter": [
+      {
+        "event": "t0-e3",
+        "tick": 0,
+        "numerator": 4,
+        "denominator": 4,
+        "quarterBeatsPerBar": 4,
+        "metronome": 24
+      }
+    ]
+  },
+  "arrangement": {
+    "id": "human-melody",
+    "title": "Human melody with Looper accompaniment",
+    "version": 2,
+    "recipes": [
+      {
+        "kind": "honk",
+        "role": "lead-68",
+        "midi": 68,
+        "position": [
+          -0.4299807177809223,
+          0.47005239394710735,
+          -0.02249105432330928
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-70",
+        "midi": 70,
+        "position": [
+          -0.33248100638986766,
+          0.47217487306948214,
+          0.038636344401084585
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-71",
+        "midi": 71,
+        "position": [
+          -0.2264879236436048,
+          0.47373088545206105,
+          0.08344950101935739
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-72",
+        "midi": 72,
+        "position": [
+          -0.1147091087622571,
+          0.4746806820843907,
+          0.11080364403045138
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-73",
+        "midi": 73,
+        "position": [
+          0,
+          0.47500000000000003,
+          0.12
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-75",
+        "midi": 75,
+        "position": [
+          0.1147091087622571,
+          0.4746806820843907,
+          0.11080364403045138
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-76",
+        "midi": 76,
+        "position": [
+          0.2264879236436048,
+          0.47373088545206105,
+          0.08344950101935739
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-78",
+        "midi": 78,
+        "position": [
+          0.33248100638986766,
+          0.47217487306948214,
+          0.038636344401084585
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "lead-80",
+        "midi": 80,
+        "position": [
+          0.4299807177809223,
+          0.47005239394710735,
+          -0.02249105432330928
+        ],
+        "scale": 1
+      },
+      {
+        "kind": "honk",
+        "role": "backing-40",
+        "midi": 40,
+        "position": [
+          -0.75,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-42",
+        "midi": 42,
+        "position": [
+          -0.6,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-44",
+        "midi": 44,
+        "position": [
+          -0.44999999999999996,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-47",
+        "midi": 47,
+        "position": [
+          -0.3,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-49",
+        "midi": 49,
+        "position": [
+          -0.15,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-51",
+        "midi": 51,
+        "position": [
+          0,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-52",
+        "midi": 52,
+        "position": [
+          0.15,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-54",
+        "midi": 54,
+        "position": [
+          0.3,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-56",
+        "midi": 56,
+        "position": [
+          0.44999999999999996,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-58",
+        "midi": 58,
+        "position": [
+          0.6,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-59",
+        "midi": 59,
+        "position": [
+          0.75,
+          -0.15,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-61",
+        "midi": 61,
+        "position": [
+          -0.75,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-63",
+        "midi": 63,
+        "position": [
+          -0.6,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-64",
+        "midi": 64,
+        "position": [
+          -0.44999999999999996,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-66",
+        "midi": 66,
+        "position": [
+          -0.3,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-68",
+        "midi": 68,
+        "position": [
+          -0.15,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-70",
+        "midi": 70,
+        "position": [
+          0,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-71",
+        "midi": 71,
+        "position": [
+          0.15,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-72",
+        "midi": 72,
+        "position": [
+          0.3,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-73",
+        "midi": 73,
+        "position": [
+          0.44999999999999996,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-75",
+        "midi": 75,
+        "position": [
+          0.6,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-76",
+        "midi": 76,
+        "position": [
+          0.75,
+          -0.42000000000000004,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-78",
+        "midi": 78,
+        "position": [
+          -0.75,
+          -0.6900000000000001,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-80",
+        "midi": 80,
+        "position": [
+          -0.6,
+          -0.6900000000000001,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-82",
+        "midi": 82,
+        "position": [
+          -0.44999999999999996,
+          -0.6900000000000001,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-83",
+        "midi": 83,
+        "position": [
+          -0.3,
+          -0.6900000000000001,
+          -0.65
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "looper",
+        "role": "foundation-0",
+        "position": [
+          -0.65,
+          -0.72,
+          0.15
+        ],
+        "scale": 0.55
+      },
+      {
+        "kind": "looper",
+        "role": "foundation-1",
+        "position": [
+          -0.35000000000000003,
+          -0.72,
+          0.15
+        ],
+        "scale": 0.55
+      },
+      {
+        "kind": "looper",
+        "role": "figures-0",
+        "position": [
+          0.19999999999999996,
+          -0.72,
+          0.15
+        ],
+        "scale": 0.55
+      },
+      {
+        "kind": "looper",
+        "role": "figures-1",
+        "position": [
+          0.49999999999999994,
+          -0.72,
+          0.15
+        ],
+        "scale": 0.55
+      },
+      {
+        "kind": "metronome",
+        "role": "metronome",
+        "position": [
+          -1.05,
+          -0.35,
+          0.05
+        ],
+        "scale": 0.65
+      }
+    ],
+    "blocks": [
+      {
+        "id": "block-1",
+        "title": "Opening rise and return",
+        "beat": 0,
+        "beats": 8,
+        "sourceStartSeconds": 0,
+        "sourceEndSeconds": 3.3201078656250003,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e5",
+                "sourceIds": [
+                  "t0-e5"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 0,
+                "beats": 2.2
+              },
+              {
+                "id": "backing-t0-e9",
+                "sourceIds": [
+                  "t0-e9"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 0.5,
+                "beats": 2.2
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e12",
+                "sourceIds": [
+                  "t0-e12"
+                ],
+                "role": "backing-71",
+                "midi": 71,
+                "beat": 1,
+                "beats": 2.2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-2",
+        "title": "Answer and anticipatory E",
+        "beat": 8,
+        "beats": 8,
+        "sourceStartSeconds": 3.3201078656250003,
+        "sourceEndSeconds": 6.734780925,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e29",
+                "sourceIds": [
+                  "t0-e29"
+                ],
+                "role": "backing-51",
+                "midi": 51,
+                "beat": 0,
+                "beats": 0.6939360178258791
+              },
+              {
+                "id": "backing-t0-e35",
+                "sourceIds": [
+                  "t0-e35"
+                ],
+                "role": "backing-58",
+                "midi": 58,
+                "beat": 0.5,
+                "beats": 0.3845296832723218
+              },
+              {
+                "id": "backing-t0-e39",
+                "sourceIds": [
+                  "t0-e39"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 1,
+                "beats": 0.3017666719719881
+              },
+              {
+                "id": "backing-t0-e43",
+                "sourceIds": [
+                  "t0-e43"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 1.5,
+                "beats": 0.9689638707623727
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e49",
+                "sourceIds": [
+                  "t0-e49"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 3.5,
+                "beats": 0.2979468406812055
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-3",
+        "title": "Repeated E and descending answer",
+        "beat": 16,
+        "beats": 8,
+        "sourceStartSeconds": 6.734780925,
+        "sourceEndSeconds": 10.02282358125,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e54",
+                "sourceIds": [
+                  "t0-e54"
+                ],
+                "role": "backing-52",
+                "midi": 52,
+                "beat": 0,
+                "beats": 0.6280991735537182
+              },
+              {
+                "id": "backing-t0-e59",
+                "sourceIds": [
+                  "t0-e59"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 0.5,
+                "beats": 0.37553719008264436
+              },
+              {
+                "id": "backing-t0-e63",
+                "sourceIds": [
+                  "t0-e63"
+                ],
+                "role": "backing-64",
+                "midi": 64,
+                "beat": 1,
+                "beats": 0.35570247933884175
+              },
+              {
+                "id": "backing-t0-e66",
+                "sourceIds": [
+                  "t0-e66"
+                ],
+                "role": "backing-68",
+                "midi": 68,
+                "beat": 1.5,
+                "beats": 0.698181818181818
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e77",
+                "sourceIds": [
+                  "t0-e77"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 5.5,
+                "beats": 0.26578512396694365
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-4",
+        "title": "Cadence with piano run",
+        "beat": 24,
+        "beats": 8,
+        "sourceStartSeconds": 10.02282358125,
+        "sourceEndSeconds": 13.307061890625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e84",
+                "sourceIds": [
+                  "t0-e84"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 0,
+                "beats": 0.6950190302829707
+              },
+              {
+                "id": "backing-t0-e85",
+                "sourceIds": [
+                  "t0-e85"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 0.5,
+                "beats": 0.4699652490484882
+              },
+              {
+                "id": "backing-t0-e90",
+                "sourceIds": [
+                  "t0-e90"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 1,
+                "beats": 0.22372993546251607
+              },
+              {
+                "id": "backing-t0-e92",
+                "sourceIds": [
+                  "t0-e92"
+                ],
+                "role": "backing-70",
+                "midi": 70,
+                "beat": 1.5,
+                "beats": 0.43422141320536306
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e101",
+                "sourceIds": [
+                  "t0-e101"
+                ],
+                "role": "backing-83",
+                "midi": 83,
+                "beat": 4.5,
+                "beats": 0.6155882839649173
+              },
+              {
+                "id": "backing-t0-e102",
+                "sourceIds": [
+                  "t0-e102"
+                ],
+                "role": "backing-82",
+                "midi": 82,
+                "beat": 5,
+                "beats": 0.6182359755088546
+              },
+              {
+                "id": "backing-t0-e104",
+                "sourceIds": [
+                  "t0-e104"
+                ],
+                "role": "backing-80",
+                "midi": 80,
+                "beat": 5.5,
+                "beats": 0.5096806222075128
+              },
+              {
+                "id": "backing-t0-e106",
+                "sourceIds": [
+                  "t0-e106"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 6,
+                "beats": 0.3124276021843478
+              },
+              {
+                "id": "backing-t0-e109",
+                "sourceIds": [
+                  "t0-e109"
+                ],
+                "role": "backing-76",
+                "midi": 76,
+                "beat": 6.5,
+                "beats": 0.3998014231342044
+              },
+              {
+                "id": "backing-t0-e111",
+                "sourceIds": [
+                  "t0-e111"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 7,
+                "beats": 0.6275028959126285
+              },
+              {
+                "id": "backing-t0-e112",
+                "sourceIds": [
+                  "t0-e112"
+                ],
+                "role": "backing-73",
+                "midi": 73,
+                "beat": 7.5,
+                "beats": 0.4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-5",
+        "title": "Opening figure returns",
+        "beat": 32,
+        "beats": 8,
+        "sourceStartSeconds": 13.307061890625,
+        "sourceEndSeconds": 16.672278440625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e116",
+                "sourceIds": [
+                  "t0-e116"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 0,
+                "beats": 2.2
+              },
+              {
+                "id": "backing-t0-e122",
+                "sourceIds": [
+                  "t0-e122"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 0.5,
+                "beats": 1.959948320413436
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e124",
+                "sourceIds": [
+                  "t0-e124"
+                ],
+                "role": "backing-71",
+                "midi": 71,
+                "beat": 1,
+                "beats": 1.2248062015503884
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-6",
+        "title": "Answer returns",
+        "beat": 40,
+        "beats": 8,
+        "sourceStartSeconds": 16.672278440625,
+        "sourceEndSeconds": 19.97716891875,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e141",
+                "sourceIds": [
+                  "t0-e141"
+                ],
+                "role": "backing-51",
+                "midi": 51,
+                "beat": 0,
+                "beats": 0.6959381680644576
+              },
+              {
+                "id": "backing-t0-e147",
+                "sourceIds": [
+                  "t0-e147"
+                ],
+                "role": "backing-58",
+                "midi": 58,
+                "beat": 0.5,
+                "beats": 0.43545469495148226
+              },
+              {
+                "id": "backing-t0-e151",
+                "sourceIds": [
+                  "t0-e151"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 1,
+                "beats": 0.2525900345338008
+              },
+              {
+                "id": "backing-t0-e155",
+                "sourceIds": [
+                  "t0-e155"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 1.5,
+                "beats": 0.9682617990462034
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e161",
+                "sourceIds": [
+                  "t0-e161"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 3.5,
+                "beats": 0.34468015129091467
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-7",
+        "title": "Repeated E returns",
+        "beat": 48,
+        "beats": 8,
+        "sourceStartSeconds": 19.97716891875,
+        "sourceEndSeconds": 23.253798534375,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e166",
+                "sourceIds": [
+                  "t0-e166"
+                ],
+                "role": "backing-52",
+                "midi": 52,
+                "beat": 0,
+                "beats": 0.6223254271023376
+              },
+              {
+                "id": "backing-t0-e169",
+                "sourceIds": [
+                  "t0-e169"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 0.5,
+                "beats": 0.36357604909603114
+              },
+              {
+                "id": "backing-t0-e175",
+                "sourceIds": [
+                  "t0-e175"
+                ],
+                "role": "backing-64",
+                "midi": 64,
+                "beat": 1,
+                "beats": 0.32509537236689434
+              },
+              {
+                "id": "backing-t0-e178",
+                "sourceIds": [
+                  "t0-e178"
+                ],
+                "role": "backing-68",
+                "midi": 68,
+                "beat": 1.5,
+                "beats": 0.7271520981920709
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e189",
+                "sourceIds": [
+                  "t0-e189"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 5.5,
+                "beats": 0.26007629789350856
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-8",
+        "title": "Cadence and connecting figure",
+        "beat": 56,
+        "beats": 8,
+        "sourceStartSeconds": 23.253798534375,
+        "sourceEndSeconds": 26.4847759875,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e195",
+                "sourceIds": [
+                  "t0-e195"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 0,
+                "beats": 0.7280067283431442
+              },
+              {
+                "id": "backing-t0-e201",
+                "sourceIds": [
+                  "t0-e201"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 0.5,
+                "beats": 0.48174936921782924
+              },
+              {
+                "id": "backing-t0-e205",
+                "sourceIds": [
+                  "t0-e205"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 1,
+                "beats": 0.18973927670310514
+              },
+              {
+                "id": "backing-t0-e208",
+                "sourceIds": [
+                  "t0-e208"
+                ],
+                "role": "backing-70",
+                "midi": 70,
+                "beat": 1.5,
+                "beats": 0.5207737594617348
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e217",
+                "sourceIds": [
+                  "t0-e217"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 5.5,
+                "beats": 0.5180824222035367
+              },
+              {
+                "id": "backing-t0-e218",
+                "sourceIds": [
+                  "t0-e218"
+                ],
+                "role": "backing-73",
+                "midi": 73,
+                "beat": 6,
+                "beats": 0.5611438183347391
+              },
+              {
+                "id": "backing-t0-e220",
+                "sourceIds": [
+                  "t0-e220"
+                ],
+                "role": "backing-76",
+                "midi": 76,
+                "beat": 6.5,
+                "beats": 0.461564339781327
+              },
+              {
+                "id": "backing-t0-e223",
+                "sourceIds": [
+                  "t0-e223"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 7,
+                "beats": 0.6122792262405442
+              },
+              {
+                "id": "backing-t0-e224",
+                "sourceIds": [
+                  "t0-e224"
+                ],
+                "role": "backing-73",
+                "midi": 73,
+                "beat": 7.5,
+                "beats": 0.4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-9",
+        "title": "Repeated B, then C#",
+        "beat": 64,
+        "beats": 8,
+        "sourceStartSeconds": 26.4847759875,
+        "sourceEndSeconds": 29.794014290625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e228",
+                "sourceIds": [
+                  "t0-e228"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 0,
+                "beats": 2.2
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e234",
+                "sourceIds": [
+                  "t0-e234"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 0.5,
+                "beats": 2.0128099852192483
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-10",
+        "title": "A# answer",
+        "beat": 72,
+        "beats": 8,
+        "sourceStartSeconds": 29.794014290625,
+        "sourceEndSeconds": 33.205969959375004,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e251",
+                "sourceIds": [
+                  "t0-e251"
+                ],
+                "role": "backing-51",
+                "midi": 51,
+                "beat": 0,
+                "beats": 0.6549856642242766
+              },
+              {
+                "id": "backing-t0-e257",
+                "sourceIds": [
+                  "t0-e257"
+                ],
+                "role": "backing-58",
+                "midi": 58,
+                "beat": 0.5,
+                "beats": 0.4319847085058872
+              },
+              {
+                "id": "backing-t0-e261",
+                "sourceIds": [
+                  "t0-e261"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 1,
+                "beats": 0.23574386747372328
+              },
+              {
+                "id": "backing-t0-e264",
+                "sourceIds": [
+                  "t0-e264"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 1.5,
+                "beats": 0.5657852819369142
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e268",
+                "sourceIds": [
+                  "t0-e268"
+                ],
+                "role": "backing-68",
+                "midi": 68,
+                "beat": 3.5,
+                "beats": 0.2816183497929287
+              },
+              {
+                "id": "backing-t0-e274",
+                "sourceIds": [
+                  "t0-e274"
+                ],
+                "role": "backing-70",
+                "midi": 70,
+                "beat": 7.5,
+                "beats": 0.3988531379420157
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-11",
+        "title": "Rising G#-C-D#-G#",
+        "beat": 80,
+        "beats": 8,
+        "sourceStartSeconds": 33.205969959375004,
+        "sourceEndSeconds": 36.459230015625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e277",
+                "sourceIds": [
+                  "t0-e277"
+                ],
+                "role": "backing-56",
+                "midi": 56,
+                "beat": 0,
+                "beats": 2.2
+              },
+              {
+                "id": "backing-t0-e283",
+                "sourceIds": [
+                  "t0-e283"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 0.5,
+                "beats": 2.2
+              },
+              {
+                "id": "backing-t0-e285",
+                "sourceIds": [
+                  "t0-e285"
+                ],
+                "role": "backing-68",
+                "midi": 68,
+                "beat": 1,
+                "beats": 2.2
+              },
+              {
+                "id": "backing-t0-e290",
+                "sourceIds": [
+                  "t0-e290"
+                ],
+                "role": "backing-72",
+                "midi": 72,
+                "beat": 4,
+                "beats": 0.6441697293685203
+              },
+              {
+                "id": "backing-t0-e295",
+                "sourceIds": [
+                  "t0-e295"
+                ],
+                "role": "backing-72",
+                "midi": 72,
+                "beat": 5,
+                "beats": 0.6655529568994432
+              },
+              {
+                "id": "backing-t0-e298",
+                "sourceIds": [
+                  "t0-e298"
+                ],
+                "role": "backing-72",
+                "midi": 72,
+                "beat": 6,
+                "beats": 0.7176745740060084
+              },
+              {
+                "id": "backing-t0-e306",
+                "sourceIds": [
+                  "t0-e306"
+                ],
+                "role": "backing-72",
+                "midi": 72,
+                "beat": 7,
+                "beats": 0.364851319746097
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e308",
+                "sourceIds": [
+                  "t0-e308"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 7.5,
+                "beats": 0.3955897093217745
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-12",
+        "title": "E and F# response",
+        "beat": 88,
+        "beats": 8,
+        "sourceStartSeconds": 36.459230015625,
+        "sourceEndSeconds": 39.8673813375,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e311",
+                "sourceIds": [
+                  "t0-e311"
+                ],
+                "role": "backing-49",
+                "midi": 49,
+                "beat": 0,
+                "beats": 0.6314782331366502
+              },
+              {
+                "id": "backing-t0-e317",
+                "sourceIds": [
+                  "t0-e317"
+                ],
+                "role": "backing-56",
+                "midi": 56,
+                "beat": 0.5,
+                "beats": 0.419709775155491
+              },
+              {
+                "id": "backing-t0-e321",
+                "sourceIds": [
+                  "t0-e321"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 1,
+                "beats": 0.16584276829851402
+              },
+              {
+                "id": "backing-t0-e324",
+                "sourceIds": [
+                  "t0-e324"
+                ],
+                "role": "backing-64",
+                "midi": 64,
+                "beat": 1.5,
+                "beats": 0.8547281135385248
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e331",
+                "sourceIds": [
+                  "t0-e331"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 3.5,
+                "beats": 0.41205549354170296
+              },
+              {
+                "id": "backing-t0-e336",
+                "sourceIds": [
+                  "t0-e336"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 7.5,
+                "beats": 0.3571998086429494
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-13",
+        "title": "C# phrase with upper arrival",
+        "beat": 96,
+        "beats": 8,
+        "sourceStartSeconds": 39.8673813375,
+        "sourceEndSeconds": 43.15542399375,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e341",
+                "sourceIds": [
+                  "t0-e341"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 0,
+                "beats": 0.6704132231405057
+              },
+              {
+                "id": "backing-t0-e345",
+                "sourceIds": [
+                  "t0-e345"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 0.5,
+                "beats": 0.44165289256198287
+              },
+              {
+                "id": "backing-t0-e349",
+                "sourceIds": [
+                  "t0-e349"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 1,
+                "beats": 0.24991735537189386
+              },
+              {
+                "id": "backing-t0-e352",
+                "sourceIds": [
+                  "t0-e352"
+                ],
+                "role": "backing-70",
+                "midi": 70,
+                "beat": 1.5,
+                "beats": 0.6981818181818311
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e358",
+                "sourceIds": [
+                  "t0-e358"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 3.5,
+                "beats": 0.41652892561984617
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-14",
+        "title": "F# turn and descent",
+        "beat": 104,
+        "beats": 8,
+        "sourceStartSeconds": 43.15542399375,
+        "sourceEndSeconds": 46.359227540625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e371",
+                "sourceIds": [
+                  "t0-e371"
+                ],
+                "role": "backing-52",
+                "midi": 52,
+                "beat": 0,
+                "beats": 0.5998303647158635
+              },
+              {
+                "id": "backing-t0-e375",
+                "sourceIds": [
+                  "t0-e375"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 0.5,
+                "beats": 0.38541136556403915
+              },
+              {
+                "id": "backing-t0-e380",
+                "sourceIds": [
+                  "t0-e380"
+                ],
+                "role": "backing-64",
+                "midi": 64,
+                "beat": 1,
+                "beats": 0.2632739609838807
+              },
+              {
+                "id": "backing-t0-e382",
+                "sourceIds": [
+                  "t0-e382"
+                ],
+                "role": "backing-68",
+                "midi": 68,
+                "beat": 1.5,
+                "beats": 0.8793893129771021
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e387",
+                "sourceIds": [
+                  "t0-e387"
+                ],
+                "role": "backing-82",
+                "midi": 82,
+                "beat": 3,
+                "beats": 0.37862595419847184
+              },
+              {
+                "id": "backing-t0-e392",
+                "sourceIds": [
+                  "t0-e392"
+                ],
+                "role": "backing-76",
+                "midi": 76,
+                "beat": 5.5,
+                "beats": 0.3799830364715924
+              },
+              {
+                "id": "backing-t0-e399",
+                "sourceIds": [
+                  "t0-e399"
+                ],
+                "role": "backing-73",
+                "midi": 73,
+                "beat": 7.5,
+                "beats": 0.3949109414758121
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-15",
+        "title": "D# repeated figure",
+        "beat": 112,
+        "beats": 4,
+        "sourceStartSeconds": 46.359227540625,
+        "sourceEndSeconds": 48.050531465625006,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e403",
+                "sourceIds": [
+                  "t0-e403"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 0,
+                "beats": 0.9293059125963965
+              },
+              {
+                "id": "backing-t0-e405",
+                "sourceIds": [
+                  "t0-e405"
+                ],
+                "role": "backing-47",
+                "midi": 47,
+                "beat": 0,
+                "beats": 0.6838046272493628
+              },
+              {
+                "id": "backing-t0-e412",
+                "sourceIds": [
+                  "t0-e412"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 1,
+                "beats": 0.3149100257069407
+              },
+              {
+                "id": "backing-t0-e414",
+                "sourceIds": [
+                  "t0-e414"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 1.5,
+                "beats": 1.1889460154241636
+              },
+              {
+                "id": "backing-t0-e416",
+                "sourceIds": [
+                  "t0-e416"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 2,
+                "beats": 0.4832904884318631
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e422",
+                "sourceIds": [
+                  "t0-e422"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 3.5,
+                "beats": 0.39845758354756416
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-16",
+        "title": "C# to D# and E",
+        "beat": 116,
+        "beats": 4,
+        "sourceStartSeconds": 48.050531465625006,
+        "sourceEndSeconds": 49.678248450000005,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e428",
+                "sourceIds": [
+                  "t0-e428"
+                ],
+                "role": "backing-42",
+                "midi": 42,
+                "beat": 0,
+                "beats": 0.5622704507512521
+              },
+              {
+                "id": "backing-t0-e429",
+                "sourceIds": [
+                  "t0-e429"
+                ],
+                "role": "backing-49",
+                "midi": 49,
+                "beat": 0,
+                "beats": 0.8013355592654465
+              },
+              {
+                "id": "backing-t0-e435",
+                "sourceIds": [
+                  "t0-e435"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 1,
+                "beats": 0.16160267111852886
+              },
+              {
+                "id": "backing-t0-e438",
+                "sourceIds": [
+                  "t0-e438"
+                ],
+                "role": "backing-58",
+                "midi": 58,
+                "beat": 1.5,
+                "beats": 0.8934891485809751
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e439",
+                "sourceIds": [
+                  "t0-e439"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 2,
+                "beats": 0.3419031719532534
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-17",
+        "title": "Long D# and B landing",
+        "beat": 120,
+        "beats": 8,
+        "sourceStartSeconds": 49.678248450000005,
+        "sourceEndSeconds": 53.1325954125,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e450",
+                "sourceIds": [
+                  "t0-e450"
+                ],
+                "role": "backing-44",
+                "midi": 44,
+                "beat": 0,
+                "beats": 0.4870988042794234
+              },
+              {
+                "id": "backing-t0-e451",
+                "sourceIds": [
+                  "t0-e451"
+                ],
+                "role": "backing-51",
+                "midi": 51,
+                "beat": 0,
+                "beats": 0.8080553807426153
+              },
+              {
+                "id": "backing-t0-e456",
+                "sourceIds": [
+                  "t0-e456"
+                ],
+                "role": "backing-56",
+                "midi": 56,
+                "beat": 1,
+                "beats": 0.15
+              },
+              {
+                "id": "backing-t0-e458",
+                "sourceIds": [
+                  "t0-e458"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 1.5,
+                "beats": 0.3410950283196888
+              },
+              {
+                "id": "backing-t0-e460",
+                "sourceIds": [
+                  "t0-e460"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 2,
+                "beats": 1.0610446821900477
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e461",
+                "sourceIds": [
+                  "t0-e461"
+                ],
+                "role": "backing-68",
+                "midi": 68,
+                "beat": 2.5,
+                "beats": 0.4984266834487112
+              },
+              {
+                "id": "backing-t0-e470",
+                "sourceIds": [
+                  "t0-e470"
+                ],
+                "role": "backing-73",
+                "midi": 73,
+                "beat": 7.5,
+                "beats": 0.3524229074889766
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-18",
+        "title": "D# and E answer",
+        "beat": 128,
+        "beats": 4,
+        "sourceStartSeconds": 53.1325954125,
+        "sourceEndSeconds": 54.795638475000004,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e475",
+                "sourceIds": [
+                  "t0-e475"
+                ],
+                "role": "backing-40",
+                "midi": 40,
+                "beat": 0,
+                "beats": 0.6496732026143647
+              },
+              {
+                "id": "backing-t0-e477",
+                "sourceIds": [
+                  "t0-e477"
+                ],
+                "role": "backing-47",
+                "midi": 47,
+                "beat": 0,
+                "beats": 0.7947712418300423
+              },
+              {
+                "id": "backing-t0-e483",
+                "sourceIds": [
+                  "t0-e483"
+                ],
+                "role": "backing-52",
+                "midi": 52,
+                "beat": 1,
+                "beats": 0.2522875816993349
+              },
+              {
+                "id": "backing-t0-e486",
+                "sourceIds": [
+                  "t0-e486"
+                ],
+                "role": "backing-56",
+                "midi": 56,
+                "beat": 1.5,
+                "beats": 1.1555555555555599
+              },
+              {
+                "id": "backing-t0-e488",
+                "sourceIds": [
+                  "t0-e488"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 2,
+                "beats": 0.5267973856209165
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e491",
+                "sourceIds": [
+                  "t0-e491"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 2.5,
+                "beats": 0.5267973856209165
+              },
+              {
+                "id": "backing-t0-e497",
+                "sourceIds": [
+                  "t0-e497"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 3.5,
+                "beats": 0.36601307189543064
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-19",
+        "title": "C# return",
+        "beat": 132,
+        "beats": 4,
+        "sourceStartSeconds": 54.795638475000004,
+        "sourceEndSeconds": 56.437485890625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e501",
+                "sourceIds": [
+                  "t0-e501"
+                ],
+                "role": "backing-49",
+                "midi": 49,
+                "beat": 0,
+                "beats": 0.8857994041707964
+              },
+              {
+                "id": "backing-t0-e503",
+                "sourceIds": [
+                  "t0-e503"
+                ],
+                "role": "backing-42",
+                "midi": 42,
+                "beat": 0,
+                "beats": 0.5931810658722088
+              },
+              {
+                "id": "backing-t0-e509",
+                "sourceIds": [
+                  "t0-e509"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 1,
+                "beats": 0.2158225753061775
+              },
+              {
+                "id": "backing-t0-e512",
+                "sourceIds": [
+                  "t0-e512"
+                ],
+                "role": "backing-58",
+                "midi": 58,
+                "beat": 1.5,
+                "beats": 1.016881827209513
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e513",
+                "sourceIds": [
+                  "t0-e513"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 2,
+                "beats": 0.36809003641179394
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-20",
+        "title": "B landing and piano fill",
+        "beat": 136,
+        "beats": 8,
+        "sourceStartSeconds": 56.437485890625,
+        "sourceEndSeconds": 59.742919846875,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e523",
+                "sourceIds": [
+                  "t0-e523"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 0,
+                "beats": 0.8931272607694966
+              },
+              {
+                "id": "backing-t0-e525",
+                "sourceIds": [
+                  "t0-e525"
+                ],
+                "role": "backing-47",
+                "midi": 47,
+                "beat": 0,
+                "beats": 0.6760933903321384
+              },
+              {
+                "id": "backing-t0-e531",
+                "sourceIds": [
+                  "t0-e531"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 1,
+                "beats": 0.3235777704702316
+              },
+              {
+                "id": "backing-t0-e533",
+                "sourceIds": [
+                  "t0-e533"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 1.5,
+                "beats": 0.764222295297598
+              },
+              {
+                "id": "backing-t0-e534",
+                "sourceIds": [
+                  "t0-e534"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 2,
+                "beats": 0.29727063465966463
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e537",
+                "sourceIds": [
+                  "t0-e537"
+                ],
+                "role": "backing-83",
+                "midi": 83,
+                "beat": 2.5,
+                "beats": 0.9957250904307765
+              },
+              {
+                "id": "backing-t0-e539",
+                "sourceIds": [
+                  "t0-e539"
+                ],
+                "role": "backing-82",
+                "midi": 82,
+                "beat": 3.5,
+                "beats": 0.5182505754685819
+              },
+              {
+                "id": "backing-t0-e541",
+                "sourceIds": [
+                  "t0-e541"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 4,
+                "beats": 0.7971062150608325
+              },
+              {
+                "id": "backing-t0-e543",
+                "sourceIds": [
+                  "t0-e543"
+                ],
+                "role": "backing-76",
+                "midi": 76,
+                "beat": 5.5,
+                "beats": 0.2841170667543468
+              },
+              {
+                "id": "backing-t0-e545",
+                "sourceIds": [
+                  "t0-e545"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 6,
+                "beats": 0.7024005261427226
+              },
+              {
+                "id": "backing-t0-e549",
+                "sourceIds": [
+                  "t0-e549"
+                ],
+                "role": "backing-73",
+                "midi": 73,
+                "beat": 7.5,
+                "beats": 0.3722459717198407
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-21",
+        "title": "Repeated D# returns",
+        "beat": 144,
+        "beats": 4,
+        "sourceStartSeconds": 59.742919846875,
+        "sourceEndSeconds": 61.4086803,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e553",
+                "sourceIds": [
+                  "t0-e553"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 0,
+                "beats": 0.8469820554649355
+              },
+              {
+                "id": "backing-t0-e555",
+                "sourceIds": [
+                  "t0-e555"
+                ],
+                "role": "backing-47",
+                "midi": 47,
+                "beat": 0,
+                "beats": 0.5990212071778058
+              },
+              {
+                "id": "backing-t0-e561",
+                "sourceIds": [
+                  "t0-e561"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 1,
+                "beats": 0.35628058727568074
+              },
+              {
+                "id": "backing-t0-e564",
+                "sourceIds": [
+                  "t0-e564"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 1.5,
+                "beats": 1.2058727569331271
+              },
+              {
+                "id": "backing-t0-e566",
+                "sourceIds": [
+                  "t0-e566"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 2,
+                "beats": 0.6303425774877481
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e572",
+                "sourceIds": [
+                  "t0-e572"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 3.5,
+                "beats": 0.4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-22",
+        "title": "C# response returns",
+        "beat": 148,
+        "beats": 4,
+        "sourceStartSeconds": 61.4086803,
+        "sourceEndSeconds": 63.06628858125,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e577",
+                "sourceIds": [
+                  "t0-e577"
+                ],
+                "role": "backing-49",
+                "midi": 49,
+                "beat": 0,
+                "beats": 0.8157377049180301
+              },
+              {
+                "id": "backing-t0-e579",
+                "sourceIds": [
+                  "t0-e579"
+                ],
+                "role": "backing-42",
+                "midi": 42,
+                "beat": 0,
+                "beats": 0.5206557377049096
+              },
+              {
+                "id": "backing-t0-e585",
+                "sourceIds": [
+                  "t0-e585"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 1,
+                "beats": 0.2072131147540993
+              },
+              {
+                "id": "backing-t0-e588",
+                "sourceIds": [
+                  "t0-e588"
+                ],
+                "role": "backing-58",
+                "midi": 58,
+                "beat": 1.5,
+                "beats": 0.9875409836065591
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e589",
+                "sourceIds": [
+                  "t0-e589"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 2,
+                "beats": 0.39475409836064806
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-23",
+        "title": "Long D# and B return",
+        "beat": 152,
+        "beats": 8,
+        "sourceStartSeconds": 63.06628858125,
+        "sourceEndSeconds": 66.4695486,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e599",
+                "sourceIds": [
+                  "t0-e599"
+                ],
+                "role": "backing-51",
+                "midi": 51,
+                "beat": 0,
+                "beats": 0.9032258064516132
+              },
+              {
+                "id": "backing-t0-e600",
+                "sourceIds": [
+                  "t0-e600"
+                ],
+                "role": "backing-44",
+                "midi": 44,
+                "beat": 0,
+                "beats": 0.5276269562440034
+              },
+              {
+                "id": "backing-t0-e606",
+                "sourceIds": [
+                  "t0-e606"
+                ],
+                "role": "backing-56",
+                "midi": 56,
+                "beat": 1,
+                "beats": 0.18652187799426462
+              },
+              {
+                "id": "backing-t0-e608",
+                "sourceIds": [
+                  "t0-e608"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 1.5,
+                "beats": 0.34493771957840963
+              },
+              {
+                "id": "backing-t0-e610",
+                "sourceIds": [
+                  "t0-e610"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 2,
+                "beats": 1.5918236984988756
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e611",
+                "sourceIds": [
+                  "t0-e611"
+                ],
+                "role": "backing-68",
+                "midi": 68,
+                "beat": 2.5,
+                "beats": 0.7716384541680308
+              },
+              {
+                "id": "backing-t0-e620",
+                "sourceIds": [
+                  "t0-e620"
+                ],
+                "role": "backing-73",
+                "midi": 73,
+                "beat": 7.5,
+                "beats": 0.4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-24",
+        "title": "D# and E return",
+        "beat": 160,
+        "beats": 4,
+        "sourceStartSeconds": 66.4695486,
+        "sourceEndSeconds": 68.108135146875,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e625",
+                "sourceIds": [
+                  "t0-e625"
+                ],
+                "role": "backing-40",
+                "midi": 40,
+                "beat": 0,
+                "beats": 0.676616915422899
+              },
+              {
+                "id": "backing-t0-e626",
+                "sourceIds": [
+                  "t0-e626"
+                ],
+                "role": "backing-47",
+                "midi": 47,
+                "beat": 0,
+                "beats": 0.8331674958540686
+              },
+              {
+                "id": "backing-t0-e633",
+                "sourceIds": [
+                  "t0-e633"
+                ],
+                "role": "backing-52",
+                "midi": 52,
+                "beat": 1,
+                "beats": 0.25339966832504895
+              },
+              {
+                "id": "backing-t0-e636",
+                "sourceIds": [
+                  "t0-e636"
+                ],
+                "role": "backing-56",
+                "midi": 56,
+                "beat": 1.5,
+                "beats": 1.2245439469320099
+              },
+              {
+                "id": "backing-t0-e638",
+                "sourceIds": [
+                  "t0-e638"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 2,
+                "beats": 0.5505804311774163
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e640",
+                "sourceIds": [
+                  "t0-e640"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 2.5,
+                "beats": 0.5890547263681236
+              },
+              {
+                "id": "backing-t0-e647",
+                "sourceIds": [
+                  "t0-e647"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 3.5,
+                "beats": 0.3462686567164354
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-25",
+        "title": "Final C# response",
+        "beat": 164,
+        "beats": 4,
+        "sourceStartSeconds": 68.108135146875,
+        "sourceEndSeconds": 69.759221690625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e651",
+                "sourceIds": [
+                  "t0-e651"
+                ],
+                "role": "backing-49",
+                "midi": 49,
+                "beat": 0,
+                "beats": 0.9321922317313933
+              },
+              {
+                "id": "backing-t0-e652",
+                "sourceIds": [
+                  "t0-e652"
+                ],
+                "role": "backing-42",
+                "midi": 42,
+                "beat": 0,
+                "beats": 0.6464779460171102
+              },
+              {
+                "id": "backing-t0-e659",
+                "sourceIds": [
+                  "t0-e659"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 1,
+                "beats": 0.26333113890716586
+              },
+              {
+                "id": "backing-t0-e662",
+                "sourceIds": [
+                  "t0-e662"
+                ],
+                "role": "backing-58",
+                "midi": 58,
+                "beat": 1.5,
+                "beats": 1.125740618828189
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 4,
+            "events": [
+              {
+                "id": "backing-t0-e663",
+                "sourceIds": [
+                  "t0-e663"
+                ],
+                "role": "backing-61",
+                "midi": 61,
+                "beat": 2,
+                "beats": 0.5898617511520708
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "block-26",
+        "title": "B ending with piano arpeggio",
+        "beat": 168,
+        "beats": 8,
+        "sourceStartSeconds": 69.759221690625,
+        "sourceEndSeconds": 74.046177140625,
+        "patterns": [
+          {
+            "lane": "foundation",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e675",
+                "sourceIds": [
+                  "t0-e675"
+                ],
+                "role": "backing-54",
+                "midi": 54,
+                "beat": 0,
+                "beats": 0.6703853955375223
+              },
+              {
+                "id": "backing-t0-e677",
+                "sourceIds": [
+                  "t0-e677"
+                ],
+                "role": "backing-47",
+                "midi": 47,
+                "beat": 0,
+                "beats": 0.49087221095336603
+              },
+              {
+                "id": "backing-t0-e681",
+                "sourceIds": [
+                  "t0-e681"
+                ],
+                "role": "backing-59",
+                "midi": 59,
+                "beat": 0.75,
+                "beats": 0.20791075050710678
+              },
+              {
+                "id": "backing-t0-e683",
+                "sourceIds": [
+                  "t0-e683"
+                ],
+                "role": "backing-63",
+                "midi": 63,
+                "beat": 1.25,
+                "beats": 0.5851926977687504
+              },
+              {
+                "id": "backing-t0-e684",
+                "sourceIds": [
+                  "t0-e684"
+                ],
+                "role": "backing-66",
+                "midi": 66,
+                "beat": 1.5,
+                "beats": 0.2697768762677512
+              }
+            ]
+          },
+          {
+            "lane": "figures",
+            "beats": 8,
+            "events": [
+              {
+                "id": "backing-t0-e687",
+                "sourceIds": [
+                  "t0-e687"
+                ],
+                "role": "backing-71",
+                "midi": 71,
+                "beat": 2,
+                "beats": 0.4036511156186596
+              },
+              {
+                "id": "backing-t0-e688",
+                "sourceIds": [
+                  "t0-e688"
+                ],
+                "role": "backing-75",
+                "midi": 75,
+                "beat": 2.25,
+                "beats": 0.5466531440162334
+              },
+              {
+                "id": "backing-t0-e690",
+                "sourceIds": [
+                  "t0-e690"
+                ],
+                "role": "backing-78",
+                "midi": 78,
+                "beat": 2.75,
+                "beats": 0.31034482758617615
+              },
+              {
+                "id": "backing-t0-e693",
+                "sourceIds": [
+                  "t0-e693"
+                ],
+                "role": "backing-83",
+                "midi": 83,
+                "beat": 3.25,
+                "beats": 0.8265720081135777
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "provenance": "b5f63cb589b93c0bdab89edbcdaf44a1b0ce6ad4e3e72b6575cf0b96d70eea35; authored interpretation of the sung line within the mixed piano track; no lyrics supplied",
+    "decisions": [
+      "Recurring contour and cadential arrivals determine the learner part. Upper piano runs, short neighbours, arpeggios and inner voices are accompaniment.",
+      "An authored 4/4 teaching grid follows harmonic changes: two-bar patterns, with one-bar changes paired into two-bar lessons. This deliberately regularizes the performed timing; the MIDI header alone does not label these phrases.",
+      "Repeated vocal anchors are combined deliberately; short passing figures stay in the Loopers. Every source note has a disposition and source IDs.",
+      "No octave transposition. All Honks retain their spawned sound and controls; no automatic vowels, nose levels, MIDI gain envelopes or pedal-length gates.",
+      "Backing uses ordinary trigger gates from physical key holds, bounded by pattern ends. MIDI velocity remains provenance rather than overriding normal trigger strength.",
+      "75 BPM initial tempo; the minimum .75-beat live attack interval is 600 ms. Above 90 BPM those optional advanced-tempo transitions become shorter than 500 ms."
+    ],
+    "sourceDecisions": [
+      {
+        "sourceId": "t0-e5",
+        "disposition": "transferred",
+        "target": "block-1/foundation/backing-t0-e5",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e6",
+        "disposition": "retained",
+        "target": "live-6",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e9",
+        "disposition": "transferred",
+        "target": "block-1/foundation/backing-t0-e9",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e11",
+        "disposition": "retained",
+        "target": "live-11",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e12",
+        "disposition": "transferred",
+        "target": "block-1/figures/backing-t0-e12",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e14",
+        "disposition": "retained",
+        "target": "live-14",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e16",
+        "disposition": "combined",
+        "target": "live-14",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e19",
+        "disposition": "retained",
+        "target": "live-19",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e22",
+        "disposition": "retained",
+        "target": "live-22",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e25",
+        "disposition": "retained",
+        "target": "live-25",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e27",
+        "disposition": "retained",
+        "target": "live-27",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e29",
+        "disposition": "transferred",
+        "target": "block-2/foundation/backing-t0-e29",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e32",
+        "disposition": "retained",
+        "target": "live-32",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e35",
+        "disposition": "transferred",
+        "target": "block-2/foundation/backing-t0-e35",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e39",
+        "disposition": "transferred",
+        "target": "block-2/foundation/backing-t0-e39",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e40",
+        "disposition": "retained",
+        "target": "live-40",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e43",
+        "disposition": "transferred",
+        "target": "block-2/foundation/backing-t0-e43",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e44",
+        "disposition": "retained",
+        "target": "live-44",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e47",
+        "disposition": "combined",
+        "target": "live-44",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e49",
+        "disposition": "transferred",
+        "target": "block-2/figures/backing-t0-e49",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e51",
+        "disposition": "retained",
+        "target": "live-51",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e53",
+        "disposition": "retained",
+        "target": "live-53",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e54",
+        "disposition": "transferred",
+        "target": "block-3/foundation/backing-t0-e54",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e59",
+        "disposition": "transferred",
+        "target": "block-3/foundation/backing-t0-e59",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e63",
+        "disposition": "transferred",
+        "target": "block-3/foundation/backing-t0-e63",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e64",
+        "disposition": "retained",
+        "target": "live-64",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e66",
+        "disposition": "transferred",
+        "target": "block-3/foundation/backing-t0-e66",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e68",
+        "disposition": "combined",
+        "target": "live-64",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e71",
+        "disposition": "retained",
+        "target": "live-71",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e73",
+        "disposition": "combined",
+        "target": "live-71",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e75",
+        "disposition": "retained",
+        "target": "live-75",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e77",
+        "disposition": "transferred",
+        "target": "block-3/figures/backing-t0-e77",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e79",
+        "disposition": "retained",
+        "target": "live-79",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e81",
+        "disposition": "retained",
+        "target": "live-81",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e83",
+        "disposition": "retained",
+        "target": "live-83",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e84",
+        "disposition": "transferred",
+        "target": "block-4/foundation/backing-t0-e84",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e85",
+        "disposition": "transferred",
+        "target": "block-4/foundation/backing-t0-e85",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e89",
+        "disposition": "retained",
+        "target": "live-89",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e90",
+        "disposition": "transferred",
+        "target": "block-4/foundation/backing-t0-e90",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e92",
+        "disposition": "transferred",
+        "target": "block-4/foundation/backing-t0-e92",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e95",
+        "disposition": "retained",
+        "target": "live-95",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e96",
+        "disposition": "retained",
+        "target": "live-96",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e99",
+        "disposition": "retained",
+        "target": "live-99",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e101",
+        "disposition": "transferred",
+        "target": "block-4/figures/backing-t0-e101",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e102",
+        "disposition": "transferred",
+        "target": "block-4/figures/backing-t0-e102",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e104",
+        "disposition": "transferred",
+        "target": "block-4/figures/backing-t0-e104",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e106",
+        "disposition": "transferred",
+        "target": "block-4/figures/backing-t0-e106",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e109",
+        "disposition": "transferred",
+        "target": "block-4/figures/backing-t0-e109",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e111",
+        "disposition": "transferred",
+        "target": "block-4/figures/backing-t0-e111",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e112",
+        "disposition": "transferred",
+        "target": "block-4/figures/backing-t0-e112",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e115",
+        "disposition": "retained",
+        "target": "live-115",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e116",
+        "disposition": "transferred",
+        "target": "block-5/foundation/backing-t0-e116",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e122",
+        "disposition": "transferred",
+        "target": "block-5/foundation/backing-t0-e122",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e123",
+        "disposition": "retained",
+        "target": "live-123",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e124",
+        "disposition": "transferred",
+        "target": "block-5/figures/backing-t0-e124",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e126",
+        "disposition": "retained",
+        "target": "live-126",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e131",
+        "disposition": "combined",
+        "target": "live-126",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e132",
+        "disposition": "retained",
+        "target": "live-132",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e135",
+        "disposition": "retained",
+        "target": "live-135",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e137",
+        "disposition": "retained",
+        "target": "live-137",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e139",
+        "disposition": "retained",
+        "target": "live-139",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e141",
+        "disposition": "transferred",
+        "target": "block-6/foundation/backing-t0-e141",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e142",
+        "disposition": "retained",
+        "target": "live-142",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e147",
+        "disposition": "transferred",
+        "target": "block-6/foundation/backing-t0-e147",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e151",
+        "disposition": "transferred",
+        "target": "block-6/foundation/backing-t0-e151",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e152",
+        "disposition": "retained",
+        "target": "live-152",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e155",
+        "disposition": "transferred",
+        "target": "block-6/foundation/backing-t0-e155",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e156",
+        "disposition": "retained",
+        "target": "live-156",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e159",
+        "disposition": "combined",
+        "target": "live-156",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e161",
+        "disposition": "transferred",
+        "target": "block-6/figures/backing-t0-e161",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e163",
+        "disposition": "retained",
+        "target": "live-163",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e165",
+        "disposition": "retained",
+        "target": "live-165",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e166",
+        "disposition": "transferred",
+        "target": "block-7/foundation/backing-t0-e166",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e169",
+        "disposition": "transferred",
+        "target": "block-7/foundation/backing-t0-e169",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e175",
+        "disposition": "transferred",
+        "target": "block-7/foundation/backing-t0-e175",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e176",
+        "disposition": "retained",
+        "target": "live-176",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e178",
+        "disposition": "transferred",
+        "target": "block-7/foundation/backing-t0-e178",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e180",
+        "disposition": "combined",
+        "target": "live-176",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e183",
+        "disposition": "retained",
+        "target": "live-183",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e185",
+        "disposition": "combined",
+        "target": "live-183",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e187",
+        "disposition": "retained",
+        "target": "live-187",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e189",
+        "disposition": "transferred",
+        "target": "block-7/figures/backing-t0-e189",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e191",
+        "disposition": "retained",
+        "target": "live-191",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e193",
+        "disposition": "retained",
+        "target": "live-193",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e195",
+        "disposition": "transferred",
+        "target": "block-8/foundation/backing-t0-e195",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e196",
+        "disposition": "retained",
+        "target": "live-196",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e201",
+        "disposition": "transferred",
+        "target": "block-8/foundation/backing-t0-e201",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e205",
+        "disposition": "transferred",
+        "target": "block-8/foundation/backing-t0-e205",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e206",
+        "disposition": "retained",
+        "target": "live-206",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e208",
+        "disposition": "transferred",
+        "target": "block-8/foundation/backing-t0-e208",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e211",
+        "disposition": "retained",
+        "target": "live-211",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e212",
+        "disposition": "retained",
+        "target": "live-212",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e214",
+        "disposition": "retained",
+        "target": "live-214",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e217",
+        "disposition": "transferred",
+        "target": "block-8/figures/backing-t0-e217",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e218",
+        "disposition": "transferred",
+        "target": "block-8/figures/backing-t0-e218",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e220",
+        "disposition": "transferred",
+        "target": "block-8/figures/backing-t0-e220",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e223",
+        "disposition": "transferred",
+        "target": "block-8/figures/backing-t0-e223",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e224",
+        "disposition": "transferred",
+        "target": "block-8/figures/backing-t0-e224",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e227",
+        "disposition": "retained",
+        "target": "live-227",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e228",
+        "disposition": "transferred",
+        "target": "block-9/foundation/backing-t0-e228",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e234",
+        "disposition": "transferred",
+        "target": "block-9/figures/backing-t0-e234",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e235",
+        "disposition": "combined",
+        "target": "live-227",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e237",
+        "disposition": "retained",
+        "target": "live-237",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e241",
+        "disposition": "combined",
+        "target": "live-237",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e243",
+        "disposition": "retained",
+        "target": "live-243",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e245",
+        "disposition": "combined",
+        "target": "live-243",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e247",
+        "disposition": "retained",
+        "target": "live-247",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e249",
+        "disposition": "retained",
+        "target": "live-249",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e251",
+        "disposition": "transferred",
+        "target": "block-10/foundation/backing-t0-e251",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e252",
+        "disposition": "retained",
+        "target": "live-252",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e257",
+        "disposition": "transferred",
+        "target": "block-10/foundation/backing-t0-e257",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e261",
+        "disposition": "transferred",
+        "target": "block-10/foundation/backing-t0-e261",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e262",
+        "disposition": "combined",
+        "target": "live-252",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e264",
+        "disposition": "transferred",
+        "target": "block-10/foundation/backing-t0-e264",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e267",
+        "disposition": "retained",
+        "target": "live-267",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e268",
+        "disposition": "transferred",
+        "target": "block-10/figures/backing-t0-e268",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e271",
+        "disposition": "retained",
+        "target": "live-271",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e273",
+        "disposition": "retained",
+        "target": "live-273",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e274",
+        "disposition": "transferred",
+        "target": "block-10/figures/backing-t0-e274",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e277",
+        "disposition": "transferred",
+        "target": "block-11/foundation/backing-t0-e277",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e278",
+        "disposition": "retained",
+        "target": "live-278",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e283",
+        "disposition": "transferred",
+        "target": "block-11/foundation/backing-t0-e283",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e285",
+        "disposition": "transferred",
+        "target": "block-11/foundation/backing-t0-e285",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e286",
+        "disposition": "retained",
+        "target": "live-286",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e288",
+        "disposition": "combined",
+        "target": "live-286",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e290",
+        "disposition": "transferred",
+        "target": "block-11/foundation/backing-t0-e290",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e291",
+        "disposition": "retained",
+        "target": "live-291",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e294",
+        "disposition": "combined",
+        "target": "live-291",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e295",
+        "disposition": "transferred",
+        "target": "block-11/foundation/backing-t0-e295",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e298",
+        "disposition": "transferred",
+        "target": "block-11/foundation/backing-t0-e298",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e299",
+        "disposition": "retained",
+        "target": "live-299",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e305",
+        "disposition": "combined",
+        "target": "live-299",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e306",
+        "disposition": "transferred",
+        "target": "block-11/foundation/backing-t0-e306",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e308",
+        "disposition": "transferred",
+        "target": "block-11/figures/backing-t0-e308",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e311",
+        "disposition": "transferred",
+        "target": "block-12/foundation/backing-t0-e311",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e312",
+        "disposition": "retained",
+        "target": "live-312",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e317",
+        "disposition": "transferred",
+        "target": "block-12/foundation/backing-t0-e317",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e321",
+        "disposition": "transferred",
+        "target": "block-12/foundation/backing-t0-e321",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e322",
+        "disposition": "combined",
+        "target": "live-312",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e324",
+        "disposition": "transferred",
+        "target": "block-12/foundation/backing-t0-e324",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e327",
+        "disposition": "combined",
+        "target": "live-312",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e329",
+        "disposition": "retained",
+        "target": "live-329",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e331",
+        "disposition": "transferred",
+        "target": "block-12/figures/backing-t0-e331",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e333",
+        "disposition": "retained",
+        "target": "live-333",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e335",
+        "disposition": "retained",
+        "target": "live-335",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e336",
+        "disposition": "transferred",
+        "target": "block-12/figures/backing-t0-e336",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e341",
+        "disposition": "transferred",
+        "target": "block-13/foundation/backing-t0-e341",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e342",
+        "disposition": "retained",
+        "target": "live-342",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e345",
+        "disposition": "transferred",
+        "target": "block-13/foundation/backing-t0-e345",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e349",
+        "disposition": "transferred",
+        "target": "block-13/foundation/backing-t0-e349",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e350",
+        "disposition": "combined",
+        "target": "live-342",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e352",
+        "disposition": "transferred",
+        "target": "block-13/foundation/backing-t0-e352",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e354",
+        "disposition": "retained",
+        "target": "live-354",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e357",
+        "disposition": "retained",
+        "target": "live-357",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e358",
+        "disposition": "transferred",
+        "target": "block-13/figures/backing-t0-e358",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e361",
+        "disposition": "retained",
+        "target": "live-361",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e363",
+        "disposition": "combined",
+        "target": "live-361",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e365",
+        "disposition": "retained",
+        "target": "live-365",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e367",
+        "disposition": "retained",
+        "target": "live-367",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e371",
+        "disposition": "transferred",
+        "target": "block-14/foundation/backing-t0-e371",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e372",
+        "disposition": "retained",
+        "target": "live-372",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e375",
+        "disposition": "transferred",
+        "target": "block-14/foundation/backing-t0-e375",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e379",
+        "disposition": "combined",
+        "target": "live-372",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e380",
+        "disposition": "transferred",
+        "target": "block-14/foundation/backing-t0-e380",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e382",
+        "disposition": "transferred",
+        "target": "block-14/foundation/backing-t0-e382",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e385",
+        "disposition": "retained",
+        "target": "live-385",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e387",
+        "disposition": "transferred",
+        "target": "block-14/figures/backing-t0-e387",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e389",
+        "disposition": "combined",
+        "target": "live-385",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e391",
+        "disposition": "retained",
+        "target": "live-391",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e392",
+        "disposition": "transferred",
+        "target": "block-14/figures/backing-t0-e392",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e395",
+        "disposition": "retained",
+        "target": "live-395",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e397",
+        "disposition": "retained",
+        "target": "live-397",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e399",
+        "disposition": "transferred",
+        "target": "block-14/figures/backing-t0-e399",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e403",
+        "disposition": "transferred",
+        "target": "block-15/foundation/backing-t0-e403",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e404",
+        "disposition": "retained",
+        "target": "live-404",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e405",
+        "disposition": "transferred",
+        "target": "block-15/foundation/backing-t0-e405",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e411",
+        "disposition": "combined",
+        "target": "live-404",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e412",
+        "disposition": "transferred",
+        "target": "block-15/foundation/backing-t0-e412",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e414",
+        "disposition": "transferred",
+        "target": "block-15/foundation/backing-t0-e414",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e416",
+        "disposition": "transferred",
+        "target": "block-15/foundation/backing-t0-e416",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e417",
+        "disposition": "retained",
+        "target": "live-417",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e421",
+        "disposition": "retained",
+        "target": "live-421",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e422",
+        "disposition": "transferred",
+        "target": "block-15/figures/backing-t0-e422",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e427",
+        "disposition": "retained",
+        "target": "live-427",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e428",
+        "disposition": "transferred",
+        "target": "block-16/foundation/backing-t0-e428",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e429",
+        "disposition": "transferred",
+        "target": "block-16/foundation/backing-t0-e429",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e435",
+        "disposition": "transferred",
+        "target": "block-16/foundation/backing-t0-e435",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e436",
+        "disposition": "combined",
+        "target": "live-427",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e438",
+        "disposition": "transferred",
+        "target": "block-16/foundation/backing-t0-e438",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e439",
+        "disposition": "transferred",
+        "target": "block-16/figures/backing-t0-e439",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e443",
+        "disposition": "retained",
+        "target": "live-443",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e445",
+        "disposition": "retained",
+        "target": "live-445",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e449",
+        "disposition": "retained",
+        "target": "live-449",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e450",
+        "disposition": "transferred",
+        "target": "block-17/foundation/backing-t0-e450",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e451",
+        "disposition": "transferred",
+        "target": "block-17/foundation/backing-t0-e451",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e456",
+        "disposition": "transferred",
+        "target": "block-17/foundation/backing-t0-e456",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e458",
+        "disposition": "transferred",
+        "target": "block-17/foundation/backing-t0-e458",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e460",
+        "disposition": "transferred",
+        "target": "block-17/foundation/backing-t0-e460",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e461",
+        "disposition": "transferred",
+        "target": "block-17/figures/backing-t0-e461",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e463",
+        "disposition": "retained",
+        "target": "live-463",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e467",
+        "disposition": "retained",
+        "target": "live-467",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e469",
+        "disposition": "retained",
+        "target": "live-469",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e470",
+        "disposition": "transferred",
+        "target": "block-17/figures/backing-t0-e470",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e475",
+        "disposition": "transferred",
+        "target": "block-18/foundation/backing-t0-e475",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e476",
+        "disposition": "retained",
+        "target": "live-476",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e477",
+        "disposition": "transferred",
+        "target": "block-18/foundation/backing-t0-e477",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e483",
+        "disposition": "transferred",
+        "target": "block-18/foundation/backing-t0-e483",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e484",
+        "disposition": "combined",
+        "target": "live-476",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e486",
+        "disposition": "transferred",
+        "target": "block-18/foundation/backing-t0-e486",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e488",
+        "disposition": "transferred",
+        "target": "block-18/foundation/backing-t0-e488",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e489",
+        "disposition": "retained",
+        "target": "live-489",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e491",
+        "disposition": "transferred",
+        "target": "block-18/figures/backing-t0-e491",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e495",
+        "disposition": "retained",
+        "target": "live-495",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e497",
+        "disposition": "transferred",
+        "target": "block-18/figures/backing-t0-e497",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e501",
+        "disposition": "transferred",
+        "target": "block-19/foundation/backing-t0-e501",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e502",
+        "disposition": "retained",
+        "target": "live-502",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e503",
+        "disposition": "transferred",
+        "target": "block-19/foundation/backing-t0-e503",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e509",
+        "disposition": "transferred",
+        "target": "block-19/foundation/backing-t0-e509",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e510",
+        "disposition": "combined",
+        "target": "live-502",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e512",
+        "disposition": "transferred",
+        "target": "block-19/foundation/backing-t0-e512",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e513",
+        "disposition": "transferred",
+        "target": "block-19/figures/backing-t0-e513",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e517",
+        "disposition": "retained",
+        "target": "live-517",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e519",
+        "disposition": "retained",
+        "target": "live-519",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e523",
+        "disposition": "transferred",
+        "target": "block-20/foundation/backing-t0-e523",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e524",
+        "disposition": "retained",
+        "target": "live-524",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e525",
+        "disposition": "transferred",
+        "target": "block-20/foundation/backing-t0-e525",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e531",
+        "disposition": "transferred",
+        "target": "block-20/foundation/backing-t0-e531",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e533",
+        "disposition": "transferred",
+        "target": "block-20/foundation/backing-t0-e533",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e534",
+        "disposition": "transferred",
+        "target": "block-20/foundation/backing-t0-e534",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e537",
+        "disposition": "transferred",
+        "target": "block-20/figures/backing-t0-e537",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e539",
+        "disposition": "transferred",
+        "target": "block-20/figures/backing-t0-e539",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e541",
+        "disposition": "transferred",
+        "target": "block-20/figures/backing-t0-e541",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e543",
+        "disposition": "transferred",
+        "target": "block-20/figures/backing-t0-e543",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e545",
+        "disposition": "transferred",
+        "target": "block-20/figures/backing-t0-e545",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e547",
+        "disposition": "retained",
+        "target": "live-547",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e549",
+        "disposition": "transferred",
+        "target": "block-20/figures/backing-t0-e549",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e553",
+        "disposition": "transferred",
+        "target": "block-21/foundation/backing-t0-e553",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e554",
+        "disposition": "retained",
+        "target": "live-554",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e555",
+        "disposition": "transferred",
+        "target": "block-21/foundation/backing-t0-e555",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e561",
+        "disposition": "transferred",
+        "target": "block-21/foundation/backing-t0-e561",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e562",
+        "disposition": "combined",
+        "target": "live-554",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e564",
+        "disposition": "transferred",
+        "target": "block-21/foundation/backing-t0-e564",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e566",
+        "disposition": "transferred",
+        "target": "block-21/foundation/backing-t0-e566",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e567",
+        "disposition": "retained",
+        "target": "live-567",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e571",
+        "disposition": "retained",
+        "target": "live-571",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e572",
+        "disposition": "transferred",
+        "target": "block-21/figures/backing-t0-e572",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e577",
+        "disposition": "transferred",
+        "target": "block-22/foundation/backing-t0-e577",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e578",
+        "disposition": "retained",
+        "target": "live-578",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e579",
+        "disposition": "transferred",
+        "target": "block-22/foundation/backing-t0-e579",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e585",
+        "disposition": "transferred",
+        "target": "block-22/foundation/backing-t0-e585",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e586",
+        "disposition": "combined",
+        "target": "live-578",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e588",
+        "disposition": "transferred",
+        "target": "block-22/foundation/backing-t0-e588",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e589",
+        "disposition": "transferred",
+        "target": "block-22/figures/backing-t0-e589",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e593",
+        "disposition": "retained",
+        "target": "live-593",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e595",
+        "disposition": "retained",
+        "target": "live-595",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e599",
+        "disposition": "transferred",
+        "target": "block-23/foundation/backing-t0-e599",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e600",
+        "disposition": "transferred",
+        "target": "block-23/foundation/backing-t0-e600",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e601",
+        "disposition": "retained",
+        "target": "live-601",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e606",
+        "disposition": "transferred",
+        "target": "block-23/foundation/backing-t0-e606",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e608",
+        "disposition": "transferred",
+        "target": "block-23/foundation/backing-t0-e608",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e610",
+        "disposition": "transferred",
+        "target": "block-23/foundation/backing-t0-e610",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e611",
+        "disposition": "transferred",
+        "target": "block-23/figures/backing-t0-e611",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e613",
+        "disposition": "retained",
+        "target": "live-613",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e617",
+        "disposition": "retained",
+        "target": "live-617",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e619",
+        "disposition": "retained",
+        "target": "live-619",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e620",
+        "disposition": "transferred",
+        "target": "block-23/figures/backing-t0-e620",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e625",
+        "disposition": "transferred",
+        "target": "block-24/foundation/backing-t0-e625",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e626",
+        "disposition": "transferred",
+        "target": "block-24/foundation/backing-t0-e626",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e627",
+        "disposition": "retained",
+        "target": "live-627",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e633",
+        "disposition": "transferred",
+        "target": "block-24/foundation/backing-t0-e633",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e634",
+        "disposition": "combined",
+        "target": "live-627",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e636",
+        "disposition": "transferred",
+        "target": "block-24/foundation/backing-t0-e636",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e638",
+        "disposition": "transferred",
+        "target": "block-24/foundation/backing-t0-e638",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e639",
+        "disposition": "retained",
+        "target": "live-639",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e640",
+        "disposition": "transferred",
+        "target": "block-24/figures/backing-t0-e640",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e644",
+        "disposition": "retained",
+        "target": "live-644",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e647",
+        "disposition": "transferred",
+        "target": "block-24/figures/backing-t0-e647",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e651",
+        "disposition": "transferred",
+        "target": "block-25/foundation/backing-t0-e651",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e652",
+        "disposition": "transferred",
+        "target": "block-25/foundation/backing-t0-e652",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e653",
+        "disposition": "retained",
+        "target": "live-653",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e659",
+        "disposition": "transferred",
+        "target": "block-25/foundation/backing-t0-e659",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e660",
+        "disposition": "combined",
+        "target": "live-653",
+        "reason": "combine repeated attacks into a singable hold"
+      },
+      {
+        "sourceId": "t0-e662",
+        "disposition": "transferred",
+        "target": "block-25/foundation/backing-t0-e662",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e663",
+        "disposition": "transferred",
+        "target": "block-25/figures/backing-t0-e663",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e665",
+        "disposition": "retained",
+        "target": "live-665",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e669",
+        "disposition": "retained",
+        "target": "live-669",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e675",
+        "disposition": "transferred",
+        "target": "block-26/foundation/backing-t0-e675",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e676",
+        "disposition": "retained",
+        "target": "live-676",
+        "reason": "retain melodic anchor"
+      },
+      {
+        "sourceId": "t0-e677",
+        "disposition": "transferred",
+        "target": "block-26/foundation/backing-t0-e677",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e681",
+        "disposition": "transferred",
+        "target": "block-26/foundation/backing-t0-e681",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e683",
+        "disposition": "transferred",
+        "target": "block-26/foundation/backing-t0-e683",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e684",
+        "disposition": "transferred",
+        "target": "block-26/foundation/backing-t0-e684",
+        "reason": "bass or inner chord/arpeggio voice"
+      },
+      {
+        "sourceId": "t0-e687",
+        "disposition": "transferred",
+        "target": "block-26/figures/backing-t0-e687",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e688",
+        "disposition": "transferred",
+        "target": "block-26/figures/backing-t0-e688",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e690",
+        "disposition": "transferred",
+        "target": "block-26/figures/backing-t0-e690",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      },
+      {
+        "sourceId": "t0-e693",
+        "disposition": "transferred",
+        "target": "block-26/figures/backing-t0-e693",
+        "reason": "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack"
+      }
+    ]
+  },
+  "lessons": [
+    {
+      "id": "phrase-1",
+      "title": "Phrase 1",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 0,
+      "endBeat": 8,
+      "eventIds": [
+        "live-6",
+        "live-11",
+        "live-14",
+        "live-19",
+        "live-22",
+        "live-25",
+        "live-27"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-2",
+      "title": "Phrase 2",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 8,
+      "endBeat": 16,
+      "eventIds": [
+        "live-32",
+        "live-40",
+        "live-44",
+        "live-51",
+        "live-53"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-3",
+      "title": "Phrase 3",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 16,
+      "endBeat": 24,
+      "eventIds": [
+        "live-64",
+        "live-71",
+        "live-75",
+        "live-79",
+        "live-81"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-4",
+      "title": "Phrase 4",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 24,
+      "endBeat": 32,
+      "eventIds": [
+        "live-83",
+        "live-89",
+        "live-95",
+        "live-96",
+        "live-99"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-5",
+      "title": "Phrase 5",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 32,
+      "endBeat": 40,
+      "eventIds": [
+        "live-115",
+        "live-123",
+        "live-126",
+        "live-132",
+        "live-135",
+        "live-137",
+        "live-139"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-6",
+      "title": "Phrase 6",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 40,
+      "endBeat": 48,
+      "eventIds": [
+        "live-142",
+        "live-152",
+        "live-156",
+        "live-163",
+        "live-165"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-7",
+      "title": "Phrase 7",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 48,
+      "endBeat": 56,
+      "eventIds": [
+        "live-176",
+        "live-183",
+        "live-187",
+        "live-191",
+        "live-193"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-8",
+      "title": "Phrase 8",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 56,
+      "endBeat": 64,
+      "eventIds": [
+        "live-196",
+        "live-206",
+        "live-211",
+        "live-212",
+        "live-214"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-9",
+      "title": "Phrase 9",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 64,
+      "endBeat": 72,
+      "eventIds": [
+        "live-227",
+        "live-237",
+        "live-243",
+        "live-247",
+        "live-249"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-10",
+      "title": "Phrase 10",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 72,
+      "endBeat": 80,
+      "eventIds": [
+        "live-252",
+        "live-267",
+        "live-271",
+        "live-273"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-11",
+      "title": "Phrase 11",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 80,
+      "endBeat": 88,
+      "eventIds": [
+        "live-278",
+        "live-286",
+        "live-291",
+        "live-299"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-12",
+      "title": "Phrase 12",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 88,
+      "endBeat": 96,
+      "eventIds": [
+        "live-312",
+        "live-329",
+        "live-333",
+        "live-335"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-13",
+      "title": "Phrase 13",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 96,
+      "endBeat": 104,
+      "eventIds": [
+        "live-342",
+        "live-354",
+        "live-357",
+        "live-361",
+        "live-365",
+        "live-367"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-14",
+      "title": "Phrase 14",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 104,
+      "endBeat": 112,
+      "eventIds": [
+        "live-372",
+        "live-385",
+        "live-391",
+        "live-395",
+        "live-397"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-15",
+      "title": "Phrase 15",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 112,
+      "endBeat": 120,
+      "eventIds": [
+        "live-404",
+        "live-417",
+        "live-421",
+        "live-427",
+        "live-443",
+        "live-445"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-16",
+      "title": "Phrase 16",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 120,
+      "endBeat": 128,
+      "eventIds": [
+        "live-449",
+        "live-463",
+        "live-467",
+        "live-469"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-17",
+      "title": "Phrase 17",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 128,
+      "endBeat": 136,
+      "eventIds": [
+        "live-476",
+        "live-489",
+        "live-495",
+        "live-502",
+        "live-517",
+        "live-519"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-18",
+      "title": "Phrase 18",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 136,
+      "endBeat": 144,
+      "eventIds": [
+        "live-524",
+        "live-547"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-19",
+      "title": "Phrase 19",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 144,
+      "endBeat": 152,
+      "eventIds": [
+        "live-554",
+        "live-567",
+        "live-571",
+        "live-578",
+        "live-593",
+        "live-595"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-20",
+      "title": "Phrase 20",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 152,
+      "endBeat": 160,
+      "eventIds": [
+        "live-601",
+        "live-613",
+        "live-617",
+        "live-619"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-21",
+      "title": "Phrase 21",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 160,
+      "endBeat": 168,
+      "eventIds": [
+        "live-627",
+        "live-639",
+        "live-644",
+        "live-653",
+        "live-665",
+        "live-669"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "phrase-22",
+      "title": "Phrase 22",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 168,
+      "endBeat": 176,
+      "eventIds": [
+        "live-676"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    },
+    {
+      "id": "performance",
+      "title": "Complete melody",
+      "goal": "Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": true,
+      "startBeat": 0,
+      "endBeat": 176,
+      "eventIds": [
+        "live-6",
+        "live-11",
+        "live-14",
+        "live-19",
+        "live-22",
+        "live-25",
+        "live-27",
+        "live-32",
+        "live-40",
+        "live-44",
+        "live-51",
+        "live-53",
+        "live-64",
+        "live-71",
+        "live-75",
+        "live-79",
+        "live-81",
+        "live-83",
+        "live-89",
+        "live-95",
+        "live-96",
+        "live-99",
+        "live-115",
+        "live-123",
+        "live-126",
+        "live-132",
+        "live-135",
+        "live-137",
+        "live-139",
+        "live-142",
+        "live-152",
+        "live-156",
+        "live-163",
+        "live-165",
+        "live-176",
+        "live-183",
+        "live-187",
+        "live-191",
+        "live-193",
+        "live-196",
+        "live-206",
+        "live-211",
+        "live-212",
+        "live-214",
+        "live-227",
+        "live-237",
+        "live-243",
+        "live-247",
+        "live-249",
+        "live-252",
+        "live-267",
+        "live-271",
+        "live-273",
+        "live-278",
+        "live-286",
+        "live-291",
+        "live-299",
+        "live-312",
+        "live-329",
+        "live-333",
+        "live-335",
+        "live-342",
+        "live-354",
+        "live-357",
+        "live-361",
+        "live-365",
+        "live-367",
+        "live-372",
+        "live-385",
+        "live-391",
+        "live-395",
+        "live-397",
+        "live-404",
+        "live-417",
+        "live-421",
+        "live-427",
+        "live-443",
+        "live-445",
+        "live-449",
+        "live-463",
+        "live-467",
+        "live-469",
+        "live-476",
+        "live-489",
+        "live-495",
+        "live-502",
+        "live-517",
+        "live-519",
+        "live-524",
+        "live-547",
+        "live-554",
+        "live-567",
+        "live-571",
+        "live-578",
+        "live-593",
+        "live-595",
+        "live-601",
+        "live-613",
+        "live-617",
+        "live-619",
+        "live-627",
+        "live-639",
+        "live-644",
+        "live-653",
+        "live-665",
+        "live-669",
+        "live-676"
+      ],
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.28
+      }
+    }
+  ],
+  "recording": {
+    "countIn": 4,
+    "tailMs": 500,
+    "end": "manual",
+    "synchronization": "captured-noise-once"
+  },
+  "requirements": {
+    "maxHonks": 35,
+    "maxLoopers": 4,
+    "maxLiveVoices": 1
+  },
+  "contentHash": "4317b56b3bc8f152cba5c66947ca4d71279bfa96b7604731181c756249e4703c"
+}

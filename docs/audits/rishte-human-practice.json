@@ -1,0 +1,33 @@
+{
+  "practice": {
+    "practice": {
+      "feedback": "7/7 matched · 0 extra. Phrase complete. Continue when ready.",
+      "observations": 7,
+      "phaseErrorBeats": 0.00009999999404008975,
+      "backingDriftAfterTempoChangeBeats": 8.881784197001252e-16,
+      "tempoHistory": [
+        {
+          "atMs": 1498.5999999940395,
+          "beat": -4,
+          "bpm": 75
+        },
+        {
+          "atMs": 6751.5,
+          "beat": 2.566100000008941,
+          "bpm": 60
+        }
+      ]
+    },
+    "emptyRetryRejected": true,
+    "learnerTakePreserved": true,
+    "cancelledRecordArmPreserved": true,
+    "changedTakeFeedback": "Looper recording activity stopped the arrangement. Your recordings are preserved.",
+    "metronomeStop": true,
+    "laterPhraseHandoff": true,
+    "completeLesson": true,
+    "cleanExit": true,
+    "playWorkspaceRestored": true,
+    "recordSongsVersion": 2
+  },
+  "errors": []
+}

@@ -128,11 +128,8 @@ export const compositionRegistry = new CompositionRegistry([
   {
     id: "rishte-naate",
     title: "rishte naate.mid",
-    version: 1,
-    load: () => Promise.all([
-      import("./MidiPerformance.js"),
-      import("./rishte-naate/composition.json", { with: { type: "json" } }),
-    ]).then(([runtime, score]) => runtime.midiPerformance(score.default)),
+    version: 2,
+    load: () => import("./rishte.js"),
   },
 ]);
 export function libraryPage(registry, mode, page = 0, size = 2) {

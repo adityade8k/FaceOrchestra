@@ -1,0 +1,40 @@
+{
+  "baseline": {
+    "commit": "fee629663085e8f9c4b245c35963c0e73c4070af",
+    "liveNotes": 181,
+    "attacksBelow300ms": 74,
+    "overlappingHolds": 30,
+    "targets": 11,
+    "widthMeters": 2.4,
+    "fastestTransition": {
+      "from": "t0-e397",
+      "to": "t0-e399",
+      "milliseconds": 177.7173468749993,
+      "meters": 0.48
+    },
+    "maximumTravelMeters": 2.16,
+    "firstPhraseNotes": 99,
+    "firstPhraseSeconds": 39.844555256250004
+  },
+  "revised": {
+    "liveNotes": 107,
+    "targets": 9,
+    "widthMeters": 0.8599614355618446,
+    "minimumAttackMsAt75": 600,
+    "minimumReleaseGapMsAt75": 200,
+    "overlappingHolds": 0,
+    "maximumTravelMeters": 0.34232307125509354,
+    "firstPhraseNotes": 7,
+    "phraseSecondsAt75": 6.4,
+    "phraseCount": 22,
+    "maximumPhraseNotes": 7,
+    "maximumPhraseTargets": 4,
+    "durationBeats": 176,
+    "durationSecondsAt75": 140.8,
+    "sourceDispositions": {
+      "retained": 107,
+      "combined": 29,
+      "transferred": 160
+    }
+  }
+}
