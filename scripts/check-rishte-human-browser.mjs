@@ -62,7 +62,7 @@ try {
   const smoke = await browser.evaluate(`(async()=>{
     const {r,t,d,check,wait}=window.__rishte;
     const controls=t.panel.model.navigation.concat(t.panel.model.actions).map(b=>b.id);
-    check(d.definition.bpm===115&&t.adapter.get('metronome').bpm===115,'Song must open at 115 BPM');
+    check(t.adapter.get('metronome').bpm===d.definition.bpm,'Song must open at its configured playback tempo');
     for(const id of ['rishte-preview','step-practice','previous-step','next-step','tempo-down','tempo-up','rishte-stop','exit'])check(controls.includes(id),'Missing '+id);
     const before=d.ensemble.loopers.map(h=>h.looperController.serializeState(h));
     await t.action('rishte-preview');await wait(5200);
@@ -70,7 +70,7 @@ try {
     const active=d.ensemble.loopers.filter(h=>h.transport.playing).length;
     check(active===2,'Expected two actual Loopers playing: '+active);
     check(d.ensemble.nextBlock===2,'Next backing window not prepared');
-    await t.action('tempo-down');check(t.adapter.get('metronome').bpm===110,'Tempo change failed');
+    await t.action('tempo-down');check(t.adapter.get('metronome').bpm===d.definition.bpm-5,'Tempo change failed');
     await wait(6000);check(d.phase==='demo','Preview after handoff: '+d.feedback);
     const handoffs=d.ensemble.handoffs;
     await t.action('rishte-stop');

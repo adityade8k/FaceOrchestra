@@ -14,7 +14,7 @@ const source=JSON.parse(readFileSync(new URL(d.normalizedSource.file,root)));
 
 test('screenshot-selected melody and backing partition all 296 MIDI notes exactly once',()=>{
  validateRishte(d);
- assert.equal(d.bpm,115);assert.equal(d.practiceBpm,75);
+ assert.equal(d.bpm,100);assert.equal(d.sourceBpm,115);assert.equal(d.practiceBpm,75);
  assert.equal(d.score.events.length,175);assert.equal(d.arrangement.backing.length,121);
  assert.deepEqual(new Set(d.score.events.map(e=>e.id)),new Set(matches.matches.map(m=>m.sourceId)));
  const all=[...d.score.events,...d.arrangement.backing];assert.equal(new Set(all.map(e=>e.id)).size,296);

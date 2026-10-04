@@ -3,7 +3,8 @@
   "id": "rishte-naate",
   "title": "rishte naate.mid",
   "contentVersion": 3,
-  "bpm": 115,
+  "bpm": 100,
+  "sourceBpm": 115,
   "practiceBpm": 75,
   "liveRole": "melody",
   "playback": "honk-looper-two-hand-v1",
@@ -10152,5 +10153,5 @@
     "maxLoopers": 4,
     "maxLiveVoices": 2
   },
-  "contentHash": "a18a96ddaa1aa795f495fad79d67b14ca0a7b6293cb763b7f418aa3c236bb941"
+  "contentHash": "d806a63b0643a476758e6b7e522bb578ad7c68210408cf371e1978ec5c85e903"
 }

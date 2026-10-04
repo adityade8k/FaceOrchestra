@@ -1,0 +1,10 @@
+{
+  "scope": "Tempo and startup check; full-song comparison remains the previous 115 BPM run",
+  "playbackBpm": 100,
+  "sourceBpm": 115,
+  "practiceBpm": 75,
+  "actualLoopers": 2,
+  "clockBeatError": 0,
+  "cleanStop": true,
+  "errors": []
+}
