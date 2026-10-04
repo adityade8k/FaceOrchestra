@@ -102,7 +102,7 @@ export class RishteTutorial extends GenericTutorial {
     const count = this.step.eventIds.length;
     return {
       visible: true, title: this.phase === "demo" ? "Preview full arrangement" : this.step.title,
-      instruction: `${bpm} BPM · ${count} melody notes${this.step.completePerformance ? "" : ` · ${(this.step.endBeat - this.step.startBeat).toFixed(1)} beats`}.\n${guidance.instruction || this.step.goal}\n${this.step.recommendedBpm < 75 && !this.step.completePerformance ? `This phrase starts at ${this.step.recommendedBpm} BPM for the fast transitions. Tempo remains adjustable.` : "Use Tempo −/+ or the Metronome handle to adjust speed."}`,
+      instruction: `${bpm} BPM · ${count} melody notes${this.step.completePerformance ? "" : ` · ${(this.step.endBeat - this.step.startBeat).toFixed(1)} beats`}.\n${guidance.instruction || this.step.goal}\nSong tempo: ${this.definition.bpm} BPM. ${this.step.recommendedBpm < this.definition.practiceBpm && !this.step.completePerformance ? `This phrase starts at ${this.step.recommendedBpm} BPM for the fast transitions. Tempo remains adjustable.` : `Practice starts at ${this.definition.practiceBpm} BPM. Use Tempo −/+ or the Metronome handle to adjust speed.`}`,
       feedback: this.feedback,
       progress: `${this.definition.title} · ${this.index + 1}/${this.definition.lessons.length}${this.outcomes[this.step.id] === "passed" ? " · Passed" : ""}`,
       navigation: [b("rishte-preview", this.previewed ? "Replay full arrangement" : "Preview full arrangement"),

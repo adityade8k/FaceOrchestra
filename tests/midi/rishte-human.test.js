@@ -14,6 +14,7 @@ const source=JSON.parse(readFileSync(new URL(d.normalizedSource.file,root)));
 
 test('screenshot-selected melody and backing partition all 296 MIDI notes exactly once',()=>{
  validateRishte(d);
+ assert.equal(d.bpm,115);assert.equal(d.practiceBpm,75);
  assert.equal(d.score.events.length,175);assert.equal(d.arrangement.backing.length,121);
  assert.deepEqual(new Set(d.score.events.map(e=>e.id)),new Set(matches.matches.map(m=>m.sourceId)));
  const all=[...d.score.events,...d.arrangement.backing];assert.equal(new Set(all.map(e=>e.id)).size,296);
@@ -52,8 +53,8 @@ test('backing uses exact supported Looper windows including genuine silent windo
  for(const b of d.arrangement.blocks)for(const p of b.patterns){
   const roles=[...new Set(p.events.map(e=>e.role))];assert.ok(roles.length<=7);
   const routes=Object.fromEntries(roles.map((role,i)=>[role,{trackId:`track-${i+1}`,trackIndex:i+1}]));
-  const timeline=compilePattern({...p,routes,beatMs:800});
-  if(p.events.length)assert.equal(timeline.durationMs,b.beats*800);
+  const timeline=compilePattern({...p,routes,beatMs:60000/d.bpm});
+  if(p.events.length)assert.equal(timeline.durationMs,b.beats*60000/d.bpm);
   else assert.equal(timeline.hasRecording(),false);
   for(const e of p.events){const n=d.arrangement.backing.find(n=>n.id===e.id);ids.push(e.id);assert.ok(Math.abs(b.beat+e.beat-n.beat)<1e-9);assert.ok(Math.abs(e.beats-n.beats)<1e-9);}
   for(const track of timeline.tracks.values())for(const e of track.events){if(e.type==='gestureSnapshot')assert.deepEqual(e.values,{squeeze:1,bend:0});if(e.type==='squeezeEnd')assert.equal(e.releaseOrigin,'controller');}

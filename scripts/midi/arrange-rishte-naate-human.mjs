@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { splitPatterns } from '../../src/tutorial/rishte/patterns.js';
+const SONG_BPM=115,PRACTICE_BPM=75;
 const root=new URL('../../src/compositions/rishte-naate/',import.meta.url);
 const read=async file=>JSON.parse(await readFile(new URL(file,root)));
 const original=await read('composition.json'),source=await read(original.normalizedSource.file),sequence=source.sequences[0];
@@ -86,14 +87,14 @@ while(start<events.length){
  const moves=['R','L'].flatMap(hand=>{const es=phrase.filter(e=>e.hand===hand);return es.slice(1).map((e,i)=>({hand,from:es[i].id,to:e.id,attackBeats:e.beat-es[i].beat,
   releaseBeats:e.beat-es[i].beat-es[i].beats,meters:distance(hand,es[i].midi,e.midi)}));});
  const minAttack=Math.min(...moves.map(m=>m.attackBeats));
- const recommendedBpm=Math.max(30,Math.min(75,Math.floor(minAttack*120/5)*5));
+ const recommendedBpm=Math.max(30,Math.min(PRACTICE_BPM,Math.floor(minAttack*120/5)*5));
  lessons.push({id:`phrase-${lessons.length+1}`,title:`Phrase ${lessons.length+1}`,goal:'Use both hands. R is the main melody hand; L assists. Either hand is accepted.',
   practice:true,demonstration:true,skip:true,completePerformance:false,startBeat,endBeat,eventIds:phrase.map(e=>e.id),recommendedBpm,
   assessment:{pitchCents:25,onsetBeats:.13,durationBeats:.2},moves});
  start=next;
 }
 lessons.push({...lessons[0],id:'performance',title:'Complete melody',startBeat:0,endBeat:durationBeats,eventIds:events.map(e=>e.id),completePerformance:true,moves:[]});
-const definition={schemaVersion:1,id:'rishte-naate',title:'rishte naate.mid',contentVersion:3,bpm:75,liveRole:'melody',playback:'honk-looper-two-hand-v1',
+const definition={schemaVersion:1,id:'rishte-naate',title:'rishte naate.mid',contentVersion:3,bpm:SONG_BPM,practiceBpm:PRACTICE_BPM,liveRole:'melody',playback:'honk-looper-two-hand-v1',
  source:source.source,normalizedSource:original.normalizedSource,score:{events,durationBeats,sourceTempo:sequence.tempo,sourceMeter:sequence.meter},
  arrangement:{id:'screenshot-two-hand',title:'Screenshot melody with two-hand guidance',version:3,recipes,blocks,backing,
   provenance:`${source.source.sha256}; 175 explicit screenshot-matched learner notes; every other source note is backing`,
@@ -108,7 +109,7 @@ const definition={schemaVersion:1,id:'rishte-naate',title:'rishte naate.mid',con
     reason:selected.has(n.id)?'Explicit screenshot rectangle matched by pitch and global time position':'Not present among the screenshot-selected notes'}))},lessons,
  recording:{countIn:4,tailMs:500,end:'manual',synchronization:'captured-noise-once'},requirements:{maxHonks:recipes.filter(r=>r.kind==='honk').length,maxLoopers:4,maxLiveVoices:2}};
 definition.contentHash=createHash('sha256').update(JSON.stringify(definition)).digest('hex');
-const metrics={learnerNotes:events.length,backingNotes:backing.length,sourceNotes:notes.length,durationBeats,durationSecondsAt75:durationBeats*.8,
+const metrics={learnerNotes:events.length,backingNotes:backing.length,sourceNotes:notes.length,durationBeats,songBpm:SONG_BPM,practiceBpm:PRACTICE_BPM,durationSecondsAt115:durationBeats*60/SONG_BPM,durationSecondsAt75:durationBeats*.8,
  phraseCount:lessons.length-1,blocks:blocks.map(b=>({beat:b.beat,beats:b.beats,notes:b.patterns.map(p=>p.events.length)})),hands:{},duplicatePitches:pitches.filter(p=>events.some(e=>e.midi===p&&e.hand==='R')&&events.some(e=>e.midi===p&&e.hand==='L'))};
 for(const hand of ['R','L']){
  const es=events.filter(e=>e.hand===hand),moves=es.slice(1).map((e,i)=>({from:es[i].id,to:e.id,attackMsAt75:(e.beat-es[i].beat)*800,

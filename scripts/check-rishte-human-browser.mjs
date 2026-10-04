@@ -62,6 +62,7 @@ try {
   const smoke = await browser.evaluate(`(async()=>{
     const {r,t,d,check,wait}=window.__rishte;
     const controls=t.panel.model.navigation.concat(t.panel.model.actions).map(b=>b.id);
+    check(d.definition.bpm===115&&t.adapter.get('metronome').bpm===115,'Song must open at 115 BPM');
     for(const id of ['rishte-preview','step-practice','previous-step','next-step','tempo-down','tempo-up','rishte-stop','exit'])check(controls.includes(id),'Missing '+id);
     const before=d.ensemble.loopers.map(h=>h.looperController.serializeState(h));
     await t.action('rishte-preview');await wait(5200);
@@ -69,7 +70,7 @@ try {
     const active=d.ensemble.loopers.filter(h=>h.transport.playing).length;
     check(active===2,'Expected two actual Loopers playing: '+active);
     check(d.ensemble.nextBlock===2,'Next backing window not prepared');
-    await t.action('tempo-down');check(t.adapter.get('metronome').bpm===70,'Tempo change failed');
+    await t.action('tempo-down');check(t.adapter.get('metronome').bpm===110,'Tempo change failed');
     await wait(6000);check(d.phase==='demo','Preview after handoff: '+d.feedback);
     const handoffs=d.ensemble.handoffs;
     await t.action('rishte-stop');
@@ -117,7 +118,8 @@ try {
   console.log(JSON.stringify({ stage: "sound-reference", ...parity }));
   const full = await browser.evaluate(`(async()=>{
     const {r,t,d,check,wait}=window.__rishte;
-    t.adapter.get('metronome').setBpm(75);
+    t.adapter.get('metronome').setBpm(d.definition.bpm);
+    const beatMs=60000/d.definition.bpm;
     const saved=d.ensemble.loopers.map(h=>h.looperController.serializeState(h));
     await t.action('rishte-preview');
     const anchor=d.ensemble.anchor,audioAnchor={...d.ensemble.audioAnchor};
@@ -161,9 +163,9 @@ try {
       const source=d.definition.arrangement.backing.filter(n=>n.role===role).sort((a,b)=>a.beat-b.beat);
       const actual=backing.filter(n=>n.role===role).sort((a,b)=>a.scheduledTime-b.scheduledTime);
       check(source.length===actual.length,'Backing voice count differs: '+role);
-      for(let i=0;i<source.length;i++)backingOnsetErrorMs=Math.max(backingOnsetErrorMs,Math.abs(actual[i].scheduledTime-audioZero-source[i].beat*.8)*1000);
+      for(let i=0;i<source.length;i++)backingOnsetErrorMs=Math.max(backingOnsetErrorMs,Math.abs(actual[i].scheduledTime-audioZero-source[i].beat*beatMs/1000)*1000);
     }
-    for(let i=0;i<melody.length;i++)melodyOnsetErrorMs=Math.max(melodyOnsetErrorMs,Math.abs(melody[i].atMs-anchor-d.definition.score.events[i].beat*800));
+    for(let i=0;i<melody.length;i++)melodyOnsetErrorMs=Math.max(melodyOnsetErrorMs,Math.abs(melody[i].atMs-anchor-d.definition.score.events[i].beat*beatMs));
     check(backingOnsetErrorMs<2,'Backing onset mismatch '+backingOnsetErrorMs);
     check(melodyOnsetErrorMs<100,'Preview frame delay '+melodyOnsetErrorMs);
     check(blocks.size===d.ensemble.blocks.length,'Missing harmonic blocks '+blocks.size);check(maxDriftBeats<1e-7,'Clock drift '+maxDriftBeats);
@@ -179,7 +181,7 @@ try {
     check(r.instrumentRegistry.getByKind('honk').every(h=>!h.activeVoiceIds.size&&!h.hornHolders.size),'Ending left voices');
     check(JSON.stringify(saved)===JSON.stringify(d.ensemble.loopers.map(h=>h.looperController.serializeState(h))),'Ending changed takes');
     check(Object.keys(d.outcomes).length===0,'Preview changed learner progress');
-    return {melodyNotes:melody.length,backingNotes:backing.length,maxMelodyHands,handLabels:d.ensemble.hands.labels.size,harmonicBlocks:blocks.size,maximumConcurrentLoopers:maxActive,
+    return {bpm:d.definition.bpm,melodyNotes:melody.length,backingNotes:backing.length,maxMelodyHands,handLabels:d.ensemble.hands.labels.size,harmonicBlocks:blocks.size,maximumConcurrentLoopers:maxActive,
       maximumClockDriftBeats:maxDriftBeats,backingOnsetErrorMs,melodyOnsetErrorMs,peakAmplitude:peak,maximumRms:rms,durationBeats:d.definition.score.durationBeats,
       soundParity:true,normalRelease:true,takesRestored:true,noPreviewCredit:true,cleanEnding:true,handoffs:d.ensemble.handoffs};
   })()`);

@@ -11,7 +11,7 @@ export async function validate() {
    d.ensemble.hands.play(d.guide.step.events,beat,now,{swapHands:true});
    if(changed&&beat>d.step.startBeat+1)for(const h of d.ensemble.loopers.filter(h=>h.transport.playing)){
     const bank=Number(a.roleForId(h.id).slice(-1)),index=d.ensemble.bankAssignments.get(bank)?.index;
-    if(index!==undefined)drift=Math.max(drift,Math.abs(h.looperController.getAbsoluteSourcePosition(h,now)/800-(beat-d.ensemble.blocks[index].beat)));
+    if(index!==undefined)drift=Math.max(drift,Math.abs(h.looperController.getAbsoluteSourcePosition(h,now)/(60000/d.definition.bpm)-(beat-d.ensemble.blocks[index].beat)));
    }
   }
   update(now);

@@ -4,7 +4,7 @@
     "controls": {
       "visible": true,
       "title": "Phrase 1",
-      "instruction": "75 BPM · 8 melody notes · 7.3 beats.\nUse both hands. R is the main melody hand; L assists. Either hand is accepted.\nUse Tempo −/+ or the Metronome handle to adjust speed.",
+      "instruction": "115 BPM · 8 melody notes · 7.3 beats.\nUse both hands. R is the main melody hand; L assists. Either hand is accepted.\nSong tempo: 115 BPM. Practice starts at 75 BPM. Use Tempo −/+ or the Metronome handle to adjust speed.",
       "feedback": "Preview the whole arrangement, then try a short melody phrase. Backing is prepared in the Loopers.",
       "progress": "rishte naate.mid · 1/18",
       "navigation": [
@@ -38,7 +38,7 @@
         {
           "id": "tempo-up",
           "label": "Tempo +5",
-          "disabled": false
+          "disabled": true
         },
         {
           "id": "rishte-stop",
@@ -60,37 +60,37 @@
       {
         "role": "lead-R-71",
         "chain": [
-          "honk-0a15cbbe-e466-4d72-97eb-012629498547"
+          "honk-6f11780a-8715-4d65-bbb2-a2c9ebc70da7"
         ]
       },
       {
         "role": "lead-L-73",
         "chain": [
-          "honk-fda7a3f3-3ce3-4ca7-be2f-3cd3e68abdd4"
+          "honk-1482f353-9204-46fd-8bf2-e9ed1a33aa7c"
         ]
       },
       {
         "role": "lead-R-70",
         "chain": [
-          "honk-ce929550-6b5f-4d82-abb5-e8520889c20d"
+          "honk-c0ddd966-7b5d-4842-bd0b-dd651005898e"
         ]
       },
       {
         "role": "lead-L-71",
         "chain": [
-          "honk-8676fc7f-334b-4752-b099-26f81b1750c5"
+          "honk-6db9a7bd-755d-49de-822a-e9babe6821ae"
         ]
       },
       {
         "role": "lead-R-73",
         "chain": [
-          "honk-8769d877-3600-407f-b108-9c905bb46a44"
+          "honk-49a5c6ac-ae52-4c59-8de5-7ba0dc00f030"
         ]
       },
       {
         "role": "lead-L-78",
         "chain": [
-          "honk-267cfcca-d1e7-4760-a4c2-6d63e960e816"
+          "honk-d587367a-e0a0-4292-acc0-b73b0d023f01"
         ]
       },
       {
@@ -160,151 +160,151 @@
       {
         "role": "backing-40",
         "chain": [
-          "honk-2a61110a-cb0b-4af0-82bd-e39ec64d9385"
+          "honk-39b8ffb8-1acc-4c45-a62a-ed011783cf05"
         ]
       },
       {
         "role": "backing-42",
         "chain": [
-          "honk-3673a403-0098-404d-8bcc-8abb51d1458a"
+          "honk-82b4030e-d283-44f3-847f-33f095e1e136"
         ]
       },
       {
         "role": "backing-44",
         "chain": [
-          "honk-db167135-9286-4d05-b822-83e6bf62b171"
+          "honk-5e2b91e9-5b52-4007-812a-f229044fc3ec"
         ]
       },
       {
         "role": "backing-47",
         "chain": [
-          "honk-9dfaddda-8835-4ab8-85f5-ffb48cde917c"
+          "honk-74e00ac5-dc7b-466a-a3b8-aceed17f76df"
         ]
       },
       {
         "role": "backing-49",
         "chain": [
-          "honk-9cd48386-f4c3-495f-b5e4-2c02e5137d0b"
+          "honk-cc5b21ce-d0a1-4e43-9020-b43b22351ee4"
         ]
       },
       {
         "role": "backing-51",
         "chain": [
-          "honk-3200b280-49fa-4570-beda-282c5c64b0a7"
+          "honk-f5423775-ce70-4c6c-8137-d86cebd3503b"
         ]
       },
       {
         "role": "backing-52",
         "chain": [
-          "honk-f1530cc4-ba1a-4d2b-99cc-9ed560594c19"
+          "honk-c35d1a33-5b0a-4bbb-84e3-595abc54af8a"
         ]
       },
       {
         "role": "backing-54",
         "chain": [
-          "honk-f813aa37-4913-435c-a508-21fd2432884c"
+          "honk-e4f6c4cb-cad6-422b-a6ca-461ba1fd1801"
         ]
       },
       {
         "role": "backing-56",
         "chain": [
-          "honk-6437ea99-d910-4135-8ab0-ca67950bb147"
+          "honk-7bc46016-fb52-4fb6-901f-4ed2e88e1576"
         ]
       },
       {
         "role": "backing-58",
         "chain": [
-          "honk-21326b0e-a05d-4967-bdac-e9e88fa9ac29"
+          "honk-104ecc81-faac-4324-8422-6c8ee495edc1"
         ]
       },
       {
         "role": "backing-59",
         "chain": [
-          "honk-c6e187ed-6406-4aaa-9992-0733c3fd7320"
+          "honk-2ae4c284-98f5-4998-8428-972cce76c80f"
         ]
       },
       {
         "role": "backing-61",
         "chain": [
-          "honk-e6a3a345-cb3d-4bef-82ae-93c52cb6947e"
+          "honk-f4653d37-e674-4cf3-8d63-6eab25521b7a"
         ]
       },
       {
         "role": "backing-63",
         "chain": [
-          "honk-14669696-636e-4102-ae76-4fe044e790b2"
+          "honk-5a38d5ae-ecc7-47b1-b1ce-31d6cc4165b0"
         ]
       },
       {
         "role": "backing-64",
         "chain": [
-          "honk-19a7a4b5-1005-4355-9129-d80df0ddf0da"
+          "honk-2c326af6-c6e8-4e6f-bc5b-bbfb70feeb48"
         ]
       },
       {
         "role": "backing-66",
         "chain": [
-          "honk-22130259-aa93-4e49-834b-105557ed0517"
+          "honk-4bf979d9-6749-4425-80b6-b6556fe9c22d"
         ]
       },
       {
         "role": "backing-68",
         "chain": [
-          "honk-bb16b233-228d-4c22-a895-6f11d31cff64"
+          "honk-a66f0fb4-c3ad-4825-878e-2060eadca910"
         ]
       },
       {
         "role": "backing-70",
         "chain": [
-          "honk-12a0d533-eec8-436b-87f1-1f5e76cd09de"
+          "honk-1ff28662-b103-44eb-b65d-8fcd20662b64"
         ]
       },
       {
         "role": "backing-71",
         "chain": [
-          "honk-4d9d9a15-92f3-4dbd-9966-b5b82a300326"
+          "honk-4f79faaa-9519-4dbb-8443-49c7b722f5df"
         ]
       },
       {
         "role": "backing-73",
         "chain": [
-          "honk-a134b18b-6cd2-42ed-b005-e486f02a6cd0"
+          "honk-1ec77db9-7887-48b6-8d02-b6625049c02c"
         ]
       },
       {
         "role": "backing-75",
         "chain": [
-          "honk-f523738c-57b6-4a4b-a971-18ed9ee2d229"
+          "honk-9d5b5140-6448-447b-9286-0bb7d8e1ce53"
         ]
       },
       {
         "role": "backing-76",
         "chain": [
-          "honk-beeb8c04-eb8f-4c26-9dac-f13f64001f64"
+          "honk-4238aab7-482a-4e67-a2c7-d337a1bbc11d"
         ]
       },
       {
         "role": "backing-78",
         "chain": [
-          "honk-27c2b3bd-c891-4995-be8a-4527bae8b7d5"
+          "honk-e822afef-4f41-4f29-a882-8ff07da9baea"
         ]
       },
       {
         "role": "backing-80",
         "chain": [
-          "honk-bee7dfe0-f690-4716-829f-ca180f54b861"
+          "honk-a229bef5-0cc9-4fc5-a2ab-7b719d5b4840"
         ]
       },
       {
         "role": "backing-82",
         "chain": [
-          "honk-ac065910-b25d-4910-94da-e608f56ca22d"
+          "honk-8c1163e4-1b2e-45e3-9789-455934953206"
         ]
       },
       {
         "role": "backing-83",
         "chain": [
-          "honk-a9f05b40-14d7-4df4-89cc-603fbcfd6c30"
+          "honk-5166c782-fae3-48c7-a0e7-7159e59c4136"
         ]
       }
     ]
@@ -325,6 +325,10 @@
       {
         "to": "block-2",
         "beat": 16
+      },
+      {
+        "to": "block-3",
+        "beat": 18
       }
     ],
     "takesRestored": true,
@@ -335,7 +339,7 @@
   "parity": {
     "normalTrigger": {
       "role": "lead-R-71",
-      "voiceId": "tutorial-0:instrument-honk-0a15cbbe-e466-4d72-97eb-012629498547",
+      "voiceId": "tutorial-0:instrument-honk-6f11780a-8715-4d65-bbb2-a2c9ebc70da7",
       "values": {
         "squeeze": 0.9914585331989946,
         "bend": 0,
@@ -350,7 +354,7 @@
     },
     "ordinaryLooper": {
       "role": "backing-71",
-      "voiceId": "looper-looper-7db9f14d-b150-45f2-a51e-5d567fb513ca:track-1:instrument-honk-4d9d9a15-92f3-4dbd-9966-b5b82a300326:action:scheduled-6",
+      "voiceId": "looper-looper-fbdf3420-719b-45b4-8954-bb022235a2f4:track-1:instrument-honk-4f79faaa-9519-4dbb-8443-49c7b722f5df:action:scheduled-9",
       "values": {
         "squeeze": 1,
         "bend": 0,
@@ -361,23 +365,24 @@
       },
       "options": {
         "gain": 0.282945,
-        "scheduledTime": 19.29459387755698
+        "scheduledTime": 19.317913832199547
       }
     },
     "defaultLooperVolume": 0.36275
   },
   "full": {
+    "bpm": 115,
     "melodyNotes": 175,
     "backingNotes": 121,
     "maxMelodyHands": 2,
     "handLabels": 22,
     "harmonicBlocks": 13,
     "maximumConcurrentLoopers": 2,
-    "maximumClockDriftBeats": 0,
+    "maximumClockDriftBeats": 3.552713678800501e-15,
     "backingOnsetErrorMs": 2.8421709430404007e-11,
-    "melodyOnsetErrorMs": 19.533333351224428,
-    "peakAmplitude": 0.956654965877533,
-    "maximumRms": 0.6501791644985928,
+    "melodyOnsetErrorMs": 19.339130458618456,
+    "peakAmplitude": 0.953347384929657,
+    "maximumRms": 0.6057091078887213,
     "durationBeats": 141.921875,
     "soundParity": true,
     "normalRelease": true,

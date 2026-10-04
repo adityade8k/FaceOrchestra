@@ -9,7 +9,8 @@ the learner. **Previous**, **Next phrase**, **Tempo −5 / +5**, **Stop**, and
 The Metronome handle also changes tempo. Record Songs loads the same version-3
 arrangement through the existing XR/receiver workflow.
 
-Initial tempo is **75 BPM**, adjustable from **30 to 115 BPM**. There are
+The composition and initial full preview run at **115 BPM**. Learner practice
+starts at **75 BPM**, with controls adjustable from **30 to 115 BPM**. There are
 **17 short phrases**, containing 8–13 notes over 5.75–8.79 beats, followed by
 **Complete melody**. Phrase 3 starts at at most 50 BPM and phrase 9 at at most
 40 BPM; learners can adjust tempo during an attempt. Slower settings persist
@@ -56,8 +57,9 @@ backing**, exactly once each. Each event retains its source ID, pitch,
 velocity, attack tick and key-release tick. Nothing is deleted, combined,
 quantized or transposed; no learner event is doubled by a Looper. All pitches
 fit the existing MIDI 36–84 Honk tuning range. Source timing, rests and
-simultaneity remain on the original beat grid. At 75 BPM the full score spans
-**141.921875 beats / 113.5375 seconds**, plus a 3.2-second count-in. This includes
+simultaneity remain on the original beat grid. At 115 BPM the full score spans
+**141.921875 beats / 74.0462 seconds**, plus a 2.087-second count-in. At the
+75 BPM practice tempo it lasts 113.5375 seconds, plus a 3.2-second count-in. This includes
 the source's ending interval; the last padded Looper window stops at the exact
 score end instead of repeating.
 
@@ -104,7 +106,7 @@ phrases exceed 500 ms at their recommended tempos.
 
 Some legato release gaps remain tight even at those tempos. A held Honk stays
 captured while the learner aims toward the next target, but this requires
-coordination. The full preview/complete performance at 75 BPM retains the
+coordination. The full preview at the original 115 BPM retains the
 faster passages; reduce tempo if needed. `human-metrics.json` lists every
 flagged transition and travel measurement. These are geometry/timing measures,
 not a claim that comfort has been verified on a physical headset.
@@ -157,13 +159,13 @@ renderers); software rendering was also too slow. The guard remains intact.
 The application keeps its normal renderer settings. Current-phrase target
 visibility reduces visual clutter and drawing work during the full preview.
 
-The [full browser comparison](audits/rishte-human-browser.json) passed with
+The [full browser comparison](audits/rishte-human-browser.json) at 115 BPM passed with
 **175 learner attacks and 121 backing attacks**, the exact melody pitch order,
 two overlapping controller holds, 22 hand labels, all 13 backing windows and
 12 transitions. At most two current-window Loopers played together. Measured
-clock drift was zero; maximum backing onset error was below 0.000001 ms and
-maximum controller-preview onset delay was **19.54 ms**. The sampled mix peak
-was **0.95666**, below full scale. Both hand copies matched normal Honk sound
+clock drift was below 0.000001 beats; maximum backing onset error was below 0.000001 ms and
+maximum controller-preview onset delay was **19.34 ms**. The sampled mix peak
+was **0.95335**, below full scale. Both hand copies matched normal Honk sound
 controls and gain; backing matched the ordinary Looper gain and controller
 release path. The ending left no owned voices, restored the takes and earned
 no preview credit. All eight playback/navigation controls were exercised.

@@ -219,6 +219,7 @@ The opening **Tutorials** chooser includes **Rag Jog Study** (VIRAG 2) and **Kuc
 **rishte naate.mid** is also available in Tutorials and Record Songs. Its full
 preview plays the 175 screenshot-selected melody notes with suggested L/R
 hands and all 121 other MIDI notes through actual Loopers. Normal Honk sound
-is preserved. Practice starts at 75 BPM across 17 short phrases, with slower
+is preserved. The composition opens at its original **115 BPM**; learner
+practice starts at 75 BPM across 17 short phrases, with slower
 starts for two difficult phrases and an adjustable 30–115 BPM range. See the [arrangement, controls and verification](docs/rishte-naate.md).
 The original MIDI performance remains preserved on `ver-13`.
