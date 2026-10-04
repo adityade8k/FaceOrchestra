@@ -1,160 +1,121 @@
-import { readFile, writeFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
-
-const root = new URL("../../src/compositions/rishte-naate/", import.meta.url);
-const original = JSON.parse(await readFile(new URL("composition.json", root)));
-const source = JSON.parse(await readFile(new URL(original.normalizedSource.file, root)));
-const notes = source.sequences[0].notes;
-const byId = new Map(notes.map(n => [Number(n.id.slice(4)), n]));
-const oldRoles = new Map(original.score.events.map(n => [n.id, n.part]));
-const id = n => `t0-e${n}`;
-
-// Reviewed musical reduction, not alternate-note deletion or a register split.
-// Each row follows a bass/harmony change. Melody cells are:
-// [source attack, authored beat, hold, repeated attacks absorbed into that hold].
-// Recurring B-C#-D# / A#-B-C# figures recur with the same simplified rhythm;
-// high descending runs, chord-tone arpeggios and quick neighbours stay in backing.
-const plan = [
-  [5, 8, "Opening rise and return", [[6,0,.7],[11,1,.65],[14,2,1.2,[16]],[19,3.5,.6],[22,4.5,1.1],[25,6,.65],[27,7,.65]]],
-  [29,8,"Answer and anticipatory E", [[32,0,.7],[40,1,.65],[44,2,1.2,[47]],[51,4,2.2],[53,7,.65]]],
-  [54,8,"Repeated E and descending answer", [[64,1,1.2,[68]],[71,3,1.2,[73]],[75,5,.65],[79,6,.65],[81,7,.65]]],
-  [83,8,"Cadence with piano run", [[83,0,.7],[89,1,1.1],[95,2.5,.65],[96,3.5,.65],[99,4.5,.65]]],
-  [115,8,"Opening figure returns", [[115,0,.7],[123,1,.65],[126,2,1.2,[131]],[132,3.5,.6],[135,4.5,1.1],[137,6,.65],[139,7,.65]]],
-  [141,8,"Answer returns", [[142,0,.7],[152,1,.65],[156,2,1.2,[159]],[163,4,2.2],[165,7,.65]]],
-  [166,8,"Repeated E returns", [[176,1,1.2,[180]],[183,3,1.2,[185]],[187,5,.65],[191,6,.65],[193,7,.65]]],
-  [195,8,"Cadence and connecting figure", [[196,0,.7],[206,1,1.1],[211,2.5,.65],[212,3.5,.65],[214,4.5,.65]]],
-  [227,8,"Repeated B, then C#", [[227,0,1.2,[235]],[237,2,1.2,[241]],[243,4,1.2,[245]],[247,6,.65],[249,7,.65]]],
-  [251,8,"A# answer", [[252,0,1.2,[262]],[267,2.5,.9],[271,4,2.2],[273,7,.65]]],
-  [277,8,"Rising G#-C-D#-G#", [[278,0,1],[286,2,1.2,[288]],[291,4,1.2,[294]],[299,6,1.2,[305]]]],
-  [311,8,"E and F# response", [[312,0,2.2,[322,327]],[329,3,.65],[333,4,2.2],[335,7,.65]]],
-  [341,8,"C# phrase with upper arrival", [[342,0,1.2,[350]],[354,2,.65],[357,3,.65],[361,4,1.2,[363]],[365,6,.65],[367,7,.65]]],
-  [371,8,"F# turn and descent", [[372,0,1.2,[379]],[385,2.5,.9,[389]],[391,4,1.2],[395,6,.65],[397,7,.65]]],
-  [403,4,"D# repeated figure", [[404,0,1.2,[411]],[417,2,.65],[421,3,.65]]],
-  [427,4,"C# to D# and E", [[427,0,1.4,[436]],[443,2,.65],[445,3,.65]]],
-  [449,8,"Long D# and B landing", [[449,0,2.2],[463,3,.65],[467,4,1.4],[469,7,.65]]],
-  [475,4,"D# and E answer", [[476,0,1.2,[484]],[489,2,.65],[495,3,.65]]],
-  [501,4,"C# return", [[502,0,1.4,[510]],[517,2.5,.5],[519,3.25,.5]]],
-  [523,8,"B landing and piano fill", [[524,0,1.5],[547,7,.65]]],
-  [553,4,"Repeated D# returns", [[554,0,1.2,[562]],[567,2,.65],[571,3,.65]]],
-  [577,4,"C# response returns", [[578,0,1.4,[586]],[593,2,.65],[595,3,.65]]],
-  [599,8,"Long D# and B return", [[601,0,2.2],[613,3,.65],[617,4,1.4],[619,7,.65]]],
-  [625,4,"D# and E return", [[627,0,1.2,[634]],[639,2,.65],[644,3,.65]]],
-  [651,4,"Final C# response", [[653,0,1.4,[660]],[665,2.5,.5],[669,3.25,.5]]],
-  [675,8,"B ending with piano arpeggio", [[676,0,2]]],
-];
-const consumed = new Map(), events = [], blocks = [];
-let cursor = 0;
-for (const [i, [sourceStart, beats, title, melody]] of plan.entries()) {
-  const startSeconds = byId.get(sourceStart).startSeconds;
-  const endSeconds = i + 1 < plan.length ? byId.get(plan[i+1][0]).startSeconds : source.sequences[0].durationSeconds;
-  const block = { id: `block-${i+1}`, title, beat: cursor, beats, sourceStartSeconds: startSeconds, sourceEndSeconds: endSeconds, patterns: [] };
-  for (const [sourceId, beat, hold, combined = []] of melody) {
-    const n = byId.get(sourceId);
-    const event = { id: `live-${sourceId}`, role: `lead-${n.midi}`, midi: n.midi, beat: cursor + beat, beats: hold,
-      sourceIds: [sourceId, ...combined].map(id), decision: combined.length ? "combine repeated attacks into a singable hold" : "retain melodic anchor" };
-    events.push(event);
-    for (const value of [sourceId,...combined]) {
-      if (consumed.has(id(value))) throw new Error(`Repeated melody assignment ${value}`);
-      consumed.set(id(value), { disposition: value===sourceId ? "retained" : "combined", target: event.id, reason: event.decision });
-    }
+import { readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { splitPatterns } from '../../src/tutorial/rishte/patterns.js';
+const root=new URL('../../src/compositions/rishte-naate/',import.meta.url);
+const read=async file=>JSON.parse(await readFile(new URL(file,root)));
+const original=await read('composition.json'),source=await read(original.normalizedSource.file),sequence=source.sequences[0];
+const match=await read('screenshot-match.json'),selected=new Set(match.matches.map(m=>m.sourceId));
+const notes=sequence.notes, byId=new Map(notes.map(n=>[n.id,n]));
+const raw=notes.filter(n=>selected.has(n.id)).map(n=>({id:n.id,sourceIds:[n.id],midi:n.midi,
+  startTick:n.startTick,releaseTick:n.releaseTick,velocity:n.velocity,beat:n.startTick/960,beats:(n.releaseTick-n.startTick)/960}));
+if(selected.size!==175||raw.length!==175)throw new Error('Screenshot assignments changed');
+const pitches=[...new Set(raw.map(n=>n.midi))].sort((a,b)=>raw.filter(n=>n.midi===b).length-raw.filter(n=>n.midi===a).length||a-b);
+const slots=[[.08,.43],[.24,.43],[.08,.19],[.24,.19],[.4,.43],[.4,.19],[.08,-.05],[.24,-.05],[.4,-.05],[.56,.43],[.56,.19],[.56,-.05],[.24,.67]];
+const slotMaps={R:new Map(pitches.map((p,i)=>[p,i])),L:new Map(pitches.map((p,i)=>[p,i]))};
+const position=(hand,midi)=>{const [x,y]=slots[slotMaps[hand].get(midi)];return [hand==='R'?x:-x,y,.2];};
+const distance=(hand,a,b)=>Math.hypot(...position(hand,a).map((v,j)=>v-position(hand,b)[j]));
+// Dynamic programming over the last note played by each hand. Occupied hands
+// cannot be reused. Costs include attack/release time and actual target travel;
+// a small left-hand cost retains right-hand preference when either is easy.
+function assignHands(){
+let states=new Map([['-1,-1',{last:{R:-1,L:-1},cost:0,hands:[]}]]);
+for(const [i,n] of raw.entries()){
+ const next=new Map();
+ for(const state of states.values())for(const hand of ['R','L']){
+  const previous=raw[state.last[hand]];
+  if(previous&&previous.releaseTick>n.startTick)continue;
+  let cost=hand==='L'?.24:0;
+  if(previous){
+   const attack=(n.beat-previous.beat)*.8,gap=(n.beat-previous.beat-previous.beats)*.8,travel=distance(hand,previous.midi,n.midi);
+   cost+=Math.max(0,.5-attack)**2*100+Math.max(0,.08+travel*.4-gap)**2*30+travel*travel/Math.max(attack,.1);
   }
-  blocks.push(block);
-  cursor += beats;
+  const last={...state.last,[hand]:i},key=`${last.R},${last.L}`,value={last,cost:state.cost+cost,hands:[...state.hands,hand]};
+  if(!next.has(key)||value.cost<next.get(key).cost)next.set(key,value);
+ }
+ if(!next.size)throw new Error(`More than two simultaneous learner holds at ${n.id}`);
+ states=next;
 }
-
-for (const block of blocks) {
-  const relevant = notes.filter(n => n.startSeconds >= block.sourceStartSeconds && n.startSeconds < block.sourceEndSeconds && !consumed.has(n.id));
-  for (const lane of ["foundation", "figures"]) {
-    const selected = relevant.filter(n => (oldRoles.get(n.id) === "melody" ? "figures" : "foundation") === lane);
-    const pattern = { lane, beats: block.beats, events: selected.map(n=>{
-      const scale = block.beats / (block.sourceEndSeconds - block.sourceStartSeconds);
-      const beat = Math.min(block.beats-.25, Math.max(0, Math.round((n.startSeconds-block.sourceStartSeconds)*scale*4)/4));
-      const duration = Math.min(2.2, Math.max(.15, (n.releaseSeconds-n.startSeconds)*scale), block.beats-beat-.1);
-      return { id: `backing-${n.id}`, sourceIds: [n.id], role: `backing-${n.midi}`, midi: n.midi, beat, beats: duration };
-    }) };
-    // Simultaneous equal-pitch attacks share a trigger; overlaps close before
-    // the next attack. No pedal data is translated into an artificial hold.
-    for (let i=0;i<pattern.events.length;i++) {
-      const e=pattern.events[i];
-      const next=pattern.events.slice(i+1).find(n=>n.midi===e.midi);
-      if(next && next.beat===e.beat) {
-        next.sourceIds.unshift(...e.sourceIds); e.merged=true;
-      } else if(next) e.beats=Math.min(e.beats, next.beat-e.beat-.05);
-    }
-    pattern.events=pattern.events.filter(e=>!e.merged);
-    if(new Set(pattern.events.map(e=>e.role)).size>7) throw new Error(`${block.id}/${lane} exceeds seven Honk sockets`);
-    for(const e of pattern.events) for(const sourceId of e.sourceIds) consumed.set(sourceId, {
-      disposition: "transferred", target: `${block.id}/${lane}/${e.id}`,
-      reason: lane==="foundation" ? "bass or inner chord/arpeggio voice" : "piano run, neighbour, connecting figure or closing arpeggio; not a required sung attack",
-    });
-    block.patterns.push(pattern);
-  }
-  // Keep both transport lanes populated without inventing a sound: when there
-  // is no piano fill, the upper-support Looper takes the last inner-voice note.
-  // This permits the existing two port groups to hand off on every boundary.
-  if (!block.patterns[1].events.length) {
-    const event = block.patterns[0].events.pop();
-    block.patterns[1].events.push(event);
-    for (const sourceId of event.sourceIds) consumed.get(sourceId).target = `${block.id}/figures/${event.id}`;
-  }
+return [...states.values()].sort((a,b)=>a.cost-b.cost)[0];
 }
-if(consumed.size!==notes.length) throw new Error(`Unassigned source notes: ${notes.filter(n=>!consumed.has(n.id)).map(n=>n.id)}`);
-const pitches=[...new Set(events.map(e=>e.midi))].sort((a,b)=>a-b);
-const recipes=pitches.map((midi,i)=>{
-  const angle=(i-(pitches.length-1)/2)*.16;
-  return { kind:"honk", role:`lead-${midi}`, midi, position:[.72*Math.sin(angle), .45+.025*Math.cos(angle), .12-.72*(1-Math.cos(angle))], scale:1 };
-});
-const backingPitches=[...new Set(blocks.flatMap(b=>b.patterns.flatMap(p=>p.events.map(e=>e.midi))))].sort((a,b)=>a-b);
-backingPitches.forEach((midi,i)=>recipes.push({kind:"honk",role:`backing-${midi}`,midi,
-  position:[((i%11)-5)*.15,-.15-Math.floor(i/11)*.27,-.65],scale:.85}));
-for(const [i,lane] of ["foundation","figures"].entries()) for(let bank=0;bank<2;bank++)
-  recipes.push({kind:"looper",role:`${lane}-${bank}`,position:[-.65+i*.85+bank*.3,-.72,.15],scale:.55});
-recipes.push({kind:"metronome",role:"metronome",position:[-1.05,-.35,.05],scale:.65});
-const lessons=Array.from({length:cursor/8},(_,i)=>({
-  id:`phrase-${i+1}`,title:`Phrase ${i+1}`,goal:"Play the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.",
-  practice:true,demonstration:true,skip:true,completePerformance:false,startBeat:i*8,endBeat:(i+1)*8,
-  eventIds:events.filter(e=>e.beat>=i*8&&e.beat<(i+1)*8).map(e=>e.id),
-  assessment:{pitchCents:25,onsetBeats:.22,durationBeats:.28},
-}));
-lessons.push({...lessons[0],id:"performance",title:"Complete melody",startBeat:0,endBeat:cursor,eventIds:events.map(e=>e.id),completePerformance:true});
-const definition={schemaVersion:1,id:"rishte-naate",title:"rishte naate.mid",contentVersion:2,bpm:75,liveRole:"melody",
-  playback:"honk-looper-human-v1",source:source.source,normalizedSource:original.normalizedSource,
-  score:{events,durationBeats:cursor,sourceTempo:source.sequences[0].tempo,sourceMeter:source.sequences[0].meter},
-  arrangement:{id:"human-melody",title:"Human melody with Looper accompaniment",version:2,recipes,blocks,
-    provenance:`${source.source.sha256}; authored interpretation of the sung line within the mixed piano track; no lyrics supplied`,
-    decisions:[
-      "Recurring contour and cadential arrivals determine the learner part. Upper piano runs, short neighbours, arpeggios and inner voices are accompaniment.",
-      "An authored 4/4 teaching grid follows harmonic changes: two-bar patterns, with one-bar changes paired into two-bar lessons. This deliberately regularizes the performed timing; the MIDI header alone does not label these phrases.",
-      "Repeated vocal anchors are combined deliberately; short passing figures stay in the Loopers. Every source note has a disposition and source IDs.",
-      "No octave transposition. All Honks retain their spawned sound and controls; no automatic vowels, nose levels, MIDI gain envelopes or pedal-length gates.",
-      "Backing uses ordinary trigger gates from physical key holds, bounded by pattern ends. MIDI velocity remains provenance rather than overriding normal trigger strength.",
-      "75 BPM initial tempo; the minimum .75-beat live attack interval is 600 ms. Above 90 BPM those optional advanced-tempo transitions become shorter than 500 ms.",
-    ],sourceDecisions:notes.map(n=>({sourceId:n.id,...consumed.get(n.id)}))},lessons,
-  recording:{countIn:4,tailMs:500,end:"manual",synchronization:"captured-noise-once"},
-  requirements:{maxHonks:pitches.length+backingPitches.length,maxLoopers:4,maxLiveVoices:1},
-};
-definition.contentHash=createHash("sha256").update(JSON.stringify(definition)).digest("hex");
-await writeFile(new URL("human-composition.json",root),JSON.stringify(definition,null,2)+"\n");
-const positions=new Map(recipes.map(r=>[r.role,r.position]));
-const old=original.score.events.filter(e=>e.part==="melody");
-const oldPositions=new Map(original.arrangement.recipes.map(r=>[r.role,r.position]));
-const oldMoves=old.slice(1).map((e,i)=>({from:old[i].id,to:e.id,milliseconds:(e.startSeconds-old[i].startSeconds)*1000,
-  meters:Math.hypot(...oldPositions.get(e.role).map((v,j)=>v-oldPositions.get(old[i].role)[j]))}));
-const transitions=events.slice(1).map((e,i)=>({gap:e.beat-events[i].beat,releaseGap:e.beat-events[i].beat-events[i].beats,
-  distance:Math.hypot(...positions.get(e.role).map((v,j)=>v-positions.get(events[i].role)[j]))}));
-const metrics={baseline:{commit:"fee629663085e8f9c4b245c35963c0e73c4070af",liveNotes:old.length,
-  attacksBelow300ms:old.slice(1).filter((e,i)=>e.startSeconds-old[i].startSeconds<.3).length,
-  overlappingHolds:old.slice(1).filter((e,i)=>e.startSeconds<old[i].releaseSeconds).length,
-  targets:new Set(old.map(e=>e.role)).size,
-  widthMeters:Math.max(...old.map(e=>oldPositions.get(e.role)[0]))-Math.min(...old.map(e=>oldPositions.get(e.role)[0])),
-  fastestTransition:oldMoves.reduce((a,b)=>a.milliseconds<b.milliseconds?a:b),maximumTravelMeters:Math.max(...oldMoves.map(e=>e.meters)),
-  firstPhraseNotes:original.lessons[0].eventIds.length,firstPhraseSeconds:original.lessons[0].endSeconds},
-  revised:{liveNotes:events.length,targets:pitches.length,widthMeters:Math.max(...recipes.slice(0,pitches.length).map(r=>r.position[0]))-Math.min(...recipes.slice(0,pitches.length).map(r=>r.position[0])),
-    minimumAttackMsAt75:Math.min(...transitions.map(t=>t.gap))*800,minimumReleaseGapMsAt75:Math.min(...transitions.map(t=>t.releaseGap))*800,
-    overlappingHolds:transitions.filter(t=>t.releaseGap<0).length,maximumTravelMeters:Math.max(...transitions.map(t=>t.distance)),
-    firstPhraseNotes:lessons[0].eventIds.length,phraseSecondsAt75:6.4,phraseCount:lessons.length-1,
-    maximumPhraseNotes:Math.max(...lessons.slice(0,-1).map(l=>l.eventIds.length)),maximumPhraseTargets:Math.max(...lessons.slice(0,-1).map(l=>new Set(events.filter(e=>l.eventIds.includes(e.id)).map(e=>e.midi)).size)),
-    durationBeats:cursor,durationSecondsAt75:cursor*.8,
-    sourceDispositions:Object.fromEntries(["retained","combined","transferred"].map(k=>[k,[...consumed.values()].filter(d=>d.disposition===k).length]))}};
-await writeFile(new URL("human-metrics.json",root),JSON.stringify(metrics,null,2)+"\n");
+let assignment=assignHands();
+for(let iteration=0;iteration<4;iteration++){
+ for(const hand of ['R','L']){
+  const es=raw.filter((e,i)=>assignment.hands[i]===hand);
+  const cost=()=>es.reduce((sum,e,i)=>{
+    const pos=position(hand,e.midi);sum+=Math.abs(pos[0])*.025;
+    if(!i)return sum;
+    const prev=es[i-1],gap=(e.beat-prev.beat-prev.beats)*.8;
+    return sum+distance(hand,prev.midi,e.midi)**2/Math.max(.02,gap);
+  },0);
+  for(let sweep=0;sweep<40;sweep++){
+   let best=cost(),pair=null;
+   for(let i=0;i<pitches.length;i++)for(let j=i+1;j<pitches.length;j++){
+    const a=pitches[i],b=pitches[j],sa=slotMaps[hand].get(a),sb=slotMaps[hand].get(b);
+    slotMaps[hand].set(a,sb);slotMaps[hand].set(b,sa);const value=cost();
+    slotMaps[hand].set(a,sa);slotMaps[hand].set(b,sb);
+    if(value<best-1e-8){best=value;pair=[a,b,sa,sb];}
+   }
+   if(!pair)break;
+   const [a,b,sa,sb]=pair;slotMaps[hand].set(a,sb);slotMaps[hand].set(b,sa);
+  }
+ }
+ assignment=assignHands();
+}
+const events=raw.map((n,i)=>({...n,hand:assignment.hands[i],role:`lead-${assignment.hands[i]}-${n.midi}`}));
+const backing=notes.filter(n=>!selected.has(n.id)).map(n=>({id:n.id,sourceIds:[n.id],role:`backing-${n.midi}`,midi:n.midi,
+ startTick:n.startTick,releaseTick:n.releaseTick,velocity:n.velocity,beat:n.startTick/960,beats:(n.releaseTick-n.startTick)/960}));
+const durationBeats=Math.max(...sequence.events.map(e=>e.tick))/960;
+const blocks=splitPatterns(backing,0,durationBeats);
+const recipes=[...new Set(events.map(e=>e.role))].map(role=>{const e=events.find(e=>e.role===role);return {kind:'honk',role,midi:e.midi,hand:e.hand,position:position(e.hand,e.midi),scale:.85};});
+const backingPitches=[...new Set(backing.map(n=>n.midi))].sort((a,b)=>a-b);
+backingPitches.forEach((midi,i)=>recipes.push({kind:'honk',role:`backing-${midi}`,midi,position:[((i%10)-4.5)*.16,-.52-Math.floor(i/10)*.24,-.7],scale:.8}));
+for(const [i,lane]of ['foundation','figures'].entries())for(let bank=0;bank<2;bank++)recipes.push({kind:'looper',role:`${lane}-${bank}`,position:[-.6+i*.8+bank*.3,-.75,.1],scale:.55});
+recipes.push({kind:'metronome',role:'metronome',position:[-.85,-.6,.05],scale:.65});
+// Short excerpts end between held-key clusters, never inside a learner hold.
+const lessons=[];let start=0;
+while(start<events.length){
+ let maximumEnd=events[start].beat+events[start].beats,candidates=[];
+ for(let i=start+1;i<events.length;i++){
+  if(events[i].beat>=maximumEnd-1e-9&&events[i].beat-events[start].beat>=5.5)candidates.push(i);
+  if(events[i].beat-events[start].beat>11&&candidates.length)break;
+  maximumEnd=Math.max(maximumEnd,events[i].beat+events[i].beats);
+ }
+ const next=candidates.length?candidates.sort((a,b)=>Math.abs(events[a].beat-events[start].beat-8)-Math.abs(events[b].beat-events[start].beat-8))[0]:events.length;
+ const phrase=events.slice(start,next),startBeat=events[start].beat;
+ const endBeat=next<events.length?events[next].beat:Math.min(durationBeats,Math.max(...phrase.map(e=>e.beat+e.beats))+.5);
+ const moves=['R','L'].flatMap(hand=>{const es=phrase.filter(e=>e.hand===hand);return es.slice(1).map((e,i)=>({hand,from:es[i].id,to:e.id,attackBeats:e.beat-es[i].beat,
+  releaseBeats:e.beat-es[i].beat-es[i].beats,meters:distance(hand,es[i].midi,e.midi)}));});
+ const minAttack=Math.min(...moves.map(m=>m.attackBeats));
+ const recommendedBpm=Math.max(30,Math.min(75,Math.floor(minAttack*120/5)*5));
+ lessons.push({id:`phrase-${lessons.length+1}`,title:`Phrase ${lessons.length+1}`,goal:'Use both hands. R is the main melody hand; L assists. Either hand is accepted.',
+  practice:true,demonstration:true,skip:true,completePerformance:false,startBeat,endBeat,eventIds:phrase.map(e=>e.id),recommendedBpm,
+  assessment:{pitchCents:25,onsetBeats:.13,durationBeats:.2},moves});
+ start=next;
+}
+lessons.push({...lessons[0],id:'performance',title:'Complete melody',startBeat:0,endBeat:durationBeats,eventIds:events.map(e=>e.id),completePerformance:true,moves:[]});
+const definition={schemaVersion:1,id:'rishte-naate',title:'rishte naate.mid',contentVersion:3,bpm:75,liveRole:'melody',playback:'honk-looper-two-hand-v1',
+ source:source.source,normalizedSource:original.normalizedSource,score:{events,durationBeats,sourceTempo:sequence.tempo,sourceMeter:sequence.meter},
+ arrangement:{id:'screenshot-two-hand',title:'Screenshot melody with two-hand guidance',version:3,recipes,blocks,backing,
+  provenance:`${source.source.sha256}; 175 explicit screenshot-matched learner notes; every other source note is backing`,
+  screenshot:{file:'melody-reference.png',sha256:createHash('sha256').update(await readFile(new URL('melody-reference.png',root))).digest('hex'),matchesFile:'screenshot-match.json',
+    displayOctaveOffset:-1,firstVisibleSourceSeconds:byId.get(match.matches[0].sourceId).startSeconds,maxHorizontalErrorPixels:Math.max(...match.matches.map(m=>Math.abs(m.xResidual))),
+    uncertainties:['No ambiguous visible note matches. The cropped opening does not identify a learner part before 2.509 seconds; all unshown notes are backing. Short drawn rectangles have minimum display width; all durations come from MIDI key releases.']},
+  decisions:['No melody deletion, merging, quantization or transposition. All 296 original key attacks and releases remain on their MIDI beat grid.',
+   'Physical key duration controls normal Honk articulation; pedal extensions and MIDI velocities remain source provenance, not custom sound overrides.',
+   'Hand suggestions optimize occupancy, attack spacing and target travel with right-hand preference. Assessment accepts either hand and either same-pitch copy.',
+   'Backing windows end only where no backing key is held. Independent Metronome ports permit silent lanes without invented notes. Practice excerpts may begin with an already-held backing note and cut backing at the excerpt boundary.'],
+  sourceDecisions:notes.map(n=>({sourceId:n.id,part:selected.has(n.id)?'learner':'backing',target:selected.has(n.id)?events.find(e=>e.id===n.id).role:`backing-${n.midi}`,
+    reason:selected.has(n.id)?'Explicit screenshot rectangle matched by pitch and global time position':'Not present among the screenshot-selected notes'}))},lessons,
+ recording:{countIn:4,tailMs:500,end:'manual',synchronization:'captured-noise-once'},requirements:{maxHonks:recipes.filter(r=>r.kind==='honk').length,maxLoopers:4,maxLiveVoices:2}};
+definition.contentHash=createHash('sha256').update(JSON.stringify(definition)).digest('hex');
+const metrics={learnerNotes:events.length,backingNotes:backing.length,sourceNotes:notes.length,durationBeats,durationSecondsAt75:durationBeats*.8,
+ phraseCount:lessons.length-1,blocks:blocks.map(b=>({beat:b.beat,beats:b.beats,notes:b.patterns.map(p=>p.events.length)})),hands:{},duplicatePitches:pitches.filter(p=>events.some(e=>e.midi===p&&e.hand==='R')&&events.some(e=>e.midi===p&&e.hand==='L'))};
+for(const hand of ['R','L']){
+ const es=events.filter(e=>e.hand===hand),moves=es.slice(1).map((e,i)=>({from:es[i].id,to:e.id,attackMsAt75:(e.beat-es[i].beat)*800,
+ releaseMsAt75:(e.beat-es[i].beat-es[i].beats)*800,meters:distance(hand,es[i].midi,e.midi)}));
+ metrics.hands[hand]={notes:es.length,targets:new Set(es.map(e=>e.role)).size,minimumAttackMsAt75:Math.min(...moves.map(m=>m.attackMsAt75)),minimumReleaseMsAt75:Math.min(...moves.map(m=>m.releaseMsAt75)),maximumTravelMeters:Math.max(...moves.map(m=>m.meters)),
+ difficultTransitions:moves.filter(m=>m.attackMsAt75<500||m.releaseMsAt75<80+m.meters*400)};
+}
+metrics.phrases=lessons.slice(0,-1).map(l=>({id:l.id,notes:l.eventIds.length,beats:l.endBeat-l.startBeat,recommendedBpm:l.recommendedBpm}));
+for(const [file,data]of [['human-composition.json',definition],['human-metrics.json',metrics]])await writeFile(new URL(file,root),JSON.stringify(data,null,2)+'\n');
 console.log(JSON.stringify(metrics,null,2));

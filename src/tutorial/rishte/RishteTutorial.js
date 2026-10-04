@@ -53,7 +53,9 @@ export class RishteTutorial extends GenericTutorial {
       const preview = id === "rishte-preview";
       const startBeat = preview ? 0 : this.step.startBeat;
       const endBeat = preview ? this.definition.score.durationBeats : this.step.endBeat;
-      const now = performance.now(), bpm = this.a.get("metronome").bpm;
+      const metro = this.a.get("metronome");
+      if (!preview && !this.step.completePerformance) metro.setBpm(Math.min(metro.bpm, this.step.recommendedBpm));
+      const now = performance.now(), bpm = metro.bpm;
       this.anchor = now + 4 * 60000 / bpm; this.last = now; this.heard = [];
       this.ensemble.schedule({ countAt: now, beatZero: this.anchor, wallNow: now,
         audioNow: this.r.audioSystem.audioContextService.context.currentTime, bpm, startBeat, endBeat,
@@ -63,8 +65,8 @@ export class RishteTutorial extends GenericTutorial {
       this.a.setVirtualsActive(preview, "demonstration");
       this.phase = preview ? "demo" : "practice";
       if (preview) this.previewed = true;
-      this.feedback = preview ? "Full preview: the upper arc plays your melody; the lower Honks play through the Loopers. Preview earns no practice credit." :
-        "Your turn: play the upper arc. Only the Looper accompaniment plays automatically. Release before moving.";
+      this.feedback = preview ? "Full preview: both suggested hands play the selected melody; the lower Honks play through the Loopers. Preview earns no practice credit." :
+        "Your turn: play the labelled L / R targets with both hands. Only the Looper accompaniment plays automatically. Either hand is accepted.";
     } catch (error) { this.cancel(); this.feedback = error.message; }
   }
   update(now) {
@@ -79,14 +81,7 @@ export class RishteTutorial extends GenericTutorial {
       if (this.ensemble.anchor === null && beat < this.guide.endBeat) {
         this.cancel(); this.feedback = "Stopped by the Metronome. Start again for a fresh count-in."; return;
       }
-      if (this.phase === "demo") {
-        const event = this.guide.step.events.find(e => beat >= e.beat && beat < e.beat + e.beats);
-        if (event?.id !== this.note) {
-          this.a.squeeze(null, false, 0, now); this.r.updateHorn(now); this.a.observe(now);
-          this.note = event?.id;
-        }
-        if (event) this.a.squeeze(event.role, true, 0, now);
-      }
+      if (this.phase === "demo") this.ensemble.hands.play(this.guide.step.events, beat, now);
       if (beat < this.guide.endBeat) return;
       const learner = this.phase === "practice";
       this.a.observe(now);
@@ -107,13 +102,13 @@ export class RishteTutorial extends GenericTutorial {
     const count = this.step.eventIds.length;
     return {
       visible: true, title: this.phase === "demo" ? "Preview full arrangement" : this.step.title,
-      instruction: `${bpm} BPM · ${count} melody notes${this.step.completePerformance ? "" : " · 2 bars"}.\n${guidance.instruction || this.step.goal}\n${bpm > 90 ? "Advanced tempo: the quickest moves are under 500 ms." : "Use Tempo −/+ or the Metronome handle to adjust speed."}`,
+      instruction: `${bpm} BPM · ${count} melody notes${this.step.completePerformance ? "" : ` · ${(this.step.endBeat - this.step.startBeat).toFixed(1)} beats`}.\n${guidance.instruction || this.step.goal}\n${this.step.recommendedBpm < 75 && !this.step.completePerformance ? `This phrase starts at ${this.step.recommendedBpm} BPM for the fast transitions. Tempo remains adjustable.` : "Use Tempo −/+ or the Metronome handle to adjust speed."}`,
       feedback: this.feedback,
       progress: `${this.definition.title} · ${this.index + 1}/${this.definition.lessons.length}${this.outcomes[this.step.id] === "passed" ? " · Passed" : ""}`,
       navigation: [b("rishte-preview", this.previewed ? "Replay full arrangement" : "Preview full arrangement"),
         b("step-practice", "Practice / Retry"), b("previous-step", "Previous", this.index === 0),
         b("next-step", "Next phrase", this.index === this.definition.lessons.length - 1)],
-      actions: [b("tempo-down", "Tempo −5", bpm <= 45), b("tempo-up", "Tempo +5", bpm >= 115),
+      actions: [b("tempo-down", "Tempo −5", bpm <= 30), b("tempo-up", "Tempo +5", bpm >= 115),
         b("rishte-stop", "Stop", !this.phase), b("exit", "Exit")],
     };
   }

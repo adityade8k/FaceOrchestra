@@ -4,9 +4,9 @@
     "controls": {
       "visible": true,
       "title": "Phrase 1",
-      "instruction": "75 BPM · 7 melody notes · 2 bars.\nPlay the melody arc. Green prepares the next target; yellow shows the hold. Release before moving.\nUse Tempo −/+ or the Metronome handle to adjust speed.",
+      "instruction": "75 BPM · 8 melody notes · 7.3 beats.\nUse both hands. R is the main melody hand; L assists. Either hand is accepted.\nUse Tempo −/+ or the Metronome handle to adjust speed.",
       "feedback": "Preview the whole arrangement, then try a short melody phrase. Backing is prepared in the Loopers.",
-      "progress": "rishte naate.mid · 1/23",
+      "progress": "rishte naate.mid · 1/18",
       "navigation": [
         {
           "id": "rishte-preview",
@@ -53,205 +53,258 @@
       ]
     },
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
-    "instruments": 40,
+    "renderPixelRatio": 0.5,
+    "instruments": 52,
     "loopers": 4,
     "contacts": [
       {
-        "role": "lead-68",
-        "chain": []
-      },
-      {
-        "role": "lead-70",
-        "chain": []
-      },
-      {
-        "role": "lead-71",
+        "role": "lead-R-71",
         "chain": [
-          "honk-770eb74f-971e-4cbf-aaf5-3a59c248cd3e"
+          "honk-0a15cbbe-e466-4d72-97eb-012629498547"
         ]
       },
       {
-        "role": "lead-72",
-        "chain": []
-      },
-      {
-        "role": "lead-73",
+        "role": "lead-L-73",
         "chain": [
-          "honk-731ae216-b015-4319-b91e-698f5df817f6"
+          "honk-fda7a3f3-3ce3-4ca7-be2f-3cd3e68abdd4"
         ]
       },
       {
-        "role": "lead-75",
+        "role": "lead-R-70",
         "chain": [
-          "honk-81dcc79a-bb00-4218-a05d-2527eb22a37d"
+          "honk-ce929550-6b5f-4d82-abb5-e8520889c20d"
         ]
       },
       {
-        "role": "lead-76",
+        "role": "lead-L-71",
+        "chain": [
+          "honk-8676fc7f-334b-4752-b099-26f81b1750c5"
+        ]
+      },
+      {
+        "role": "lead-R-73",
+        "chain": [
+          "honk-8769d877-3600-407f-b108-9c905bb46a44"
+        ]
+      },
+      {
+        "role": "lead-L-78",
+        "chain": [
+          "honk-267cfcca-d1e7-4760-a4c2-6d63e960e816"
+        ]
+      },
+      {
+        "role": "lead-L-76",
         "chain": []
       },
       {
-        "role": "lead-78",
+        "role": "lead-R-76",
         "chain": []
       },
       {
-        "role": "lead-80",
+        "role": "lead-L-75",
+        "chain": []
+      },
+      {
+        "role": "lead-R-75",
+        "chain": []
+      },
+      {
+        "role": "lead-R-78",
+        "chain": []
+      },
+      {
+        "role": "lead-L-68",
+        "chain": []
+      },
+      {
+        "role": "lead-L-70",
+        "chain": []
+      },
+      {
+        "role": "lead-R-68",
+        "chain": []
+      },
+      {
+        "role": "lead-R-72",
+        "chain": []
+      },
+      {
+        "role": "lead-L-80",
+        "chain": []
+      },
+      {
+        "role": "lead-R-82",
+        "chain": []
+      },
+      {
+        "role": "lead-R-83",
+        "chain": []
+      },
+      {
+        "role": "lead-L-82",
+        "chain": []
+      },
+      {
+        "role": "lead-R-63",
+        "chain": []
+      },
+      {
+        "role": "lead-L-66",
+        "chain": []
+      },
+      {
+        "role": "lead-L-83",
         "chain": []
       },
       {
         "role": "backing-40",
         "chain": [
-          "honk-157eaa38-85fe-4ca0-b007-20d86de8054b"
+          "honk-2a61110a-cb0b-4af0-82bd-e39ec64d9385"
         ]
       },
       {
         "role": "backing-42",
         "chain": [
-          "honk-0bf406e2-a6bf-402d-b939-76c1e92c432c"
+          "honk-3673a403-0098-404d-8bcc-8abb51d1458a"
         ]
       },
       {
         "role": "backing-44",
         "chain": [
-          "honk-dfcc6a3c-30ef-4e0f-9da6-1c67e46e7577"
+          "honk-db167135-9286-4d05-b822-83e6bf62b171"
         ]
       },
       {
         "role": "backing-47",
         "chain": [
-          "honk-3fb78124-5c56-4a40-aaaa-45904648f2e3"
+          "honk-9dfaddda-8835-4ab8-85f5-ffb48cde917c"
         ]
       },
       {
         "role": "backing-49",
         "chain": [
-          "honk-60c34793-3de6-457f-9c04-d2acc1a67148"
+          "honk-9cd48386-f4c3-495f-b5e4-2c02e5137d0b"
         ]
       },
       {
         "role": "backing-51",
         "chain": [
-          "honk-51989b65-a8d8-4d04-8d4d-1a3734432685"
+          "honk-3200b280-49fa-4570-beda-282c5c64b0a7"
         ]
       },
       {
         "role": "backing-52",
         "chain": [
-          "honk-2dc1db99-2af2-402b-b93d-ceb0421bb573"
+          "honk-f1530cc4-ba1a-4d2b-99cc-9ed560594c19"
         ]
       },
       {
         "role": "backing-54",
         "chain": [
-          "honk-61177633-9ac1-4cb9-8377-59b336b2cbc9"
+          "honk-f813aa37-4913-435c-a508-21fd2432884c"
         ]
       },
       {
         "role": "backing-56",
         "chain": [
-          "honk-f5b3da97-d96e-4624-a681-7b573e96134e"
+          "honk-6437ea99-d910-4135-8ab0-ca67950bb147"
         ]
       },
       {
         "role": "backing-58",
         "chain": [
-          "honk-048d8e49-e94b-4aaf-93ae-a580e30a9535"
+          "honk-21326b0e-a05d-4967-bdac-e9e88fa9ac29"
         ]
       },
       {
         "role": "backing-59",
         "chain": [
-          "honk-adcba4f1-f814-4b73-9720-2ef793f0b9f3"
+          "honk-c6e187ed-6406-4aaa-9992-0733c3fd7320"
         ]
       },
       {
         "role": "backing-61",
         "chain": [
-          "honk-fbb416c2-6c67-4667-a3a8-786456807bf3"
+          "honk-e6a3a345-cb3d-4bef-82ae-93c52cb6947e"
         ]
       },
       {
         "role": "backing-63",
         "chain": [
-          "honk-451e0149-045a-4159-b0d6-ffb69b57b45e"
+          "honk-14669696-636e-4102-ae76-4fe044e790b2"
         ]
       },
       {
         "role": "backing-64",
         "chain": [
-          "honk-46c32be1-db69-48b3-9b11-c264f246415e"
+          "honk-19a7a4b5-1005-4355-9129-d80df0ddf0da"
         ]
       },
       {
         "role": "backing-66",
         "chain": [
-          "honk-2e80524d-d947-4bb0-b731-8a50996252da"
+          "honk-22130259-aa93-4e49-834b-105557ed0517"
         ]
       },
       {
         "role": "backing-68",
         "chain": [
-          "honk-68a109a1-be1e-4c6a-bee2-ce053692dbde"
+          "honk-bb16b233-228d-4c22-a895-6f11d31cff64"
         ]
       },
       {
         "role": "backing-70",
         "chain": [
-          "honk-7c1c03a5-1408-4a9c-a735-a6f8a4887b2a"
+          "honk-12a0d533-eec8-436b-87f1-1f5e76cd09de"
         ]
       },
       {
         "role": "backing-71",
         "chain": [
-          "honk-43bb556e-8070-4c79-ad21-02b90824ff45"
-        ]
-      },
-      {
-        "role": "backing-72",
-        "chain": [
-          "honk-b4bcdfb2-a8a4-4e14-a067-c4ce568bd3be"
+          "honk-4d9d9a15-92f3-4dbd-9966-b5b82a300326"
         ]
       },
       {
         "role": "backing-73",
         "chain": [
-          "honk-3cbc943b-d82f-43e6-b290-fb23fef02c1b"
+          "honk-a134b18b-6cd2-42ed-b005-e486f02a6cd0"
         ]
       },
       {
         "role": "backing-75",
         "chain": [
-          "honk-23c19ae1-962f-4a13-ace7-a459245d9fb8"
+          "honk-f523738c-57b6-4a4b-a971-18ed9ee2d229"
         ]
       },
       {
         "role": "backing-76",
         "chain": [
-          "honk-8015ec00-33e8-4a11-a2e6-4279b8799648"
+          "honk-beeb8c04-eb8f-4c26-9dac-f13f64001f64"
         ]
       },
       {
         "role": "backing-78",
         "chain": [
-          "honk-82381235-f850-4aeb-9dc3-aa6bcda80213"
+          "honk-27c2b3bd-c891-4995-be8a-4527bae8b7d5"
         ]
       },
       {
         "role": "backing-80",
         "chain": [
-          "honk-44c4e967-8347-4b10-b385-79f1b6c390f9"
+          "honk-bee7dfe0-f690-4716-829f-ca180f54b861"
         ]
       },
       {
         "role": "backing-82",
         "chain": [
-          "honk-6702ac9f-ed1c-41e9-89e2-e00e97ba7d6e"
+          "honk-ac065910-b25d-4910-94da-e608f56ca22d"
         ]
       },
       {
         "role": "backing-83",
         "chain": [
-          "honk-037fd2b2-d322-4237-ae9d-6d2e44fbee94"
+          "honk-a9f05b40-14d7-4df4-89cc-603fbcfd6c30"
         ]
       }
     ]
@@ -270,13 +323,7 @@
     "actualLoopers": 2,
     "handoffs": [
       {
-        "from": "block-1",
         "to": "block-2",
-        "beat": 8
-      },
-      {
-        "from": "block-2",
-        "to": "block-3",
         "beat": 16
       }
     ],
@@ -287,10 +334,10 @@
   },
   "parity": {
     "normalTrigger": {
-      "role": "lead-71",
-      "voiceId": "tutorial-0:instrument-honk-770eb74f-971e-4cbf-aaf5-3a59c248cd3e",
+      "role": "lead-R-71",
+      "voiceId": "tutorial-0:instrument-honk-0a15cbbe-e466-4d72-97eb-012629498547",
       "values": {
-        "squeeze": 0.9914585331989947,
+        "squeeze": 0.9914585331989946,
         "bend": 0,
         "earLeft": 0.8571428571428571,
         "earRight": 0,
@@ -303,7 +350,7 @@
     },
     "ordinaryLooper": {
       "role": "backing-71",
-      "voiceId": "looper-looper-972ec974-2a73-4a50-b03c-10a40a5ce4b4:track-1:instrument-honk-43bb556e-8070-4c79-ad21-02b90824ff45:action:scheduled-6",
+      "voiceId": "looper-looper-7db9f14d-b150-45f2-a51e-5d567fb513ca:track-1:instrument-honk-4d9d9a15-92f3-4dbd-9966-b5b82a300326:action:scheduled-6",
       "values": {
         "squeeze": 1,
         "bend": 0,
@@ -314,20 +361,24 @@
       },
       "options": {
         "gain": 0.282945,
-        "scheduledTime": 19.300498866213154
+        "scheduledTime": 19.29459387755698
       }
     },
     "defaultLooperVolume": 0.36275
   },
   "full": {
-    "melodyNotes": 107,
-    "backingNotes": 160,
-    "harmonicBlocks": 26,
+    "melodyNotes": 175,
+    "backingNotes": 121,
+    "maxMelodyHands": 2,
+    "handLabels": 22,
+    "harmonicBlocks": 13,
     "maximumConcurrentLoopers": 2,
     "maximumClockDriftBeats": 0,
-    "peakAmplitude": 0.9565492272377014,
-    "maximumRms": 0.6687631865766022,
-    "durationBeats": 176,
+    "backingOnsetErrorMs": 2.8421709430404007e-11,
+    "melodyOnsetErrorMs": 19.533333351224428,
+    "peakAmplitude": 0.956654965877533,
+    "maximumRms": 0.6501791644985928,
+    "durationBeats": 141.921875,
     "soundParity": true,
     "normalRelease": true,
     "takesRestored": true,
@@ -335,129 +386,52 @@
     "cleanEnding": true,
     "handoffs": [
       {
-        "from": "block-1",
         "to": "block-2",
-        "beat": 8
-      },
-      {
-        "from": "block-2",
-        "to": "block-3",
         "beat": 16
       },
       {
-        "from": "block-3",
+        "to": "block-3",
+        "beat": 18
+      },
+      {
         "to": "block-4",
-        "beat": 24
+        "beat": 22
       },
       {
-        "from": "block-4",
         "to": "block-5",
-        "beat": 32
+        "beat": 38
       },
       {
-        "from": "block-5",
         "to": "block-6",
-        "beat": 40
+        "beat": 42
       },
       {
-        "from": "block-6",
         "to": "block-7",
-        "beat": 48
+        "beat": 44
       },
       {
-        "from": "block-7",
         "to": "block-8",
-        "beat": 56
+        "beat": 60
       },
       {
-        "from": "block-8",
         "to": "block-9",
-        "beat": 64
+        "beat": 76
       },
       {
-        "from": "block-9",
         "to": "block-10",
-        "beat": 72
+        "beat": 92
       },
       {
-        "from": "block-10",
         "to": "block-11",
-        "beat": 80
+        "beat": 94
       },
       {
-        "from": "block-11",
         "to": "block-12",
-        "beat": 88
+        "beat": 110
       },
       {
-        "from": "block-12",
         "to": "block-13",
-        "beat": 96
-      },
-      {
-        "from": "block-13",
-        "to": "block-14",
-        "beat": 104
-      },
-      {
-        "from": "block-14",
-        "to": "block-15",
-        "beat": 112
-      },
-      {
-        "from": "block-15",
-        "to": "block-16",
-        "beat": 116
-      },
-      {
-        "from": "block-16",
-        "to": "block-17",
-        "beat": 120
-      },
-      {
-        "from": "block-17",
-        "to": "block-18",
-        "beat": 128
-      },
-      {
-        "from": "block-18",
-        "to": "block-19",
-        "beat": 132
-      },
-      {
-        "from": "block-19",
-        "to": "block-20",
-        "beat": 136
-      },
-      {
-        "from": "block-20",
-        "to": "block-21",
-        "beat": 144
-      },
-      {
-        "from": "block-21",
-        "to": "block-22",
-        "beat": 148
-      },
-      {
-        "from": "block-22",
-        "to": "block-23",
-        "beat": 152
-      },
-      {
-        "from": "block-23",
-        "to": "block-24",
-        "beat": 160
-      },
-      {
-        "from": "block-24",
-        "to": "block-25",
-        "beat": 164
-      },
-      {
-        "from": "block-25",
-        "to": "block-26",
-        "beat": 168
+        "beat": 126
       }
     ]
   },

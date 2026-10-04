@@ -128,7 +128,7 @@ export const compositionRegistry = new CompositionRegistry([
   {
     id: "rishte-naate",
     title: "rishte naate.mid",
-    version: 2,
+    version: 3,
     load: () => import("./rishte.js"),
   },
 ]);

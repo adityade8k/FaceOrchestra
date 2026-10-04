@@ -1,40 +1,347 @@
 {
-  "baseline": {
-    "commit": "fee629663085e8f9c4b245c35963c0e73c4070af",
-    "liveNotes": 181,
-    "attacksBelow300ms": 74,
-    "overlappingHolds": 30,
-    "targets": 11,
-    "widthMeters": 2.4,
-    "fastestTransition": {
-      "from": "t0-e397",
-      "to": "t0-e399",
-      "milliseconds": 177.7173468749993,
-      "meters": 0.48
+  "learnerNotes": 175,
+  "backingNotes": 121,
+  "sourceNotes": 296,
+  "durationBeats": 141.921875,
+  "durationSecondsAt75": 113.53750000000001,
+  "phraseCount": 17,
+  "blocks": [
+    {
+      "beat": 0,
+      "beats": 16,
+      "notes": [
+        7,
+        10
+      ]
     },
-    "maximumTravelMeters": 2.16,
-    "firstPhraseNotes": 99,
-    "firstPhraseSeconds": 39.844555256250004
-  },
-  "revised": {
-    "liveNotes": 107,
-    "targets": 9,
-    "widthMeters": 0.8599614355618446,
-    "minimumAttackMsAt75": 600,
-    "minimumReleaseGapMsAt75": 200,
-    "overlappingHolds": 0,
-    "maximumTravelMeters": 0.34232307125509354,
-    "firstPhraseNotes": 7,
-    "phraseSecondsAt75": 6.4,
-    "phraseCount": 22,
-    "maximumPhraseNotes": 7,
-    "maximumPhraseTargets": 4,
-    "durationBeats": 176,
-    "durationSecondsAt75": 140.8,
-    "sourceDispositions": {
-      "retained": 107,
-      "combined": 29,
-      "transferred": 160
+    {
+      "beat": 16,
+      "beats": 2,
+      "notes": [
+        0,
+        0
+      ]
+    },
+    {
+      "beat": 18,
+      "beats": 4,
+      "notes": [
+        2,
+        2
+      ]
+    },
+    {
+      "beat": 22,
+      "beats": 16,
+      "notes": [
+        7,
+        6
+      ]
+    },
+    {
+      "beat": 38,
+      "beats": 4,
+      "notes": [
+        2,
+        2
+      ]
+    },
+    {
+      "beat": 42,
+      "beats": 2,
+      "notes": [
+        0,
+        0
+      ]
+    },
+    {
+      "beat": 44,
+      "beats": 16,
+      "notes": [
+        4,
+        6
+      ]
+    },
+    {
+      "beat": 60,
+      "beats": 16,
+      "notes": [
+        4,
+        3
+      ]
+    },
+    {
+      "beat": 76,
+      "beats": 16,
+      "notes": [
+        7,
+        6
+      ]
+    },
+    {
+      "beat": 92,
+      "beats": 2,
+      "notes": [
+        3,
+        2
+      ]
+    },
+    {
+      "beat": 94,
+      "beats": 16,
+      "notes": [
+        8,
+        12
+      ]
+    },
+    {
+      "beat": 110,
+      "beats": 16,
+      "notes": [
+        7,
+        8
+      ]
+    },
+    {
+      "beat": 126,
+      "beats": 16,
+      "notes": [
+        6,
+        7
+      ]
     }
-  }
+  ],
+  "hands": {
+    "R": {
+      "notes": 115,
+      "targets": 11,
+      "minimumAttackMsAt75": 289.16666666666515,
+      "minimumReleaseMsAt75": 34.16666666666459,
+      "maximumTravelMeters": 0.5059644256269408,
+      "difficultTransitions": [
+        {
+          "from": "t0-e83",
+          "to": "t0-e89",
+          "attackMsAt75": 616.6666666666657,
+          "releaseMsAt75": 71.6666666666657,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e89",
+          "to": "t0-e95",
+          "attackMsAt75": 943.3333333333337,
+          "releaseMsAt75": 114.16666666666711,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e123",
+          "to": "t0-e126",
+          "attackMsAt75": 349.1666666666646,
+          "releaseMsAt75": 34.16666666666459,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e142",
+          "to": "t0-e152",
+          "attackMsAt75": 649.1666666666646,
+          "releaseMsAt75": 139.1666666666646,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e196",
+          "to": "t0-e206",
+          "attackMsAt75": 625,
+          "releaseMsAt75": 100.83333333333337,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e206",
+          "to": "t0-e211",
+          "attackMsAt75": 967.5000000000011,
+          "releaseMsAt75": 137.50000000000108,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e306",
+          "to": "t0-e308",
+          "attackMsAt75": 289.16666666666515,
+          "releaseMsAt75": 61.66666666666516,
+          "meters": 0.16000000000000003
+        },
+        {
+          "from": "t0-e395",
+          "to": "t0-e397",
+          "attackMsAt75": 614.1666666666652,
+          "releaseMsAt75": 153.3333333333318,
+          "meters": 0.24
+        },
+        {
+          "from": "t0-e510",
+          "to": "t0-e517",
+          "attackMsAt75": 957.5000000000045,
+          "releaseMsAt75": 128.33333333333795,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e683",
+          "to": "t0-e687",
+          "attackMsAt75": 647.5000000000136,
+          "releaseMsAt75": 166.66666666668027,
+          "meters": 0.24
+        }
+      ]
+    },
+    "L": {
+      "notes": 60,
+      "targets": 11,
+      "minimumAttackMsAt75": 591.6666666666629,
+      "minimumReleaseMsAt75": 54.16666666666741,
+      "maximumTravelMeters": 0.4,
+      "difficultTransitions": [
+        {
+          "from": "t0-e294",
+          "to": "t0-e299",
+          "attackMsAt75": 636.6666666666674,
+          "releaseMsAt75": 54.16666666666741,
+          "meters": 0.15999999999999998
+        },
+        {
+          "from": "t0-e305",
+          "to": "t0-e312",
+          "attackMsAt75": 607.4999999999932,
+          "releaseMsAt75": 183.33333333332655,
+          "meters": 0.2884441020371191
+        },
+        {
+          "from": "t0-e449",
+          "to": "t0-e463",
+          "attackMsAt75": 1957.4999999999932,
+          "releaseMsAt75": 188.33333333332655,
+          "meters": 0.2884441020371191
+        },
+        {
+          "from": "t0-e601",
+          "to": "t0-e613",
+          "attackMsAt75": 1925.8333333333326,
+          "releaseMsAt75": 130.83333333333263,
+          "meters": 0.2884441020371191
+        }
+      ]
+    }
+  },
+  "duplicatePitches": [
+    73,
+    75,
+    71,
+    76,
+    78,
+    70,
+    68,
+    82,
+    83
+  ],
+  "phrases": [
+    {
+      "id": "phrase-1",
+      "notes": 8,
+      "beats": 7.323958333333333,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-2",
+      "notes": 10,
+      "beats": 7.847916666666666,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-3",
+      "notes": 8,
+      "beats": 7.553125000000001,
+      "recommendedBpm": 50
+    },
+    {
+      "id": "phrase-4",
+      "notes": 10,
+      "beats": 7.636458333333334,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-5",
+      "notes": 8,
+      "beats": 7.851041666666667,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-6",
+      "notes": 12,
+      "beats": 7.740625000000001,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-7",
+      "notes": 10,
+      "beats": 8.432291666666664,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-8",
+      "notes": 10,
+      "beats": 8.377083333333339,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-9",
+      "notes": 13,
+      "beats": 8.074999999999989,
+      "recommendedBpm": 40
+    },
+    {
+      "id": "phrase-10",
+      "notes": 12,
+      "beats": 7.861458333333346,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-11",
+      "notes": 12,
+      "beats": 7.799999999999997,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-12",
+      "notes": 9,
+      "beats": 7.161458333333329,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-13",
+      "notes": 11,
+      "beats": 8.558333333333337,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-14",
+      "notes": 11,
+      "beats": 8.283333333333331,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-15",
+      "notes": 11,
+      "beats": 8.787499999999994,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-16",
+      "notes": 11,
+      "beats": 8.450000000000003,
+      "recommendedBpm": 75
+    },
+    {
+      "id": "phrase-17",
+      "notes": 9,
+      "beats": 5.754166666666691,
+      "recommendedBpm": 75
+    }
+  ]
 }

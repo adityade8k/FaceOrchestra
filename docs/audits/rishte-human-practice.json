@@ -1,33 +1,35 @@
 {
   "practice": {
     "practice": {
-      "feedback": "7/7 matched · 0 extra. Phrase complete. Continue when ready.",
-      "observations": 7,
-      "phaseErrorBeats": 0.00009999999404008975,
-      "backingDriftAfterTempoChangeBeats": 8.881784197001252e-16,
+      "feedback": "8/8 matched · 0 extra. Phrase complete. Continue when ready.",
+      "observations": 8,
+      "swappedHandsAccepted": true,
+      "backingDriftBeats": 1.7763568394002505e-15,
       "tempoHistory": [
         {
-          "atMs": 1498.5999999940395,
-          "beat": -4,
-          "bpm": 75
+          "atMs": 1478.699999988079,
+          "beat": 15.98125,
+          "bpm": 50
         },
         {
-          "atMs": 6751.5,
-          "beat": 2.566100000008941,
-          "bpm": 60
+          "atMs": 7015.9000000059605,
+          "beat": 20.595566666682558,
+          "bpm": 40
         }
       ]
     },
     "emptyRetryRejected": true,
     "learnerTakePreserved": true,
     "cancelledRecordArmPreserved": true,
-    "changedTakeFeedback": "Looper recording activity stopped the arrangement. Your recordings are preserved.",
+    "newTakePreserved": true,
+    "slowerPhraseTempos": [
+      50,
+      40
+    ],
     "metronomeStop": true,
-    "laterPhraseHandoff": true,
-    "completeLesson": true,
     "cleanExit": true,
     "playWorkspaceRestored": true,
-    "recordSongsVersion": 2
+    "recordSongsVersion": 3
   },
   "errors": []
 }

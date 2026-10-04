@@ -3,7 +3,7 @@ import { validateComposition } from "../../compositions/CompositionRegistry.js";
 export function validateRishte(d) {
   validateComposition(d);
   const fail = message => { throw new Error(`Invalid Rishte arrangement: ${message}`); };
-  if (d.playback !== "honk-looper-human-v1") fail("playback contract");
+  if (d.playback !== "honk-looper-two-hand-v1") fail("playback contract");
   const roles = new Map(d.arrangement.recipes.map(r => [r.role, r]));
   if (roles.size !== d.arrangement.recipes.length) fail("duplicate role");
   for (const r of roles.values()) {
@@ -13,26 +13,29 @@ export function validateRishte(d) {
     if (["vowel", "nose", "gain", "envelope"].some(k => k in r)) fail("sound override");
   }
   const ids = new Set();
-  let end = -Infinity;
+  const ends = { R: -Infinity, L: -Infinity };
   for (const e of d.score.events) {
     if (ids.has(e.id) || roles.get(e.role)?.midi !== e.midi || !e.sourceIds?.length ||
-        e.beat < 0 || e.beat < end || !(e.beats > 0) || e.beat + e.beats > d.score.durationBeats) fail("live gate");
-    ids.add(e.id); end = e.beat + e.beats;
+        !["R", "L"].includes(e.hand) || roles.get(e.role)?.hand !== e.hand ||
+        e.beat < 0 || e.beat < ends[e.hand] - 1e-9 || !(e.beats > 0) || e.beat + e.beats > d.score.durationBeats) fail("live gate");
+    ids.add(e.id); ends[e.hand] = e.beat + e.beats;
   }
   let cursor = 0;
   for (const b of d.arrangement.blocks) {
-    if (b.beat !== cursor || ![4, 8].includes(b.beats) || b.patterns.length !== 2) fail("block boundary");
+    if (b.beat !== cursor || ![2, 4, 8, 16].includes(b.beats) || b.patterns.length !== 2) fail("block boundary");
     for (const p of b.patterns) {
-      if (!p.events.length || p.beats !== b.beats || new Set(p.events.map(e => e.role)).size > 7) fail("Looper capacity");
+      if (p.beats !== b.beats || new Set(p.events.map(e => e.role)).size > 7) fail("Looper capacity");
       for (const e of p.events) if (roles.get(e.role)?.midi !== e.midi || e.beat < 0 ||
           !(e.beats > 0) || e.beat + e.beats > b.beats) fail("backing gate");
     }
     cursor += b.beats;
   }
-  if (cursor !== d.score.durationBeats) fail("ending");
+  if (cursor < d.score.durationBeats || cursor - d.score.durationBeats >= 16) fail("ending");
+  const all = [...d.score.events, ...d.arrangement.backing];
+  if (new Set(all.map(e => e.id)).size !== all.length || all.length !== d.arrangement.sourceDecisions.length) fail("source assignments");
   for (const l of d.lessons) if (!l.eventIds.length || l.eventIds.some(id => !ids.has(id)) ||
-      !d.arrangement.blocks.some(b => b.beat === l.startBeat) ||
-      !d.arrangement.blocks.some(b => b.beat + b.beats === l.endBeat)) fail("phrase boundary");
+      l.startBeat < 0 || l.endBeat > d.score.durationBeats || l.endBeat <= l.startBeat ||
+      d.score.events.some(e => l.eventIds.includes(e.id) && (e.beat < l.startBeat || e.beat + e.beats > l.endBeat + 1e-9))) fail("phrase boundary");
   return d;
 }
 
@@ -74,8 +77,8 @@ export class RishteGuidance {
     return {
       transport: beat < this.startBeat ? `Count in: ${Math.ceil(this.startBeat - beat)}` :
         beat >= this.endBeat ? "Complete" : next && beat >= next.beat ? "Hold, then release" : "Release · rest",
-      instruction: "You play the upper melody arc. Green prepares the next target; yellow shows the hold. The lower Honks are the Looper accompaniment.",
-      feedback: "Keep your wrist neutral. Release before moving to the next target.",
+      instruction: "R / mint: main melody hand. L / orange: assisting hand. Green prepares; yellow holds. Either hand is accepted. Lower Honks are backing.",
+      feedback: "Keep your wrist neutral. Coordinate both hands through the overlapping holds.",
     };
   }
 }

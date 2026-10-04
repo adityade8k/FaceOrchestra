@@ -1,6 +1,9 @@
 import { tuningForMidi } from "../composition.js";
 import { compilePattern } from "../../compositions/CompositionCompiler.js";
 import { beatAtTime, validateRishte } from "./score.js";
+import { splitPatterns } from "./patterns.js";
+import { RishteHands } from "./RishteHands.js";
+import { Vector3 } from "three";
 
 const LANES = ["foundation", "figures"];
 
@@ -19,6 +22,7 @@ export class RishteEnsemble {
     this.dispose();
     validateRishte(this.definition);
     this.a.clear(); this.a.begin("learner");
+    this.a.anchor.add(new Vector3(-.25, 0, 0).applyQuaternion(this.a.layoutRotation));
     for (const recipe of this.definition.arrangement.recipes) {
       if (!this.r.createSpawnedComponent(recipe.kind, { name: recipe.role, baseScale: recipe.scale,
         ...(recipe.kind === "honk" ? { tuning: tuningForMidi(recipe.midi) } : {}) }))
@@ -34,10 +38,12 @@ export class RishteEnsemble {
     this.metro = metro;
     this.originalSetBpm = metro.setBpm;
     metro.setBpm(this.definition.bpm);
+    this.r.updateMetronomeLabel(metro);
     metro.setVolume(.15);
     // Scope the tempo range and history to this tutorial's own Metronome.
     metro.setBpm = value => {
-      const result = this.originalSetBpm.call(metro, Math.min(115, Math.max(45, value)));
+      const result = this.originalSetBpm.call(metro, Math.min(115, Math.max(30, value)));
+      this.r.updateMetronomeLabel(metro);
       if (this.anchor !== null) {
         const now = performance.now();
         this.history.push({ atMs: now, beat: this.beatAt(now), bpm: metro.bpm });
@@ -48,11 +54,12 @@ export class RishteEnsemble {
     const ports = [...metro.connectionPorts.keys()];
     for (const [i, lane] of LANES.entries()) for (const bank of [0, 1]) {
       const h = this.a.get(`${lane}-${bank}`);
-      this.r.metronomeConnectionManager.connect({ metronomeId: metro.id, portId: ports[i],
+      this.r.metronomeConnectionManager.connect({ metronomeId: metro.id, portId: ports[i * 2 + bank],
         targetKind: "looper", targetId: h.id, targetPortId: h.tracks[0].trackId });
       this.loadPattern(h, this.definition.arrangement.blocks[bank].patterns[i]);
     }
     this.prepared = true;
+    this.hands = new RishteHands(this);
     this.validate();
   }
   validate() {
@@ -86,31 +93,45 @@ export class RishteEnsemble {
     this.expectedTakes.set(h.id, { timeline: h.timeline, json: JSON.stringify(h.timeline.toJSON()) });
   }
   showMelody(startBeat = 0, endBeat = this.definition.score.durationBeats) {
+    this.visibleRange = `${startBeat}:${endBeat}`;
     const roles = new Set(this.definition.score.events.filter(e => e.beat >= startBeat && e.beat < endBeat).map(e => e.role));
     for (const recipe of this.definition.arrangement.recipes.filter(r => r.role.startsWith("lead-")))
       if (this.a.get(recipe.role)) this.a.get(recipe.role).root.visible = roles.has(recipe.role);
+    this.hands?.update();
   }
   schedule({ countAt, beatZero, wallNow, audioNow, bpm = this.definition.bpm,
     startBeat = 0, endBeat = this.definition.score.durationBeats, origin = "performance" }) {
     this.cancel(); this.validate();
     this.startBeat = startBeat; this.endBeat = endBeat;
-    this.blocks = this.definition.arrangement.blocks.filter(b => b.beat >= startBeat && b.beat < endBeat);
+    this.blocks = splitPatterns(this.definition.arrangement.backing, startBeat, endBeat);
     this.snapshots = new Map(this.loopers.map(h => [h.id, structuredClone(h.looperController.serializeState(h))]));
     this.expectedRevisions = new Map(this.loopers.map(h => [h.id, h.looperData.takeRevision]));
     this.expectedTakes = new Map(this.loopers.map(h => [h.id, { timeline: h.timeline, json: JSON.stringify(h.timeline.toJSON()) }]));
     this.anchor = beatZero; this.origin = origin;
     this.clockStartBeat = (beatZero - countAt) / (60000 / bpm);
     this.originalSetBpm.call(this.metro, bpm);
+    this.r.updateMetronomeLabel(this.metro);
     this.metro.beatOriginMs = null; this.metro.play(countAt);
     this.history = [{ atMs: countAt, beat: startBeat - this.clockStartBeat, bpm }];
-    this.queuedIndex = 0; this.limited = false; this.handoffs = [];
-    for (const [i, lane] of LANES.entries()) {
-      const h = this.a.get(`${lane}-0`);
-      this.loadPattern(h, this.blocks[0].patterns[i]);
-      const c = h.looperController;
-      if (!c.armPlayback(h, wallNow, c.getTimingForLooper(h, wallNow), {
-        targetBeat: this.clockStartBeat, audioAnchor: { wallMs: wallNow, audioSeconds: audioNow }, origin,
-      })) throw new Error("Backing could not start on the Metronome.");
+    this.audioAnchor = { wallMs: wallNow, audioSeconds: audioNow };
+    this.nextBlock = 0; this.bankAssignments = new Map(); this.handoffs = [];
+    this.fillBanks(wallNow);
+  }
+  fillBanks(now) {
+    while (this.nextBlock < this.blocks.length && !this.bankAssignments.has(this.nextBlock % 2)) {
+      const index = this.nextBlock++, bank = index % 2, block = this.blocks[index];
+      for (const [i, lane] of LANES.entries()) {
+        const h = this.a.get(`${lane}-${bank}`), c = h.looperController;
+        this.loadPattern(h, block.patterns[i]);
+        if (!h.timeline.hasRecording()) continue; // A real rest: no dummy notes.
+        if (!c.armPlayback(h, now, c.getTimingForLooper(h, now), {
+          targetBeat: this.clockStartBeat + block.beat - this.startBeat,
+          audioAnchor: this.audioAnchor, origin: this.origin,
+        })) throw new Error("Backing could not start on the Metronome.");
+        h.looperData.playbackLimitSourceMs = h.timeline.durationMs;
+      }
+      this.bankAssignments.set(bank, { index, endBeat: block.beat + block.beats });
+      if (index) this.handoffs.push({ to: block.id, beat: block.beat });
     }
   }
   beatAt(now) {
@@ -128,34 +149,26 @@ export class RishteEnsemble {
       this.cancel(); throw new Error("Looper recording activity stopped the arrangement. Your recordings are preserved.");
     }
     const beat = this.beatAt(now);
-    const index = this.blocks.findLastIndex(b => beat >= b.beat);
-    if (index >= 0 && beat >= this.blocks[index].beat + .25) {
-      // Wait for the active bank to launch before requesting the next bank;
-      // otherwise the port arbiter correctly treats it as replacing that launch.
-      const active = LANES.map(lane => this.a.get(`${lane}-${index % 2}`));
-      if (active.every(h => h.transport.playing) && this.queuedIndex === index) {
-        const next = this.blocks[index + 1];
-        if (next) {
-          for (const [i, lane] of LANES.entries()) {
-            const h = this.a.get(`${lane}-${(index + 1) % 2}`);
-            this.loadPattern(h, next.patterns[i]);
-            const c = h.looperController;
-            if (!c.startPlayback(h, now, { origin: this.origin })) throw new Error("Backing handoff failed.");
-          }
-          this.queuedIndex = index + 1;
-          this.handoffs.push({ from: this.blocks[index].id, to: next.id, beat: next.beat });
-        } else if (!this.limited) {
-          // Bound the last audio cycle in advance: a late rendering frame must
-          // never schedule another first attack after the musical ending.
-          for (const h of active) {
-            const limit = h.timeline.durationMs;
-            h.looperData.playbackLimitSourceMs = limit;
-            h.looperController.trimPlaybackAtBoundary(h, limit, now);
-          }
-          this.limited = true;
-        }
+    if (this.startBeat === 0 && this.endBeat === this.definition.score.durationBeats) {
+      // Keep the complete performance readable: retain the current phrase's
+      // fixed targets and reveal the next phrase one beat before its entry.
+      const phrases = this.definition.lessons.filter(l => !l.completePerformance);
+      const index = phrases.findIndex(l => beat < l.endBeat);
+      const phrase = phrases[index], next = phrases[index + 1];
+      if (phrase) {
+        const end = next && beat >= next.startBeat - 1 ? next.endBeat : phrase.endBeat;
+        if (this.visibleRange !== `${phrase.startBeat}:${end}`) this.showMelody(phrase.startBeat, end);
       }
     }
+    this.hands?.update(this.definition.score.events, beat);
+    for (const [bank, assignment] of this.bankAssignments) if (beat >= assignment.endBeat) {
+      for (const lane of LANES) {
+        const h = this.a.get(`${lane}-${bank}`);
+        h.looperController.stopPlayback(h);
+      }
+      this.bankAssignments.delete(bank);
+    }
+    this.fillBanks(now);
     if (beat >= this.endBeat) this.cancel();
   }
   cancel() {
@@ -179,10 +192,12 @@ export class RishteEnsemble {
       this.expectedTakes.set(h.id, { timeline: h.timeline, json: JSON.stringify(h.timeline.toJSON()) });
     }
     this.metro?.pause();
+    this.hands?.release();
     this.a.releaseAll(); this.a.focus(null);
   }
   dispose() {
     this.cancel();
+    this.hands?.dispose(); this.hands = null;
     if (this.metro && this.originalSetBpm) this.metro.setBpm = this.originalSetBpm;
     this.prepared = false;
   }

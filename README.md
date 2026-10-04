@@ -217,7 +217,8 @@ npm run verify
 The opening **Tutorials** chooser includes **Rag Jog Study** (VIRAG 2) and **Kuch To Hua Hai**. Both offer demonstrations and practice in the main app. See [Jog controls and verification](docs/tutorial.md) and [Kuch To Hua Hai lesson](docs/kuch-tutorial.md).
 
 **rishte naate.mid** is also available in Tutorials and Record Songs. Its full
-preview plays a simplified sung-melody interpretation with actual Looper
-accompaniment and normal Honk sound. Practice starts at an adjustable 75 BPM
-in short two-bar phrases. See the [arrangement, controls and verification](docs/rishte-naate.md).
+preview plays the 175 screenshot-selected melody notes with suggested L/R
+hands and all 121 other MIDI notes through actual Loopers. Normal Honk sound
+is preserved. Practice starts at 75 BPM across 17 short phrases, with slower
+starts for two difficult phrases and an adjustable 30–115 BPM range. See the [arrangement, controls and verification](docs/rishte-naate.md).
 The original MIDI performance remains preserved on `ver-13`.
