@@ -104,6 +104,31 @@ test('scheduler prepares attacks ahead of frames and late starts recover at targ
   assert.equal(late.a.looperData.clockPlaybackStartBeatPosition,1);close(late.a.looperData.playbackEngine.elapsedMs,2050);
   late.a.looperController.stopPlayback(late.a);
 });
+test('a scheduling stall preserves an already-held voice and its original release without a second attack',()=>{
+  const h=fixture();h.set(500);h.a.looperController.startPlayback(h.a,500);h.quiet();h.run(750);
+  const first=h.calls.find(c=>c.kind==='start');assert.ok(first);
+  // Jump beyond the look-ahead plus late-recovery allowance, within this hold.
+  h.run(1150);
+  assert.equal(h.calls.filter(c=>c.kind==='start').length,1,'Held note must not restart');
+  assert.equal(h.calls.some(c=>c.kind==='cancel'&&c.voice===first.voice),false);
+  h.run(1350);h.run(1450);
+  const release=h.calls.find(c=>c.kind==='release'&&c.voice===first.voice);
+  assert.ok(release);close(release.scheduledTime,11.54);
+  h.run(1750);assert.equal(h.calls.filter(c=>c.kind==='start').length,1);
+  h.a.looperController.stopPlayback(h.a);
+});
+
+test('recovery releases a note whose end was missed and does not replay it past a bounded window',()=>{
+  const h=fixture();h.set(500);h.a.looperController.startPlayback(h.a,500);h.quiet();h.run(750);
+  const first=h.calls.find(c=>c.kind==='start');h.run(1800);
+  assert.ok(h.calls.some(c=>c.kind==='cancel'&&c.voice===first.voice));
+  assert.equal(h.calls.filter(c=>c.kind==='start').length,1);
+  h.a.looperData.playbackLimitSourceMs=h.a.timeline.durationMs;
+  h.run(750+h.a.timeline.durationMs+200);
+  assert.equal(h.calls.filter(c=>c.kind==='start').length,1,'No attack from the next repetition');
+  h.a.looperController.stopPlayback(h.a);
+});
+
 test('disconnect retains canonical timestamps and bends, and content duration scales from source 80 BPM to internal 70',()=>{
   const h=fixture(),before=JSON.stringify(h.a.timeline.toJSON());h.set(100);h.a.looperController.startPlayback(h.a,100);h.quiet();
   h.disconnect();h.a.looperController.handleClockDisconnected(h.a);assert.equal(h.a.looperData.armed,false);

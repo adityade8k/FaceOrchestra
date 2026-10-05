@@ -1081,9 +1081,19 @@ export class LooperController {
       sourceNow - scheduling.scheduledThroughSourceMs >
       AUDIO_MAX_LATE_MS * rate
     ) {
-      // Work older than the scheduling horizon cannot be repaired in Web Audio.
-      // Drop that bounded interval and reconcile from the current phase.
-      this.applier.cancelScheduledAudio?.(looperState);
+      // Drop missed attacks, but keep a voice whose same note is still held.
+      // Restarting every voice here invents another attack after a frame stall.
+      const held = new Map();
+      const duration = Math.max(data.timeline.durationMs, 1);
+      if (!Number.isFinite(data.playbackLimitSourceMs) || sourceNow < data.playbackLimitSourceMs) {
+        data.timeline.forEachActiveTrack(track => {
+          const note = this.getActiveNoteAtAbsoluteSource(track, sourceNow, duration);
+          if (note) held.set(track.trackId, `${data.playbackGeneration}:${note.noteKey}`);
+        });
+      }
+      this.applier.cancelScheduledGenerations(
+        s => s.looperId === looperState.id && held.get(s.trackId) !== s.noteKey,
+      );
       this.adapter.cancelLooperPercussion?.(looperState.id);
       scheduling.scheduledThroughSourceMs = Math.max(sourceNow, 0);
       scheduling.includeStart = true;
@@ -1272,6 +1282,7 @@ export class LooperController {
 
   reconcileScheduledAudioAtSource(looperState, absoluteSourceMs, audioNow) {
     const data = looperState.looperData;
+    if (Number.isFinite(data.playbackLimitSourceMs) && absoluteSourceMs >= data.playbackLimitSourceMs) return;
     const durationMs = Math.max(data.timeline.durationMs, 1);
     const localTimeMs =
       ((absoluteSourceMs % durationMs) + durationMs) % durationMs;

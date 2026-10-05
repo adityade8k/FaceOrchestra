@@ -21,7 +21,6 @@ export class HonkVoice {
     this.pitchBendSemitones = 0;
     this.disconnected = false;
     this.releaseState = null;
-    this.scheduledPerformanceStarted = false;
 
     this.createNodes();
     this.rebuildFormants(vowel);
@@ -146,19 +145,10 @@ export class HonkVoice {
         polyphonyScale,
     );
 
-    if (isScheduled) {
-      this.source.frequency.setValueAtTime(frequency, now);
-      this.source.detune.setValueAtTime(detune, now);
-      this.vibrato.frequency.setValueAtTime(5.2, now);
-      if (!this.scheduledPerformanceStarted) {
-        this.master.gain.setValueAtTime(0.0001, now);
-        this.master.gain.linearRampToValueAtTime(gain, now + 0.004);
-        this.scheduledPerformanceStarted = true;
-      } else {
-        this.master.gain.linearRampToValueAtTime(gain, now);
-      }
-      return;
-    }
+    // Loopers change when a performance happens, not how a Honk sounds.
+    // Recorded squeeze curves are sampled before this audio smoothing, so
+    // scheduled notes need the same pitch settling and gain envelope as live
+    // notes. A separate 4 ms attack made imported backing sound percussive.
     this.source.frequency.setTargetAtTime(frequency, now, 0.035);
     this.source.detune.setTargetAtTime(detune, now, 0.045);
     this.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);

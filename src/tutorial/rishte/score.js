@@ -65,7 +65,7 @@ export class RishteGuidance {
   constructor(ensemble, definition, startBeat = 0, endBeat = definition.score.durationBeats) {
     Object.assign(this, { ensemble, startBeat, endBeat });
     this.anchorMs = 0;
-    this.step = { type: "data", timed: true, beats: endBeat,
+    this.step = { type: "data", timed: true, cueStyle: "attack-next", beats: endBeat,
       events: definition.score.events.filter(e => e.beat >= startBeat && e.beat < endBeat) };
   }
   get beatMs() { return 60000 / this.ensemble.a.get("metronome").bpm; }
@@ -77,7 +77,7 @@ export class RishteGuidance {
     return {
       transport: beat < this.startBeat ? `Count in: ${Math.ceil(this.startBeat - beat)}` :
         beat >= this.endBeat ? "Complete" : next && beat >= next.beat ? "Hold, then release" : "Release · rest",
-      instruction: "R / mint: main melody hand. L / orange: assisting hand. Green prepares; yellow holds. Either hand is accepted. Lower Honks are backing.",
+      instruction: "Red square: current note. White circle: next note. Yellow starts large and shrinks: press Trigger at its smallest point. Hold as yellow expands, then release when it reaches the red square. R / mint and L / orange suggest a hand; either hand is accepted.",
       feedback: "Keep your wrist neutral. Coordinate both hands through the overlapping holds.",
     };
   }

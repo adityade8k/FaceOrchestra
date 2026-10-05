@@ -4,9 +4,9 @@ const WIDTH = 1.05,
   HEIGHT = 1.42,
   CW = 1152,
   CH = 1560;
-const buttonRects = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({
+const buttonRects = Array.from({ length: 10 }, (_, i) => ({
   x: i % 2 ? 592 : 40,
-  y: i < 4 ? 132 + Math.floor(i / 2) * 92 : i < 6 ? 1440 : 1348,
+  y: i < 4 ? 132 + Math.floor(i / 2) * 92 : 1440 - Math.floor((i - 4) / 2) * 92,
   w: 520,
   h: 76,
 }));
@@ -241,7 +241,7 @@ export class TutorialPanel {
         name === "feedback" && model.practiceTempo
           ? { ...originalRegion, h: 252 }
           : name === "feedback" && extended
-            ? { ...originalRegion, h: 454 }
+            ? { ...originalRegion, h: actions.length > 8 ? 362 : 454 }
             : originalRegion;
       const text = model[name] || "",
         color =
@@ -266,10 +266,10 @@ export class TutorialPanel {
         : i < 6
           ? model.actions?.[i - 2]
           : null;
-      b.visible = Boolean(a);
+      b.visible = Boolean(a) && (!this.compact || i < compactRects.length);
       b.userData.action = a?.id;
       b.userData.disabled = Boolean(a?.disabled);
-      if (!a) return;
+      if (!b.visible) return;
       const rect = (this.compact ? compactRects : buttonRects)[i];
       ctx.fillStyle = a.disabled
         ? "#233430"
@@ -314,7 +314,7 @@ export class TutorialPanel {
     this.handle.position.y = height / 2 - (compact ? 0.025 : 0.04);
     this.handle.scale.y = compact ? 0.45 : 1;
     this.buttons.forEach((b, i) => {
-      const rect = (compact ? compactRects : buttonRects)[i];
+      const rect = (compact ? compactRects[i] : buttonRects[i]) || buttonRects[i];
       b.scale.set(rect.w / buttonRects[i].w, (rect.h / ch * height) / (buttonRects[i].h / CH * HEIGHT), 1);
       b.position.set(((rect.x + rect.w / 2) / CW - 0.5) * WIDTH,
         (0.5 - (rect.y + rect.h / 2) / ch) * height, 0.003);

@@ -55,10 +55,11 @@ export class RishteHands {
       sprite.visible = Boolean(h?.root.visible);
       if (!sprite.visible) continue;
       const sphere = h.getSqueezeColliderSphere();
-      this.offset.set(.07, .07, 0).applyQuaternion(this.a.layoutRotation);
+      const scale = this.ensemble.layoutFrame?.visualScaleFor(role) ?? 1;
+      this.offset.set(.07, .07, 0).multiplyScalar(scale).applyQuaternion(this.a.layoutRotation);
       sprite.position.copy(sphere.center).add(this.offset);
       sprite.material.opacity = !events || upcoming ? 1 : .35;
-      sprite.scale.setScalar(upcoming ? .07 : .055);
+      sprite.scale.setScalar((upcoming ? .07 : .055) * scale);
     }
   }
   release() {

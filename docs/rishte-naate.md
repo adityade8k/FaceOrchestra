@@ -3,11 +3,28 @@
 Open **Tutorials → next library page → rishte naate.mid**. **Preview full
 arrangement** is available immediately and simulates the suggested two hands
 while actual Loopers play the accompaniment. **Replay full arrangement** starts
-a fresh four-beat count-in. **Practice / Retry** leaves the selected melody to
-the learner. **Previous**, **Next phrase**, **Tempo −5 / +5**, **Stop**, and
-**Exit** use the existing eight panel slots. The toolbar retains **Recenter**.
+a fresh four-beat count-in. **Demonstrate** plays the current step; the final
+step demonstrates the full arrangement. **Practice / Retry** leaves the selected
+melody to the learner. **Previous**, **Next phrase**, **Tempo −5 / +5**, **Stop**,
+and **Exit** remain available. The toolbar retains **Recenter**.
 The Metronome handle also changes tempo. Record Songs loads the same version-3
 arrangement through the existing XR/receiver workflow.
+
+During preview and practice, a **white circle** marks the next note until its
+expected Trigger attack. At the attack, a **red square** marks the current note
+and white moves to the next note. During the final preparation beat, a **large
+yellow circle shrinks to its smallest size exactly at the attack**. Press
+Trigger at that minimum, then hold as yellow expands to the red square's
+edges. Release when yellow reaches red; the current red and yellow disappear
+at the scored release. White remains visible through rests and the count-in.
+
+For a repeat on the same Honk, the current red square and next white circle
+appear together. Yellow finishes the current hold before the next countdown
+starts large and shrinks through the remaining gap. Overlapping notes on
+separate targets retain their own current markers and hold circles. Rishte no longer uses a green countdown. Cues follow
+the same score beat as the preview
+controllers and Metronome, including tempo changes, rather than starting from
+the learner's actual press. Visual changes occur on rendered frames.
 
 The composition and initial full preview currently run at **100 BPM** for the
 requested tempo trial. The original MIDI tempo remains **115 BPM**. Learner practice
@@ -83,7 +100,9 @@ same-pitch target.
 
 Targets remain in stable positions across the entire piece. Full preview and
 complete performance show the current phrase and reveal the next phrase one
-beat before entry; they do not move targets between phrases. The right cluster
+beat before entry; the immediate next target is always visible for its white
+circle, even across a phrase boundary or rest. Targets do not move between
+phrases. The right cluster
 sits at local x = +0.08…+0.56 m; the left at −0.08…−0.56 m, relative to the
 centred layout anchor. Each hand has 11 targets, with unused targets hidden in
 short practice. Nine pitches have a copy on each side to support alternation
@@ -93,6 +112,37 @@ upcoming/held labels brighten beside the normal timing highlights.
 Backing Honks sit lower and farther away; all four Loopers and clock are
 ordinary visible instruments with real cables. The full scene has 47 Honks,
 four Loopers and one Metronome.
+
+### Place the melody before playing
+
+The tutorial shows a blue cuboid around all 22 melody Honks while idle. Hold
+Grip (or Trigger) on a rail or **MOVE MELODY** to drag the group in space.
+Drag an orange corner to scale the group uniformly; thumbstick left/right
+while holding changes size by 10 percentage points. Release to place it.
+Both target sizes and spacing scale together from **60% to 200%**. Targets
+hidden until later phrases move with the group. Backing Honks, Loopers and
+the Metronome keep their positions and sizes.
+
+On desktop, drag the frame or corners with the mouse. **Size**, **Closer**,
+**Farther** and **Reset layout** controls are also available. The frame's
+**RESET** handle restores the initial placement in XR. Placement stays fixed
+and the frame hides during Demonstrate, Preview and Practice, then returns
+after Stop or completion. Phrase changes and retries preserve placement for
+the current tutorial visit. Hand labels and timing cues follow the targets.
+
+Every one of the 18 steps has **Demonstrate**. Each of the 17 short phrases
+demonstrates its melody with its matching Looper accompaniment, using the
+same recommended tempo limit as Practice (75 BPM, or 50/40 BPM for the two
+fast phrases). A lower chosen tempo is retained. The last step's
+**Demonstrate full arrangement** plays all 175 melody notes and 121 backing
+notes, including the opening and ending. **Preview full arrangement** remains
+available on the short steps. Demonstrations preserve takes, earn no practice
+credit, and may be stopped or replayed. The XR panel has an additional action
+row so Demonstrate, full preview, tempo and Stop are all available.
+
+The travel measurements below use the initial 100% layout. Resizing scales
+these distances by the chosen factor; phrase timing and hand assignments stay
+the same.
 
 | Measurement | Right hand | Left hand |
 | --- | ---: | ---: |
@@ -119,7 +169,16 @@ not a claim that comfort has been verified on a physical headset.
 The catalog loads `rishte.js`, `RishteEnsemble` and `RishteTutorial`.
 `RishteHands` drives two ordinary controller rays for preview; the established
 Honk trigger/hold/release path produces the melody. No direct MIDI audio
-scheduler is used. Shared sound-engine and instrument code are unchanged.
+scheduler is used. MIDI instrument names and velocities do not select a sound.
+
+The backing articulation correction makes scheduled `HonkVoice.update` calls
+use the same gain and pitch smoothing as live calls, at their scheduled audio
+time. Previously, a separate scheduled branch snapped pitch immediately and
+used a 4 ms attack, making backing notes much more percussive than live Honks.
+The existing sawtooth source, vowel formants, vibrato, live envelope settings,
+gain mapping and controller release are retained. This corrects the common
+Looper voice path; ordinary live Honk behavior is unchanged. Note gates and
+the composition's 100 BPM playback tempo are unchanged.
 
 Backing uses **13 supported 2/4/8/16-beat windows**. Boundaries occur only when
 no backing key remains held, preserving all 121 attacks and complete key
@@ -133,7 +192,8 @@ next window at its absolute clock beat; source-duration limits prevent the
 old window from repeating while its transport flag awaits the next render
 frame. Empty lanes remain silent without dummy notes. Practice excerpts may
 start with an already-held backing key and cut backing at the excerpt end;
-this boundary clipping is restricted to isolated practice, not full preview.
+this boundary clipping is restricted to isolated phrase practice and
+demonstration, not the full arrangement.
 
 Accompaniment uses the ordinary Looper volume setting −0.35 (existing mapping:
 0.36275 amplitude). The Metronome volume starts at 0.15. These are existing
@@ -152,20 +212,69 @@ node scripts/midi/arrange-rishte-naate-human.mjs
 npm run verify
 node scripts/check-rishte-human-browser.mjs
 node scripts/check-rishte-human-browser.mjs --practice-only
+node scripts/check-rishte-human-browser.mjs --cues-only
+node scripts/check-rishte-human-browser.mjs --layout-only
+node scripts/check-rishte-human-browser.mjs --demonstrations-only
+# Isolate the full audio/controller sequence if headless GPU stalls interrupt it:
+node scripts/check-rishte-human-browser.mjs --demonstrations-only --audio-timing-only
+node scripts/check-honk-articulation-browser.mjs
 npm run test:audit:browser
 ```
 
 Run the timing-sensitive Chrome checks sequentially. On macOS the focused
-scripts select native graphics at half pixel ratio for timing checks. Initial
+scripts select native graphics at half pixel ratio for timing checks; the
+enlarged-layout and step-demonstration checks use quarter pixel ratio. Initial
 runs hit the app's interruption guard (including a run with concurrent
 renderers); software rendering was also too slow. The guard remains intact.
 The application keeps its normal renderer settings. Current-phrase target
 visibility reduces visual clutter and drawing work during the full preview.
 
-The current [100 BPM startup check](audits/rishte-tempo-100.json) confirmed
-the displayed tempo, shared Looper clock, clean Stop and separate 75 BPM
-practice setting. All 700 tests passed again. The full-song browser comparison
-below remains the earlier 115 BPM run.
+The [placement and demonstration audit](audits/rishte-layout-demonstrations.json)
+records 711 passing automated tests and checks all 18 Demonstrate controls.
+Native browser pointer/controller checks cover moving and resizing all 22
+melody targets, including hidden targets, the 60–200% range, fixed backing,
+Reset and placement preservation. The final step completed all **175 melody
+and 121 backing attacks**, with both hands, 12 backing transitions, restored
+takes and a clean ending at a moved 130% layout.
+
+Timing verification has a material limit: full native WebGL runs hit the
+existing frame-interruption guard. The completed full-song check therefore
+used real Web Audio/controller logic with scene matrix updates during
+playback, without rasterizing the 3D scene. It still measured a maximum
+77.875 ms late backing onset and 151.025 ms melody onset delay under headless
+load. The strict 2 ms backing timing check did **not** pass. These results
+verify note coverage and control behavior, not headset frame-rate or timing
+performance. The optional `--audio-timing-only` flag affects only the test
+harness; the application keeps its renderer and interruption guard.
+
+After the red/white role swap, 711 automated tests passed. A deterministic
+browser check sampled 1,053 score positions across all 175 melody notes,
+including 81 overlapping-hold samples and 170 same-target repeat samples.
+Current red squares, next white circles, unchanged yellow sizes and cleanup
+at the ending passed; rendered count-in and hold screenshots were inspected.
+This check sampled score positions rather than replaying the audio and did
+not test a physical headset.
+
+Before the red/white role swap, the [timing-cue browser check](audits/rishte-timing-cues.json) verified all
+175 melody attacks at 100 BPM: yellow changed from shrinking to expanding on
+the same rendered frame as each preview controller attack (0 ms frame
+difference; maximum delay from the score beat was 16.475 ms). Every frame
+checked the nearest red square, countdown size, hold growth and white target,
+including two simultaneous holds, repeats, rests and phrase transitions.
+Practice showed all eight expected cues without automatic melody, including
+a 75 → 50 BPM change. Stop and the ending cleared the cues. Screenshots of
+preparation, attack, hold and overlapping notes were inspected. These are
+desktop browser checks, not physical headset testing.
+
+The latest [Honk articulation check](audits/rishte-honk-articulation.json)
+passed a complete **100 BPM** preview after the sound fix: all 175 melody and
+121 backing attacks, all 13 windows and 12 transitions, zero measured clock
+drift, backing onset error below 0.000001 ms, and a maximum melody frame delay
+of 20.125 ms. The sampled mix peak was 0.95934. Stop, Retry, tempo changes and
+phrase navigation passed; the ending released all voices and restored saved
+takes without preview credit. There were no browser errors. The earlier
+[100 BPM startup check](audits/rishte-tempo-100.json) also confirmed the separate
+75 BPM practice setting. The 115 BPM comparison below is retained as history.
 
 The previous [full browser comparison](audits/rishte-human-browser.json) at
 115 BPM passed with
@@ -186,7 +295,7 @@ attack order. Preview attacks follow render frames; MIDI and Looper score data
 retain the precise beat timing. Physical note releases are checked against the
 source before compiling ordinary trigger gates.
 
-`npm run verify` passed **700 tests**, plus syntax, import and architecture
+`npm run verify` passed **705 tests**, plus syntax, import and architecture
 checks. The [practice browser check](audits/rishte-human-practice.json) passed
 all eight notes in a phrase with overlapping holds while deliberately swapping
 the suggested controllers and changing 50 → 40 BPM during playback. Measured
@@ -199,15 +308,24 @@ were checked. The saved Play scene, including its recorded take, was restored.
 The [existing-composition regression audit](audits/rishte-human-regression.json)
 passed both earlier song scenes, 50 mode transitions, saved-clock relationships,
 workspace recovery, Basics preservation and 49 manual-Honk comparisons. All
-three final browser reports contain zero runtime errors. The shared audio
-engine, instruments and earlier song implementations have no diff from
-`ver-13`.
+three original browser reports contain zero runtime errors. Those reports
+precede the scheduled Honk articulation correction described above; its new
+audio regression renders 24 pairs of live/scheduled Honks through real Web
+Audio at 48 kHz. It covers MIDI 40, 55, 71 and 83, holds of 60, 350 and 1400 ms,
+and both fixed and moving squeeze values. With identical performance inputs,
+the maximum relative waveform RMS difference is below 0.00000006, and all
+releases end in silence. The previous implementation fails this same check.
+This compares synthesized waveforms, not just the values sent to the voice.
+`ver-13` remains at `fee629663085e8f9c4b245c35963c0e73c4070af`.
 
-An earlier completed headless run logged four additional backing voice starts;
-the final traced run had exactly 121 and matched every scheduled onset. The
-extra starts' cause was not confirmed. Together with the observed frame stalls,
-this remains a reason to check playback under actual headset load rather than
-claiming that the desktop result establishes XR timing performance.
+The frame/demonstration checks reproduced the previously observed extra
+backing starts and traced them to late scheduling recovery. The Looper used
+to cancel all scheduled voices and restart any currently held notes after
+falling behind. Recovery now preserves the existing voice when its same
+source note is still held. It cancels expired notes, skips missed attacks,
+and respects bounded playback windows. Deterministic tests cover a stall
+inside a hold, the original release, a missed release, and no attack beyond
+the final window. This correction does not change note data or Honk timbre.
 
 Physical headset testing remains outstanding for reach, comfort, text/cable
 visibility, tracking interruptions and frame rate in the 52-instrument scene.
@@ -227,3 +345,30 @@ comparison is against the MIDI events and screenshot, not a sung recording.
 - `tests/midi/rishte-human.test.js`, `scripts/check-rishte-human-browser.mjs`
   and `scripts/validate-rishte-human-practice-browser.mjs`: automated verification.
 - `README.md`, this report and `docs/audits/rishte-human-*.json`: usage and evidence.
+- `src/audio/honk/HonkVoice.js`, `tests/audio/HonkVoice.test.js` and
+  `scripts/check-honk-articulation-browser.mjs`: preserve normal Honk articulation
+  during scheduled backing playback and compare real rendered waveforms.
+- `docs/audits/rishte-honk-articulation.json`: audio comparison and complete
+  100 BPM preview results after the articulation fix.
+- `src/tutorial/attackCueState.js`, `src/tutorial/TutorialTimingCues.js` and
+  the Rishte guidance: red current-note squares, white next-note circles and
+  yellow circles shrinking to the attack, then expanding to the red boundary.
+- `tests/tutorial/RishteTimingCues.test.js` and
+  `scripts/validate-rishte-cues-browser.mjs`: attack boundaries, rests, repeats,
+  overlapping notes, tempo changes and real preview-controller frame checks.
+- `docs/audits/rishte-timing-cues.json`: complete preview and practice cue results.
+- `src/tutorial/rishte/RishteLayoutFrame.js`, `RishteTutorial.js`,
+  `RishteEnsemble.js`, `RishteHands.js`, `src/tutorial/TutorialRuntime.js`,
+  `src/app/runtime/RuntimeHost.js` and `style.css`: melody-only placement,
+  uniform sizing, controller capture, playback locking and cleanup.
+- `src/tutorial/TutorialPanel.js`: one additional optional XR action row for
+  per-step Demonstrate alongside full preview and existing session controls.
+- `tests/tutorial/RishteLayoutFrame.test.js`,
+  `scripts/validate-rishte-layout-browser.mjs` and
+  `scripts/validate-rishte-demonstrations-browser.mjs`: frame interaction,
+  placement preservation, all lesson demonstrations and moved-layout playback.
+- `src/instruments/looper/LooperController.js` and
+  `tests/instruments/looper/LooperLaunchRules.test.js`: keep an existing held
+  voice during late scheduling recovery instead of creating an extra attack.
+- `docs/audits/rishte-layout-demonstrations.json`: placement, step controls,
+  full note coverage, and the observed headless timing limitations.

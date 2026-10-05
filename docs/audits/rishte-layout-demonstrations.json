@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-04",
+  "branch": "ver-14",
+  "unitTestsPassed": 711,
+  "demonstrationChecks": {
+    "stepsChecked": 18,
+    "firstPhrasePlayedToEnd": true,
+    "fullArrangementBpm": 100,
+    "melodyAttacks": 175,
+    "melodyPitchOrderMatches": true,
+    "backingAttacks": 121,
+    "backingTransitions": 12,
+    "maximumConcurrentHands": 2,
+    "cleanEnding": true,
+    "takesRestored": true,
+    "demonstrationEarnedNoCredit": true,
+    "layoutScale": 1.3,
+    "maximumMelodyOnsetDelayMs": 151.02499997615814,
+    "lateBackingAttacks": [
+      {
+        "id": "t0-e659",
+        "role": "backing-54",
+        "lateMs": 0.5999999642511966
+      },
+      {
+        "id": "t0-e43",
+        "role": "backing-66",
+        "lateMs": 77.87500000000324
+      }
+    ],
+    "timingThresholdPassed": false
+  },
+  "limitations": [
+    "Full native WebGL runs encountered frame stalls and the unchanged 250 ms interruption guard.",
+    "The complete note-count and ending check used real Web Audio and controller logic with only scene matrix updates during playback; placement UI used native WebGL at quarter pixel ratio.",
+    "The full-song check completed all 296 notes but exceeded its 2 ms backing-onset timing threshold. Physical headset timing and reach have not been tested."
+  ],
+  "layoutChecks": {
+    "melodyTargets": 22,
+    "hiddenTargetsMoved": true,
+    "desktopDrag": true,
+    "cornerResize": true,
+    "mouseScale": 1.1970848071185218,
+    "xrGripDrag": true,
+    "xrThumbstickResize": true,
+    "scaleLimits": [
+      0.6,
+      2
+    ],
+    "preservedAcrossPhrasesAndStop": true,
+    "fixedDuringPlayback": true,
+    "cuesFollowTargets": true,
+    "backingUnchanged": true,
+    "reset": true,
+    "learnerRegressionScale": 1.3
+  },
+  "practiceChecks": {
+    "practice": {
+      "feedback": "8/8 matched \u00b7 0 extra. Phrase complete. Continue when ready.",
+      "observations": 8,
+      "swappedHandsAccepted": true,
+      "backingDriftBeats": 2.6645352591003757e-15,
+      "tempoHistory": [
+        {
+          "atMs": 10833.099999964237,
+          "beat": 15.98125,
+          "bpm": 50
+        },
+        {
+          "atMs": 16366.699999988079,
+          "beat": 20.592516666680574,
+          "bpm": 40
+        }
+      ]
+    },
+    "emptyRetryRejected": true,
+    "learnerTakePreserved": true,
+    "cancelledRecordArmPreserved": true,
+    "newTakePreserved": true,
+    "slowerPhraseTempos": [
+      50,
+      40
+    ],
+    "metronomeStop": true,
+    "cleanExit": true,
+    "playWorkspaceRestored": true,
+    "recordSongsVersion": 3
+  },
+  "browserErrors": [],
+  "placementRendering": "native WebGL, quarter pixel ratio",
+  "practiceRendering": "scene matrix updates during playback"
+}

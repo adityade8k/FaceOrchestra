@@ -1009,6 +1009,7 @@ export class TutorialRuntime {
   blocksController(controller) {
     return Boolean(
       this.busy ||
+        this.dataTutorial?.ensemble?.layoutFrame?.blocked.has(controller) ||
         this.menu?.blocked.has(controller) ||
         ((this.session?.mode === "simulation" ||
           this.demo ||
@@ -1062,6 +1063,7 @@ export class TutorialRuntime {
     this.jogReference?.removeEventListener("reset", this.jogReset);
     this.jogReference = this.r.renderer.xr.getReferenceSpace();
     this.jogReset = () => {
+      this.dataTutorial?.ensemble?.layoutFrame?.cancelDrag();
       this.menu?.referenceChanged(this.r.getUserCamera());
       this.jogRecording?.interrupt("reference-space-reset");
       if (this.kuch?.running)

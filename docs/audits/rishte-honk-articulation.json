@@ -1,0 +1,329 @@
+{
+  "scope": "Scheduled Honk audio articulation correction on ver-14; real Chrome Web Audio plus full 100 BPM arrangement",
+  "audio": {
+    "sampleRate": 48000,
+    "cases": [
+      {
+        "midi": 40,
+        "duration": 0.06,
+        "movingSqueeze": false,
+        "relativeRmsError": 4.345894850648461e-08,
+        "maximumDifference": 3.725290298461914e-09,
+        "peak": 0.0570768378674984,
+        "tailPeak": 0
+      },
+      {
+        "midi": 40,
+        "duration": 0.06,
+        "movingSqueeze": true,
+        "relativeRmsError": 4.503822181031185e-08,
+        "maximumDifference": 1.862645149230957e-09,
+        "peak": 0.02356126718223095,
+        "tailPeak": 0
+      },
+      {
+        "midi": 40,
+        "duration": 0.35,
+        "movingSqueeze": false,
+        "relativeRmsError": 4.839103000424474e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.07226481288671494,
+        "tailPeak": 0
+      },
+      {
+        "midi": 40,
+        "duration": 0.35,
+        "movingSqueeze": true,
+        "relativeRmsError": 0,
+        "maximumDifference": 0,
+        "peak": 0.07037246227264404,
+        "tailPeak": 0
+      },
+      {
+        "midi": 40,
+        "duration": 1.4,
+        "movingSqueeze": false,
+        "relativeRmsError": 5.0223014837303765e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.0723070278763771,
+        "tailPeak": 0
+      },
+      {
+        "midi": 40,
+        "duration": 1.4,
+        "movingSqueeze": true,
+        "relativeRmsError": 4.628357917492025e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.07227909564971924,
+        "tailPeak": 0
+      },
+      {
+        "midi": 55,
+        "duration": 0.06,
+        "movingSqueeze": false,
+        "relativeRmsError": 4.797528427504871e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.05655508115887642,
+        "tailPeak": 0
+      },
+      {
+        "midi": 55,
+        "duration": 0.06,
+        "movingSqueeze": true,
+        "relativeRmsError": 4.7984695030042467e-08,
+        "maximumDifference": 1.862645149230957e-09,
+        "peak": 0.02071414887905121,
+        "tailPeak": 0
+      },
+      {
+        "midi": 55,
+        "duration": 0.35,
+        "movingSqueeze": false,
+        "relativeRmsError": 5.1409159287675254e-08,
+        "maximumDifference": 1.4901161193847656e-08,
+        "peak": 0.07699484378099442,
+        "tailPeak": 0
+      },
+      {
+        "midi": 55,
+        "duration": 0.35,
+        "movingSqueeze": true,
+        "relativeRmsError": 0,
+        "maximumDifference": 0,
+        "peak": 0.07506504654884338,
+        "tailPeak": 0
+      },
+      {
+        "midi": 55,
+        "duration": 1.4,
+        "movingSqueeze": false,
+        "relativeRmsError": 5.214243456015045e-08,
+        "maximumDifference": 1.4901161193847656e-08,
+        "peak": 0.07700125128030777,
+        "tailPeak": 0
+      },
+      {
+        "midi": 55,
+        "duration": 1.4,
+        "movingSqueeze": true,
+        "relativeRmsError": 5.3735957719881055e-08,
+        "maximumDifference": 1.4901161193847656e-08,
+        "peak": 0.07699562609195709,
+        "tailPeak": 0
+      },
+      {
+        "midi": 71,
+        "duration": 0.06,
+        "movingSqueeze": false,
+        "relativeRmsError": 0,
+        "maximumDifference": 0,
+        "peak": 0.04572579637169838,
+        "tailPeak": 0
+      },
+      {
+        "midi": 71,
+        "duration": 0.06,
+        "movingSqueeze": true,
+        "relativeRmsError": 0,
+        "maximumDifference": 0,
+        "peak": 0.01671932451426983,
+        "tailPeak": 0
+      },
+      {
+        "midi": 71,
+        "duration": 0.35,
+        "movingSqueeze": false,
+        "relativeRmsError": 5.3672546236738894e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.04572579637169838,
+        "tailPeak": 0
+      },
+      {
+        "midi": 71,
+        "duration": 0.35,
+        "movingSqueeze": true,
+        "relativeRmsError": 5.306302601447605e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.04086487740278244,
+        "tailPeak": 0
+      },
+      {
+        "midi": 71,
+        "duration": 1.4,
+        "movingSqueeze": false,
+        "relativeRmsError": 4.6883322352257895e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.04572579637169838,
+        "tailPeak": 0
+      },
+      {
+        "midi": 71,
+        "duration": 1.4,
+        "movingSqueeze": true,
+        "relativeRmsError": 5.3988435519998936e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.04219181835651398,
+        "tailPeak": 0
+      },
+      {
+        "midi": 83,
+        "duration": 0.06,
+        "movingSqueeze": false,
+        "relativeRmsError": 5.050963833539225e-08,
+        "maximumDifference": 1.4901161193847656e-08,
+        "peak": 0.08918508142232895,
+        "tailPeak": 0
+      },
+      {
+        "midi": 83,
+        "duration": 0.06,
+        "movingSqueeze": true,
+        "relativeRmsError": 0,
+        "maximumDifference": 0,
+        "peak": 0.030758559703826904,
+        "tailPeak": 0
+      },
+      {
+        "midi": 83,
+        "duration": 0.35,
+        "movingSqueeze": false,
+        "relativeRmsError": 5.2344602287589486e-08,
+        "maximumDifference": 1.4901161193847656e-08,
+        "peak": 0.08918508142232895,
+        "tailPeak": 0
+      },
+      {
+        "midi": 83,
+        "duration": 0.35,
+        "movingSqueeze": true,
+        "relativeRmsError": 5.125082980775572e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.04206686094403267,
+        "tailPeak": 0
+      },
+      {
+        "midi": 83,
+        "duration": 1.4,
+        "movingSqueeze": false,
+        "relativeRmsError": 4.8894973861760855e-08,
+        "maximumDifference": 1.1175870895385742e-08,
+        "peak": 0.08918508142232895,
+        "tailPeak": 0
+      },
+      {
+        "midi": 83,
+        "duration": 1.4,
+        "movingSqueeze": true,
+        "relativeRmsError": 5.305415841760415e-08,
+        "maximumDifference": 7.450580596923828e-09,
+        "peak": 0.04320025071501732,
+        "tailPeak": 0
+      }
+    ]
+  },
+  "maximumRelativeRmsErrorBefore": 2.367127851868323,
+  "maximumRelativeRmsErrorAfter": 5.3988435519998936e-08,
+  "fullPreview": {
+    "bpm": 100,
+    "melodyNotes": 175,
+    "backingNotes": 121,
+    "maxMelodyHands": 2,
+    "handLabels": 22,
+    "harmonicBlocks": 13,
+    "maximumConcurrentLoopers": 2,
+    "maximumClockDriftBeats": 0,
+    "backingOnsetErrorMs": 1.4210854715202004e-11,
+    "melodyOnsetErrorMs": 20.125,
+    "peakAmplitude": 0.9593372941017151,
+    "maximumRms": 0.6060213660214185,
+    "durationBeats": 141.921875,
+    "soundParity": true,
+    "normalRelease": true,
+    "takesRestored": true,
+    "noPreviewCredit": true,
+    "cleanEnding": true,
+    "handoffs": [
+      {
+        "to": "block-2",
+        "beat": 16
+      },
+      {
+        "to": "block-3",
+        "beat": 18
+      },
+      {
+        "to": "block-4",
+        "beat": 22
+      },
+      {
+        "to": "block-5",
+        "beat": 38
+      },
+      {
+        "to": "block-6",
+        "beat": 42
+      },
+      {
+        "to": "block-7",
+        "beat": 44
+      },
+      {
+        "to": "block-8",
+        "beat": 60
+      },
+      {
+        "to": "block-9",
+        "beat": 76
+      },
+      {
+        "to": "block-10",
+        "beat": 92
+      },
+      {
+        "to": "block-11",
+        "beat": 94
+      },
+      {
+        "to": "block-12",
+        "beat": 110
+      },
+      {
+        "to": "block-13",
+        "beat": 126
+      }
+    ]
+  },
+  "controls": {
+    "controls": [
+      "rishte-preview",
+      "step-practice",
+      "previous-step",
+      "next-step",
+      "tempo-down",
+      "tempo-up",
+      "rishte-stop",
+      "exit"
+    ],
+    "actualLoopers": 2,
+    "handoffs": [
+      {
+        "to": "block-2",
+        "beat": 16
+      }
+    ],
+    "takesRestored": true,
+    "previewNoCredit": true,
+    "practiceBackingOnly": true,
+    "retry": true
+  },
+  "browserErrors": [],
+  "unitTests": {
+    "passed": 701,
+    "failed": 0
+  },
+  "ver13Commit": "fee629663085e8f9c4b245c35963c0e73c4070af",
+  "limitations": [
+    "Waveform parity uses identical input performances to isolate the scheduled versus live audio paths.",
+    "No subjective listening or physical headset test was performed."
+  ]
+}

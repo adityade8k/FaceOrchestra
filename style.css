@@ -93,6 +93,22 @@ canvas {
   cursor: pointer;
 }
 .practice-tempo :focus-visible { outline: 2px solid #b4ecd3; outline-offset: 2px; }
+.rishte-layout-controls {
+  border: 1px solid #65c5eb; border-radius: 10px; margin: 14px 0;
+  padding: 12px; font: 15px/1.4 system-ui, sans-serif;
+}
+.rishte-layout-controls[hidden] { display: none; }
+.rishte-layout-controls legend { color: #a2e3ff; padding: 0 6px; }
+.rishte-layout-controls p { margin: 0 0 10px; }
+.rishte-layout-controls input { width: 100%; accent-color: #ffb45c; }
+.rishte-layout-controls output { float: right; }
+.rishte-layout-controls > div { display: flex; gap: 6px; margin-top: 10px; }
+.rishte-layout-controls button {
+  flex: 1; color: #fff4dd; background: #30574b; border: 1px solid #558474;
+  border-radius: 6px; padding: 8px 4px; font: inherit; cursor: pointer;
+}
+.rishte-layout-controls :focus-visible { outline: 2px solid #a2e3ff; outline-offset: 2px; }
+.tutorial-actions button[data-action="rishte-preview"] { grid-column: 1 / -1; }
 .tutorial-panel[hidden] {
   display: none;
 }

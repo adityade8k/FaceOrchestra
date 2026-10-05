@@ -92,9 +92,10 @@ export class RishteEnsemble {
     this.expectedRevisions.set(h.id, h.looperData.takeRevision);
     this.expectedTakes.set(h.id, { timeline: h.timeline, json: JSON.stringify(h.timeline.toJSON()) });
   }
-  showMelody(startBeat = 0, endBeat = this.definition.score.durationBeats) {
-    this.visibleRange = `${startBeat}:${endBeat}`;
+  showMelody(startBeat = 0, endBeat = this.definition.score.durationBeats, nextRole = null) {
+    this.visibleRange = `${startBeat}:${endBeat}:${nextRole}`;
     const roles = new Set(this.definition.score.events.filter(e => e.beat >= startBeat && e.beat < endBeat).map(e => e.role));
+    if (nextRole) roles.add(nextRole);
     for (const recipe of this.definition.arrangement.recipes.filter(r => r.role.startsWith("lead-")))
       if (this.a.get(recipe.role)) this.a.get(recipe.role).root.visible = roles.has(recipe.role);
     this.hands?.update();
@@ -157,7 +158,8 @@ export class RishteEnsemble {
       const phrase = phrases[index], next = phrases[index + 1];
       if (phrase) {
         const end = next && beat >= next.startBeat - 1 ? next.endBeat : phrase.endBeat;
-        if (this.visibleRange !== `${phrase.startBeat}:${end}`) this.showMelody(phrase.startBeat, end);
+        const nextRole = this.definition.score.events.find(e => e.beat > beat)?.role || null;
+        if (this.visibleRange !== `${phrase.startBeat}:${end}:${nextRole}`) this.showMelody(phrase.startBeat, end, nextRole);
       }
     }
     this.hands?.update(this.definition.score.events, beat);
@@ -197,6 +199,7 @@ export class RishteEnsemble {
   }
   dispose() {
     this.cancel();
+    this.layoutFrame?.dispose(); this.layoutFrame = null;
     this.hands?.dispose(); this.hands = null;
     if (this.metro && this.originalSetBpm) this.metro.setBpm = this.originalSetBpm;
     this.prepared = false;

@@ -4,6 +4,7 @@ import { observeBendGesture } from "./observeBendGesture.js";
 import * as THREE from "three";
 import { scoreForStep } from "./scoring.js";
 import { timingCueState } from "./timingCueState.js";
+import { attackCueState } from "./attackCueState.js";
 import {
   bendCueState,
   bendCueDisplacement,
@@ -16,6 +17,14 @@ export class TutorialTimingCues {
     this.adapter = adapter;
     this.gauge = new BendGauge(adapter.r.scene, createCanvas);
     this.geometry = new THREE.RingGeometry(1, 1.06, 48);
+    const square = new THREE.Shape();
+    square.moveTo(-1.06, -1.06); square.lineTo(1.06, -1.06);
+    square.lineTo(1.06, 1.06); square.lineTo(-1.06, 1.06); square.closePath();
+    const hole = new THREE.Path();
+    hole.moveTo(-1, -1); hole.lineTo(-1, 1);
+    hole.lineTo(1, 1); hole.lineTo(1, -1); hole.closePath();
+    square.holes.push(hole);
+    this.squareGeometry = new THREE.ShapeGeometry(square);
     this.quaternion = new THREE.Quaternion();
     this.position = new THREE.Vector3();
     this.startQuaternion = new THREE.Quaternion();
@@ -29,9 +38,9 @@ export class TutorialTimingCues {
     this.candidates = [];
     this.drawnRoles = new Set();
     this.pool = Array.from({ length: 6 }, () => {
-      const make = (color) => {
+      const make = (color, geometry = this.geometry) => {
         const mesh = new THREE.Mesh(
-          this.geometry,
+          geometry,
           new THREE.MeshBasicMaterial({
             color,
             transparent: true,
@@ -42,7 +51,7 @@ export class TutorialTimingCues {
           }),
         );
         // Headset guidance stays outside instrument/UI capture roots.
-        mesh.name = "Tutorial timing ring";
+        mesh.name = geometry === this.squareGeometry ? "Tutorial current-note square" : "Tutorial timing ring";
         mesh.raycast = () => {};
         mesh.renderOrder = 100;
         mesh.visible = false;
@@ -54,6 +63,7 @@ export class TutorialTimingCues {
       return {
         yellow: make(0xffd15a),
         green: make(0x60ef9b),
+        red: make(0xff4141, this.squareGeometry),
         reference,
         bend: make(0xffad38),
       };
@@ -153,17 +163,27 @@ export class TutorialTimingCues {
       return;
     }
     const beat = session.beatAt(now);
+    const attackNext = step.cueStyle === "attack-next";
+    const nextBeat = attackNext ? this.events.find(e => e.role && e.beat > beat)?.beat : null;
     const candidates = this.candidates;
     candidates.length = 0;
     for (const event of this.events) {
       if (!event.role) continue;
-      const state = timingCueState(beat, event, {
+      const options = {
         percussion,
         beatMs: session.beatMs,
-      });
+        nextBeat,
+      };
+      if (attackNext && event.beat === nextBeat) {
+        // One yellow motion per Honk: a repeat counts down in the available
+        // gap after the previous hold, without covering its release guidance.
+        const previous = this.events.findLast(e => e.role === event.role && e.beat < event.beat);
+        options.prepareStartBeat = Math.max(event.beat - 1, previous ? previous.beat + previous.beats : -Infinity);
+      }
+      const state = attackNext ? attackCueState(beat, event, options) : timingCueState(beat, event, options);
       if (!state) continue;
       const priority =
-        state.phase === "prepare"
+        ["prepare", "next"].includes(state.phase)
           ? 1
           : ["release", "withdraw"].includes(state.phase)
             ? 2
@@ -205,7 +225,7 @@ export class TutorialTimingCues {
       state.fraction = (beat - event.beat) / event.beats;
       const pair = this.pool[index++];
       this.show(pair, event.role, state, percussion);
-      if (repeat) pair.reference.visible = false;
+      if (repeat && !attackNext) pair.reference.visible = false;
       for (const mesh of Object.values(pair))
         Object.assign(mesh.userData, {
           eventId: event.id,
@@ -236,11 +256,13 @@ export class TutorialTimingCues {
     const radius = sphere?.radius || 0.065;
     pair.reference.position.copy(point);
     pair.reference.quaternion.copy(this.quaternion);
-    pair.reference.scale.setScalar(radius * 1.12);
-    pair.reference.visible = true;
+    const referenceScale = state.reference ?? (state.phase !== "next" ? 1 : 0);
+    pair.reference.scale.setScalar(radius * 1.12 * referenceScale);
+    pair.reference.visible = referenceScale > 0;
     for (const [key, color] of [
       ["yellow", "yellow"],
       ["green", "green"],
+      ["red", "red"],
     ]) {
       const mesh = pair[key],
         scale = state[color];
@@ -329,5 +351,6 @@ export class TutorialTimingCues {
         mesh.material.dispose();
       }
     this.geometry.dispose();
+    this.squareGeometry.dispose();
   }
 }

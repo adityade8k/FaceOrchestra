@@ -186,6 +186,32 @@ test("scheduled looper note parameters and controller release use audio-context 
   assert.equal(release.silentAt, 5.02 + HONK_RELEASE_SETTINGS.liveFadeSeconds);
 });
 
+test("scheduling a Honk preserves the live attack, pitch settling and expression smoothing", () => {
+  const liveContext = createAudioContext({ currentTime: 5 });
+  const scheduledContext = createAudioContext({ currentTime: 1 });
+  const live = new HonkVoice({ context: liveContext });
+  const scheduled = new HonkVoice({ context: scheduledContext });
+  for (const [time, amount] of [[5, .18], [5.017, .33], [5.033, .45], [5.4, 1]]) {
+    const performance = { hornAmount: amount, masterGain: .78, leftEar: -.6,
+      rightEar: -.5, noteGain: 1, pitchBendSemitones: .25 };
+    liveContext.currentTime = time;
+    live.update(performance);
+    scheduled.update(performance, { scheduledTime: time });
+  }
+  for (const [liveParameter, scheduledParameter] of [
+    [live.source.frequency, scheduled.source.frequency],
+    [live.source.detune, scheduled.source.detune],
+    [live.vibrato.frequency, scheduled.vibrato.frequency],
+    [live.master.gain, scheduled.master.gain],
+  ]) {
+    assert.deepEqual(
+      scheduledParameter.events.filter(e => e.type === "setTargetAtTime"),
+      liveParameter.events.filter(e => e.type === "setTargetAtTime"),
+    );
+    assert.equal(eventCount(scheduledParameter, "linearRampToValueAtTime"), 0);
+  }
+});
+
 test("release ramps the held master gain to exact zero before stopping oscillators", () => {
   const context = createAudioContext({ currentTime: 4 });
   const voice = new HonkVoice({ context });

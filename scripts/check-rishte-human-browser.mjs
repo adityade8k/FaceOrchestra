@@ -19,8 +19,9 @@ try {
     for(let i=0;i<300&&!app.runtime.tutorial.ready;i++)await new Promise(r=>setTimeout(r,100));
     const r=app.runtime,t=r.tutorial;
     // Keep native WebGL/Web Audio, but avoid GPU stalls from the headless
-    // desktop renderer. This is a test setting, not an app quality change.
-    r.renderer.setPixelRatio(.5);
+    // desktop renderer. The larger placement checks use quarter resolution;
+    // this is a test setting, not an app quality change.
+    r.renderer.setPixelRatio(${process.argv.includes("--demonstrations-only") || process.argv.includes("--layout-only") ? ".25" : ".5"});
     await t.action('play');await t.action('tutorials');await t.action('composition:rishte-naate');
     if(!t.dataTutorial?.ensemble.prepared)throw new Error('Prepare failed: '+t.uiFeedback);
     t.render(performance.now());await new Promise(r=>setTimeout(r,700));
@@ -30,7 +31,14 @@ try {
       if(d.phase&&(now-d.last>250||r.audioSystem.audioContextService.context?.state!=='running'))interruptions.push({gap:now-d.last,state:r.audioSystem.audioContextService.context?.state,beat:d.ensemble.beatAt(now),longTasks:longTasks.slice(-5)});
       update(now);
     };
-    window.__rishte={r,t,d,interruptions,check:(v,m)=>{if(!v)throw new Error(m+' ' +JSON.stringify(interruptions))},wait:ms=>new Promise(resolve=>setTimeout(resolve,ms))};
+    window.__rishte={r,t,d,interruptions,timingOnly:${process.argv.includes("--audio-timing-only")},check:(v,m)=>{if(!v)throw new Error(m+' ' +JSON.stringify(interruptions))},wait:ms=>new Promise(resolve=>setTimeout(resolve,ms))};
+    if(window.__rishte.timingOnly){
+      const draw=r.renderer.render;
+      r.renderer.render=function(scene,camera){
+        if(d.phase){scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);return;}
+        return draw.call(this,scene,camera);
+      };
+    }
     return {title:d.definition.title,controls:t.panel.model, userAgent:navigator.userAgent,renderPixelRatio:r.renderer.getPixelRatio(),
       instruments:r.instrumentRegistry.size,loopers:d.ensemble.loopers.length,
       contacts:d.definition.arrangement.recipes.filter(p=>p.kind==='honk').map(p=>({role:p.role, chain:r.getTouchingInstrumentChain(t.adapter.get(p.role)).map(h=>h.id)}))};
@@ -38,7 +46,58 @@ try {
   console.log(JSON.stringify({ stage: "prepared", ...prepared }));
   const shot = await browser.send("Page.captureScreenshot", { format: "png" });
   await writeFile("test-results/rishte-human/prepared.png", Buffer.from(shot.data, "base64"));
-  if (process.argv.includes("--sound-only")) {
+  if (process.argv.includes("--layout-only")) {
+    const point = async kind => browser.evaluate(`(() => {
+      const {r,d}=window.__rishte,f=d.ensemble.layoutFrame;
+      if(!window.__rishte.layoutBefore)window.__rishte.layoutBefore=d.definition.arrangement.recipes.map(p=>{
+        const h=d.a.get(p.role);return {role:p.role,position:h.root.position.toArray(),scale:h.baseScale};
+      });
+      const target=${JSON.stringify(kind)}==='move'?f.moveHandle:f.targets.find(h=>h.userData.layoutHandle==='scale'&&h.position.x>0&&h.position.y>0&&h.position.z>0);
+      const p=target.getWorldPosition(f.point.clone()).project(r.getUserCamera()),rect=r.renderer.domElement.getBoundingClientRect();
+      const center=f.root.position.clone().project(r.getUserCamera());
+      return {x:rect.left+(p.x+1)*rect.width/2,y:rect.top+(1-p.y)*rect.height/2,
+        cx:rect.left+(center.x+1)*rect.width/2,cy:rect.top+(1-center.y)*rect.height/2};
+    })()`);
+    const drag = async (from, to) => {
+      await browser.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: from.x, y: from.y });
+      await browser.send("Input.dispatchMouseEvent", { type: "mousePressed", x: from.x, y: from.y, button: "left", buttons: 1, clickCount: 1 });
+      await browser.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: to.x, y: to.y, button: "left", buttons: 1 });
+      await browser.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: to.x, y: to.y, button: "left", buttons: 0, clickCount: 1 });
+      await browser.evaluate(`new Promise(requestAnimationFrame)`);
+    };
+    let handle = await point("move"); await drag(handle, { x: handle.x + 60, y: handle.y + 25 });
+    handle = await point("scale"); await drag(handle, { x: handle.cx + (handle.x - handle.cx) * 1.2, y: handle.cy + (handle.y - handle.cy) * 1.2 });
+    const placed = await browser.send("Page.captureScreenshot", { format: "png" });
+    await writeFile("test-results/rishte-human/layout-placed.png", Buffer.from(placed.data, "base64"));
+    const layout = await browser.evaluate(`(async()=> (await import('/scripts/validate-rishte-layout-browser.mjs')).validate())()`);
+    console.log(JSON.stringify({stage:"layout",...layout}));
+    let demonstrations;
+    if (process.argv.includes("--demonstrations-only")) {
+      const result = await browser.evaluate(`(async()=> (await import('/scripts/validate-rishte-demonstrations-browser.mjs')).validate())()`);
+      const { panelImage, ...report } = result; demonstrations = report;
+      await writeFile("test-results/rishte-human/layout-xr-panel.png", Buffer.from(panelImage.split(",")[1], "base64"));
+      console.log(JSON.stringify({stage:"demonstrations",...report}));
+    }
+    const practice = await browser.evaluate(`(async()=> (await import('/scripts/validate-rishte-human-practice-browser.mjs')).validate())()`);
+    if (browser.errors.length) throw new Error(browser.errors.join("\n"));
+    await writeFile("test-results/rishte-human/layout.json", JSON.stringify({ layout, demonstrations, practice,
+      timingOnly: process.argv.includes("--audio-timing-only"), errors: browser.errors }, null, 2) + "\n");
+    console.log(JSON.stringify({ stage: "layout-practice", ...practice }));
+  } else if (process.argv.includes("--demonstrations-only")) {
+    await browser.evaluate(`(async()=>{const f=window.__rishte.d.ensemble.layoutFrame;f.apply(f.home.clone().add({x:.17,y:.004,z:0}),1.3);await window.__rishte.wait(700)})()`);
+    const { panelImage, ...demonstrations } = await browser.evaluate(`(async()=> (await import('/scripts/validate-rishte-demonstrations-browser.mjs')).validate())()`);
+    await writeFile("test-results/rishte-human/layout-xr-panel.png", Buffer.from(panelImage.split(",")[1], "base64"));
+    if (browser.errors.length) throw new Error(browser.errors.join("\n"));
+    await writeFile("test-results/rishte-human/demonstrations.json", JSON.stringify({demonstrations,errors:browser.errors},null,2)+"\n");
+    console.log(JSON.stringify({stage:"demonstrations",...demonstrations}));
+  } else if (process.argv.includes("--cues-only")) {
+    const { screenshots, ...cues } = await browser.evaluate(`(async()=> (await import('/scripts/validate-rishte-cues-browser.mjs')).validate())()`);
+    for (const [name, data] of Object.entries(screenshots))
+      await writeFile(`test-results/rishte-human/cue-${name}.png`, Buffer.from(data.split(",")[1], "base64"));
+    if (browser.errors.length) throw new Error(browser.errors.join("\n"));
+    await writeFile("test-results/rishte-human/cues.json", JSON.stringify({ ...cues, errors: browser.errors }, null, 2) + "\n");
+    console.log(JSON.stringify({ stage: "timing-cues", ...cues }));
+  } else if (process.argv.includes("--sound-only")) {
     const sound = await browser.evaluate(`(async()=>{
       const {r,t,d,wait}=window.__rishte,a=t.adapter;await r.audioSystem.ensureAudio();
       const ctx=r.audioSystem.audioContextService.context,analyser=ctx.createAnalyser();analyser.fftSize=2048;
@@ -192,7 +251,7 @@ try {
 } finally {
   if (browser) {
     try {
-      const trace = await browser.evaluate(`window.__rishte ? {calls:window.__rishte.calls,releases:window.__rishte.releases,history:window.__rishte.d.ensemble.history,audioAnchor:window.__rishte.d.ensemble.audioAnchor,interruptions:window.__rishte.interruptions} : null`);
+      const trace = await browser.evaluate(`window.__rishte ? {calls:window.__rishte.demoCalls||window.__rishte.calls,releases:window.__rishte.releases,history:window.__rishte.d.ensemble.history,audioAnchor:window.__rishte.d.ensemble.audioAnchor,interruptions:window.__rishte.interruptions} : null`);
       await writeFile("test-results/rishte-human/voice-trace.json", JSON.stringify(trace, null, 2) + "\n");
     } catch { /* Preserve the original error if Chrome itself has closed. */ }
   }

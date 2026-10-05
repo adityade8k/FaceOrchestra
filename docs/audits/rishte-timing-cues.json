@@ -1,0 +1,29 @@
+{
+  "bpm": 100,
+  "runs": [
+    {
+      "mode": "preview",
+      "frames": 5253,
+      "yellowAttacks": 175,
+      "controllerAttacks": 175,
+      "maximumOnsetDelayMs": 16.475000011925545,
+      "maximumOverlap": 2,
+      "maximumCueToControllerFrameDifferenceMs": 0
+    },
+    {
+      "mode": "practice",
+      "frames": 679,
+      "yellowAttacks": 8,
+      "controllerAttacks": 0,
+      "maximumOnsetDelayMs": 14.899999958274535,
+      "maximumOverlap": 1
+    }
+  ],
+  "tempoChange": "75 → 50 BPM during practice",
+  "noGreen": true,
+  "nextSquareThroughoutRests": true,
+  "yellowShrinksToAttack": true,
+  "yellowGrowsToWhite": true,
+  "cleanStopAndEnding": true,
+  "errors": []
+}
