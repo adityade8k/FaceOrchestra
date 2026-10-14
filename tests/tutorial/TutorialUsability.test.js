@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {TutorialSession} from '../../src/tutorial/TutorialSession.js';
-import {LESSON_STEPS} from '../../src/tutorial/lessonSteps.js';
-import {COMPOSITION as C} from '../../src/tutorial/composition.js';
+import {LESSON_STEPS} from '../../src/compositions/jog/definition.js';
+import {COMPOSITION as C} from '../../src/compositions/jog/definition.js';
 import {scoreAttempt,PRACTICE_TOLERANCES as P} from '../../src/tutorial/scoring.js';
 import {timingCueState} from '../../src/tutorial/timingCueState.js';
 import {resolveTutorialRoutes,connectTutorialClock,connectTutorialHonk,recordingFitsRoutes} from '../../src/tutorial/TutorialRoutes.js';

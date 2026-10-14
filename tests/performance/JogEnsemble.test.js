@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { jogTimeline, JogEnsemble } from '../../src/performance/JogEnsemble.js';
-import { COMPOSITION as C } from '../../src/tutorial/composition.js';
+import { COMPOSITION as C } from '../../src/compositions/jog/definition.js';
 import { LooperTimeline } from '../../src/instruments/looper/timeline/LooperTimeline.js';
 import { createHarness } from '../helpers/looperCaptureHarness.js';
 

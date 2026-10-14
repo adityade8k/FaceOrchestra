@@ -30,8 +30,9 @@ export const HONK_INTERACTION_PROFILE = Object.freeze({
 
 export const VOWEL_MORPHS = HONK_INTERACTION_PROFILE[INTERACTION_TARGET_NAMES.mouth].morphs;
 
-// Acquisition and captured-gesture validation share this contract. A body/grip
-// hit (including a locked body's hit) never grants squeeze ownership.
+// Acquisition and captured-gesture validation share one registered squeeze
+// identity. Its raycast uses a sphere when editable and model bounds when
+// locked; arbitrary body/grip geometry never grants voice ownership.
 export function isHonkSqueezeTarget(honk, target) {
   if (honk?.kind !== "honk" || honk.disposed || honk.pendingPlacement ||
       !honk.root?.parent || !target || target.name !== INTERACTION_TARGET_NAMES.horn ||

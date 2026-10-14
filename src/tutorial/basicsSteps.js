@@ -21,7 +21,7 @@ const step = (id, title, instruction, target, objectives, helper = '') => ({
   entry: id, completion: id, cleanup: 'release-inputs',
 });
 export const BASICS_STEPS = Object.freeze([
-  step('honk', 'Honk', 'Point at the horn and press the trigger to honk.', 'squeeze', ['honk'], 'Aim at the large squeeze sphere below the face. Hold Trigger to sustain.'),
+  step('honk', 'Honk', 'Aim at the horn’s squeeze target and press Trigger to honk.', 'squeeze', ['honk'], 'Hold Trigger on the large squeeze sphere below the face to sustain. Release Trigger to stop.'),
   step('bend', 'Bend a note', 'Keep pressing the trigger and bend your wrist to bend the note.', 'squeeze', ['bend'], 'Press Trigger again for this step, then roll your wrist while holding it.'),
   step('move', 'Move the horn', 'Aim at the clown horn, hold grip, and move it through space.', 'body', ['move']),
   step('rotate', 'Rotate the horn', 'While holding grip, rotate the clown horn.', 'body', ['rotate'], 'Release and grab again to start this step.'),
@@ -29,11 +29,11 @@ export const BASICS_STEPS = Object.freeze([
   step('big', 'Make it big', 'Hold grip and push the joystick right to make the clown horn as big as it can go.', 'body', ['big'], 'Use the gripping hand. Recenter the joystick between pushes. The horn returns to working size afterward.'),
   step('ears', 'Adjust both ears', 'Hold the trigger on the right ear and pull it up and down. Then try the left ear.', 'ear', ['right-up', 'right-down', 'left-up', 'left-down'], 'Left and right are from the clown’s perspective: its right ear is on your left.'),
   step('pitch', 'Combine pitch controls', 'Squeeze the horn, bend your wrist, and pull an ear to explore how the pitch changes.', 'squeeze', ['bend', 'ear'], 'Hold Trigger on the squeeze sphere with one hand; use the other hand’s Trigger on an ear.'),
-  step('volume', 'Change volume', 'While squeezing the horn, pull its nose up and down to change the volume.', 'nose', ['up', 'down'], 'Keep one hand’s Trigger on the squeeze sphere. Drag the nose with the other.'),
+  step('volume', 'Change volume', 'While squeezing the horn, pull its nose up and down to change the volume.', 'nose', ['up', 'down'], 'Keep one hand’s ray on the squeeze sphere. Drag the nose with the other.'),
   step('vowels', 'Explore all five vowels', 'Click the mouth to change the vowel. Play all five vowels.', 'mouth', BASICS_VOWELS, 'Click with Trigger. A vowel is checked only when it sounds.'),
   step('duplicate', 'Duplicate', 'Hold grip on the clown horn and press A to duplicate it.', 'body', ['duplicate'], 'Use Grip and A on the right controller. Move the copy aside.'),
   step('chord', 'Make and play a chord', 'Duplicate again until you have three clown horns. Bring all three together to make a chord, then play it.', 'group', ['three', 'group', 'play'], 'Overlap the large squeeze spheres, then squeeze any member. Up to three horns are kept in this lesson.'),
-  step('freeze', 'Freeze and move the chord', 'Point at the chord and press B to freeze it. Then hold grip and move the chord.', 'group', ['freeze', 'move'], 'Freeze fixes membership and relative positions, and disables facial editing. The chord still sounds when squeezed.'),
+  step('freeze', 'Freeze and move the chord', 'Point at the chord and press B to freeze it. Then hold grip and move the chord.', 'group', ['freeze', 'move'], 'Freeze fixes membership and relative positions, and disables facial editing. Aim anywhere inside a frozen horn’s bounding box to play the chord.'),
   step('unfreeze', 'Unfreeze', 'Point at the chord and press B to unfreeze it.', 'group', ['unfreeze'], 'Release B first, then press it again. Members can be moved and edited separately.'),
   step('clear', 'Clear the horns', 'Press X to delete all clown horns.', 'group', ['clear'], 'In onboarding, X clears the tutorial horns. Your saved Play workspace returns on Exit.'),
   step('create', 'Create a new horn', 'Hold A, choose Instruments → Honk, then release. Press Trigger to place it.', 'placement', ['create'], 'Roll to select a category, pull toward you, then roll to Honk. Left Y also opens the menu; Grip cancels a preview.'),

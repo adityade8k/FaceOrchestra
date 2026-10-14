@@ -1,0 +1,15 @@
+{
+  "id": "tu-kisi-rail-si",
+  "title": "Tu Kisi Rail Si",
+  "version": 2,
+  "sequence": 0,
+  "live": {
+    "track": 0,
+    "channel": 0,
+    "port": 0
+  },
+  "transpose": 0,
+  "playback": "honk-live-two-hand-v1",
+  "teachingGrid": "Quarter-note pulses at the MIDI tempo; four-pulse count-in. Source has no meter event.",
+  "authoringScript": "scripts/midi/arrange-tu-kisi-rail-si.mjs"
+}

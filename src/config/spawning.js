@@ -1,5 +1,5 @@
 import { ASSET_PATHS } from "./assets.js";
-import { COMPOSITION } from "../tutorial/composition.js";
+import { COMPOSITION } from "../compositions/jog/definition.js";
 
 export const SPAWN_DISTANCE = 1.5;
 export const DEFAULT_INSTRUMENT_DISTANCE = 1.5;

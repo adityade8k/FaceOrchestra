@@ -9,7 +9,9 @@ export const LifecycleRuntimeMethods = {
       }
   
       const instrumentState = this.getPointedInstrumentState(controller);
-      if (!instrumentState) {
+      // Locking protects against player deletion before any audio or controller
+      // cleanup. Managed scene/tutorial cleanup still calls deleteInstrument.
+      if (!instrumentState || (instrumentState.kind === "honk" && instrumentState.locked)) {
         return;
       }
   

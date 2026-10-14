@@ -1,12 +1,16 @@
 import * as THREE from 'three';
-import { INTERACTION_TARGET_NAMES, MAX_PITCH_BEND_SEMITONES } from '../config/honk.js';
+import { INTERACTION_TARGET_NAMES, getHonkPitchBendRange } from '../config/honk.js';
 import { getLooperButtonName, getLooperControlName } from '../instruments/looper/looperNames.js';
 import { BASICS_EARS } from './basicsSteps.js';
 import { BendGauge } from './BendGauge.js';
+import { BendHaptics } from './BendHaptics.js';
+
+const BASIC_BEND_TARGETS = [{ role: 'basic' }];
 
 export class BasicsGuidance {
   constructor(tutorial) {
     this.t = tutorial; this.r = tutorial.r;
+    this.bendHaptics = new BendHaptics(tutorial.a);
     this.scratch = new THREE.Vector3(); this.eye = new THREE.Vector3();
     this.desired = new THREE.Vector3(); this.rotation = new THREE.Quaternion();
     this.look = new THREE.Object3D(); this.bounds = new THREE.Box3();
@@ -68,6 +72,8 @@ export class BasicsGuidance {
   }
   update(now) {
     const t = this.t, panel = t.host.panel, camera = this.r.getUserCamera();
+    if (['bend', 'pitch'].includes(t.step.id) && !t.demo) this.bendHaptics.update(BASIC_BEND_TARGETS);
+    else this.bendHaptics.reset();
     const visible = !t.host.navigationScreen && t.host.menu.visible;
     const target = this.target();
     camera.getWorldPosition(this.eye); camera.getWorldQuaternion(this.rotation);
@@ -145,7 +151,7 @@ export class BasicsGuidance {
     }
     if (visible && ['bend', 'pitch'].includes(t.step.id) && t.horn) {
       const sphere = t.horn.getSqueezeColliderSphere();
-      const bend = t.horn.getProcessedLivePerformanceState().bend * MAX_PITCH_BEND_SEMITONES;
+      const bend = t.horn.getProcessedLivePerformanceState().bend * getHonkPitchBendRange(t.horn);
       if (sphere) this.bend.update({
         required: bend < -0.1 ? -1 : 1, actual: bend, destinationSemitones: bend < -0.1 ? -1 : 1, start: 'Squeeze',
         destination: 'Roll wrist', status: 'Either direction · at least one semitone',
@@ -158,8 +164,9 @@ export class BasicsGuidance {
       panel.hover(hit?.object);
     }
   }
-  reset() { this.ring.visible = false; this.arrow.visible = false; this.badge.visible = false; this.bend.reset(); this.pinned = false; this.anchorAt = -Infinity; }
+  reset() { this.bendHaptics.reset(); this.ring.visible = false; this.arrow.visible = false; this.badge.visible = false; this.bend.reset(); this.pinned = false; this.anchorAt = -Infinity; }
   dispose() {
+    this.bendHaptics.reset();
     this.bend.dispose(); this.ring.removeFromParent(); this.arrow.removeFromParent();
     this.ring.geometry.dispose(); this.ring.material.dispose();
     this.badge.removeFromParent(); this.badge.geometry.dispose(); this.badge.material.dispose(); this.badgeTexture.dispose();

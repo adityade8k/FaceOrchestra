@@ -1,4 +1,4 @@
-import { COMPOSITION as C, TOLERANCES as T, performanceEvents, DESCENDING_BEND } from './composition.js';
+import { COMPOSITION as C, TOLERANCES as T, performanceEvents, DESCENDING_BEND } from '../compositions/jog/definition.js';
 const pass = () => ({ ok: true, message: 'Validated.' });
 const fail = message => ({ ok: false, message });
 export function sameMembers(a = [], b = []) {
@@ -31,7 +31,7 @@ export function validateBend(event, curve = DESCENDING_BEND) {
   return pass();
 }
 export function validateNote(event, expected, { timed = false, durationBeats=T.durationBeats } = {}) {
-  if (!event || event.kind !== 'note' || !event.released || event.allReleased === false || !event.articulated) return fail('Release Trigger before starting a fresh note.');
+  if (!event || event.kind !== 'note' || !event.released || event.allReleased === false || !event.articulated) return fail('Release Trigger before pressing again to start a fresh note.');
   if (event.role !== expected.role) return fail(`Wrong target: play ${expected.role}.`);
   if (!event.voiced || event.invalidMembers || !pitchesMatch(event.midis, expected.midis || [expected.midi]))
     return fail('Check the pitches and touching voices; an expected voice is missing or an extra voice joined.');

@@ -1,5 +1,5 @@
-import { validateComposition } from "./CompositionRegistry.js";
-import { tuningForMidi } from "../tutorial/composition.js";
+import { validateComposition } from "./CompositionDefinition.js";
+import { tuningForMidi } from "./jog/definition.js";
 import { GenericTutorial, assessDataLesson } from "../tutorial/GenericTutorial.js";
 import { DataGuidance } from "./DataEnsemble.js";
 import { MidiScorePlayer } from "./MidiScorePlayer.js";

@@ -1,4 +1,4 @@
-import { COMPOSITION as C, bendAt, TOLERANCES as T } from './composition.js';
+import { COMPOSITION as C, bendAt, TOLERANCES as T } from '../compositions/jog/definition.js';
 import { expectedForStep } from './validation.js';
 
 // Driven by the app's INPUT phase; never owns a timer or a render loop.

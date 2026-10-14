@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { updateHonkPitchColor } from "../../scene/honkPitchColor.js";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import {
   INTERACTION_TARGET_NAMES,
@@ -225,9 +226,12 @@ export const HonkPresentationRuntimeMethods = {
     },
     setInstrumentLockedTexture(instrumentState, locked) {
       const textureSet = this.getTextureSetForInstrumentState(instrumentState);
-      return applyInstrumentLockedTexture(instrumentState, locked, textureSet, {
+      const changed = applyInstrumentLockedTexture(instrumentState, locked, textureSet, {
         swapMaterial: (material, targetMap) => this.getTextureSwapMaterial(material, targetMap),
       });
+      // Lock selects the painted texture; octave tint stays layered over it.
+      updateHonkPitchColor(instrumentState);
+      return changed;
     },
     getTextureSetForInstrumentState(instrumentState) {
       return resolveInstrumentLockTextureSet(instrumentState, {
@@ -310,6 +314,7 @@ export const HonkPresentationRuntimeMethods = {
       group.scale.set(scale.x ?? 1, scale.y ?? 1, scale.z ?? 1);
     },
     updateNoteLabel(state) {
+      updateHonkPitchColor(state);
       if (!NOTE_LABEL_SETTINGS.enabled || !this.noteFont || !state?.noteLabelGroup) {
         return;
       }

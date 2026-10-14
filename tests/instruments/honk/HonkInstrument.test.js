@@ -100,3 +100,26 @@ function tuple(...values) {
   result.setScalar = (next) => keys.slice(0, 3).forEach((key) => { result[key] = next; });
   return result;
 }
+
+
+test("authored extended bend range survives save/restore and old scenes retain the default", () => {
+  const calls = [];
+  const make = () => new HonkInstrument({id:"saved-honk",root:object3D(),morphController:morphController(),
+    voiceService:{startVoice(){},updateVoice:(_id,_state,_tuning,options)=>calls.push(options)}});
+  const honk = make();
+  assert.equal(honk.pitchBendRange, 4);
+  const ordinary = honk.serialize();
+  assert.equal(ordinary.pitchBendRange, undefined);
+  honk.pitchBendRange = 5;
+  const saved = JSON.parse(JSON.stringify(honk.serialize()));
+  assert.equal(saved.pitchBendRange, 5);
+  const restored = make().restore(saved);
+  restored.startAudioVoice("take"); restored.updateAudioVoice("take", {squeeze:1,bend:-1});
+  assert.equal(calls.at(-1).pitchBendRange, 5);
+  restored.restore(ordinary);
+  assert.equal(restored.pitchBendRange, 4);
+  restored.updateAudioVoice("take", {squeeze:1,bend:-1});
+  assert.equal(calls.at(-1).pitchBendRange, undefined);
+  restored.restore({...saved,pitchBendRange:99});
+  assert.equal(restored.pitchBendRange, 4);
+});

@@ -1,0 +1,3239 @@
+{
+  "schemaVersion": 1,
+  "id": "nazariya-honk-bends",
+  "title": "Nazariya Ki Maari",
+  "contentVersion": 5,
+  "bpm": 70,
+  "sourceBpm": 70,
+  "practiceBpm": 70,
+  "maxBpm": 70,
+  "pitchBendRange": 4,
+  "liveRole": "melody",
+  "playback": "honk-live-two-hand-v1",
+  "source": {
+    "filename": "nazariya-honk-bends-70bpm.mid",
+    "sha256": "d2ca1e4bc2aef6de444843875920e0fe38b06e101e390d52d89a93390b3733f1",
+    "byteLength": 3844,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "nazariya-honk-bends-70bpm.mid"
+    },
+    "format": 1,
+    "division": {
+      "kind": "ppq",
+      "ppq": 960
+    }
+  },
+  "importOptions": {
+    "id": "nazariya-honk-bends",
+    "title": "Nazariya Ki Maari",
+    "version": 5,
+    "sequence": 0,
+    "live": {
+      "track": 1,
+      "channel": 0,
+      "port": 0
+    },
+    "transpose": 0,
+    "playback": "honk-live-two-hand-v1",
+    "approvedArrangement": "approved-70bpm-screenshot-arrangement.json",
+    "authoringScript": "scripts/midi/arrange-nazariya-honk-bends.mjs"
+  },
+  "normalizedSource": {
+    "file": "normalized.json",
+    "sha256": "bc76b76916678c5eedc9b87c5724f0c12cbacb9edf88d86d5969bc8bc26b07fa",
+    "sequence": 0
+  },
+  "authoredSource": {
+    "file": "approved-70bpm-screenshot-arrangement.json",
+    "sha256": "6a5face108b5df85064a11945f0bf6a30a7c1ffafe89458d86ff6879732791c1",
+    "sourcePreview": {
+      "filename": "nazariya-original-screenshots-bends-70bpm-composition.json",
+      "sha256": "6a5face108b5df85064a11945f0bf6a30a7c1ffafe89458d86ff6879732791c1"
+    },
+    "sourceScreenshots": {
+      "file": "screenshot-notes.json",
+      "sha256": "1f86fa22af9eea6447e19124c3445fe4781c1c73a103e6142a5b755409db5593",
+      "noteCount": 135
+    },
+    "sourceCompositionHash": "67fa4ed500dbba504f664fad6631533c2effd4e03f2bbd24ae7697ad8facb170",
+    "sourceCompositionFile": "provenance/layout-v4.json"
+  },
+  "score": {
+    "events": [
+      {
+        "id": "screenshot-contour-01",
+        "beat": 0.4037274394038806,
+        "beats": 0.32245042135540186,
+        "midi": 57,
+        "velocity": 80,
+        "role": "lead-57",
+        "hand": "R",
+        "screenshotNoteIds": [
+          0
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 0,
+            "midi": 57,
+            "beat": 0.4037274394038806,
+            "endBeat": 0.7261778607592825
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-01"
+        ]
+      },
+      {
+        "id": "screenshot-contour-02",
+        "beat": 0.7476745555163092,
+        "beats": 0.5374173689256697,
+        "midi": 57,
+        "velocity": 80,
+        "role": "lead-57",
+        "hand": "R",
+        "screenshotNoteIds": [
+          1
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 1,
+            "midi": 57,
+            "beat": 0.7476745555163092,
+            "endBeat": 1.285091924441979
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-02"
+        ]
+      },
+      {
+        "id": "screenshot-contour-03",
+        "beat": 1.3065886191990057,
+        "beats": 0.8383710955240449,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          2
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 2,
+            "midi": 61,
+            "beat": 1.3065886191990057,
+            "endBeat": 2.1449597147230506
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-03"
+        ]
+      },
+      {
+        "id": "screenshot-contour-04",
+        "beat": 2.166456409480077,
+        "beats": 2.902053792198617,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 3,
+            "midi": 61,
+            "beat": 2.166456409480077,
+            "endBeat": 2.3169332727792646
+          },
+          {
+            "sourceId": 4,
+            "midi": 63,
+            "beat": 2.3384299675362916,
+            "endBeat": 2.574893609863586
+          },
+          {
+            "sourceId": 5,
+            "midi": 64,
+            "beat": 2.596390304620613,
+            "endBeat": 3.3702713158735778
+          },
+          {
+            "sourceId": 6,
+            "midi": 63,
+            "beat": 3.3917680106306043,
+            "endBeat": 3.972178769070328
+          },
+          {
+            "sourceId": 7,
+            "midi": 61,
+            "beat": 3.9936754638273544,
+            "endBeat": 5.068510201678694
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.018962962962962928,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.05925925925925932,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.08770370370370378,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.14814814814814822,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.3438294644409668,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.4222222222222222,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.5291260940126356,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6296296296296297,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-04"
+        ]
+      },
+      {
+        "id": "screenshot-contour-05",
+        "beat": 5.090006896435721,
+        "beats": 0.8168744007670181,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          8,
+          9
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 8,
+            "midi": 61,
+            "beat": 5.090006896435721,
+            "endBeat": 5.390960623034096
+          },
+          {
+            "sourceId": 9,
+            "midi": 59,
+            "beat": 5.412457317791123,
+            "endBeat": 5.906881297202739
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.12631578947368444,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.39473684210526333,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-05"
+        ]
+      },
+      {
+        "id": "screenshot-contour-06",
+        "beat": 5.928377991959765,
+        "beats": 1.9561992228894383,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          10,
+          11,
+          12,
+          13
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 10,
+            "midi": 61,
+            "beat": 5.928377991959765,
+            "endBeat": 6.444298666128408
+          },
+          {
+            "sourceId": 11,
+            "midi": 62,
+            "beat": 6.465795360885435,
+            "endBeat": 6.788245782240837
+          },
+          {
+            "sourceId": 12,
+            "midi": 61,
+            "beat": 6.809742476997864,
+            "endBeat": 7.347159845923533
+          },
+          {
+            "sourceId": 13,
+            "midi": 59,
+            "beat": 7.36865654068056,
+            "endBeat": 7.8845772148492035
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1584283263684673,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2747252747252748,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.33425250219264324,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.4505494505494508,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5871650845242393,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7362637362637363,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-06"
+        ]
+      },
+      {
+        "id": "screenshot-contour-07",
+        "beat": 7.9060739096062305,
+        "beats": 0.9028611797951251,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          14,
+          15,
+          16
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 14,
+            "midi": 61,
+            "beat": 7.9060739096062305,
+            "endBeat": 8.18553094144758
+          },
+          {
+            "sourceId": 15,
+            "midi": 59,
+            "beat": 8.207027636204606,
+            "endBeat": 8.464987973288927
+          },
+          {
+            "sourceId": 16,
+            "midi": 57,
+            "beat": 8.50798136280298,
+            "endBeat": 8.808935089401356
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.10666666666666734,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3333333333333333,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.43999999999999967,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6666666666666656,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-07"
+        ]
+      },
+      {
+        "id": "screenshot-contour-08",
+        "beat": 8.959411952700544,
+        "beats": 0.5804107584397222,
+        "midi": 57,
+        "velocity": 80,
+        "role": "lead-57",
+        "hand": "R",
+        "screenshotNoteIds": [
+          17
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 17,
+            "midi": 57,
+            "beat": 8.959411952700544,
+            "endBeat": 9.539822711140266
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-08"
+        ]
+      },
+      {
+        "id": "screenshot-contour-09",
+        "beat": 9.668802879682428,
+        "beats": 0.9028611797951243,
+        "midi": 57,
+        "velocity": 80,
+        "role": "lead-57",
+        "hand": "R",
+        "screenshotNoteIds": [
+          18,
+          19,
+          20
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 18,
+            "midi": 57,
+            "beat": 9.668802879682428,
+            "endBeat": 9.948259911523776
+          },
+          {
+            "sourceId": 19,
+            "midi": 57,
+            "beat": 9.969756606280802,
+            "endBeat": 10.063240080065937
+          },
+          {
+            "sourceId": 20,
+            "midi": 57,
+            "beat": 10.077240080065936,
+            "endBeat": 10.571664059477552
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-09"
+        ]
+      },
+      {
+        "id": "screenshot-contour-10",
+        "beat": 10.59316075423458,
+        "beats": 0.30095372659837416,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          21
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 21,
+            "midi": 61,
+            "beat": 10.59316075423458,
+            "endBeat": 10.894114480832954
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-10"
+        ]
+      },
+      {
+        "id": "screenshot-contour-11",
+        "beat": 10.915611175589982,
+        "beats": 0.6019074531967501,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          22
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 22,
+            "midi": 61,
+            "beat": 10.915611175589982,
+            "endBeat": 11.517518628786732
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-11"
+        ]
+      },
+      {
+        "id": "screenshot-contour-12",
+        "beat": 11.53901532354376,
+        "beats": 0.5374173689256683,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          23
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 23,
+            "midi": 61,
+            "beat": 11.53901532354376,
+            "endBeat": 12.076432692469428
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-12"
+        ]
+      },
+      {
+        "id": "screenshot-contour-13",
+        "beat": 12.097929387226456,
+        "beats": 1.4832719382348483,
+        "midi": 66,
+        "velocity": 80,
+        "role": "lead-66",
+        "hand": "R",
+        "screenshotNoteIds": [
+          24,
+          25,
+          26
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 24,
+            "midi": 66,
+            "beat": 12.097929387226456,
+            "endBeat": 12.914803787993474
+          },
+          {
+            "sourceId": 25,
+            "midi": 64,
+            "beat": 12.9363004827505,
+            "endBeat": 13.194260819834822
+          },
+          {
+            "sourceId": 26,
+            "midi": 63,
+            "beat": 13.215757514591848,
+            "endBeat": 13.581201325461304
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.36858003901022884,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5652173913043476,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6255072463768108,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7536231884057967,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-13"
+        ]
+      },
+      {
+        "id": "screenshot-contour-14",
+        "beat": 13.60269802021833,
+        "beats": 0.902861179795126,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          27
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 27,
+            "midi": 61,
+            "beat": 13.60269802021833,
+            "endBeat": 14.505559200013456
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-14"
+        ]
+      },
+      {
+        "id": "screenshot-contour-15",
+        "beat": 14.527055894770482,
+        "beats": 0.8813644850380982,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          28,
+          29
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 28,
+            "midi": 61,
+            "beat": 14.527055894770482,
+            "endBeat": 14.892499705639938
+          },
+          {
+            "sourceId": 29,
+            "midi": 59,
+            "beat": 14.913996400396965,
+            "endBeat": 15.40842037980858
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.14048780487804868,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4390243902439024,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-15"
+        ]
+      },
+      {
+        "id": "screenshot-contour-16",
+        "beat": 15.429917074565608,
+        "beats": 0.2364636423272941,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          30
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 30,
+            "midi": 61,
+            "beat": 15.429917074565608,
+            "endBeat": 15.666380716892903
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-16"
+        ]
+      },
+      {
+        "id": "screenshot-contour-17",
+        "beat": 15.68787741164993,
+        "beats": 1.8057223595902503,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          31,
+          32,
+          33,
+          34,
+          35
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 31,
+            "midi": 61,
+            "beat": 15.68787741164993,
+            "endBeat": 15.967334443491279
+          },
+          {
+            "sourceId": 32,
+            "midi": 62,
+            "beat": 15.988831138248305,
+            "endBeat": 16.08231461203344
+          },
+          {
+            "sourceId": 33,
+            "midi": 62,
+            "beat": 16.09631461203344,
+            "endBeat": 16.28978486484668
+          },
+          {
+            "sourceId": 34,
+            "midi": 61,
+            "beat": 16.332778254360733,
+            "endBeat": 16.89169231804343
+          },
+          {
+            "sourceId": 35,
+            "midi": 59,
+            "beat": 16.91318901280046,
+            "endBeat": 17.49359977124018
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.05333333333333318,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.16666666666666619,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.26809523809523667,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.3571428571428564,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5170478891869736,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6785714285714292,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-17"
+        ]
+      },
+      {
+        "id": "screenshot-contour-18",
+        "beat": 17.515096465997207,
+        "beats": 1.7842256648332224,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          36,
+          37,
+          38
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 36,
+            "midi": 61,
+            "beat": 17.515096465997207,
+            "endBeat": 17.816050192595583
+          },
+          {
+            "sourceId": 37,
+            "midi": 59,
+            "beat": 17.83754688735261,
+            "endBeat": 18.138500613950985
+          },
+          {
+            "sourceId": 38,
+            "midi": 57,
+            "beat": 18.15999730870801,
+            "endBeat": 19.29932213083043
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.05783132530120497,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.18072289156626528,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.23855421686747025,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.36144578313253056,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-18"
+        ]
+      },
+      {
+        "id": "screenshot-contour-19",
+        "beat": 19.342315520344485,
+        "beats": 0.32245042135540203,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          39
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 39,
+            "midi": 68,
+            "beat": 19.342315520344485,
+            "endBeat": 19.664765941699887
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-19"
+        ]
+      },
+      {
+        "id": "screenshot-contour-20",
+        "beat": 19.686262636456913,
+        "beats": 0.6019074531967483,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          40
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 40,
+            "midi": 68,
+            "beat": 19.686262636456913,
+            "endBeat": 20.28817008965366
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-20"
+        ]
+      },
+      {
+        "id": "screenshot-contour-21",
+        "beat": 20.30966678441069,
+        "beats": 0.53741736892567,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          41
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 41,
+            "midi": 68,
+            "beat": 20.30966678441069,
+            "endBeat": 20.84708415333636
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-21"
+        ]
+      },
+      {
+        "id": "screenshot-contour-22",
+        "beat": 20.868580848093387,
+        "beats": 0.2794570318413463,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          42
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 42,
+            "midi": 68,
+            "beat": 20.868580848093387,
+            "endBeat": 21.148037879934733
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-22"
+        ]
+      },
+      {
+        "id": "screenshot-contour-23",
+        "beat": 21.16953457469176,
+        "beats": 2.3861331180299743,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          43,
+          44,
+          45
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 43,
+            "midi": 68,
+            "beat": 21.16953457469176,
+            "endBeat": 21.77144202788851
+          },
+          {
+            "sourceId": 44,
+            "midi": 66,
+            "beat": 21.792938722645538,
+            "endBeat": 22.71729659719769
+          },
+          {
+            "sourceId": 45,
+            "midi": 68,
+            "beat": 22.738793291954718,
+            "endBeat": 23.555667692721734
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.13902723145680881,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.26126126126126165,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.5354236278532056,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6576576576576585,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-23"
+        ]
+      },
+      {
+        "id": "screenshot-contour-24",
+        "beat": 23.59866108223579,
+        "beats": 3.0095372659837487,
+        "midi": 69,
+        "velocity": 80,
+        "role": "lead-69",
+        "hand": "R",
+        "screenshotNoteIds": [
+          46,
+          47,
+          48,
+          49,
+          50
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 46,
+            "midi": 69,
+            "beat": 23.59866108223579,
+            "endBeat": 25.404383441826038
+          },
+          {
+            "sourceId": 47,
+            "midi": 71,
+            "beat": 25.425880136583064,
+            "endBeat": 25.705337168424414
+          },
+          {
+            "sourceId": 48,
+            "midi": 69,
+            "beat": 25.72683386318144,
+            "endBeat": 25.984794200265764
+          },
+          {
+            "sourceId": 49,
+            "midi": 68,
+            "beat": 26.00629089502279,
+            "endBeat": 26.307244621621166
+          },
+          {
+            "sourceId": 50,
+            "midi": 66,
+            "beat": 26.328741316378192,
+            "endBeat": 26.60819834821954
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5102287335121832,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6071428571428567,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6391428571428566,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.7071428571428571,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7368571428571425,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.8000000000000005,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.8342857142857149,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.9071428571428577,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-24"
+        ]
+      },
+      {
+        "id": "screenshot-contour-25",
+        "beat": 26.629695042976564,
+        "beats": 0.4514305898975657,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          51
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 51,
+            "midi": 64,
+            "beat": 26.629695042976564,
+            "endBeat": 27.08112563287413
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-25"
+        ]
+      },
+      {
+        "id": "screenshot-contour-26",
+        "beat": 27.102622327631156,
+        "beats": 1.9991926124034904,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          52,
+          53,
+          54
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 52,
+            "midi": 64,
+            "beat": 27.102622327631156,
+            "endBeat": 27.532556222771692
+          },
+          {
+            "sourceId": 53,
+            "midi": 66,
+            "beat": 27.55405291752872,
+            "endBeat": 28.456914097323843
+          },
+          {
+            "sourceId": 54,
+            "midi": 68,
+            "beat": 28.47841079208087,
+            "endBeat": 29.101814940034647
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.0799142224914593,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2258064516129031,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.5422798138893082,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.688172043010752,
+            "semitones": 4
+          },
+          {
+            "fraction": 1,
+            "semitones": 4
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-26"
+        ]
+      },
+      {
+        "id": "screenshot-contour-27",
+        "beat": 29.123311634791673,
+        "beats": 0.8813644850380982,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          55,
+          56,
+          57
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 55,
+            "midi": 68,
+            "beat": 29.123311634791673,
+            "endBeat": 29.402768666633023
+          },
+          {
+            "sourceId": 56,
+            "midi": 68,
+            "beat": 29.42426536139005,
+            "endBeat": 29.560742224689236
+          },
+          {
+            "sourceId": 57,
+            "midi": 68,
+            "beat": 29.574742224689235,
+            "endBeat": 30.00467611982977
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-27"
+        ]
+      },
+      {
+        "id": "screenshot-contour-28",
+        "beat": 30.0261728145868,
+        "beats": 0.2364636423272941,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          58
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 58,
+            "midi": 68,
+            "beat": 30.0261728145868,
+            "endBeat": 30.262636456914095
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-28"
+        ]
+      },
+      {
+        "id": "screenshot-contour-29",
+        "beat": 30.28413315167112,
+        "beats": 0.7813777060099909,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          59,
+          60,
+          61
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 59,
+            "midi": 68,
+            "beat": 30.28413315167112,
+            "endBeat": 30.800053825839765
+          },
+          {
+            "sourceId": 60,
+            "midi": 66,
+            "beat": 30.82155052059679,
+            "endBeat": 30.93653068913895
+          },
+          {
+            "sourceId": 61,
+            "midi": 64,
+            "beat": 30.95053068913895,
+            "endBeat": 31.06551085768111
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.31450948800919587,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6877818048712008,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7406034474853082,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.852849438040288,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-29"
+        ]
+      },
+      {
+        "id": "screenshot-contour-30",
+        "beat": 31.07951085768111,
+        "beats": 1.2253116011505263,
+        "midi": 63,
+        "velocity": 80,
+        "role": "lead-63",
+        "hand": "R",
+        "screenshotNoteIds": [
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 62,
+            "midi": 63,
+            "beat": 31.07951085768111,
+            "endBeat": 31.272981110494353
+          },
+          {
+            "sourceId": 63,
+            "midi": 61,
+            "beat": 31.29447780525138,
+            "endBeat": 31.387961279036514
+          },
+          {
+            "sourceId": 64,
+            "midi": 63,
+            "beat": 31.401961279036513,
+            "endBeat": 31.61692822660678
+          },
+          {
+            "sourceId": 65,
+            "midi": 63,
+            "beat": 31.638424921363807,
+            "endBeat": 31.75340508990597
+          },
+          {
+            "sourceId": 66,
+            "midi": 64,
+            "beat": 31.76740508990597,
+            "endBeat": 31.860888563691102
+          },
+          {
+            "sourceId": 67,
+            "midi": 66,
+            "beat": 31.8748885636911,
+            "endBeat": 32.08985551126137
+          },
+          {
+            "sourceId": 68,
+            "midi": 66,
+            "beat": 32.111352206018395,
+            "endBeat": 32.30482245883164
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.056140350877194094,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.17543859649122828,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.20350877192982386,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.2631578947368424,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4898245614035082,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5614035087719322,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.5894736842105278,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.6491228070175434,
+            "semitones": 3
+          },
+          {
+            "fraction": 1,
+            "semitones": 3
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-30"
+        ]
+      },
+      {
+        "id": "screenshot-contour-31",
+        "beat": 32.32631915358866,
+        "beats": 1.1178281273653923,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          69,
+          70,
+          71
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 69,
+            "midi": 68,
+            "beat": 32.32631915358866,
+            "endBeat": 32.928226606785415
+          },
+          {
+            "sourceId": 70,
+            "midi": 66,
+            "beat": 32.94972330154244,
+            "endBeat": 33.16469024911271
+          },
+          {
+            "sourceId": 71,
+            "midi": 64,
+            "beat": 33.186186943869735,
+            "endBeat": 33.444147280954056
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2967696671481915,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.557692307692309,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6253846153846184,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7692307692307702,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-31"
+        ]
+      },
+      {
+        "id": "screenshot-contour-32",
+        "beat": 33.46564397571109,
+        "beats": 0.4729272846545882,
+        "midi": 63,
+        "velocity": 80,
+        "role": "lead-63",
+        "hand": "R",
+        "screenshotNoteIds": [
+          72
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 72,
+            "midi": 63,
+            "beat": 33.46564397571109,
+            "endBeat": 33.93857126036568
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-32"
+        ]
+      },
+      {
+        "id": "screenshot-contour-33",
+        "beat": 33.9600679551227,
+        "beats": 2.364636423272948,
+        "midi": 63,
+        "velocity": 80,
+        "role": "lead-63",
+        "hand": "R",
+        "screenshotNoteIds": [
+          73,
+          74,
+          75
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 73,
+            "midi": 63,
+            "beat": 33.9600679551227,
+            "endBeat": 35.42184319860052
+          },
+          {
+            "sourceId": 74,
+            "midi": 66,
+            "beat": 35.44333989335755,
+            "endBeat": 35.70130023044187
+          },
+          {
+            "sourceId": 75,
+            "midi": 63,
+            "beat": 35.7227969251989,
+            "endBeat": 36.32470437839565
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.47679152439891775,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6272727272727275,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.6650909090909105,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.7454545454545448,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-33"
+        ]
+      },
+      {
+        "id": "screenshot-contour-34",
+        "beat": 36.34620107315268,
+        "beats": 0.838371095524046,
+        "midi": 68,
+        "velocity": 80,
+        "role": "lead-68",
+        "hand": "R",
+        "screenshotNoteIds": [
+          76,
+          77,
+          78
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 76,
+            "midi": 68,
+            "beat": 36.34620107315268,
+            "endBeat": 36.625658104994024
+          },
+          {
+            "sourceId": 77,
+            "midi": 66,
+            "beat": 36.64715479975105,
+            "endBeat": 36.926611831592396
+          },
+          {
+            "sourceId": 78,
+            "midi": 64,
+            "beat": 36.94810852634942,
+            "endBeat": 37.18457216867672
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.11487179487179437,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.35897435897435526,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.47384615384614964,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7179487179487105,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-34"
+        ]
+      },
+      {
+        "id": "screenshot-contour-35",
+        "beat": 37.20606886343375,
+        "beats": 0.9028611797951243,
+        "midi": 63,
+        "velocity": 80,
+        "role": "lead-63",
+        "hand": "R",
+        "screenshotNoteIds": [
+          79,
+          80,
+          81
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 79,
+            "midi": 63,
+            "beat": 37.20606886343375,
+            "endBeat": 37.50702259003212
+          },
+          {
+            "sourceId": 80,
+            "midi": 61,
+            "beat": 37.52851928478915,
+            "endBeat": 37.76498292711644
+          },
+          {
+            "sourceId": 81,
+            "midi": 62,
+            "beat": 37.807976316630494,
+            "endBeat": 38.108930043228874
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.11428571428571069,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.35714285714285376,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.456190476190476,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6666666666666614,
+            "semitones": -1
+          },
+          {
+            "fraction": 1,
+            "semitones": -1
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-35"
+        ]
+      },
+      {
+        "id": "screenshot-contour-36",
+        "beat": 38.409883769827246,
+        "beats": 1.0103446535802618,
+        "midi": 59,
+        "velocity": 80,
+        "role": "lead-59",
+        "hand": "R",
+        "screenshotNoteIds": [
+          82,
+          83,
+          84,
+          85
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 82,
+            "midi": 59,
+            "beat": 38.409883769827246,
+            "endBeat": 38.68934080166859
+          },
+          {
+            "sourceId": 83,
+            "midi": 57,
+            "beat": 38.710837496425626,
+            "endBeat": 38.90430774923886
+          },
+          {
+            "sourceId": 84,
+            "midi": 59,
+            "beat": 38.925804443995894,
+            "endBeat": 39.20526147583724
+          },
+          {
+            "sourceId": 85,
+            "midi": 61,
+            "beat": 39.226758170594266,
+            "endBeat": 39.42022842340751
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.09531914893616968,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2978723404255355,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.36595744680851183,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.5106382978723436,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6059574468085133,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.8085106382978721,
+            "semitones": 2
+          },
+          {
+            "fraction": 1,
+            "semitones": 2
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-36"
+        ]
+      },
+      {
+        "id": "screenshot-contour-37",
+        "beat": 39.441725118164534,
+        "beats": 0.6449008427108041,
+        "midi": 63,
+        "velocity": 80,
+        "role": "lead-63",
+        "hand": "R",
+        "screenshotNoteIds": [
+          86,
+          87
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 86,
+            "midi": 63,
+            "beat": 39.441725118164534,
+            "endBeat": 39.82866562379102
+          },
+          {
+            "sourceId": 87,
+            "midi": 64,
+            "beat": 39.850162318548044,
+            "endBeat": 40.08662596087534
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2805659233176864,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6333333333333344,
+            "semitones": 1
+          },
+          {
+            "fraction": 1,
+            "semitones": 1
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-37"
+        ]
+      },
+      {
+        "id": "screenshot-contour-38",
+        "beat": 40.108122655632364,
+        "beats": 0.45143058989756213,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          88
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 88,
+            "midi": 64,
+            "beat": 40.108122655632364,
+            "endBeat": 40.559553245529926
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-38"
+        ]
+      },
+      {
+        "id": "screenshot-contour-39",
+        "beat": 40.58104994028695,
+        "beats": 0.3439471161124317,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          89,
+          90
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 89,
+            "midi": 64,
+            "beat": 40.58104994028695,
+            "endBeat": 40.67453341407209
+          },
+          {
+            "sourceId": 90,
+            "midi": 64,
+            "beat": 40.68853341407209,
+            "endBeat": 40.924997056399384
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-39"
+        ]
+      },
+      {
+        "id": "screenshot-contour-40",
+        "beat": 40.94649375115641,
+        "beats": 0.9673512640662025,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          91
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 91,
+            "midi": 64,
+            "beat": 40.94649375115641,
+            "endBeat": 41.91384501522261
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-40"
+        ]
+      },
+      {
+        "id": "screenshot-contour-41",
+        "beat": 41.93534170997964,
+        "beats": 1.1393248221224255,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          92,
+          93,
+          94,
+          95
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 92,
+            "midi": 64,
+            "beat": 41.93534170997964,
+            "endBeat": 42.47275907890531
+          },
+          {
+            "sourceId": 93,
+            "midi": 63,
+            "beat": 42.49425577366234,
+            "endBeat": 42.75221611074666
+          },
+          {
+            "sourceId": 94,
+            "midi": 64,
+            "beat": 42.773712805503685,
+            "endBeat": 42.888692974045846
+          },
+          {
+            "sourceId": 95,
+            "midi": 64,
+            "beat": 42.90269297404585,
+            "endBeat": 43.074666532102064
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2908863716892571,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4905660377358494,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.5690566037735874,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.735849056603771,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-41"
+        ]
+      },
+      {
+        "id": "screenshot-contour-42",
+        "beat": 43.09616322685909,
+        "beats": 0.2364636423272941,
+        "midi": 66,
+        "velocity": 80,
+        "role": "lead-66",
+        "hand": "R",
+        "screenshotNoteIds": [
+          96
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 96,
+            "midi": 66,
+            "beat": 43.09616322685909,
+            "endBeat": 43.332626869186385
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-42"
+        ]
+      },
+      {
+        "id": "screenshot-contour-43",
+        "beat": 43.35412356394341,
+        "beats": 1.8487157491043007,
+        "midi": 66,
+        "velocity": 80,
+        "role": "lead-66",
+        "hand": "R",
+        "screenshotNoteIds": [
+          97,
+          98,
+          99,
+          100,
+          101
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 97,
+            "midi": 66,
+            "beat": 43.35412356394341,
+            "endBeat": 43.93453432238313
+          },
+          {
+            "sourceId": 98,
+            "midi": 64,
+            "beat": 43.95603101714016,
+            "endBeat": 44.2354880489815
+          },
+          {
+            "sourceId": 99,
+            "midi": 63,
+            "beat": 44.25698474373853,
+            "endBeat": 44.55793847033691
+          },
+          {
+            "sourceId": 100,
+            "midi": 64,
+            "beat": 44.57943516509393,
+            "endBeat": 44.81589880742123
+          },
+          {
+            "sourceId": 101,
+            "midi": 63,
+            "beat": 44.83739550217825,
+            "endBeat": 45.20283931304771
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.16781421734541865,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.32558139534883873,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.3776744186046526,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.48837209302325235,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.5441860465116265,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.6627906976744175,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7074418604651145,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.8023255813953473,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-43"
+        ]
+      },
+      {
+        "id": "screenshot-contour-44",
+        "beat": 45.24583270256176,
+        "beats": 0.5664107584397158,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          102,
+          103
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 102,
+            "midi": 61,
+            "beat": 45.24583270256176,
+            "endBeat": 45.65426990294527
+          },
+          {
+            "sourceId": 103,
+            "midi": 61,
+            "beat": 45.6757665977023,
+            "endBeat": 45.81224346100148
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-44"
+        ]
+      },
+      {
+        "id": "screenshot-contour-45",
+        "beat": 45.82624346100148,
+        "beats": 0.3009537265983795,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          104
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 104,
+            "midi": 64,
+            "beat": 45.82624346100148,
+            "endBeat": 46.12719718759986
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-45"
+        ]
+      },
+      {
+        "id": "screenshot-contour-46",
+        "beat": 46.14869388235689,
+        "beats": 0.5804107584397258,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          105
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 105,
+            "midi": 64,
+            "beat": 46.14869388235689,
+            "endBeat": 46.72910464079661
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-46"
+        ]
+      },
+      {
+        "id": "screenshot-contour-47",
+        "beat": 46.75060133555364,
+        "beats": 3.8694050562648172,
+        "midi": 64,
+        "velocity": 80,
+        "role": "lead-64",
+        "hand": "R",
+        "screenshotNoteIds": [
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 106,
+            "midi": 64,
+            "beat": 46.75060133555364,
+            "endBeat": 47.245025314965254
+          },
+          {
+            "sourceId": 107,
+            "midi": 63,
+            "beat": 47.26652200972228,
+            "endBeat": 47.61046912583471
+          },
+          {
+            "sourceId": 108,
+            "midi": 64,
+            "beat": 47.63196582059174,
+            "endBeat": 48.19087988427443
+          },
+          {
+            "sourceId": 109,
+            "midi": 66,
+            "beat": 48.21237657903146,
+            "endBeat": 48.81428403222821
+          },
+          {
+            "sourceId": 110,
+            "midi": 64,
+            "beat": 48.835780726985234,
+            "endBeat": 49.093741064069555
+          },
+          {
+            "sourceId": 111,
+            "midi": 63,
+            "beat": 49.11523775882658,
+            "endBeat": 49.48068156969604
+          },
+          {
+            "sourceId": 112,
+            "midi": 61,
+            "beat": 49.502178264453065,
+            "endBeat": 50.62000639181846
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.0745387649973914,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.13333333333333283,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.16898320944183656,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.22777777777777802,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3024001260650319,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.377777777777777,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.46351123717614345,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.5388888888888886,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5620000000000005,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6111111111111104,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.6431111111111109,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.7111111111111109,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-47"
+        ]
+      },
+      {
+        "id": "screenshot-contour-48",
+        "beat": 50.64150308657548,
+        "beats": 0.8813644850381053,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          113,
+          114,
+          115
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 113,
+            "midi": 61,
+            "beat": 50.64150308657548,
+            "endBeat": 51.02844359220197
+          },
+          {
+            "sourceId": 114,
+            "midi": 59,
+            "beat": 51.04994028695899,
+            "endBeat": 51.20041715025818
+          },
+          {
+            "sourceId": 115,
+            "midi": 59,
+            "beat": 51.22191384501521,
+            "endBeat": 51.52286757161359
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1482926829268265,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.46341463414633893,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-48"
+        ]
+      },
+      {
+        "id": "screenshot-contour-49",
+        "beat": 51.544364266370614,
+        "beats": 2.0421860019175426,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          116,
+          117,
+          118,
+          119
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 116,
+            "midi": 61,
+            "beat": 51.544364266370614,
+            "endBeat": 52.0172915510252
+          },
+          {
+            "sourceId": 117,
+            "midi": 62,
+            "beat": 52.03878824578223,
+            "endBeat": 52.38273536189465
+          },
+          {
+            "sourceId": 118,
+            "midi": 61,
+            "beat": 52.404232056651686,
+            "endBeat": 52.96314612033438
+          },
+          {
+            "sourceId": 119,
+            "midi": 59,
+            "beat": 53.00613950984843,
+            "endBeat": 53.58655026828816
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.13070502841611034,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2421052631578941,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.30965239683716433,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.4210526315789481,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.572968659912692,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.715789473684209,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-49"
+        ]
+      },
+      {
+        "id": "screenshot-contour-50",
+        "beat": 53.651040352559235,
+        "beats": 1.676742191048092,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          120,
+          121,
+          122
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 120,
+            "midi": 61,
+            "beat": 53.651040352559235,
+            "endBeat": 53.88750399488653
+          },
+          {
+            "sourceId": 121,
+            "midi": 59,
+            "beat": 53.93049738440059,
+            "endBeat": 54.209954416241935
+          },
+          {
+            "sourceId": 122,
+            "midi": 57,
+            "beat": 54.23145111099896,
+            "endBeat": 55.32778254360733
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.05333333333333492,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1666666666666695,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.22410256410256668,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.34615384615384714,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-50"
+        ]
+      },
+      {
+        "id": "screenshot-contour-51",
+        "beat": 55.34927923836435,
+        "beats": 0.4729272846545882,
+        "midi": 57,
+        "velocity": 80,
+        "role": "lead-57",
+        "hand": "R",
+        "screenshotNoteIds": [
+          123,
+          124
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 123,
+            "midi": 57,
+            "beat": 55.34927923836435,
+            "endBeat": 55.464259406906514
+          },
+          {
+            "sourceId": 124,
+            "midi": 57,
+            "beat": 55.47825940690652,
+            "endBeat": 55.82220652301894
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-51"
+        ]
+      },
+      {
+        "id": "screenshot-contour-52",
+        "beat": 55.84370321777597,
+        "beats": 0.21496694757026802,
+        "midi": 57,
+        "velocity": 80,
+        "role": "lead-57",
+        "hand": "R",
+        "screenshotNoteIds": [
+          125
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 125,
+            "midi": 57,
+            "beat": 55.84370321777597,
+            "endBeat": 56.058670165346236
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-52"
+        ]
+      },
+      {
+        "id": "screenshot-contour-53",
+        "beat": 56.08016686010326,
+        "beats": 0.2579603370843273,
+        "midi": 57,
+        "velocity": 80,
+        "role": "lead-57",
+        "hand": "R",
+        "screenshotNoteIds": [
+          126
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 126,
+            "midi": 57,
+            "beat": 56.08016686010326,
+            "endBeat": 56.33812719718759
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-53"
+        ]
+      },
+      {
+        "id": "screenshot-contour-54",
+        "beat": 56.359623891944615,
+        "beats": 0.5159206741686404,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          127
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 127,
+            "midi": 61,
+            "beat": 56.359623891944615,
+            "endBeat": 56.875544566113255
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-54"
+        ]
+      },
+      {
+        "id": "screenshot-contour-55",
+        "beat": 56.89704126087028,
+        "beats": 1.053338043094314,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          128
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 128,
+            "midi": 61,
+            "beat": 56.89704126087028,
+            "endBeat": 57.950379303964596
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-55"
+        ]
+      },
+      {
+        "id": "screenshot-contour-56",
+        "beat": 57.97187599872162,
+        "beats": 2.2571529494878106,
+        "midi": 66,
+        "velocity": 80,
+        "role": "lead-66",
+        "hand": "R",
+        "screenshotNoteIds": [
+          129,
+          130,
+          131,
+          132
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 129,
+            "midi": 66,
+            "beat": 57.97187599872162,
+            "endBeat": 58.874737178516746
+          },
+          {
+            "sourceId": 130,
+            "midi": 64,
+            "beat": 58.89623387327377,
+            "endBeat": 59.433651242199446
+          },
+          {
+            "sourceId": 131,
+            "midi": 63,
+            "beat": 59.45514793695647,
+            "endBeat": 59.648618189769714
+          },
+          {
+            "sourceId": 132,
+            "midi": 63,
+            "beat": 59.67011488452674,
+            "endBeat": 60.22902894820943
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bendStyle": "melody",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2803049780162462,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.40952380952380923,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.5563521685669589,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6571428571428585,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-56"
+        ]
+      },
+      {
+        "id": "screenshot-contour-57",
+        "beat": 60.25052564296646,
+        "beats": 0.6019074531967519,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          133
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 133,
+            "midi": 61,
+            "beat": 60.25052564296646,
+            "endBeat": 60.85243309616321
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-57"
+        ]
+      },
+      {
+        "id": "screenshot-contour-58",
+        "beat": 60.873929790920236,
+        "beats": 1.1823182116364777,
+        "midi": 61,
+        "velocity": 80,
+        "role": "lead-61",
+        "hand": "R",
+        "screenshotNoteIds": [
+          134
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": 134,
+            "midi": 61,
+            "beat": 60.873929790920236,
+            "endBeat": 62.056248002556714
+          }
+        ],
+        "sourceIds": [
+          "screenshot-contour-58"
+        ]
+      }
+    ],
+    "durationBeats": 62.056248002556714,
+    "durationSeconds": 53.19106971647719,
+    "sourceTempo": [
+      {
+        "tick": 0,
+        "us": 857143,
+        "seconds": 0
+      }
+    ],
+    "sourceMeter": [
+      {
+        "event": "t0-e2",
+        "tick": 0,
+        "numerator": 4,
+        "denominator": 4,
+        "quarterBeatsPerBar": 4,
+        "metronome": 24
+      }
+    ]
+  },
+  "arrangement": {
+    "id": "screenshot-contours-70",
+    "title": "Original screenshot contours and rhythmic taps",
+    "version": 5,
+    "recipes": [
+      {
+        "kind": "honk",
+        "role": "lead-57",
+        "midi": 57,
+        "position": [
+          -0.46,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-59",
+        "midi": 59,
+        "position": [
+          -0.23,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-61",
+        "midi": 61,
+        "position": [
+          0,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-62",
+        "midi": 62,
+        "position": [
+          0.23,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-63",
+        "midi": 63,
+        "position": [
+          0.46,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-64",
+        "midi": 64,
+        "position": [
+          -0.46,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-66",
+        "midi": 66,
+        "position": [
+          -0.23,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-68",
+        "midi": 68,
+        "position": [
+          0,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-69",
+        "midi": 69,
+        "position": [
+          0.23,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-71",
+        "midi": 71,
+        "position": [
+          0.46,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "metronome",
+        "role": "metronome",
+        "position": [
+          -0.85,
+          -0.6,
+          0.05
+        ],
+        "scale": 0.65
+      }
+    ],
+    "backing": [],
+    "provenance": "Approved 70 BPM arrangement 6a5face108b5df85064a11945f0bf6a30a7c1ffafe89458d86ff6879732791c1; original MIDI d2ca1e4bc2aef6de444843875920e0fe38b06e101e390d52d89a93390b3733f1",
+    "roleAssignments": [
+      {
+        "role": "melody",
+        "sequence": 0,
+        "source": {
+          "track": 1,
+          "channel": 0,
+          "port": 0
+        }
+      }
+    ],
+    "exclusions": [],
+    "decisions": [
+      "The accepted full 70 BPM preview is imported exactly: 58 presses with 26 continuous bend holds, preserving all 135 reconstructed pitch targets.",
+      "Each live event references its approved arrangement event ID. Screenshot note IDs and exact target beats are retained; historical MIDI and normalized inventory are unchanged.",
+      "Natural rises and falls use continuous bends. Repeated accents remain separate. Tutorial boundaries follow the screenshot timing and never cut a held gesture.",
+      "The existing ten-Honk layout is preserved. Either hand can play; all bends within one hold use one Trigger press.",
+      "Every sound uses the ordinary Honk instrument, voice engine, vowel, gain, envelope, and mixer. Only tuning, note timing and wrist bend are guided; preview audio and synthesis are not loaded.",
+      "The original MIDI was reconstructed from the user's edited GarageBand screenshots; its timing remains approximate relative to that visual source."
+    ]
+  },
+  "lessons": [
+    {
+      "id": "phrase-1",
+      "title": "Opening pulses and first turn",
+      "startBeat": 0,
+      "endBeat": 8.959411952700544,
+      "goal": "Keep the opening taps distinct. Hold C♯ through the rising and falling turn. Follow each held bend, then keep the final C♯ pressed as it bends down through B to A.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "screenshot-contour-01",
+        "screenshot-contour-02",
+        "screenshot-contour-03",
+        "screenshot-contour-04",
+        "screenshot-contour-05",
+        "screenshot-contour-06",
+        "screenshot-contour-07"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-2",
+      "title": "Low pulses and answering phrase",
+      "startBeat": 8.959411952700544,
+      "endBeat": 19.342315520344485,
+      "goal": "Keep the low repeated pulses crisp. Hold F♯ through the descent to E and E♭. Keep C♯ held through the answering bends, and use one final hold for the descent through B to A.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "screenshot-contour-08",
+        "screenshot-contour-09",
+        "screenshot-contour-10",
+        "screenshot-contour-11",
+        "screenshot-contour-12",
+        "screenshot-contour-13",
+        "screenshot-contour-14",
+        "screenshot-contour-15",
+        "screenshot-contour-16",
+        "screenshot-contour-17",
+        "screenshot-contour-18"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-3",
+      "title": "High repeated notes and the crest",
+      "startBeat": 19.342315520344485,
+      "endBeat": 27.102622327631156,
+      "goal": "Keep the high repeated notes distinct. Hold G♯ through F♯ and back to G♯, then hold A through the crest at B and the descent to F♯.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "screenshot-contour-19",
+        "screenshot-contour-20",
+        "screenshot-contour-21",
+        "screenshot-contour-22",
+        "screenshot-contour-23",
+        "screenshot-contour-24",
+        "screenshot-contour-25"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-4",
+      "title": "Fast turns with fewer presses",
+      "startBeat": 27.102622327631156,
+      "endBeat": 33.9600679551227,
+      "goal": "Hold E as it bends up through F♯ to G♯, then keep the repeated G♯ taps distinct. Use one press for each following bend phrase, staying held through every turn and return to neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "screenshot-contour-26",
+        "screenshot-contour-27",
+        "screenshot-contour-28",
+        "screenshot-contour-29",
+        "screenshot-contour-30",
+        "screenshot-contour-31",
+        "screenshot-contour-32"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-5",
+      "title": "Answer and return",
+      "startBeat": 33.9600679551227,
+      "endBeat": 41.93534170997964,
+      "goal": "Follow the falling and rising turns with continuous holds. Do not press again within a bend phrase. Keep the returning E pulses distinct.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "screenshot-contour-33",
+        "screenshot-contour-34",
+        "screenshot-contour-35",
+        "screenshot-contour-36",
+        "screenshot-contour-37",
+        "screenshot-contour-38",
+        "screenshot-contour-39",
+        "screenshot-contour-40"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-6",
+      "title": "Rising and falling holds",
+      "startBeat": 41.93534170997964,
+      "endBeat": 50.64150308657548,
+      "goal": "Hold through each quick turn and keep the repeated E accents distinct. Keep the final E held through all its rising and falling bends to C♯.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "screenshot-contour-41",
+        "screenshot-contour-42",
+        "screenshot-contour-43",
+        "screenshot-contour-44",
+        "screenshot-contour-45",
+        "screenshot-contour-46",
+        "screenshot-contour-47"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-7",
+      "title": "Closing phrase",
+      "startBeat": 50.64150308657548,
+      "endBeat": 62.056248002556714,
+      "goal": "Hold the opening C♯ through the answering bends. Use one hold for the C♯ to B to A descent, preserve the low pulses, and hold the final F♯ through E to E♭ before the two C♯ presses.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "screenshot-contour-48",
+        "screenshot-contour-49",
+        "screenshot-contour-50",
+        "screenshot-contour-51",
+        "screenshot-contour-52",
+        "screenshot-contour-53",
+        "screenshot-contour-54",
+        "screenshot-contour-55",
+        "screenshot-contour-56",
+        "screenshot-contour-57",
+        "screenshot-contour-58"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "performance",
+      "title": "Complete guided performance",
+      "startBeat": 0,
+      "endBeat": 62.056248002556714,
+      "goal": "Play the whole section at 70 BPM. Keep Trigger held through each complete bend phrase, including every turn and return to neutral. Release only between separate notes and preserve the repeated rhythmic taps. Either hand works.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": true,
+      "eventIds": [
+        "screenshot-contour-01",
+        "screenshot-contour-02",
+        "screenshot-contour-03",
+        "screenshot-contour-04",
+        "screenshot-contour-05",
+        "screenshot-contour-06",
+        "screenshot-contour-07",
+        "screenshot-contour-08",
+        "screenshot-contour-09",
+        "screenshot-contour-10",
+        "screenshot-contour-11",
+        "screenshot-contour-12",
+        "screenshot-contour-13",
+        "screenshot-contour-14",
+        "screenshot-contour-15",
+        "screenshot-contour-16",
+        "screenshot-contour-17",
+        "screenshot-contour-18",
+        "screenshot-contour-19",
+        "screenshot-contour-20",
+        "screenshot-contour-21",
+        "screenshot-contour-22",
+        "screenshot-contour-23",
+        "screenshot-contour-24",
+        "screenshot-contour-25",
+        "screenshot-contour-26",
+        "screenshot-contour-27",
+        "screenshot-contour-28",
+        "screenshot-contour-29",
+        "screenshot-contour-30",
+        "screenshot-contour-31",
+        "screenshot-contour-32",
+        "screenshot-contour-33",
+        "screenshot-contour-34",
+        "screenshot-contour-35",
+        "screenshot-contour-36",
+        "screenshot-contour-37",
+        "screenshot-contour-38",
+        "screenshot-contour-39",
+        "screenshot-contour-40",
+        "screenshot-contour-41",
+        "screenshot-contour-42",
+        "screenshot-contour-43",
+        "screenshot-contour-44",
+        "screenshot-contour-45",
+        "screenshot-contour-46",
+        "screenshot-contour-47",
+        "screenshot-contour-48",
+        "screenshot-contour-49",
+        "screenshot-contour-50",
+        "screenshot-contour-51",
+        "screenshot-contour-52",
+        "screenshot-contour-53",
+        "screenshot-contour-54",
+        "screenshot-contour-55",
+        "screenshot-contour-56",
+        "screenshot-contour-57",
+        "screenshot-contour-58"
+      ],
+      "recommendedBpm": 70,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    }
+  ],
+  "recording": {
+    "bpm": 70,
+    "countIn": 4,
+    "tailMs": 500,
+    "end": "manual",
+    "synchronization": "captured-noise-once",
+    "instructions": "Play at 70 BPM. Follow the squares for each new press. When the bend gauge appears, keep Trigger held through the entire bend phrase and every return to neutral. Release between separate notes and preserve repeated accents. Either hand works."
+  },
+  "requirements": {
+    "maxHonks": 10,
+    "maxLoopers": 0,
+    "maxLiveVoices": 1
+  },
+  "warnings": [],
+  "compatibility": {
+    "recordingHashes": [
+      "b4b38cd6d777b19fabebf41c197a5f1ab33ebe01a0e7605e7d70e4315a14a644"
+    ],
+    "progressVersion": 5
+  },
+  "contentHash": "f1f616992d5cf0b366fb90c3d7478befd83323cd8bcb852bd77ac471702b072b"
+}

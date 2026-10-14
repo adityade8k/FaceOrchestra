@@ -1,5 +1,6 @@
+import {tmpdir} from 'node:os';
 import assert from 'node:assert/strict';
-import { mkdir,writeFile,readFile,stat } from 'node:fs/promises';
+import { mkdir,writeFile,readFile,stat,mkdtemp,rm } from 'node:fs/promises';
 import { join,resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { startServer } from './server.mjs';
@@ -10,7 +11,8 @@ import { checkScrubbing } from './check-scrubbing.mjs';
 import { checkFrameMatching } from './check-frame-matching.mjs';
 import { checkRayStyle, checkRayExportParity } from './check-ray-style.mjs';
 const output=resolve('test-results/capture');await mkdir(output,{recursive:true});
-const service=await startServer({host:'127.0.0.1',port:0,plain:true,pairCode:'123456'}),chrome=await launchChrome();
+const dataRoot=await mkdtemp(join(tmpdir(),'honk-capture-validation-'));
+const service=await startServer({host:'127.0.0.1',port:0,plain:true,pairCode:'123456',dataRoot}),chrome=await launchChrome();
 const base=`http://127.0.0.1:${service.port}`;
 try {
   let interrupted=false;
@@ -102,12 +104,12 @@ try {
       if(![207,203,189].every((value,j)=>Math.abs(pixel[j]-value)<10))throw new Error('Phone background missing in exported frame '+i+': '+[...pixel]);checked++;
     }return checked;
   })()`);
-  const exportDir=resolve('captures/exports',exported.id);
+  const exportDir=resolve(dataRoot,'exports',exported.id);
   const wav=await readFile(join(exportDir,'audio.wav'));let peak=0;for(let i=44;i<wav.length;i+=2)peak=Math.max(peak,Math.abs(wav.readInt16LE(i)));assert.ok(peak>100);report.cleanAudioPeak=peak;
   if(exported.ffmpeg){const info=JSON.parse(execFileSync('ffprobe',['-v','error','-show_streams','-show_format','-of','json',join(exportDir,'composite.mp4')],{encoding:'utf8'}));const video=info.streams.find(s=>s.codec_type==='video'),audio=info.streams.find(s=>s.codec_type==='audio');assert.equal(video.width,270);assert.equal(video.height,480);assert.equal(Number(video.nb_frames),60);assert.equal(audio.codec_name,'aac');report.ffprobe=info;}
   await chrome.evaluate('captureEditor.setProject({output:{width:1080,height:1920,fps:60},trim:{start:.3,end:.4}})');
   const fullResolution=await chrome.evaluate('captureEditor.exportProject()');assert.equal(fullResolution.frames,6);
-  const fullInfo=JSON.parse(execFileSync('ffprobe',['-v','error','-show_streams','-of','json',resolve('captures/exports',fullResolution.id,'composite.mp4')],{encoding:'utf8'}));
+  const fullInfo=JSON.parse(execFileSync('ffprobe',['-v','error','-show_streams','-of','json',resolve(dataRoot,'exports',fullResolution.id,'composite.mp4')],{encoding:'utf8'}));
   const fullVideo=fullInfo.streams.find(s=>s.codec_type==='video');assert.equal(fullVideo.width,1080);assert.equal(fullVideo.height,1920);assert.equal(fullVideo.r_frame_rate,'60/1');assert.equal(Number(fullVideo.nb_frames),6);report.fullResolution={...fullResolution,probe:fullVideo};
   // Exercise real portable export + import, not just metadata serialization.
   const archive=await chrome.evaluate(`(async()=>{const blob=await fetch('/api/takes/${demo.id}/archive').then(r=>r.blob());const result=await fetch('/api/import',{method:'POST',body:blob}).then(r=>r.json());if(!result.id)throw new Error(JSON.stringify(result));await captureEditor.loadTake(result.id);return {id:result.id,bytes:blob.size,nodes:captureEditor.replay.nodes.size};})()`);
@@ -130,7 +132,7 @@ try {
   const withoutGuides=await chrome.evaluate('captureEditor.exportProject()');
   for(let i=0;i<3;i++){
     const name=`frame-${String(i).padStart(6,'0')}.png`;
-    assert.deepEqual(await readFile(resolve('captures/exports',fallback.id,name)),await readFile(resolve('captures/exports',withoutGuides.id,name)),`Helpers must not change exported ${name}`);
+    assert.deepEqual(await readFile(resolve(dataRoot,'exports',fallback.id,name)),await readFile(resolve(dataRoot,'exports',withoutGuides.id,name)),`Helpers must not change exported ${name}`);
   }
   report.alignment.exportHelperPixelEquality=true;
   // Controller rays are an explicit output layer; hiding them must change real
@@ -139,7 +141,7 @@ try {
   const withoutRays=await chrome.evaluate('captureEditor.exportProject()');
   for(let i=0;i<3;i++){
     const name=`frame-${String(i).padStart(6,'0')}.png`;
-    assert.notDeepEqual(await readFile(resolve('captures/exports',fallback.id,name)),await readFile(resolve('captures/exports',withoutRays.id,name)),`Controller rays must appear in exported ${name}`);
+    assert.notDeepEqual(await readFile(resolve(dataRoot,'exports',fallback.id,name)),await readFile(resolve(dataRoot,'exports',withoutRays.id,name)),`Controller rays must appear in exported ${name}`);
   }
   report.alignment.controllerRaysExport=true;
   const tarBase64=await chrome.evaluate(`(async()=>{const blob=await fetch('/api/exports/${fallback.id}/archive.tar').then(r=>r.blob());return new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.readAsDataURL(blob);});})()`);
@@ -150,4 +152,4 @@ try {
   assert.deepEqual(chrome.errors,[]);
   report.export=exported;report.archive=archive;report.captureMetrics=demo.metrics;report.heapBefore=demo.heapBefore;report.heapBytes=demo.heapBytes;report.externalRequests=external;
   await writeFile(join(output,'report.json'),JSON.stringify(report,null,2));console.log(`Passed: ${output}/report.json\nScreenshot: ${output}/editor.png`);
-}finally{await chrome.close();await service.close();}
+}finally{await chrome.close();await service.close();await rm(dataRoot,{recursive:true,force:true});}

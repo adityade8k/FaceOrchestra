@@ -5,7 +5,7 @@ import {
   PRACTICE_MIN_BPM,
   PRACTICE_DEFAULT_BPM,
   PRACTICE_TEMPOS,
-} from "./kuch/timing.js";
+} from "./PracticeTempoSettings.js";
 
 const W = 1072,
   H = 206,

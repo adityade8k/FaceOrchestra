@@ -1,4 +1,4 @@
-import { COMPOSITION as C, PITCHES, TUTORIAL_LOOPERS } from './composition.js';
+import { COMPOSITION as C, PITCHES, TUTORIAL_LOOPERS } from '../compositions/jog/definition.js';
 
 // Resolve only committed catalog identities. The current step cannot turn an
 // unrelated scale/preset into the expected chord or consume a cancelled Looper.

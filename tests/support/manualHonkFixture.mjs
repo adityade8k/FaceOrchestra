@@ -4,7 +4,7 @@ import { InstrumentRegistry } from '../../src/instruments/core/InstrumentRegistr
 import { InteractionTargetRegistry } from '../../src/instruments/core/InteractionTargetRegistry.js';
 import { HonkContactSystem } from '../../src/instruments/formations/HonkContactSystem.js';
 import { AudioSystem } from '../../src/audio/AudioSystem.js';
-import { INTERACTION_TARGET_NAMES } from '../../src/config/honk.js';
+import { INTERACTION_TARGET_NAMES, BEND_SENSITIVITY } from '../../src/config/honk.js';
 const { XRInteractionRuntimeMethods } = await runtimeModule(new URL('../../src/app/runtime/XRInteractionRuntime.js', import.meta.url));
 const { HonkPerformanceRuntimeMethods } = await runtimeModule(new URL('../../src/app/runtime/HonkPerformanceRuntime.js', import.meta.url));
 const { XRInteractionCoordinator } = await runtimeModule(new URL('../../src/xr/XRInteractionCoordinator.js', import.meta.url));
@@ -58,7 +58,9 @@ export function fixture({ count = 1, locked = false, ensureContext = null } = {}
     getControllerVoiceId(controller) { return controller.id; },
     getInstrumentVoiceId(voice, honk) { return `${voice}:${honk.id}`; },
     resetRaySqueezeReference(controller, state) { state.raySqueezeStartInverseQuaternion = { roll: controller.roll }; },
+    getControllerRollAngle(controller, interaction) { return (controller.roll - interaction.bendStartInverseQuaternion.roll) / BEND_SENSITIVITY; },
     getControllerRollBend(controller, interaction) { return controller.roll - interaction.bendStartInverseQuaternion.roll; },
+    clearControllerTriggerInteraction(state) { this.releaseRaySqueeze(state); state.activeTriggerInteraction = null; },
     cancelAllMetronomeWireInteractions() {},
     instrumentLifecycle: { deleteInstrument(id) { instrumentRegistry.remove(id); } },
     triggerRaycastHitHaptics() {}, setTargetHighlight() {}, clearControllerHover() {},
@@ -79,13 +81,15 @@ export function fixture({ count = 1, locked = false, ensureContext = null } = {}
     const owner = instrumentRegistry.getFromObject3D(target);
     controller.lockedHit = owner?.locked ? owner : null;
     host.controllerStates.get(controller).trigger = true;
-    host.handleTriggerBeginIntent(controller);
+    host.handleTriggerBeginIntent(controller, now);
   };
+  // Keep aiming at the same target to verify that Trigger release ends sound.
   const release = (controller = controllers[0]) => {
     host.controllerStates.get(controller).trigger = false;
     host.handleTriggerEndIntent(controller);
   };
-  return { host, honks, controllers, context, audio: audioSystem.honkVoices, counters, frame, press, release, contact };
+  return { host, honks, controllers, context, audio: audioSystem.honkVoices, counters, frame, press, release, contact,
+    get now() { return now; } };
 }
 
 function audioContext() {

@@ -119,7 +119,7 @@ try {
   })()`);
   assert.deepEqual(browser.errors, []);
   await writeFile(
-    "docs/audits/long-editor.json",
+    "/tmp/honk-long-editor.json",
     JSON.stringify({ ...result, bytes, realTimeSoak: false }, null, 2),
   );
   console.log(JSON.stringify(result));

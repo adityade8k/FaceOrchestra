@@ -1,8 +1,9 @@
-import { COMPOSITION as C, TOLERANCES as T } from './composition.js';
-import { LESSON_STEPS, SIMULATION_STEPS } from './lessonSteps.js';
+import { COMPOSITION as C, TOLERANCES as T } from '../compositions/jog/definition.js';
+import { LESSON_STEPS, SIMULATION_STEPS } from '../compositions/jog/definition.js';
 import { expectedForStep, validateNote, validateSequence, validateSetup, validateTake, validateSwitchExercise } from './validation.js';
 import { scoreAttempt, scoreForStep, PRACTICE_TOLERANCES as P } from './scoring.js';
 import { setupStatus } from './TutorialLessonPolicy.js';
+import { NotePracticeGate } from './NotePracticeGate.js';
 
 // Pure state machine: no Three.js, DOM, audio or wall-clock dependencies.
 export class TutorialSession {
@@ -27,6 +28,7 @@ export class TutorialSession {
       if(event.endMs !== undefined)tagged.durationBeats = (event.endMs-event.startMs)/this.beatMs;
     }
     this.evidence.push(tagged);
+    this.practiceGate?.accept(event);
     if (this.evidence.length > 512) this.evidence.shift();
     return true;
   }
@@ -35,6 +37,13 @@ export class TutorialSession {
     this.anchorMs = anchorMs; this.beatMs = beatMs; this.evidence = []; this.phrasesPassed = []; this.revision++;
     this.anchorBeat = this.musicalClock?.(anchorMs)?.beatPosition ?? null;
     return true;
+  }
+  enableNotePractice({ anchorMs = this.anchorMs ?? this.enteredAt, beatMs = this.beatMs } = {}) {
+    if (this.mode !== 'practice' || this.step.timed || this.step.type === 'record') return;
+    const events = scoreForStep(this.step).map(event => ({ ...event,
+      ...(this.step.type === 'strike' ? { kind: 'strike' } : {}),
+    }));
+    if (events.length) this.practiceGate = new NotePracticeGate(events, { anchorMs, beatMs });
   }
   beatAt(now) {
     const timing=this.musicalClock?.(now);
@@ -64,6 +73,7 @@ export class TutorialSession {
     this.discardAttempt(now);this.phase='ready';this.result=null;this.attempt=0;this.attemptAssisted=false;this.revision++;return true;
   }
   discardAttempt(now) {
+    this.practiceGate = null;
     this.evidence=[];this.seen.clear();this.anchorMs=null;this.enteredAt=now;this.failed=false;this.playbackSince=null;this.phrasesPassed=[];this.feedback='';this.finalRestApplied=false;this.pendingAssessment=null;this.switchQueued=new Set();
   }
   startAttempt(now,{assisted=false}={}) {
@@ -209,6 +219,15 @@ export class TutorialSession {
     const step=this.step,elapsed=now-this.enteredAt;
     if(step.timed&&snapshot.roles&&scoreForStep(step).some(event=>!snapshot.roles[event.role]?.ready)){
       this.finishAttempt(snapshot,now,'A required target is missing. Place it with the radial menu, then press Practice.');return;
+    }
+    if (this.practiceGate) {
+      if (snapshot.audioRunning === false) {
+        this.finishResult({ok:false,message:'Audio paused. Press Practice to restart.'},now);return;
+      }
+      this.feedback = this.practiceGate.feedback;
+      if (this.practiceGate.complete) this.finishResult({...this.practiceGate.result(),
+        score:100,components:{targets:100,holdRelease:100}},now);
+      return;
     }
     const writtenRest=step.type==='performance'&&this.anchorMs!==null&&now>=this.anchorMs+95*this.beatMs;
     if(step.timed&&!writtenRest&&snapshot.clockPlaying!==undefined&&(!snapshot.clockPlaying||Math.abs(snapshot.bpm-C.bpm)>T.bpm)){

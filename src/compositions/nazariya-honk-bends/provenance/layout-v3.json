@@ -1,0 +1,2375 @@
+{
+  "schemaVersion": 1,
+  "id": "nazariya-honk-bends",
+  "title": "Nazariya Ki Maari — Honk Bends",
+  "contentVersion": 3,
+  "bpm": 50,
+  "sourceBpm": 70,
+  "practiceBpm": 50,
+  "maxBpm": 50,
+  "pitchBendRange": 4,
+  "liveRole": "melody",
+  "playback": "honk-live-two-hand-v1",
+  "source": {
+    "filename": "nazariya-honk-bends-70bpm.mid",
+    "sha256": "d2ca1e4bc2aef6de444843875920e0fe38b06e101e390d52d89a93390b3733f1",
+    "byteLength": 3844,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "nazariya-honk-bends-70bpm.mid"
+    },
+    "format": 1,
+    "division": {
+      "kind": "ppq",
+      "ppq": 960
+    }
+  },
+  "importOptions": {
+    "id": "nazariya-honk-bends",
+    "title": "Nazariya Ki Maari — Honk Bends",
+    "version": 3,
+    "sequence": 0,
+    "live": {
+      "track": 1,
+      "channel": 0,
+      "port": 0
+    },
+    "transpose": 0,
+    "playback": "honk-live-two-hand-v1",
+    "approvedArrangement": "approved-50bpm-arrangement.json",
+    "authoringScript": "scripts/midi/arrange-nazariya-honk-bends.mjs"
+  },
+  "normalizedSource": {
+    "file": "bc76b76916678c5eedc9b87c5724f0c12cbacb9edf88d86d5969bc8bc26b07fa.normalized.json",
+    "sha256": "bc76b76916678c5eedc9b87c5724f0c12cbacb9edf88d86d5969bc8bc26b07fa",
+    "sequence": 0
+  },
+  "authoredSource": {
+    "file": "approved-50bpm-arrangement.json",
+    "sha256": "54bcfa50718545e1c0f875208ba2a2878c18e259350c1854ecb60991b649d772",
+    "sourcePreview": {
+      "filename": "nazariya-more-bends-50bpm-proposal.json",
+      "sha256": "3f978b5b27f1eea2ced17ae0b5cdac992a90a88b2b5a1b7a2bfccab52fc8a6c3"
+    },
+    "sourceCompositionHash": "0d38bb9c2fe168cf0b2b00b50a4cf0e52cfe558eb1f5c327d41cbecb0459a6a0"
+  },
+  "score": {
+    "events": [
+      {
+        "id": "nazariya-1",
+        "sourceIds": [
+          "nazariya-1"
+        ],
+        "sourceEventId": "t1-e9",
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 77,
+        "beat": 0.4041666666666667,
+        "beats": 0.296875
+      },
+      {
+        "id": "nazariya-2",
+        "sourceIds": [
+          "nazariya-2"
+        ],
+        "sourceEventId": "t1-e13",
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 77,
+        "beat": 0.7479166666666667,
+        "beats": 0.5125
+      },
+      {
+        "id": "nazariya-3",
+        "sourceIds": [
+          "nazariya-3"
+        ],
+        "sourceEventId": "t1-e17",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 1.30625,
+        "beats": 0.8135416666666667
+      },
+      {
+        "id": "nazariya-4",
+        "sourceIds": [
+          "nazariya-4"
+        ],
+        "sourceEventId": "t1-e21",
+        "screenshotNoteIds": [
+          3
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 2.1666666666666665,
+        "beats": 0.1545869707826628
+      },
+      {
+        "id": "nazariya-5",
+        "sourceIds": [
+          "nazariya-5"
+        ],
+        "sourceEventId": "t1-e21",
+        "screenshotNoteIds": [
+          4
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 77,
+        "beat": 2.3384299675362916,
+        "beats": 0.2392103370843217
+      },
+      {
+        "id": "nazariya-6",
+        "sourceIds": [
+          "nazariya-6"
+        ],
+        "sourceEventId": "t1-e21",
+        "screenshotNoteIds": [
+          5,
+          6,
+          7,
+          8
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 2.596390304620613,
+        "beats": 2.79731701317051,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2186479770187955,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.29371991166591066,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.4230965434501501,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.5088930401897104,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-7",
+        "sourceIds": [
+          "nazariya-7"
+        ],
+        "sourceEventId": "t1-e21",
+        "screenshotNoteIds": [
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "role": "lead-59",
+        "hand": "R",
+        "midi": 59,
+        "velocity": 77,
+        "beat": 5.412457317791123,
+        "beats": 2.4748665918151076,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.12209574252122624,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.21907066666207872,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.3513676438035968,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.4362207024268427,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.4903436666930458,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.5751967253162916,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.7040578383707934,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.8010327625116459,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-8",
+        "sourceIds": [
+          "nazariya-8"
+        ],
+        "sourceEventId": "t1-e21",
+        "screenshotNoteIds": [
+          14
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 7.9060739096062305,
+        "beats": 0.28220372659837434
+      },
+      {
+        "id": "nazariya-9",
+        "sourceIds": [
+          "nazariya-9"
+        ],
+        "sourceEventId": "t1-e21",
+        "screenshotNoteIds": [
+          15
+        ],
+        "role": "lead-59",
+        "hand": "R",
+        "midi": 59,
+        "velocity": 77,
+        "beat": 8.207027636204606,
+        "beats": 0.28220372659837345
+      },
+      {
+        "id": "nazariya-10",
+        "sourceIds": [
+          "nazariya-10"
+        ],
+        "sourceEventId": "t1-e21",
+        "screenshotNoteIds": [
+          16
+        ],
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 77,
+        "beat": 8.50798136280298,
+        "beats": 0.3013936371970196
+      },
+      {
+        "id": "nazariya-11",
+        "sourceIds": [
+          "nazariya-11"
+        ],
+        "sourceEventId": "t1-e181",
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 77,
+        "beat": 8.959375,
+        "beats": 0.5802083333333333
+      },
+      {
+        "id": "nazariya-12",
+        "sourceIds": [
+          "nazariya-12"
+        ],
+        "sourceEventId": "t1-e185",
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 80,
+        "beat": 9.66875,
+        "beats": 0.878125
+      },
+      {
+        "id": "nazariya-13",
+        "sourceIds": [
+          "nazariya-13"
+        ],
+        "sourceEventId": "t1-e189",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 10.592708333333333,
+        "beats": 0.2760416666666667
+      },
+      {
+        "id": "nazariya-14",
+        "sourceIds": [
+          "nazariya-14"
+        ],
+        "sourceEventId": "t1-e193",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 10.915625,
+        "beats": 0.5770833333333333
+      },
+      {
+        "id": "nazariya-15",
+        "sourceIds": [
+          "nazariya-15"
+        ],
+        "sourceEventId": "t1-e197",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 11.538541666666667,
+        "beats": 0.5125
+      },
+      {
+        "id": "nazariya-16",
+        "sourceIds": [
+          "nazariya-16"
+        ],
+        "sourceEventId": "t1-e201",
+        "screenshotNoteIds": [
+          24
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 80,
+        "beat": 12.097916666666666,
+        "beats": 0.819633816083833
+      },
+      {
+        "id": "nazariya-17",
+        "sourceIds": [
+          "nazariya-17"
+        ],
+        "sourceEventId": "t1-e201",
+        "screenshotNoteIds": [
+          25
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 80,
+        "beat": 12.9363004827505,
+        "beats": 0.26070703184134736
+      },
+      {
+        "id": "nazariya-18",
+        "sourceIds": [
+          "nazariya-18"
+        ],
+        "sourceEventId": "t1-e201",
+        "screenshotNoteIds": [
+          26
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 80,
+        "beat": 13.215757514591848,
+        "beats": 0.34049248540815213
+      },
+      {
+        "id": "nazariya-19",
+        "sourceIds": [
+          "nazariya-19"
+        ],
+        "sourceEventId": "t1-e235",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 13.603125,
+        "beats": 0.8770833333333333
+      },
+      {
+        "id": "nazariya-20",
+        "sourceIds": [
+          "nazariya-20"
+        ],
+        "sourceEventId": "t1-e239",
+        "screenshotNoteIds": [
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 84,
+        "beat": 14.527083333333334,
+        "beats": 2.9692631326638725,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.05831853201513899,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.13914666656469787,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.23207230563431502,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.3129004401838739,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.43040907720711713,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5011336949379813,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.5462449262865674,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.6169695440174316,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7316144047894468,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.8124425393390051,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-21",
+        "sourceIds": [
+          "nazariya-21"
+        ],
+        "sourceEventId": "t1-e239",
+        "screenshotNoteIds": [
+          36
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 84,
+        "beat": 17.515096465997207,
+        "beats": 0.3037004213554013
+      },
+      {
+        "id": "nazariya-22",
+        "sourceIds": [
+          "nazariya-22"
+        ],
+        "sourceEventId": "t1-e239",
+        "screenshotNoteIds": [
+          37
+        ],
+        "role": "lead-59",
+        "hand": "R",
+        "midi": 59,
+        "velocity": 84,
+        "beat": 17.83754688735261,
+        "beats": 0.3037004213554013
+      },
+      {
+        "id": "nazariya-23",
+        "sourceIds": [
+          "nazariya-23"
+        ],
+        "sourceEventId": "t1-e239",
+        "screenshotNoteIds": [
+          38
+        ],
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 84,
+        "beat": 18.15999730870801,
+        "beats": 1.1358360246253234
+      },
+      {
+        "id": "nazariya-24",
+        "sourceIds": [
+          "nazariya-24"
+        ],
+        "sourceEventId": "t1-e340",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 19.342708333333334,
+        "beats": 0.296875
+      },
+      {
+        "id": "nazariya-25",
+        "sourceIds": [
+          "nazariya-25"
+        ],
+        "sourceEventId": "t1-e344",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 19.686458333333334,
+        "beats": 0.5760416666666667
+      },
+      {
+        "id": "nazariya-26",
+        "sourceIds": [
+          "nazariya-26"
+        ],
+        "sourceEventId": "t1-e348",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 20.309375,
+        "beats": 0.5125
+      },
+      {
+        "id": "nazariya-27",
+        "sourceIds": [
+          "nazariya-27"
+        ],
+        "sourceEventId": "t1-e352",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 20.86875,
+        "beats": 0.25416666666666665
+      },
+      {
+        "id": "nazariya-28",
+        "sourceIds": [
+          "nazariya-28"
+        ],
+        "sourceEventId": "t1-e356",
+        "screenshotNoteIds": [
+          43,
+          44
+        ],
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 84,
+        "beat": 21.169791666666665,
+        "beats": 1.5218750000000014,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2690083324707185,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4267085378095264,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-29",
+        "sourceIds": [
+          "nazariya-29"
+        ],
+        "sourceEventId": "t1-e376",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 22.738541666666666,
+        "beats": 0.8135416666666667
+      },
+      {
+        "id": "nazariya-30",
+        "sourceIds": [
+          "nazariya-30"
+        ],
+        "sourceEventId": "t1-e380",
+        "screenshotNoteIds": [
+          46
+        ],
+        "role": "lead-69",
+        "hand": "R",
+        "midi": 69,
+        "velocity": 77,
+        "beat": 23.598958333333332,
+        "beats": 1.8081718032497314
+      },
+      {
+        "id": "nazariya-31",
+        "sourceIds": [
+          "nazariya-31"
+        ],
+        "sourceEventId": "t1-e380",
+        "screenshotNoteIds": [
+          47
+        ],
+        "role": "lead-71",
+        "hand": "R",
+        "midi": 71,
+        "velocity": 77,
+        "beat": 25.425880136583064,
+        "beats": 0.2822037265983752
+      },
+      {
+        "id": "nazariya-32",
+        "sourceIds": [
+          "nazariya-32"
+        ],
+        "sourceEventId": "t1-e380",
+        "screenshotNoteIds": [
+          48
+        ],
+        "role": "lead-69",
+        "hand": "R",
+        "midi": 69,
+        "velocity": 77,
+        "beat": 25.72683386318144,
+        "beats": 0.26070703184134913
+      },
+      {
+        "id": "nazariya-33",
+        "sourceIds": [
+          "nazariya-33"
+        ],
+        "sourceEventId": "t1-e380",
+        "screenshotNoteIds": [
+          49
+        ],
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 26.00629089502279,
+        "beats": 0.3037004213554013
+      },
+      {
+        "id": "nazariya-34",
+        "sourceIds": [
+          "nazariya-34"
+        ],
+        "sourceEventId": "t1-e380",
+        "screenshotNoteIds": [
+          50
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 77,
+        "beat": 26.328741316378192,
+        "beats": 0.2545920169551401
+      },
+      {
+        "id": "nazariya-35",
+        "sourceIds": [
+          "nazariya-35"
+        ],
+        "sourceEventId": "t1-e441",
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 26.630208333333332,
+        "beats": 0.42604166666666665
+      },
+      {
+        "id": "nazariya-36",
+        "sourceIds": [
+          "nazariya-36"
+        ],
+        "sourceEventId": "t1-e445",
+        "screenshotNoteIds": [
+          52,
+          53
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 84,
+        "beat": 27.103125,
+        "beats": 1.328125,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.17858102025692033,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.35928690260986035,
+            "semitones": 2
+          },
+          {
+            "fraction": 1,
+            "semitones": 2
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-37",
+        "sourceIds": [
+          "nazariya-37"
+        ],
+        "sourceEventId": "t1-e465",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 28.478125,
+        "beats": 0.5989583333333334
+      },
+      {
+        "id": "nazariya-38",
+        "sourceIds": [
+          "nazariya-38"
+        ],
+        "sourceEventId": "t1-e469",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 80,
+        "beat": 29.122916666666665,
+        "beats": 0.85625
+      },
+      {
+        "id": "nazariya-39",
+        "sourceIds": [
+          "nazariya-39"
+        ],
+        "sourceEventId": "t1-e473",
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 77,
+        "beat": 30.026041666666668,
+        "beats": 0.21145833333333333
+      },
+      {
+        "id": "nazariya-40",
+        "sourceIds": [
+          "nazariya-40"
+        ],
+        "sourceEventId": "t1-e477",
+        "screenshotNoteIds": [
+          59
+        ],
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 80,
+        "beat": 30.284375,
+        "beats": 0.5242775037425744
+      },
+      {
+        "id": "nazariya-41",
+        "sourceIds": [
+          "nazariya-41"
+        ],
+        "sourceEventId": "t1-e477",
+        "screenshotNoteIds": [
+          60
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 80,
+        "beat": 30.82155052059679,
+        "beats": 0.12069990412271991
+      },
+      {
+        "id": "nazariya-42",
+        "sourceIds": [
+          "nazariya-42"
+        ],
+        "sourceEventId": "t1-e477",
+        "screenshotNoteIds": [
+          61
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 80,
+        "beat": 30.95053068913895,
+        "beats": 0.0828026441943841
+      },
+      {
+        "id": "nazariya-43",
+        "sourceIds": [
+          "nazariya-43"
+        ],
+        "sourceEventId": "t1-e501",
+        "screenshotNoteIds": [
+          62
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 80,
+        "beat": 31.079166666666666,
+        "beats": 0.20456279120620025
+      },
+      {
+        "id": "nazariya-44",
+        "sourceIds": [
+          "nazariya-44"
+        ],
+        "sourceEventId": "t1-e501",
+        "screenshotNoteIds": [
+          63
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 80,
+        "beat": 31.29447780525138,
+        "beats": 0.09673512640662096
+      },
+      {
+        "id": "nazariya-45",
+        "sourceIds": [
+          "nazariya-45"
+        ],
+        "sourceEventId": "t1-e501",
+        "screenshotNoteIds": [
+          64,
+          65
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 80,
+        "beat": 31.401961279036513,
+        "beats": 0.3546954634909447
+      },
+      {
+        "id": "nazariya-46",
+        "sourceIds": [
+          "nazariya-46"
+        ],
+        "sourceEventId": "t1-e501",
+        "screenshotNoteIds": [
+          66
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 80,
+        "beat": 31.76740508990597,
+        "beats": 0.09673512640661741
+      },
+      {
+        "id": "nazariya-47",
+        "sourceIds": [
+          "nazariya-47"
+        ],
+        "sourceEventId": "t1-e501",
+        "screenshotNoteIds": [
+          67,
+          68
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 80,
+        "beat": 31.8748885636911,
+        "beats": 0.4042781029755673
+      },
+      {
+        "id": "nazariya-48",
+        "sourceIds": [
+          "nazariya-48"
+        ],
+        "sourceEventId": "t1-e537",
+        "screenshotNoteIds": [
+          69
+        ],
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 80,
+        "beat": 32.32604166666667,
+        "beats": 0.6049316348757756
+      },
+      {
+        "id": "nazariya-49",
+        "sourceIds": [
+          "nazariya-49"
+        ],
+        "sourceEventId": "t1-e537",
+        "screenshotNoteIds": [
+          70
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 80,
+        "beat": 32.94972330154244,
+        "beats": 0.21771364232729695
+      },
+      {
+        "id": "nazariya-50",
+        "sourceIds": [
+          "nazariya-50"
+        ],
+        "sourceEventId": "t1-e537",
+        "screenshotNoteIds": [
+          71
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 80,
+        "beat": 33.186186943869735,
+        "beats": 0.2325630561302674
+      },
+      {
+        "id": "nazariya-51",
+        "sourceIds": [
+          "nazariya-51"
+        ],
+        "sourceEventId": "t1-e569",
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 77,
+        "beat": 33.465625,
+        "beats": 0.4479166666666667
+      },
+      {
+        "id": "nazariya-52",
+        "sourceIds": [
+          "nazariya-52"
+        ],
+        "sourceEventId": "t1-e573",
+        "screenshotNoteIds": [
+          73
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 80,
+        "beat": 33.96041666666667,
+        "beats": 1.464173226690889
+      },
+      {
+        "id": "nazariya-53",
+        "sourceIds": [
+          "nazariya-53"
+        ],
+        "sourceEventId": "t1-e573",
+        "screenshotNoteIds": [
+          74
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 80,
+        "beat": 35.44333989335755,
+        "beats": 0.26070703184134913
+      },
+      {
+        "id": "nazariya-54",
+        "sourceIds": [
+          "nazariya-54"
+        ],
+        "sourceEventId": "t1-e573",
+        "screenshotNoteIds": [
+          75
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 80,
+        "beat": 35.7227969251989,
+        "beats": 0.5772030748010977
+      },
+      {
+        "id": "nazariya-55",
+        "sourceIds": [
+          "nazariya-55"
+        ],
+        "sourceEventId": "t1-e607",
+        "screenshotNoteIds": [
+          76
+        ],
+        "role": "lead-68",
+        "hand": "R",
+        "midi": 68,
+        "velocity": 80,
+        "beat": 36.34583333333333,
+        "beats": 0.28257146641772124
+      },
+      {
+        "id": "nazariya-56",
+        "sourceIds": [
+          "nazariya-56"
+        ],
+        "sourceEventId": "t1-e607",
+        "screenshotNoteIds": [
+          77
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 80,
+        "beat": 36.64715479975105,
+        "beats": 0.2822037265983752
+      },
+      {
+        "id": "nazariya-57",
+        "sourceIds": [
+          "nazariya-57"
+        ],
+        "sourceEventId": "t1-e607",
+        "screenshotNoteIds": [
+          78
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 80,
+        "beat": 36.94810852634942,
+        "beats": 0.21126647365057494
+      },
+      {
+        "id": "nazariya-58",
+        "sourceIds": [
+          "nazariya-58"
+        ],
+        "sourceEventId": "t1-e639",
+        "screenshotNoteIds": [
+          79
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 80,
+        "beat": 37.20625,
+        "beats": 0.3035192847891537
+      },
+      {
+        "id": "nazariya-59",
+        "sourceIds": [
+          "nazariya-59"
+        ],
+        "sourceEventId": "t1-e639",
+        "screenshotNoteIds": [
+          80
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 80,
+        "beat": 37.52851928478915,
+        "beats": 0.26070703184134913
+      },
+      {
+        "id": "nazariya-60",
+        "sourceIds": [
+          "nazariya-60"
+        ],
+        "sourceEventId": "t1-e639",
+        "screenshotNoteIds": [
+          81
+        ],
+        "role": "lead-62",
+        "hand": "R",
+        "midi": 62,
+        "velocity": 80,
+        "beat": 37.807976316630494,
+        "beats": 0.3013986833695057
+      },
+      {
+        "id": "nazariya-61",
+        "sourceIds": [
+          "nazariya-61"
+        ],
+        "sourceEventId": "t1-e671",
+        "screenshotNoteIds": [
+          82
+        ],
+        "role": "lead-59",
+        "hand": "R",
+        "midi": 59,
+        "velocity": 82,
+        "beat": 38.409375,
+        "beats": 0.28271249642563134
+      },
+      {
+        "id": "nazariya-62",
+        "sourceIds": [
+          "nazariya-62"
+        ],
+        "sourceEventId": "t1-e671",
+        "screenshotNoteIds": [
+          83
+        ],
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 82,
+        "beat": 38.710837496425626,
+        "beats": 0.19621694757027086
+      },
+      {
+        "id": "nazariya-63",
+        "sourceIds": [
+          "nazariya-63"
+        ],
+        "sourceEventId": "t1-e671",
+        "screenshotNoteIds": [
+          84
+        ],
+        "role": "lead-59",
+        "hand": "R",
+        "midi": 59,
+        "velocity": 82,
+        "beat": 38.925804443995894,
+        "beats": 0.28415037699113554
+      },
+      {
+        "id": "nazariya-64",
+        "sourceIds": [
+          "nazariya-64"
+        ],
+        "sourceEventId": "t1-e671",
+        "screenshotNoteIds": [
+          85
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 82,
+        "beat": 39.226758170594266,
+        "beats": 0.16803349607239682
+      },
+      {
+        "id": "nazariya-65",
+        "sourceIds": [
+          "nazariya-65"
+        ],
+        "sourceEventId": "t1-e712",
+        "screenshotNoteIds": [
+          86
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 84,
+        "beat": 39.44166666666667,
+        "beats": 0.3897456518813769
+      },
+      {
+        "id": "nazariya-66",
+        "sourceIds": [
+          "nazariya-66"
+        ],
+        "sourceEventId": "t1-e712",
+        "screenshotNoteIds": [
+          87
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 84,
+        "beat": 39.850162318548044,
+        "beats": 0.21129601478529025
+      },
+      {
+        "id": "nazariya-67",
+        "sourceIds": [
+          "nazariya-67"
+        ],
+        "sourceEventId": "t1-e732",
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 40.108333333333334,
+        "beats": 0.42604166666666665
+      },
+      {
+        "id": "nazariya-68",
+        "sourceIds": [
+          "nazariya-68"
+        ],
+        "sourceEventId": "t1-e736",
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 84,
+        "beat": 40.58125,
+        "beats": 0.31875
+      },
+      {
+        "id": "nazariya-69",
+        "sourceIds": [
+          "nazariya-69"
+        ],
+        "sourceEventId": "t1-e740",
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 40.946875,
+        "beats": 0.9416666666666667
+      },
+      {
+        "id": "nazariya-70",
+        "sourceIds": [
+          "nazariya-70"
+        ],
+        "sourceEventId": "t1-e744",
+        "screenshotNoteIds": [
+          92
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 82,
+        "beat": 41.93541666666667,
+        "beats": 0.5400891069956728
+      },
+      {
+        "id": "nazariya-71",
+        "sourceIds": [
+          "nazariya-71"
+        ],
+        "sourceEventId": "t1-e744",
+        "screenshotNoteIds": [
+          93
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 82,
+        "beat": 42.49425577366234,
+        "beats": 0.26070703184134913
+      },
+      {
+        "id": "nazariya-72",
+        "sourceIds": [
+          "nazariya-72"
+        ],
+        "sourceEventId": "t1-e744",
+        "screenshotNoteIds": [
+          94,
+          95
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 82,
+        "beat": 42.773712805503685,
+        "beats": 0.27628719449631944
+      },
+      {
+        "id": "nazariya-73",
+        "sourceIds": [
+          "nazariya-73"
+        ],
+        "sourceEventId": "t1-e776",
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 77,
+        "beat": 43.09583333333333,
+        "beats": 0.21145833333333333
+      },
+      {
+        "id": "nazariya-74",
+        "sourceIds": [
+          "nazariya-74"
+        ],
+        "sourceEventId": "t1-e780",
+        "screenshotNoteIds": [
+          97
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 77,
+        "beat": 43.354166666666664,
+        "beats": 0.583114350473501
+      },
+      {
+        "id": "nazariya-75",
+        "sourceIds": [
+          "nazariya-75"
+        ],
+        "sourceEventId": "t1-e780",
+        "screenshotNoteIds": [
+          98
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 43.95603101714016,
+        "beats": 0.2822037265983681
+      },
+      {
+        "id": "nazariya-76",
+        "sourceIds": [
+          "nazariya-76"
+        ],
+        "sourceEventId": "t1-e780",
+        "screenshotNoteIds": [
+          99
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 77,
+        "beat": 44.25698474373853,
+        "beats": 0.3037004213554084
+      },
+      {
+        "id": "nazariya-77",
+        "sourceIds": [
+          "nazariya-77"
+        ],
+        "sourceEventId": "t1-e780",
+        "screenshotNoteIds": [
+          100
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 44.57943516509393,
+        "beats": 0.23921033708432304
+      },
+      {
+        "id": "nazariya-78",
+        "sourceIds": [
+          "nazariya-78"
+        ],
+        "sourceEventId": "t1-e780",
+        "screenshotNoteIds": [
+          101
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 77,
+        "beat": 44.83739550217825,
+        "beats": 0.3615628311550765
+      },
+      {
+        "id": "nazariya-79",
+        "sourceIds": [
+          "nazariya-79"
+        ],
+        "sourceEventId": "t1-e841",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 84,
+        "beat": 45.24583333333333,
+        "beats": 0.5333333333333333
+      },
+      {
+        "id": "nazariya-80",
+        "sourceIds": [
+          "nazariya-80"
+        ],
+        "sourceEventId": "t1-e845",
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 45.82604166666667,
+        "beats": 0.2760416666666667
+      },
+      {
+        "id": "nazariya-81",
+        "sourceIds": [
+          "nazariya-81"
+        ],
+        "sourceEventId": "t1-e849",
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 77,
+        "beat": 46.14895833333333,
+        "beats": 0.5552083333333333
+      },
+      {
+        "id": "nazariya-82",
+        "sourceIds": [
+          "nazariya-82"
+        ],
+        "sourceEventId": "t1-e853",
+        "screenshotNoteIds": [
+          106,
+          107,
+          108,
+          109
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 82,
+        "beat": 46.751041666666666,
+        "beats": 2.0659890603185715,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.160567327982104,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2622135583680574,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.3374529746142827,
+            "semitones": -1
+          },
+          {
+            "fraction": 0.4390992050002361,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6038681115631904,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7200352320042805,
+            "semitones": 2
+          },
+          {
+            "fraction": 1,
+            "semitones": 2
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-83",
+        "sourceIds": [
+          "nazariya-83"
+        ],
+        "sourceEventId": "t1-e853",
+        "screenshotNoteIds": [
+          110
+        ],
+        "role": "lead-64",
+        "hand": "R",
+        "midi": 64,
+        "velocity": 82,
+        "beat": 48.835780726985234,
+        "beats": 0.26070703184134913
+      },
+      {
+        "id": "nazariya-84",
+        "sourceIds": [
+          "nazariya-84"
+        ],
+        "sourceEventId": "t1-e853",
+        "screenshotNoteIds": [
+          111,
+          112
+        ],
+        "role": "lead-63",
+        "hand": "R",
+        "midi": 63,
+        "velocity": 82,
+        "beat": 49.11523775882658,
+        "beats": 1.479553907840085,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.11705589415076473,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.27926694893440834,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-85",
+        "sourceIds": [
+          "nazariya-85"
+        ],
+        "sourceEventId": "t1-e939",
+        "screenshotNoteIds": [
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 80,
+        "beat": 50.641666666666666,
+        "beats": 2.9906236858925723,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.06504449931629085,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.14529531827828016,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.2303692045755743,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.31062002353756357,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.40572526220510435,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4759447287968447,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.5279217834837047,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.5981412500754449,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7191552896899708,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.79940610865196,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-86",
+        "sourceIds": [
+          "nazariya-86"
+        ],
+        "sourceEventId": "t1-e939",
+        "screenshotNoteIds": [
+          120
+        ],
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 80,
+        "beat": 53.651040352559235,
+        "beats": 0.26070703184135624
+      },
+      {
+        "id": "nazariya-87",
+        "sourceIds": [
+          "nazariya-87"
+        ],
+        "sourceEventId": "t1-e939",
+        "screenshotNoteIds": [
+          121
+        ],
+        "role": "lead-59",
+        "hand": "R",
+        "midi": 59,
+        "velocity": 80,
+        "beat": 53.93049738440059,
+        "beats": 0.2822037265983752
+      },
+      {
+        "id": "nazariya-88",
+        "sourceIds": [
+          "nazariya-88"
+        ],
+        "sourceEventId": "t1-e939",
+        "screenshotNoteIds": [
+          122
+        ],
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 80,
+        "beat": 54.23145111099896,
+        "beats": 1.0716738890010404
+      },
+      {
+        "id": "nazariya-89",
+        "sourceIds": [
+          "nazariya-89"
+        ],
+        "sourceEventId": "t1-e1042",
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 84,
+        "beat": 55.348958333333336,
+        "beats": 0.4479166666666667
+      },
+      {
+        "id": "nazariya-90",
+        "sourceIds": [
+          "nazariya-90"
+        ],
+        "sourceEventId": "t1-e1046",
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 77,
+        "beat": 55.84375,
+        "beats": 0.18958333333333333
+      },
+      {
+        "id": "nazariya-91",
+        "sourceIds": [
+          "nazariya-91"
+        ],
+        "sourceEventId": "t1-e1050",
+        "role": "lead-57",
+        "hand": "R",
+        "midi": 57,
+        "velocity": 77,
+        "beat": 56.08020833333333,
+        "beats": 0.23229166666666667
+      },
+      {
+        "id": "nazariya-92",
+        "sourceIds": [
+          "nazariya-92"
+        ],
+        "sourceEventId": "t1-e1054",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 56.359375,
+        "beats": 0.490625
+      },
+      {
+        "id": "nazariya-93",
+        "sourceIds": [
+          "nazariya-93"
+        ],
+        "sourceEventId": "t1-e1058",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 56.896875,
+        "beats": 1.028125
+      },
+      {
+        "id": "nazariya-94",
+        "sourceIds": [
+          "nazariya-94"
+        ],
+        "sourceEventId": "t1-e1062",
+        "screenshotNoteIds": [
+          129,
+          130,
+          131,
+          132
+        ],
+        "role": "lead-66",
+        "hand": "R",
+        "midi": 66,
+        "velocity": 82,
+        "beat": 57.971875,
+        "beats": 2.2322916666666686,
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3183315531231073,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4258443856009429,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.5821474659254369,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6762211943435427,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "bendStyle": "melody",
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "nazariya-95",
+        "sourceIds": [
+          "nazariya-95"
+        ],
+        "sourceEventId": "t1-e1098",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 60.251041666666666,
+        "beats": 0.5760416666666667
+      },
+      {
+        "id": "nazariya-96",
+        "sourceIds": [
+          "nazariya-96"
+        ],
+        "sourceEventId": "t1-e1102",
+        "role": "lead-61",
+        "hand": "R",
+        "midi": 61,
+        "velocity": 77,
+        "beat": 60.873958333333334,
+        "beats": 1.1822916666666667
+      }
+    ],
+    "durationBeats": 62.05625,
+    "durationSeconds": 74.4675,
+    "sourceTempo": [
+      {
+        "tick": 0,
+        "us": 857143,
+        "seconds": 0
+      }
+    ],
+    "sourceMeter": [
+      {
+        "event": "t0-e2",
+        "tick": 0,
+        "numerator": 4,
+        "denominator": 4,
+        "quarterBeatsPerBar": 4,
+        "metronome": 24
+      }
+    ]
+  },
+  "arrangement": {
+    "id": "measured-bends-50",
+    "title": "Quick note switches and held bends",
+    "version": 3,
+    "recipes": [
+      {
+        "kind": "honk",
+        "role": "lead-57",
+        "midi": 57,
+        "position": [
+          -0.46,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-59",
+        "midi": 59,
+        "position": [
+          -0.23,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-61",
+        "midi": 61,
+        "position": [
+          0,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-62",
+        "midi": 62,
+        "position": [
+          0.23,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-63",
+        "midi": 63,
+        "position": [
+          0.46,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-64",
+        "midi": 64,
+        "position": [
+          -0.46,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-66",
+        "midi": 66,
+        "position": [
+          -0.23,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-68",
+        "midi": 68,
+        "position": [
+          0,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-69",
+        "midi": 69,
+        "position": [
+          0.23,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-71",
+        "midi": 71,
+        "position": [
+          0.46,
+          0.45,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "metronome",
+        "role": "metronome",
+        "position": [
+          -0.85,
+          -0.6,
+          0.05
+        ],
+        "scale": 0.65
+      }
+    ],
+    "backing": [],
+    "provenance": "Approved 50 BPM arrangement 54bcfa50718545e1c0f875208ba2a2878c18e259350c1854ecb60991b649d772; original MIDI d2ca1e4bc2aef6de444843875920e0fe38b06e101e390d52d89a93390b3733f1",
+    "roleAssignments": [
+      {
+        "role": "melody",
+        "sequence": 0,
+        "source": {
+          "track": 1,
+          "channel": 0,
+          "port": 0
+        }
+      }
+    ],
+    "exclusions": [],
+    "decisions": [
+      "The accepted 50 BPM preview is imported exactly: 96 presses and 24 bend changes across nine continuous holds. Fast turns use separate notes; rhythmic taps remain distinct.",
+      "Each live event references its event ID in the approved arrangement. Original MIDI event IDs and screenshot note IDs remain derivation provenance; the original binary and normalized inventory are unchanged.",
+      "Bend eligibility was selected at 45 BPM, then the same beat-relative notes and curves were played at the approved 50 BPM. No new threshold calculation changes the accepted arrangement.",
+      "Ten stable Honks cover the starting pitches. Either hand can play; all bends within one hold use one Trigger press.",
+      "Every sound uses the ordinary Honk instrument, voice engine, vowel, gain, envelope, and mixer. Only tuning, note timing and wrist bend are guided; preview audio and synthesis are not loaded.",
+      "The original MIDI was reconstructed from the user's edited GarageBand screenshots; its timing remains approximate relative to that visual source."
+    ]
+  },
+  "lessons": [
+    {
+      "id": "phrase-1",
+      "title": "Opening pulses and first turn",
+      "startBeat": 0,
+      "endBeat": 8.959375,
+      "goal": "Keep the opening taps distinct. Switch notes through the quick rise and ending descent; hold Trigger through the slower bends in between.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "nazariya-1",
+        "nazariya-2",
+        "nazariya-3",
+        "nazariya-4",
+        "nazariya-5",
+        "nazariya-6",
+        "nazariya-7",
+        "nazariya-8",
+        "nazariya-9",
+        "nazariya-10"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-2",
+      "title": "Low pulses and answering phrase",
+      "startBeat": 8.959375,
+      "endBeat": 19.342708333333334,
+      "goal": "Keep the low repeated pulses crisp. Play the quick descending notes separately, then keep C♯ held through all the answering bends and returns to neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "nazariya-11",
+        "nazariya-12",
+        "nazariya-13",
+        "nazariya-14",
+        "nazariya-15",
+        "nazariya-16",
+        "nazariya-17",
+        "nazariya-18",
+        "nazariya-19",
+        "nazariya-20",
+        "nazariya-21",
+        "nazariya-22",
+        "nazariya-23"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-3",
+      "title": "High repeated notes and the crest",
+      "startBeat": 19.342708333333334,
+      "endBeat": 27.103125,
+      "goal": "Keep the high repeated notes distinct. Hold the G♯ to F♯ bend, then switch notes through the quick crest and descent.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "nazariya-24",
+        "nazariya-25",
+        "nazariya-26",
+        "nazariya-27",
+        "nazariya-28",
+        "nazariya-29",
+        "nazariya-30",
+        "nazariya-31",
+        "nazariya-32",
+        "nazariya-33",
+        "nazariya-34",
+        "nazariya-35"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-4",
+      "title": "Fast turns with fewer presses",
+      "startBeat": 27.103125,
+      "endBeat": 33.96041666666667,
+      "goal": "Hold E as it bends up to F♯. Use separate presses for the fast falling and rising turns that follow.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "nazariya-36",
+        "nazariya-37",
+        "nazariya-38",
+        "nazariya-39",
+        "nazariya-40",
+        "nazariya-41",
+        "nazariya-42",
+        "nazariya-43",
+        "nazariya-44",
+        "nazariya-45",
+        "nazariya-46",
+        "nazariya-47",
+        "nazariya-48",
+        "nazariya-49",
+        "nazariya-50",
+        "nazariya-51"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-5",
+      "title": "Answer and return",
+      "startBeat": 33.96041666666667,
+      "endBeat": 41.93541666666667,
+      "goal": "Play these quick turns as separate notes. Keep the returning E pulses distinct and follow the squares for each new press.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "nazariya-52",
+        "nazariya-53",
+        "nazariya-54",
+        "nazariya-55",
+        "nazariya-56",
+        "nazariya-57",
+        "nazariya-58",
+        "nazariya-59",
+        "nazariya-60",
+        "nazariya-61",
+        "nazariya-62",
+        "nazariya-63",
+        "nazariya-64",
+        "nazariya-65",
+        "nazariya-66",
+        "nazariya-67",
+        "nazariya-68",
+        "nazariya-69"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-6",
+      "title": "Rising and falling holds",
+      "startBeat": 41.93541666666667,
+      "endBeat": 50.641666666666666,
+      "goal": "Use separate notes for the quick turns. Keep the repeated E accents, then hold through its slower falling and rising bends. Keep the final E♭ to C♯ bend held.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "nazariya-70",
+        "nazariya-71",
+        "nazariya-72",
+        "nazariya-73",
+        "nazariya-74",
+        "nazariya-75",
+        "nazariya-76",
+        "nazariya-77",
+        "nazariya-78",
+        "nazariya-79",
+        "nazariya-80",
+        "nazariya-81",
+        "nazariya-82",
+        "nazariya-83",
+        "nazariya-84"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "phrase-7",
+      "title": "Closing phrase",
+      "startBeat": 50.641666666666666,
+      "endBeat": 62.05625,
+      "goal": "Hold the opening C♯ through the answering bends. Switch notes through the quick descent, preserve the low pulses, and hold the final F♯ through E to E♭ before the two C♯ presses.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "eventIds": [
+        "nazariya-85",
+        "nazariya-86",
+        "nazariya-87",
+        "nazariya-88",
+        "nazariya-89",
+        "nazariya-90",
+        "nazariya-91",
+        "nazariya-92",
+        "nazariya-93",
+        "nazariya-94",
+        "nazariya-95",
+        "nazariya-96"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    },
+    {
+      "id": "performance",
+      "title": "Complete guided performance",
+      "startBeat": 0,
+      "endBeat": 62.05625,
+      "goal": "Play the whole section at 50 BPM. Switch notes through the quick turns and keep Trigger held through each slower bend phrase, including returns to neutral. Keep the rhythmic accents. Either hand works.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": true,
+      "eventIds": [
+        "nazariya-1",
+        "nazariya-2",
+        "nazariya-3",
+        "nazariya-4",
+        "nazariya-5",
+        "nazariya-6",
+        "nazariya-7",
+        "nazariya-8",
+        "nazariya-9",
+        "nazariya-10",
+        "nazariya-11",
+        "nazariya-12",
+        "nazariya-13",
+        "nazariya-14",
+        "nazariya-15",
+        "nazariya-16",
+        "nazariya-17",
+        "nazariya-18",
+        "nazariya-19",
+        "nazariya-20",
+        "nazariya-21",
+        "nazariya-22",
+        "nazariya-23",
+        "nazariya-24",
+        "nazariya-25",
+        "nazariya-26",
+        "nazariya-27",
+        "nazariya-28",
+        "nazariya-29",
+        "nazariya-30",
+        "nazariya-31",
+        "nazariya-32",
+        "nazariya-33",
+        "nazariya-34",
+        "nazariya-35",
+        "nazariya-36",
+        "nazariya-37",
+        "nazariya-38",
+        "nazariya-39",
+        "nazariya-40",
+        "nazariya-41",
+        "nazariya-42",
+        "nazariya-43",
+        "nazariya-44",
+        "nazariya-45",
+        "nazariya-46",
+        "nazariya-47",
+        "nazariya-48",
+        "nazariya-49",
+        "nazariya-50",
+        "nazariya-51",
+        "nazariya-52",
+        "nazariya-53",
+        "nazariya-54",
+        "nazariya-55",
+        "nazariya-56",
+        "nazariya-57",
+        "nazariya-58",
+        "nazariya-59",
+        "nazariya-60",
+        "nazariya-61",
+        "nazariya-62",
+        "nazariya-63",
+        "nazariya-64",
+        "nazariya-65",
+        "nazariya-66",
+        "nazariya-67",
+        "nazariya-68",
+        "nazariya-69",
+        "nazariya-70",
+        "nazariya-71",
+        "nazariya-72",
+        "nazariya-73",
+        "nazariya-74",
+        "nazariya-75",
+        "nazariya-76",
+        "nazariya-77",
+        "nazariya-78",
+        "nazariya-79",
+        "nazariya-80",
+        "nazariya-81",
+        "nazariya-82",
+        "nazariya-83",
+        "nazariya-84",
+        "nazariya-85",
+        "nazariya-86",
+        "nazariya-87",
+        "nazariya-88",
+        "nazariya-89",
+        "nazariya-90",
+        "nazariya-91",
+        "nazariya-92",
+        "nazariya-93",
+        "nazariya-94",
+        "nazariya-95",
+        "nazariya-96"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 35,
+        "onsetBeats": 0.22,
+        "durationBeats": 0.3,
+        "bendCents": 75,
+        "bendTimingBeats": 0.16
+      }
+    }
+  ],
+  "recording": {
+    "bpm": 50,
+    "countIn": 4,
+    "tailMs": 500,
+    "end": "manual",
+    "synchronization": "captured-noise-once",
+    "instructions": "Play at 50 BPM. Use the squares to switch notes through quick turns. When the bend gauge appears, keep Trigger held through the entire bend phrase and every return to neutral. Release between separate notes and preserve repeated accents. Either hand works."
+  },
+  "requirements": {
+    "maxHonks": 10,
+    "maxLoopers": 0,
+    "maxLiveVoices": 1
+  },
+  "warnings": [],
+  "contentHash": "8ce53598e317f4c68bc341c926efd673f2d275892c2cb9e5fbead61900a7c794"
+}

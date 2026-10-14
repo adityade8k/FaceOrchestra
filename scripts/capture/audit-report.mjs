@@ -36,7 +36,7 @@ export async function writeGuidedAudit(song, report) {
     return result;
   };
   await writeFile(
-    `docs/audits/${song}-tutorial.json`,
+    `/tmp/honk-${song}-tutorial.json`,
     JSON.stringify({ ...compact(report), rawEvidence }, null, 2),
   );
 }

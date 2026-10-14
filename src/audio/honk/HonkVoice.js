@@ -125,7 +125,7 @@ export class HonkVoice {
     pitchBendSemitones = null,
     pitchSnap = null,
     activeVoiceCount = 1,
-  }, { scheduledTime = undefined } = {}) {
+  }, { scheduledTime = undefined, bendSnapped = false } = {}) {
     const isScheduled = Number.isFinite(scheduledTime);
     const now = isScheduled
       ? Math.max(scheduledTime, this.context.currentTime)
@@ -150,7 +150,9 @@ export class HonkVoice {
     // scheduled notes need the same pitch settling and gain envelope as live
     // notes. A separate 4 ms attack made imported backing sound percussive.
     this.source.frequency.setTargetAtTime(frequency, now, 0.035);
-    this.source.detune.setTargetAtTime(detune, now, 0.045);
+    // A guided note capture settles in about 24 ms; ordinary glides retain
+    // their usual smoothing. Keep gain and articulation independent of this.
+    this.source.detune.setTargetAtTime(detune, now, bendSnapped ? 0.008 : 0.045);
     this.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);
     this.master.gain.setTargetAtTime(gain, now, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
   }

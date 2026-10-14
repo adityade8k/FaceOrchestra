@@ -1,54 +1,5 @@
-export function validateComposition(definition) {
-  const d = definition;
-  if (!d || d.schemaVersion !== 1 || !d.id || !d.title || !d.contentVersion)
-    throw new Error("Invalid composition identity/version");
-  if (!Number.isFinite(d.bpm) || d.bpm < 30 || d.bpm > 240)
-    throw new Error("Unsupported composition tempo");
-  if (
-    !Array.isArray(d.lessons) ||
-    !d.lessons.length ||
-    !d.lessons.some((l) => l.completePerformance)
-  )
-    throw new Error(
-      "Composition requires complete guided lessons and a final performance",
-    );
-  const ids = new Set();
-  for (const lesson of d.lessons) {
-    if (
-      !lesson.id ||
-      ids.has(lesson.id) ||
-      !lesson.goal ||
-      !lesson.practice ||
-      !lesson.demonstration ||
-      !lesson.assessment ||
-      !lesson.skip
-    )
-      throw new Error("Incomplete guided lesson");
-    ids.add(lesson.id);
-  }
-  if (!d.recording || !d.liveRole || !d.score || !d.arrangement)
-    throw new Error(
-      "Composition requires one score, arrangement, live role and recording policy",
-    );
-  const plain = (value) => {
-    if (value === null || ["string", "boolean"].includes(typeof value)) return;
-    if (typeof value === "number" && Number.isFinite(value)) return;
-    if (Array.isArray(value)) {
-      value.forEach(plain);
-      return;
-    }
-    if (
-      typeof value === "object" &&
-      Object.getPrototypeOf(value) === Object.prototype
-    ) {
-      Object.values(value).forEach(plain);
-      return;
-    }
-    throw new Error("Composition must contain finite serializable plain data");
-  };
-  plain(d);
-  return d;
-}
+import { validateComposition } from "./CompositionDefinition.js";
+export { validateComposition } from "./CompositionDefinition.js";
 
 // Metadata is cheap. Loading imports only the chosen composition and adapter.
 export class CompositionRegistry {
@@ -122,7 +73,7 @@ export const compositionRegistry = new CompositionRegistry([
   {
     id: "kuch-to-hua-hai",
     title: "Kuch To Hua Hai",
-    version: 2,
+    version: 7,
     load: () => import("./kuch.js"),
   },
   {
@@ -130,6 +81,18 @@ export const compositionRegistry = new CompositionRegistry([
     title: "rishte naate.mid",
     version: 3,
     load: () => import("./rishte.js"),
+  },
+  {
+    id: "tu-kisi-rail-si",
+    title: "Tu Kisi Rail Si",
+    version: 2,
+    load: () => import("./tu-kisi-rail-si.js"),
+  },
+  {
+    id: "nazariya-honk-bends",
+    title: "Nazariya Ki Maari",
+    version: 5,
+    load: () => import("./nazariya-honk-bends.js"),
   },
 ]);
 export function libraryPage(registry, mode, page = 0, size = 2) {

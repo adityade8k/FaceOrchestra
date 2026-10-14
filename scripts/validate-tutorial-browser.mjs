@@ -346,7 +346,7 @@ async function validateRecordingDemonstrations(app) {
   const { TutorialSession } = await import(
     "../src/tutorial/TutorialSession.js"
   );
-  const { LESSON_STEPS } = await import("../src/tutorial/lessonSteps.js");
+  const { LESSON_STEPS } = await import("../src/compositions/jog/definition.js");
   const originalSession = t.session,
     originalConductor = t.conductor;
   const roles = ["chordLooper", "percussionLooper"];

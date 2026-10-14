@@ -4,6 +4,8 @@ import {
   BEND_COLLIDER_ROTATION_DEGREES,
   BEND_SENSITIVITY,
   BEND_SMOOTHING,
+  MAX_PITCH_BEND_SEMITONES,
+  getHonkPitchBendRange,
   INTERACTION_TARGET_NAMES,
   SQUEEZE_SENSITIVITY,
 } from "../../config/honk.js";
@@ -19,12 +21,15 @@ import {
 
 const tempBendQuaternion = new THREE.Quaternion();
 const tempBendEuler = new THREE.Euler();
+// Sound starts immediately; only sustained aim with Trigger held may latch.
+const RAY_SQUEEZE_LATCH_MS = 100;
 
 export const HonkPerformanceRuntimeMethods = {
     updateHorn(now = performance.now()) {
       for (const state of this.instrumentStates) {
         state.hornHolders.clear();
         state.activeBends.clear();
+        state.liveBendSnapped = false;
       }
   
       const activeHoldInteractions = [];
@@ -44,7 +49,8 @@ export const HonkPerformanceRuntimeMethods = {
           continue;
         }
   
-        if (!controllerState?.trigger) {
+        if (!controllerState || controller.visible === false || controller.userData?.inputConnected === false ||
+            this.pendingSpawnPlacement || controllerState.radialMenuOpen) {
           this.releaseRaySqueeze(controllerState);
           continue;
         }
@@ -66,19 +72,24 @@ export const HonkPerformanceRuntimeMethods = {
           interaction?.type === "metronomeWire";
         // Share this selection only across the adjacent, read-only routing work.
         // Hover runs before grip/relationship transforms, so its hit cannot be reused here.
-        const hit = controllerState?.trigger ? this.getCurrentHit(controller) : null;
+        const hit = this.getCurrentHit(controller);
+        if (hit?.object?.userData.isCloseButton || this.tutorial?.nearestPanelHit?.(controller, hit)) {
+          this.releaseRaySqueeze(controllerState);
+          continue;
+        }
         const triggerBlockedByLooper =
-          controllerState?.trigger && this.isLooperColliderTarget(hit?.object);
-        if (controllerState?.trigger && (looperInteractionActive || triggerBlockedByLooper)) {
+          this.isLooperColliderTarget(hit?.object);
+        if (looperInteractionActive || triggerBlockedByLooper ||
+            interaction?.type === "verticalDragMorph" || interaction?.type === "metronomeControlDrag") {
           this.releaseRaySqueeze(controllerState);
         }
         if (
-          controllerState?.trigger &&
           interaction?.type !== "verticalDragMorph" &&
+          interaction?.type !== "metronomeControlDrag" &&
           !looperInteractionActive &&
           !triggerBlockedByLooper
         ) {
-          const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState, hit);
+          const raySqueezeInteraction = this.getRaySqueezeInteraction(controller, controllerState, hit, now);
           if (raySqueezeInteraction) {
             activeHoldInteractions.push({ interaction: raySqueezeInteraction, controller });
           }
@@ -89,13 +100,18 @@ export const HonkPerformanceRuntimeMethods = {
         const chain = this.getTouchingInstrumentChain(interaction.instrumentState);
         const playableChain = chain.filter((chainState) => chainState.isPlayable());
         const desiredVoiceIds = new Set();
-        const bendAmount = this.getControllerRollBend(controller, interaction);
+        const wristBend = interaction.bendEnabled === false ? 0 : this.getControllerRollBend(controller, interaction);
+        const bendAmount = this.tutorial?.snapBend?.(controller, interaction, wristBend, now) ?? wristBend;
+        const bendSnapped = this.tutorial?.isBendSnapped?.(controller) === true;
   
         for (const chainState of playableChain) {
           const voiceId = this.getInstrumentVoiceId(interaction.voiceId, chainState);
           desiredVoiceIds.add(voiceId);
           chainState.hornHolders.add(voiceId);
-          chainState.activeBends.set(voiceId, bendAmount);
+          chainState.liveBendSnapped ||= bendSnapped;
+          chainState.activeBends.set(voiceId, THREE.MathUtils.clamp(
+            bendAmount * getHonkPitchBendRange(interaction.instrumentState) / getHonkPitchBendRange(chainState), -1, 1,
+          ));
           if (!interaction.activeVoiceIds?.has(voiceId) || !chainState.hasAudioVoice(voiceId)) {
             prepareControllerHonkAttack(chainState,voiceId);
             // The service is authoritative for pending/failed/cancelled starts;
@@ -156,7 +172,8 @@ export const HonkPerformanceRuntimeMethods = {
             earRight: livePerformance.earRight,
             nose: livePerformance.nose,
             vowel: livePerformance.vowel,
-          }, { gain: HONK_MASTER_GAIN });
+          }, { gain: HONK_MASTER_GAIN,
+            bendSnapped: synthState.liveBendSnapped && synthState.hornHolders.size === 1 });
         }
       }
   
@@ -170,6 +187,7 @@ export const HonkPerformanceRuntimeMethods = {
   
         state.hornHolders.clear();
         state.activeBends.clear();
+        state.liveBendSnapped = false;
         state.setLivePerformance?.({
           squeeze: 0,
           bend: 0,
@@ -201,7 +219,7 @@ export const HonkPerformanceRuntimeMethods = {
             rawLive.bend ?? 0,
             BEND_SMOOTHING,
             deltaMs,
-            false,
+            state.liveBendSnapped && state.hornHolders.size === 1,
           ),
         };
         state.processedLivePerformance = processedLive;
@@ -296,7 +314,7 @@ export const HonkPerformanceRuntimeMethods = {
       }
       this.updateNoteLabel(honkState);
     },
-    getRaySqueezeInteraction(controller, controllerState, hit = this.getCurrentHit(controller)) {
+    getRaySqueezeInteraction(controller, controllerState, hit = this.getCurrentHit(controller), now = performance.now()) {
       if (!controllerState?.trigger) {
         this.releaseRaySqueeze(controllerState);
         return null;
@@ -306,9 +324,15 @@ export const HonkPerformanceRuntimeMethods = {
           this.instrumentRegistry.get(captured.id) !== captured)) {
         this.releaseRaySqueeze(controllerState);
       }
-      // A fresh sphere hit may acquire/retarget during Trigger hold. Otherwise
-      // retain the validated capture so roll-bending can move away from it.
-      this.captureRaySqueezeTarget(controller, controllerState, hit);
+      // Confirm the current hit before counting dwell. A departed target cannot
+      // latch later, and moving to another Honk starts a fresh timer/reference.
+      if (!controllerState.raySqueezeLatched) {
+        if (!this.captureRaySqueezeTarget(controller, controllerState, hit, now)) {
+          this.releaseRaySqueeze(controllerState);
+        } else if (now - controllerState.raySqueezeAcquiredAt >= RAY_SQUEEZE_LATCH_MS) {
+          controllerState.raySqueezeLatched = true;
+        }
+      }
       const instrumentState = controllerState.raySqueezeInstrumentState;
       if (!instrumentState) return null;
       return {
@@ -319,6 +343,7 @@ export const HonkPerformanceRuntimeMethods = {
         voiceId: controllerState.raySqueezeVoiceId || this.getControllerVoiceId(controller),
         activeVoiceIds: controllerState.raySqueezeActiveVoiceIds,
         bendStartInverseQuaternion: controllerState.raySqueezeStartInverseQuaternion,
+        bendEnabled: Boolean(controllerState.trigger),
         isRaySqueeze: true,
       };
     },
@@ -330,12 +355,18 @@ export const HonkPerformanceRuntimeMethods = {
       state.bendAlignedColliderGroup.rotation.z =
         state.bendValue * THREE.MathUtils.degToRad(BEND_COLLIDER_ROTATION_DEGREES);
     },
-    getControllerRollBend(controller, interaction) {
+    getControllerRollAngle(controller, interaction) {
       controller.updateMatrixWorld(true);
       controller.getWorldQuaternion(tempBendQuaternion);
       tempBendQuaternion.premultiply(interaction.bendStartInverseQuaternion);
       tempBendEuler.setFromQuaternion(tempBendQuaternion, "XYZ");
-      return THREE.MathUtils.clamp(tempBendEuler.z * BEND_SENSITIVITY, -1, 1);
+      return tempBendEuler.z;
+    },
+    getControllerRollBend(controller, interaction) {
+      // Preserve semitones per wrist degree when an authored Honk has extra range.
+      return THREE.MathUtils.clamp(
+        this.getControllerRollAngle(controller, interaction) * BEND_SENSITIVITY *
+          MAX_PITCH_BEND_SEMITONES / getHonkPitchBendRange(interaction.instrumentState), -1, 1);
     },
     getTouchingInstrumentChain(startState) {
       if (startState?.kind !== "honk") return [];

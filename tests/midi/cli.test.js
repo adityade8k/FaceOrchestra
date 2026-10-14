@@ -84,10 +84,9 @@ test("CLI rejection preserves current files and a versioned re-import retains or
       await readFile(join(output, `${previous.source.sha256}.mid`)),
       original,
     );
-    assert.deepEqual(
-      await readFile(join(output, previous.normalizedSource.file)),
-      before.get(previous.normalizedSource.file),
-    );
+    assert.equal(current.normalizedSource.file, "normalized.json");
+    assert.notDeepEqual(await readFile(join(output, current.normalizedSource.file)), before.get(previous.normalizedSource.file));
+    assert.ok(!(await readdir(output)).some(name => /^[a-f0-9]{64}\.(composition|normalized)\.json$/.test(name)));
     const [version] = await readdir(join(output, "versions"));
     const archived = join(output, "versions", version);
     assert.deepEqual(

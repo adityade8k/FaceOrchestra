@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { NOTE_LABEL_SETTINGS } from '../config/ui.js';
-import { COMPOSITION as C, TUTORIAL_LOOPERS } from './composition.js';
+import { COMPOSITION as C, TUTORIAL_LOOPERS } from '../compositions/jog/definition.js';
 
 export const TUTORIAL_LABEL_SETTINGS=Object.freeze({margin:.035,height:.06,noteScale:.4});
 const names=new Map([['metronome','Metronome'],...TUTORIAL_LOOPERS.map(l=>[l.role,l.label]),...C.backing.map(g=>[g.role,`${g.label} · ${g.notes}`])]);

@@ -1,4 +1,4 @@
-import { COMPOSITION as C } from './composition.js';
+import { COMPOSITION as C } from '../compositions/jog/definition.js';
 import { scoreForStep } from './scoring.js';
 import { validateSetup } from './validation.js';
 

@@ -1,5 +1,5 @@
 import { bendCueState } from "./bendCueState.js";
-import { MAX_PITCH_BEND_SEMITONES } from "../config/honk.js";
+import { getHonkPitchBendRange } from "../config/honk.js";
 
 export function bendGaugeState(event, fraction, observed = null) {
   const preview = fraction < 0;
@@ -9,14 +9,15 @@ export function bendGaugeState(event, fraction, observed = null) {
     !preview && Number.isFinite(observed?.semitones)
       ? observed.semitones
       : null;
-  const destination = event.bend.at(-1).semitones;
+  const destination = target.destinationSemitones ?? event.bend.at(-1).semitones;
   const tolerance = (event.assessment?.pitchCents ?? 35) / 100;
-  const direction = Math.sign(destination - event.bend[0].semitones);
+  const start = target.startSemitones ?? event.bend[0].semitones;
+  const direction = Math.sign(destination - start);
   const status = preview
-    ? "Prepare · squeeze as green closes"
+    ? "Prepare · press Trigger when the square highlights"
     : actual === null
       ? "Waiting for hold"
-      : actual * direction < -tolerance
+        : (actual - start) * direction < -tolerance
         ? "Wrong direction"
         : (actual - destination) * direction > tolerance
           ? "Overshoot"
@@ -28,7 +29,7 @@ export function bendGaugeState(event, fraction, observed = null) {
     preview,
     phase: preview ? "prepare" : target.phase,
     instruction: preview
-      ? `Prepare ${target.start} · squeeze as green closes · roll ${target.direction} after the hold`
+      ? `Prepare ${target.start} · press Trigger when the square highlights · roll ${target.direction} after the hold`
       : target.instruction,
     required: target.semitones,
     actual,
@@ -37,6 +38,6 @@ export function bendGaugeState(event, fraction, observed = null) {
     status,
     onTarget: status === "On target",
     demonstration: !preview && observed?.origin === "demonstration",
-    range: MAX_PITCH_BEND_SEMITONES,
+    range: getHonkPitchBendRange(event),
   };
 }

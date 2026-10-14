@@ -1,7 +1,7 @@
 import { TutorialSession } from './TutorialSession.js';
 import { CompositionConductor } from './CompositionConductor.js';
-import { LESSON_STEPS } from './lessonSteps.js';
-import { TUTORIAL_LOOPERS } from './composition.js';
+import { LESSON_STEPS } from '../compositions/jog/definition.js';
+import { TUTORIAL_LOOPERS } from '../compositions/jog/definition.js';
 import { isSetupStep, musicUnavailable, setupStatus } from './TutorialLessonPolicy.js';
 
 // The learner flow observes setup. Automatic construction belongs to the
@@ -109,6 +109,8 @@ export class TutorialLessonFlow {
         if(anchor===null)throw new Error('Start the 80 BPM Metronome, then press Practice.');
         s.startCountIn(anchor,this.a.get('metronome').getBeatTiming(now).beatIntervalMs);
       }
+      if (!step.timed && ['note','strike','chords','drums'].includes(step.type))
+        s.enableNotePractice({beatMs:()=>this.a.get('metronome')?.getBeatTiming(performance.now()).beatIntervalMs || s.beatMs});
       this.t.uiFeedback='Your turn. Press Practice again to stop.';
     }catch(error){s.finishResult({ok:false,message:error.message},performance.now());this.finishPractice();}
   }

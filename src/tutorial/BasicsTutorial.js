@@ -254,7 +254,11 @@ export class BasicsTutorial {
   }
   sounding(c, state, now) {
     const h = state.raySqueezeInstrumentState;
-    if (!this.fresh.get(c)?.trigger || !state.trigger || !h || !this.fixtures.owned.has(h.id)) return [];
+    const freshTrigger = this.fresh.get(c)?.trigger && state.trigger;
+    if (!freshTrigger || !h || !this.fixtures.owned.has(h.id)) {
+      this.soundSince.delete(c);
+      return [];
+    }
     const chain = this.r.getTouchingInstrumentChain(h);
     if (!chain.every(member => member.getProcessedLivePerformanceState().squeeze > 0.025 &&
         member.hasAudioVoice(this.r.getInstrumentVoiceId(this.r.getControllerVoiceId(c), member)))) return [];
@@ -277,14 +281,14 @@ export class BasicsTutorial {
     const sounds = new Set();
     for (const [c, s] of this.r.controllerStates) {
       this.gate.observe(c, s);
-      if (c.userData.virtualTutorial) continue;
-      const fresh = this.fresh.get(c);
-      if (!fresh) continue;
+      if (c.userData.virtualTutorial || (c.userData.tutorialOrigin && c.userData.tutorialOrigin !== 'learner')) continue;
+      let fresh = this.fresh.get(c);
+      if (!fresh) this.fresh.set(c, fresh = {});
       const chain = this.audioRunning() ? this.sounding(c, s, now) : [];
       for (const h of chain) sounds.add(h.id);
       if (chain.includes(horn)) {
         if (id === 'honk') this.award('honk');
-        if (['bend', 'pitch'].includes(id)) {
+        if (['bend', 'pitch'].includes(id) && s.trigger && fresh.trigger) {
           fresh.soundingBend ??= horn.getProcessedLivePerformanceState().bend;
           if (Math.abs(horn.getProcessedLivePerformanceState().bend - fresh.soundingBend) >= this.thresholds.bend) this.award('bend');
         }

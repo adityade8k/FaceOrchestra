@@ -39,10 +39,15 @@ export const BEND_ALIGNED_INTERACTION_TYPES = [
   INTERACTION_TYPES.nose,
 ];
 
-export const BEND_SENSITIVITY = 2.5;
+// Reduce wrist-bend gain by another 25%, preserving the full pitch range.
+export const BEND_SENSITIVITY = (2.5 / 1.2) * 0.75;
 export const BEND_SMOOTHING = 0.18;
 export const BEND_COLLIDER_ROTATION_DEGREES = -18;
 export const MAX_PITCH_BEND_SEMITONES = 4;
+// Authored passages may opt into one extra semitone. Ordinary Honks retain four.
+export function getHonkPitchBendRange(honk) {
+  return honk?.pitchBendRange === 5 ? 5 : MAX_PITCH_BEND_SEMITONES;
+}
 export const SQUEEZE_SENSITIVITY = 0.18;
 export const EAR_DRAG_SENSITIVITY = 1.8;
 export const NOSE_DRAG_SENSITIVITY = 1.8;

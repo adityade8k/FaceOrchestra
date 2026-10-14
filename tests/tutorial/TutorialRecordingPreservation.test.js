@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { TutorialLessonFlow } from "../../src/tutorial/TutorialLessonFlow.js";
 import { TutorialSession } from "../../src/tutorial/TutorialSession.js";
-import { COMPOSITION as C } from "../../src/tutorial/composition.js";
-import { LESSON_STEPS } from "../../src/tutorial/lessonSteps.js";
+import { COMPOSITION as C } from "../../src/compositions/jog/definition.js";
+import { LESSON_STEPS } from "../../src/compositions/jog/definition.js";
 import { validateTake } from "../../src/tutorial/validation.js";
 import { createHarness, setHonk } from "../helpers/looperCaptureHarness.js";
 

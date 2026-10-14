@@ -1,13 +1,15 @@
 import * as THREE from 'three';
 import { LooperController } from '../instruments/looper/LooperController.js';
-import { COMPOSITION as C, PITCHES, TUTORIAL_PRESETS, TUTORIAL_LOOPERS } from './composition.js';
+import { COMPOSITION as C, PITCHES, TUTORIAL_PRESETS, TUTORIAL_LOOPERS } from '../compositions/jog/definition.js';
 import { pitchesMatch, sameMembers } from './validation.js';
 import { getHonkFrequency } from '../audio/honk/pitch.js';
-import { MAX_PITCH_BEND_SEMITONES, BEND_SENSITIVITY } from '../config/honk.js';
+import { MAX_PITCH_BEND_SEMITONES, BEND_SENSITIVITY, getHonkPitchBendRange } from '../config/honk.js';
 import { resolveTutorialRoutes, connectTutorialClock, connectTutorialHonk } from './TutorialRoutes.js';
 import { TutorialStrikeTargets } from './TutorialStrikeTargets.js';
 import { committedRoleBindings } from './TutorialRoleBindings.js';
 import { TutorialLabels } from './TutorialLabels.js';
+import { scoreForStep } from './scoring.js';
+import { BEND_PRACTICE_DURATION_MS } from './bendCueState.js';
 
 export class TutorialAdapter {
   constructor(runtime, emit) {
@@ -321,10 +323,10 @@ export class TutorialAdapter {
     for (const controller of this.r.controllers) {
       const state=this.r.controllerStates.get(controller), previous=this.gestures.get(controller);
       const h=state?.raySqueezeInstrumentState || (state?.activeTriggerInteraction?.type==='holdSqueeze' ? state.activeTriggerInteraction.instrumentState : null);
-      const active=state?.trigger && !state.stickActive && h && h.hornHolders.size>0;
+      const active=!state?.stickActive && h && h.hornHolders.size>0;
       if (previous && (!active || h.id!==previous.targetId)) {
         previous.endMs=now;previous.durationBeats=(now-previous.startMs)/C.beatMs;
-        previous.released=!state?.trigger;
+        previous.released=!active || h.id!==previous.targetId;
         previous.allReleased=previous.memberIds.every(id=>!this.r.instrumentRegistry.get(id)?.hornHolders.size);
         previous.articulated &&= previous.released;
         this.emit({...previous});this.gestures.delete(controller);
@@ -337,21 +339,22 @@ export class TutorialAdapter {
         const role=this.roleForId(h.id)||'unrelated',route=resolveTutorialRoutes(this).chords[role];
         gesture={id:`note-${++this.sequence}`,kind:'note',origin:controller.userData.tutorialOrigin||'learner',
           role,targetId:h.id,startMs:now,midis,memberIds:members.map(m=>m.id),lane:route?.trackId,
-          vowel:h.getLivePerformanceState().vowel,articulated:!previous,bendSamples:[],maxAbsBend:0,voiced:false};
+          vowel:h.getLivePerformanceState().vowel,articulated:!previous || previous.released,bendSamples:[],maxAbsBend:0,voiced:false};
         this.gestures.set(controller,gesture);
       }
       if(members.length!==gesture.memberIds.length||members.some(m=>!gesture.memberIds.includes(m.id)))gesture.invalidMembers=true;
       if(!gesture.pitchCheckedAt||now-gesture.pitchCheckedAt>=100){
         if(!pitchesMatch(members.map(m=>this.midi(m)),gesture.midis))gesture.invalidMembers=true;gesture.pitchCheckedAt=now;
       }
-      const semitones=(h.getProcessedLivePerformanceState().bend||0)*MAX_PITCH_BEND_SEMITONES;
+      const semitones=(h.getProcessedLivePerformanceState().bend||0)*getHonkPitchBendRange(h);
       gesture.maxAbsBend=Math.max(gesture.maxAbsBend,Math.abs(semitones));
       const last=gesture.bendSamples.at(-1);
       if (!last || now-gesture.startMs-last.offsetMs >= 30) gesture.bendSamples.push({offsetMs:now-gesture.startMs,semitones});
-      if(gesture.bendSamples.length>320) gesture.bendSamples.splice(1,1);
+      // Joined melodic holds can exceed ten seconds at slower practice tempos.
+      if(gesture.bendSamples.length>1024) gesture.bendSamples.splice(1,1);
       const sounding=members.every(m=>m.hasAudioVoice(this.r.getInstrumentVoiceId(this.r.getControllerVoiceId(controller),m)));
       if(gesture.voiced&&!sounding)gesture.voiceInterrupted=true;
-      if(sounding)gesture.voiced=true;
+      if(sounding){gesture.voiced=true;gesture.voicedStartMs??=now;}
     }
     for(const e of [...this.pendingStrikes]) {
       const stick=this.r.instrumentRegistry.get(e.stickId);
@@ -360,6 +363,40 @@ export class TutorialAdapter {
       }
     }
     this.bindOrdinaryPercussion();this.labelPresentation.update();
+  }
+  updateSustainTimings(session, now) {
+    if (!session?.step) return;
+    const gate = session.practiceGate;
+    if (gate) {
+      gate.update(now, this.gestures.values());
+      return;
+    }
+    // Freeze each indicator's duration when its voice starts. The indicator
+    // only guides the player; it never releases or blocks their held note.
+    if (this.sustainStep !== session.step) {
+      this.sustainStep = session.step;
+      this.sustainTimings = new WeakMap();
+    }
+    const step = session.step, events = step.events || scoreForStep(step);
+    const beat = step.timed && session.anchorMs !== null ? session.beatAt(now) : null;
+    for (const gesture of this.gestures.values()) {
+      if (gesture.origin !== 'learner' || !gesture.voiced || gesture.invalidMembers || gesture.voiceInterrupted) continue;
+      let timing = this.sustainTimings.get(gesture);
+      if (!timing) {
+        const event = events.find(e => e.role === gesture.role &&
+          (beat === null || (beat >= e.beat && beat < e.beat + e.beats)));
+        if (!event) continue;
+        // Beat-based songs follow the active tempo; imported seconds describe
+        // the source performance, not a slower tutorial or faster recording.
+        const durationMs = event.minimumMs ?? (step.timed && Number.isFinite(event.beats)
+          ? event.beats * session.beatMs : event.durationSeconds !== undefined
+          ? event.durationSeconds * 1000 : Number.isFinite(event.beats)
+            ? event.beats * session.beatMs : event.bend ? BEND_PRACTICE_DURATION_MS : 600);
+        if (!(durationMs > 0)) continue;
+        timing = { durationMs };
+        this.sustainTimings.set(gesture, timing);
+      }
+    }
   }
   midi(h) {
     const s=h.getLivePerformanceState();

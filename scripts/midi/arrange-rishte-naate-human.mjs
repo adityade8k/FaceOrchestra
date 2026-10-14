@@ -1,10 +1,11 @@
+import { finalizeDefinition } from './definition-identity.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { splitPatterns } from '../../src/tutorial/rishte/patterns.js';
+import { splitPatterns } from '../../src/compositions/BackingPatterns.js';
 const SONG_BPM=115,PLAYBACK_BPM=100,PRACTICE_BPM=75;
 const root=new URL('../../src/compositions/rishte-naate/',import.meta.url);
 const read=async file=>JSON.parse(await readFile(new URL(file,root)));
-const original=await read('composition.json'),source=await read(original.normalizedSource.file),sequence=source.sequences[0];
+const original=await read('provenance/imported-arrangement.json'),source=await read('normalized.json'),sequence=source.sequences[0];
 const match=await read('screenshot-match.json'),selected=new Set(match.matches.map(m=>m.sourceId));
 const notes=sequence.notes, byId=new Map(notes.map(n=>[n.id,n]));
 const raw=notes.filter(n=>selected.has(n.id)).map(n=>({id:n.id,sourceIds:[n.id],midi:n.midi,
@@ -70,7 +71,6 @@ const blocks=splitPatterns(backing,0,durationBeats);
 const recipes=[...new Set(events.map(e=>e.role))].map(role=>{const e=events.find(e=>e.role===role);return {kind:'honk',role,midi:e.midi,hand:e.hand,position:position(e.hand,e.midi),scale:.85};});
 const backingPitches=[...new Set(backing.map(n=>n.midi))].sort((a,b)=>a-b);
 backingPitches.forEach((midi,i)=>recipes.push({kind:'honk',role:`backing-${midi}`,midi,position:[((i%10)-4.5)*.16,-.52-Math.floor(i/10)*.24,-.7],scale:.8}));
-for(const [i,lane]of ['foundation','figures'].entries())for(let bank=0;bank<2;bank++)recipes.push({kind:'looper',role:`${lane}-${bank}`,position:[-.6+i*.8+bank*.3,-.75,.1],scale:.55});
 recipes.push({kind:'metronome',role:'metronome',position:[-.85,-.6,.05],scale:.65});
 // Short excerpts end between held-key clusters, never inside a learner hold.
 const lessons=[];let start=0;
@@ -95,8 +95,8 @@ while(start<events.length){
 }
 lessons.push({...lessons[0],id:'performance',title:'Complete melody',startBeat:0,endBeat:durationBeats,eventIds:events.map(e=>e.id),completePerformance:true,moves:[]});
 const definition={schemaVersion:1,id:'rishte-naate',title:'rishte naate.mid',contentVersion:3,bpm:PLAYBACK_BPM,sourceBpm:SONG_BPM,practiceBpm:PRACTICE_BPM,liveRole:'melody',playback:'honk-looper-two-hand-v1',
- source:source.source,normalizedSource:original.normalizedSource,score:{events,durationBeats,sourceTempo:sequence.tempo,sourceMeter:sequence.meter},
- arrangement:{id:'screenshot-two-hand',title:'Screenshot melody with two-hand guidance',version:3,recipes,blocks,backing,
+ source:source.source,maxBpm:115,normalizedSource:{...original.normalizedSource,file:'normalized.json'},score:{events,durationBeats,sourceTempo:sequence.tempo,sourceMeter:sequence.meter},
+ arrangement:{id:'screenshot-two-hand',title:'Screenshot melody with two-hand guidance',version:3,recipes:recipes.filter(r=>r.kind!=='looper'),blocks,backing,fixedBacking:{terminalGapBeats:1,outputGroups:['foundation','figures'],volume:-.35,placement:[-1.6,.55,-1.7]},
   provenance:`${source.source.sha256}; 175 explicit screenshot-matched learner notes; every other source note is backing`,
   screenshot:{file:'melody-reference.png',sha256:createHash('sha256').update(await readFile(new URL('melody-reference.png',root))).digest('hex'),matchesFile:'screenshot-match.json',
     displayOctaveOffset:-1,firstVisibleSourceSeconds:byId.get(match.matches[0].sourceId).startSeconds,maxHorizontalErrorPixels:Math.max(...match.matches.map(m=>Math.abs(m.xResidual))),
@@ -107,8 +107,8 @@ const definition={schemaVersion:1,id:'rishte-naate',title:'rishte naate.mid',con
    'Backing windows end only where no backing key is held. Independent Metronome ports permit silent lanes without invented notes. Practice excerpts may begin with an already-held backing note and cut backing at the excerpt boundary.'],
   sourceDecisions:notes.map(n=>({sourceId:n.id,part:selected.has(n.id)?'learner':'backing',target:selected.has(n.id)?events.find(e=>e.id===n.id).role:`backing-${n.midi}`,
     reason:selected.has(n.id)?'Explicit screenshot rectangle matched by pitch and global time position':'Not present among the screenshot-selected notes'}))},lessons,
- recording:{countIn:4,tailMs:500,end:'manual',synchronization:'captured-noise-once'},requirements:{maxHonks:recipes.filter(r=>r.kind==='honk').length,maxLoopers:4,maxLiveVoices:2}};
-definition.contentHash=createHash('sha256').update(JSON.stringify(definition)).digest('hex');
+ recording:{countIn:4,tailMs:500,end:'manual',synchronization:'captured-noise-once'},requirements:{maxHonks:recipes.filter(r=>r.kind==='honk').length,maxLoopers:22,maxLiveVoices:2}};
+await finalizeDefinition(definition, root);
 const metrics={learnerNotes:events.length,backingNotes:backing.length,sourceNotes:notes.length,durationBeats,songBpm:SONG_BPM,playbackBpm:PLAYBACK_BPM,practiceBpm:PRACTICE_BPM,durationSecondsAtPlaybackTempo:durationBeats*60/PLAYBACK_BPM,durationSecondsAt115:durationBeats*60/SONG_BPM,durationSecondsAt75:durationBeats*.8,
  phraseCount:lessons.length-1,blocks:blocks.map(b=>({beat:b.beat,beats:b.beats,notes:b.patterns.map(p=>p.events.length)})),hands:{},duplicatePitches:pitches.filter(p=>events.some(e=>e.midi===p&&e.hand==='R')&&events.some(e=>e.midi===p&&e.hand==='L'))};
 for(const hand of ['R','L']){
@@ -118,5 +118,5 @@ for(const hand of ['R','L']){
  difficultTransitions:moves.filter(m=>m.attackMsAt75<500||m.releaseMsAt75<80+m.meters*400)};
 }
 metrics.phrases=lessons.slice(0,-1).map(l=>({id:l.id,notes:l.eventIds.length,beats:l.endBeat-l.startBeat,recommendedBpm:l.recommendedBpm}));
-for(const [file,data]of [['human-composition.json',definition],['human-metrics.json',metrics]])await writeFile(new URL(file,root),JSON.stringify(data,null,2)+'\n');
+for(const [file,data]of [['composition.json',definition]])await writeFile(new URL(file,root),JSON.stringify(data,null,2)+'\n');
 console.log(JSON.stringify(metrics,null,2));

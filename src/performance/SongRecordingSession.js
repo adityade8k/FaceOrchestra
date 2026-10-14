@@ -1,5 +1,5 @@
 const MELODY_HELP =
-  "Play the designated melody live. Follow onset, hold, release and bend cues; backing parts are automatic.";
+  "Aim at the Honk with the highlighted square and hold Trigger to play. The white circle marks the next note. Release Trigger to stop; hold Trigger and roll to bend. Backing parts are automatic.";
 
 const RUNNING = new Set(["starting", "count-in", "performing"]);
 export const PHONE_REMINDER =
@@ -17,11 +17,13 @@ export class SongRecordingSession {
     trackingReady,
     onExit,
     onChange = () => {},
+    guidedPlayOffsetMs = () => 0,
     now = () => performance.now(),
     uuid = () => crypto.randomUUID(),
   }) {
     this.composition = composition;
-    this.beatMs = 60000 / composition.bpm;
+    this.bpm = composition.recording?.bpm ?? composition.bpm;
+    this.beatMs = 60000 / this.bpm;
     this.createGuidance = createGuidance;
     Object.assign(this, {
       recorder,
@@ -30,6 +32,7 @@ export class SongRecordingSession {
       trackingReady,
       onExit,
       onChange,
+      guidedPlayOffsetMs,
       now,
     });
     this.groupId = uuid();
@@ -111,7 +114,7 @@ export class SongRecordingSession {
               "Enter XR with tracking, then choose Prepare ensemble.",
             );
           await this.ensureAudio();
-          this.ensemble.prepare();
+          this.ensemble.prepare({ bpm: this.bpm });
           this.phase = "ready";
           this.feedback = "Ensemble ready. Adjust placement, then Start.";
         } else if (id === "start") await this.begin();
@@ -206,6 +209,7 @@ export class SongRecordingSession {
         compositionId: this.composition.id,
         compositionVersion: this.composition.contentVersion,
         compositionHash: this.composition.contentHash || null,
+        bpm: this.bpm,
         sourceMidiHash: this.composition.source?.sha256 || null,
         arrangementProvenance: this.composition.arrangement?.provenance || null,
         arrangementId: this.composition.arrangement?.id || null,
@@ -251,7 +255,7 @@ export class SongRecordingSession {
       "count-in",
     );
     audio.countIn(countContextTime, this.beatMs / 1000);
-    this.ensemble.schedule({ countAt, beatZero, wallNow, audioNow });
+    this.ensemble.schedule({ countAt, beatZero, wallNow, audioNow, bpm: this.bpm });
     this.phase = "count-in";
     this.lastFrame = wallNow;
     this.feedback = "Recording · Sync cue, then 4, 3, 2, 1.";
@@ -273,7 +277,7 @@ export class SongRecordingSession {
       this.phase = "performing";
       this.ensemble.play();
       this.feedback =
-        "Recording. Follow the melody rings; Stop Recording finishes the take.";
+        "Recording. Follow the highlighted squares; Stop Recording finishes the take.";
       const t =
         this.recorder.audio.mapping.sceneTime +
         this.anchor.contextTime -
@@ -363,10 +367,10 @@ export class SongRecordingSession {
       title: `${this.composition.title} · ${this.composition.arrangement?.title || "Mixed reality"}`,
       progress: this.attempt
         ? `${this.composition.title} — TAKE ${String(this.attempt).padStart(2, "0")}`
-        : `${this.composition.title} · ${this.composition.bpm} BPM`,
+        : `${this.composition.title} · ${this.bpm} BPM`,
       instruction: PHONE_REMINDER,
       feedback:
-        this.feedback + (this.phase === "ready" ? `\n\n${MELODY_HELP}` : ""),
+        this.feedback + (this.phase === "ready" ? `\n\n${this.composition.recording?.instructions || MELODY_HELP}` : ""),
       transport:
         this.phase === "count-in"
           ? countdown === null
@@ -380,6 +384,8 @@ export class SongRecordingSession {
               ? "Saving…"
               : "",
       ...this.guidance(now)?.model(now),
+      ...(this.guidance(now) ? { instruction: this.guidance(now).model(
+        now + (this.guidedPlayOffsetMs?.() || 0)).instruction } : {}),
       actions: running
         ? [
             button("restart", "Restart Recording", this.phase === "starting"),

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { JogMelodyGuidance } from '../../src/performance/JogMelodyGuidance.js';
 import { TutorialTimingCues } from '../../src/tutorial/TutorialTimingCues.js';
-import { COMPOSITION as C, performanceEvents } from '../../src/tutorial/composition.js';
+import { COMPOSITION as C, performanceEvents } from '../../src/compositions/jog/definition.js';
 import { scoreForStep } from '../../src/tutorial/scoring.js';
 import { PresentationCapture } from '../../src/capture/PresentationCapture.js';
 
@@ -54,7 +54,7 @@ test('timing and bend guidance is excluded from clean capture and included only 
 test('current note, upcoming note, rest and held Eb-to-C glide instructions advance together',()=>{
   const guide=new JogMelodyGuidance(anchor);
   assert.match(guide.model(at(0)).transport,/S = C4 \(2 beats\)/);
-  assert.match(guide.model(at(0)).feedback,/Hold Trigger.*\nNext: G = E4/);
+  assert.match(guide.model(at(0)).feedback,/Keep Trigger held.*\nNext: G = E4/);
   assert.match(guide.model(at(11.1)).feedback,/Keep Trigger held · Hold level/);
   assert.match(guide.model(at(12.5)).feedback,/Keep Trigger held · Hold · roll down toward C/);
   assert.match(guide.model(at(13.5)).feedback,/Settle on C4.*then release/);
@@ -75,14 +75,14 @@ test('the existing tutorial renderer follows moved melody targets, previews onse
     const guide=new JogMelodyGuidance(anchor),first=instruments.get('melody-C4');
     first.root.position.x+=.12;
     cues.update(guide,at(-.5));
-    assert.equal(cues.pool.filter(p=>p.green.visible).length,1);
-    assert.deepEqual(cues.pool[0].green.position.toArray(),first.root.position.toArray());
+    assert.equal(cues.pool.filter(p=>p.reference.visible).length,1);
+    assert.deepEqual(cues.pool[0].reference.position.toArray(),first.root.position.toArray());
     cues.update(guide,at(0));
-    assert.equal(cues.pool[0].green.visible,false);
-    assert.ok(cues.pool[0].yellow.scale.x>.065);
+    assert.equal(cues.pool[0].reference.visible,false);
+    assert.ok(cues.pool[0].hand.visible);
     cues.update(guide,at(12.5));
     assert.match(cues.bendInstruction,/roll down toward C/);
-    const bend=cues.pool.find(p=>p.yellow.visible);
+    const bend=cues.pool.find(p=>p.hand.visible);
     assert.deepEqual(bend.reference.position.toArray(),instruments.get('melody-Eb4').root.position.toArray());
     assert.ok(cues.gauge.root.visible);
     assert.notEqual(cues.gauge.expected.position.x,0);

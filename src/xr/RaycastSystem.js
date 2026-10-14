@@ -42,7 +42,13 @@ export class RaycastSystem {
       this.allTargets.push(closeButton);
     for (const instrument of this.getInstruments()) {
       if (!instrument?.root?.visible) continue;
-      this.allTargets.push(...this.getTargets(instrument));
+      for (const target of this.getTargets(instrument)) {
+        // Frozen morph controls are not editable. Their spheres must not mask
+        // the locked Honk's larger squeeze volume.
+        if (instrument.kind === "honk" && instrument.locked &&
+            target.userData.isProceduralMorphTarget && target !== instrument.squeezeCollider) continue;
+        this.allTargets.push(target);
+      }
     }
     // Detailed body triangles are a fallback for this selector. A squeeze,
     // connector or control hit usually wins regardless of a nearer body.
@@ -109,6 +115,17 @@ export class RaycastSystem {
     for (const child of target.children || [])
       if (!this.isFallbackBody(child)) return false;
     return true;
+  }
+
+  getHonkSqueezeHit(controller, instrument) {
+    if (!controller || instrument?.kind !== "honk" || !instrument.locked ||
+        !instrument.root?.visible || !instrument.squeezeCollider) return null;
+    this.setFromController(controller);
+    this.targets.length = 0;
+    this.targets.push(instrument.squeezeCollider);
+    this.intersections.length = 0;
+    this.intersectTargets();
+    return this.intersections[0] || null;
   }
 
   getLockedInstrumentFromRay(controller) {

@@ -1,4 +1,4 @@
-import { TUTORIAL_PRESETS, tuningForMidi } from '../../tutorial/composition.js';
+import { TUTORIAL_PRESETS, tuningForMidi } from '../../compositions/jog/definition.js';
 import { FORMATION_SPAWN_SETTINGS } from "../../config/formations.js";
 
 export const HONK_TUNING_SETS = Object.freeze({

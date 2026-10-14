@@ -22,11 +22,13 @@ try {
     const r=app.runtime,t=r.tutorial;
     if(!t.ready)throw new Error('App failed to initialize');
     await t.action('play');
-    await t.action('tutorials');
-    await t.action('library-next');
-    if(!t.catalog.list().some(e=>e.id==='rishte-naate'))throw new Error('Missing catalog entry');
-    await t.action('composition:rishte-naate');
-    if(!t.dataTutorial)throw new Error('Composition failed: '+t.uiFeedback);
+    // Retain the independent polyphonic MIDI importer/player check. This is
+    // historical source evidence, not the current catalog arrangement.
+    const {midiPerformance}=await import('/src/compositions/MidiPerformance.js');
+    const source=await fetch('/src/compositions/rishte-naate/provenance/imported-arrangement.json').then(r=>r.json());
+    await r.audioSystem.ensureAudio();t.navigationScreen=null;
+    await midiPerformance(source).enterTutorial(t);
+    if(!t.dataTutorial)throw new Error('Imported reference failed to open');
     t.render(performance.now());
     await new Promise(r=>setTimeout(r,1500));
     return {title:t.dataTutorial.definition.title, honks:r.instrumentRegistry.getByKind('honk').length,

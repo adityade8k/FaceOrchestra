@@ -5,7 +5,7 @@ import {LooperController} from '../../../src/instruments/looper/LooperController
 import {MetronomeConnectionManager} from '../../../src/instruments/metronome/MetronomeConnectionManager.js';
 import {routeStickStrikeToLooperRecordings} from '../../../src/instruments/stick/StickLooperRecordingRouter.js';
 import {disconnectShakenTarget,resolveShakeTarget} from '../../../src/xr/shakeDisconnect.js';
-import {COMPOSITION as C} from '../../../src/tutorial/composition.js';
+import {COMPOSITION as C} from '../../../src/compositions/jog/definition.js';
 
 function setup() {
   const registry=new InstrumentRegistry();const input=new Map();

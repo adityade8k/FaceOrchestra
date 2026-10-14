@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const roots = ["src", "capture", "scripts/capture"];
+const roots = ["src", "capture", "scripts"];
 const sourceFiles = roots.flatMap(walk).filter((file) => [".js", ".mjs"].includes(extname(file)));
 const errors = [];
 const relativeImportPattern = /(?:from\s*|import\s*\()\s*["'](\.{1,2}\/[^"']+)["']/g;
@@ -12,6 +12,15 @@ for (const file of sourceFiles) {
   for (const match of source.matchAll(relativeImportPattern)) {
     const target = resolve(file, "..", match[1]);
     if (!existsSync(target)) errors.push(`${file}: unresolved import ${match[1]}`);
+  }
+
+  // Browser entry points embed absolute dynamic imports inside CDP strings.
+  // Worker/worklet modules are literal URLs, not ordinary import statements.
+  for (const match of source.matchAll(/import\s*\(\s*["'](\/(?:src|scripts|capture)\/[^"']+)["']/g)) {
+    if (!existsSync(resolve(match[1].slice(1)))) errors.push(`${file}: unresolved browser import ${match[1]}`);
+  }
+  for (const match of source.matchAll(/new URL\(\s*["'](\.{1,2}\/[^"']+\.m?js)["']\s*,\s*import\.meta\.url/g)) {
+    if (!existsSync(resolve(file, "..", match[1]))) errors.push(`${file}: unresolved module URL ${match[1]}`);
   }
 
   const syntax = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });

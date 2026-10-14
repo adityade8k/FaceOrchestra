@@ -1,4 +1,5 @@
 import { DataEnsemble, DataGuidance } from "../compositions/DataEnsemble.js";
+import { visualCueTime } from "./GuidedPlayOffset.js";
 
 // Data-driven runner for imported compositions. The score is shared by demo,
 // assessment and recording; only learner-origin observations earn credit.
@@ -72,16 +73,13 @@ export class GenericTutorial {
       this.origin = this.anchor - this.step.startSeconds * 1000;
       this.guide = new DataGuidance(this.definition, this.origin);
       this.ensemble.schedule({
-        countAt: now,
-        beatZero: this.origin,
-        wallNow: now,
-        audioNow: audio.currentTime,
+        countAt: now, beatZero: this.origin, wallNow: now, audioNow: audio.currentTime,
       });
       this.a.setVirtualsActive(this.phase === "demo", "demonstration");
       this.feedback =
         this.phase === "demo"
           ? "Watch the actual instruments. Demonstrations preserve your takes and earn no credit."
-          : "Practice: follow the count-in and target. Next skips; Practice retries.";
+          : "Follow the song's beat: highlighted square means play now, white circle means next. Cues continue even if you miss a note or keep holding. Release and press Trigger for each new attack.";
     }
   }
   update(now) {
@@ -155,6 +153,7 @@ export class GenericTutorial {
   model(now) {
     const b = (id, label, disabled = false) => ({ id, label, disabled });
     const guide = this.phase ? this.guide.model(now) : {};
+    if (this.phase) guide.instruction = this.guide.model(visualCueTime(this.r, now)).instruction;
     if (this.phase && now < this.anchor)
       guide.transport = `Count in: ${Math.ceil((this.anchor - now) / (60000 / this.definition.bpm))}`;
     this.host.panel.setTransport(guide.transport || "");

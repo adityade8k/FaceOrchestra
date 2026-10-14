@@ -1,4 +1,4 @@
-import { MAX_PITCH_BEND_SEMITONES } from "../config/honk.js";
+import { getHonkPitchBendRange } from "../config/honk.js";
 
 // Resolve the actual held target and voice owner. Looper automation is deliberately
 // absent: this is the same processed-live field consumed by HonkPerformanceRuntime.
@@ -49,7 +49,7 @@ export function observeBendGesture(adapter, role, mode) {
         role,
         gestureId: gesture.id,
         origin: gesture.origin,
-        semitones: bend * MAX_PITCH_BEND_SEMITONES,
+        semitones: bend * getHonkPitchBendRange(target),
       };
   }
   return observed;

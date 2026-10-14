@@ -16,7 +16,7 @@ try {
   await browser.navigate(`http://127.0.0.1:${service.port}/`);
   const report = await browser.evaluate(`(async () => {
     const { HonkVoice } = await import('/src/audio/honk/HonkVoice.js');
-    const { tuningForMidi } = await import('/src/tutorial/composition.js');
+    const { tuningForMidi } = await import('/src/compositions/jog/definition.js');
     const { createHonkTuning } = await import('/src/instruments/honk/HonkTuning.js');
     const { HONK_MASTER_GAIN, HONK_RELEASE_SETTINGS } = await import('/src/config/audio.js');
     const { HONK_RELEASE_ORIGINS } = await import('/src/audio/honk/HonkReleaseProfile.js');

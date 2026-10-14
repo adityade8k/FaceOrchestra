@@ -1,7 +1,8 @@
 import { Timeline } from "./Timeline.js";
 
-// Long-take presentation cache. Exact export/seek awaits ensure(); interactive
-// rendering gets null while a range loads, never an invented/interpolated pose.
+// Long-take presentation cache. Ranges overlap by one keyframe chunk, so
+// interactive playback can use recorded frames while the next range loads.
+// Uncached timestamps still return null; exact export/seek awaits ensure().
 export class ChunkedTimeline {
   constructor(
     index,
@@ -77,14 +78,24 @@ export class ChunkedTimeline {
     return operation;
   }
   seek(t) {
-    const index = this.chunkAt(t),
-      timeline = this.cache.get(index);
+    const index = this.chunkAt(t);
+    let cachedIndex = index, timeline = this.cache.get(index);
     if (!timeline) {
       this.ensure(t).catch((error) => this.onError?.(error));
-      return null;
+      // ensure() loads the following chunk too. At a boundary its exact
+      // samples are already available under the preceding cache key. Do not
+      // blank the composite while a redundant range request is in flight.
+      for (const [key, candidate] of this.cache) {
+        if (t >= candidate.frames[0].t && t <= candidate.duration) {
+          cachedIndex = key;
+          timeline = candidate;
+          break;
+        }
+      }
+      if (!timeline) return null;
     }
-    this.cache.delete(index);
-    this.cache.set(index, timeline);
+    this.cache.delete(cachedIndex);
+    this.cache.set(cachedIndex, timeline);
     return timeline.seek(t);
   }
   poseAt(t) {

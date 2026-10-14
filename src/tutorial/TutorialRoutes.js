@@ -1,4 +1,4 @@
-import { COMPOSITION as C, TUTORIAL_LOOPERS } from './composition.js';
+import { COMPOSITION as C, TUTORIAL_LOOPERS } from '../compositions/jog/definition.js';
 
 // Logical score roles bind to real routes, never to a numbered socket recipe.
 export function resolveTutorialRoutes(adapter) {

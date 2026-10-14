@@ -17,6 +17,7 @@ const service = await startServer({
 });
 let chrome;
 try {
+  if (process.platform === "darwin") process.env.CAPTURE_SOFTWARE_GL ??= "0";
   chrome = await launchChrome();
   await chrome.navigate(`http://127.0.0.1:${service.port}/`);
   await chrome.evaluate(
@@ -40,9 +41,6 @@ try {
   // worker and receiver; no claim of XR hardware/controller verification.
   await chrome.evaluate(`(async()=>{
     window.mode=r.tutorial.jogRecording;mode.trackingReady=()=>true;
-    // SwiftShader renders the full ensemble on CPU; lower raster resolution
-    // while retaining every production instrument, scheduler and capture path.
-    r.renderer.setPixelRatio(.3);
     const start=r.capture.startReady.bind(r.capture);r.capture.startReady=options=>start({...options,synthetic:true});
     await r.capture.pair('123456');await mode.action('prepare');
   })()`);
@@ -102,7 +100,7 @@ try {
   assert.equal(guidance.capturedRings, 0);
   assert.equal(guidance.lesson, null);
   assert.equal(guidance.virtuals, false);
-  assert.match(guidance.model.instruction, /squeeze Trigger/);
+  assert.match(guidance.model.instruction, /hold Trigger/);
   assert.match(guidance.model.feedback, /Next:/);
   assert.ok(guidance.layout.every((region) => region.bottom <= region.limit));
   const screenshot = await chrome.send("Page.captureScreenshot", {

@@ -1,7 +1,7 @@
 import { AudioContextService } from "./AudioContextService.js";
 import { MasterBus } from "./MasterBus.js";
 import { getHonkNoteGainFromNose, HONK_MASTER_GAIN } from "../config/audio.js";
-import { MAX_PITCH_BEND_SEMITONES } from "../config/honk.js";
+import { getHonkPitchBendRange } from "../config/honk.js";
 import { HonkVoiceService } from "./honk/HonkVoiceService.js";
 import { PercussionVoiceService } from "./percussion/PercussionVoiceService.js";
 import { METRONOME_SETTINGS } from "../config/metronome.js";
@@ -45,7 +45,7 @@ export class AudioSystem {
     voiceId,
     performanceState = {},
     tuning = {},
-    { gain = HONK_MASTER_GAIN, scheduledTime = undefined } = {},
+    { gain = HONK_MASTER_GAIN, scheduledTime = undefined, pitchBendRange, bendSnapped = false } = {},
   ) {
     this.honkVoices.updateVoice(voiceId, {
       hornAmount: performanceState.squeeze ?? 0,
@@ -56,9 +56,9 @@ export class AudioSystem {
       vowel: performanceState.vowel && performanceState.vowel !== "neutral"
         ? performanceState.vowel
         : "A",
-      pitchBendSemitones: (performanceState.bend ?? 0) * MAX_PITCH_BEND_SEMITONES,
+      pitchBendSemitones: (performanceState.bend ?? 0) * getHonkPitchBendRange({ pitchBendRange }),
       pitchSnap: tuning.pitchSnap || null,
-    }, { scheduledTime });
+    }, { scheduledTime, ...(bendSnapped ? { bendSnapped: true } : {}) });
   }
 
   setVoiceVowel(voiceId, vowel) {

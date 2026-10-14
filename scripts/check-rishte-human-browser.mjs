@@ -18,10 +18,6 @@ try {
     const {app}=await import('/src/main.js');
     for(let i=0;i<300&&!app.runtime.tutorial.ready;i++)await new Promise(r=>setTimeout(r,100));
     const r=app.runtime,t=r.tutorial;
-    // Keep native WebGL/Web Audio, but avoid GPU stalls from the headless
-    // desktop renderer. The larger placement checks use quarter resolution;
-    // this is a test setting, not an app quality change.
-    r.renderer.setPixelRatio(${process.argv.includes("--demonstrations-only") || process.argv.includes("--layout-only") ? ".25" : ".5"});
     await t.action('play');await t.action('tutorials');await t.action('composition:rishte-naate');
     if(!t.dataTutorial?.ensemble.prepared)throw new Error('Prepare failed: '+t.uiFeedback);
     t.render(performance.now());await new Promise(r=>setTimeout(r,700));
@@ -46,7 +42,30 @@ try {
   console.log(JSON.stringify({ stage: "prepared", ...prepared }));
   const shot = await browser.send("Page.captureScreenshot", { format: "png" });
   await writeFile("test-results/rishte-human/prepared.png", Buffer.from(shot.data, "base64"));
-  if (process.argv.includes("--layout-only")) {
+  if (process.argv.includes("--visibility-only")) {
+    const visibility = await browser.evaluate(`(async()=>{
+      const {r,t,d,check,wait}=window.__rishte;
+      const honks=r.instrumentRegistry.getByKind('honk');
+      const allVisible=()=>check(honks.every(h=>h.root.visible),'A Honk disappeared');
+      allVisible();
+      for(let i=1;i<d.definition.lessons.length;i++){
+        await t.action('next-step');await wait(20);allVisible();
+      }
+      d.index=0;d.cancel();allVisible();
+      let checkedFrames=0;
+      const update=d.update.bind(d);
+      d.update=now=>{update(now);allVisible();checkedFrames++;};
+      await t.action('rishte-preview');await wait(8000);
+      check(d.phase==='demo','Preview stopped: '+d.feedback);allVisible();
+      check([...d.ensemble.hands.labels.values()].some(s=>s.visible),'Note squares disappeared');
+      await t.action('rishte-stop');allVisible();
+      await t.action('exit');
+      return {honks:honks.length,phraseLessons:d.definition.lessons.length,checkedFrames,allHonksVisible:true};
+    })()`);
+    if (browser.errors.length) throw new Error(browser.errors.join("\n"));
+    await writeFile("test-results/rishte-human/visibility.json", JSON.stringify(visibility,null,2)+"\n");
+    console.log(JSON.stringify({stage:"visibility",...visibility}));
+  } else if (process.argv.includes("--layout-only")) {
     const point = async kind => browser.evaluate(`(() => {
       const {r,d}=window.__rishte,f=d.ensemble.layoutFrame;
       if(!window.__rishte.layoutBefore)window.__rishte.layoutBefore=d.definition.arrangement.recipes.map(p=>{
@@ -128,7 +147,7 @@ try {
     check(d.phase==='demo','Preview stopped: '+d.feedback);
     const active=d.ensemble.loopers.filter(h=>h.transport.playing).length;
     check(active===2,'Expected two actual Loopers playing: '+active);
-    check(d.ensemble.nextBlock===2,'Next backing window not prepared');
+    check(d.ensemble.handoffs.length>0,'Next shared-output handoff not queued');
     await t.action('tempo-down');check(t.adapter.get('metronome').bpm===d.definition.bpm-5,'Tempo change failed');
     await wait(6000);check(d.phase==='demo','Preview after handoff: '+d.feedback);
     const handoffs=d.ensemble.handoffs;
@@ -161,16 +180,19 @@ try {
     }
     a.setVirtualsActive(true,'demonstration');d.ensemble.showMelody();d.ensemble.hands.trigger('R','lead-R-71',true,performance.now());await wait(650);d.ensemble.hands.release();await wait(500);a.setVirtualsActive(false);
     const manual=window.__rishte.updates.find(e=>e.role==='lead-R-71');check(manual,'Normal trigger reference was silent');
-    const h=a.get('foundation-0'),c=h.looperController,prior=c.serializeState(h),track=h.tracks[1];
+    r.createSpawnedComponent('looper',{name:'Ordinary reference take'});
+    const h=r.activeInstrumentState,c=h.looperController,track=h.tracks[1];
+    r.metronomeConnectionManager.connect({metronomeId:a.get('metronome').id,portId:[...a.get('metronome').connectionPorts.keys()][2],targetKind:'looper',targetId:h.id,targetPortId:h.tracks[0].trackId});
     for(const tr of h.tracks)if(tr.connectedHonkId!=null)c.connections.disconnect(h,tr.index);
     r.connectLooperTrackToHonk(h,track.index,a.get('backing-71').id);
     const pattern=compilePattern({events:[{role:'normal',beat:0,beats:1}],beats:2,beatMs:800,routes:{normal:{trackId:track.trackId,trackIndex:track.index}}});
     c.restoreState(h,{timeline:pattern.toJSON(),controls:{recordBeats:2,gap:-1,volume:-.35}},{preserveConnections:true});
     const metro=a.get('metronome');metro.setBpm(75);metro.beatOriginMs=null;metro.play(performance.now());c.startPlayback(h,performance.now(),{origin:'demonstration'});
-    await wait(1700);c.stopPlayback(h);metro.pause();c.restoreState(h,prior,{restoreConnections:true});await wait(500);
+    await wait(1700);c.stopPlayback(h);metro.pause();await wait(500);
     const normalLooper=window.__rishte.updates.find(e=>e.role==='backing-71');check(normalLooper,'Ordinary Looper reference was silent');
     for(const field of ['bend','earLeft','earRight','nose','vowel'])check(manual.values[field]===normalLooper.values[field],'Normal Looper timbre differs: '+field);
     const volume=h.looperData.volume;check(Math.abs(normalLooper.options.gain/manual.options.gain-volume)<1e-9,'Normal Looper gain mapping differs');
+    r.deleteInstrument(h);
     window.__rishte.reference={manual,normalLooper};window.__rishte.calls=[];window.__rishte.updates=[];window.__rishte.releases=[];
     return {normalTrigger:manual,ordinaryLooper:normalLooper,defaultLooperVolume:volume};
   })()`);
@@ -179,8 +201,8 @@ try {
     const {r,t,d,check,wait}=window.__rishte;
     t.adapter.get('metronome').setBpm(d.definition.bpm);
     const beatMs=60000/d.definition.bpm;
-    const saved=d.ensemble.loopers.map(h=>h.looperController.serializeState(h));
     await t.action('rishte-preview');
+    const saved=d.ensemble.loopers.map(h=>h.looperController.serializeState(h));
     const anchor=d.ensemble.anchor,audioAnchor={...d.ensemble.audioAnchor};
     const ctx=r.audioSystem.audioContextService.context,analyser=ctx.createAnalyser();analyser.fftSize=2048;
     r.audioSystem.masterBus.output.connect(analyser);const samples=new Float32Array(analyser.fftSize);
@@ -189,19 +211,13 @@ try {
     while(d.phase&&performance.now()<deadline){
       const beat=d.ensemble.beatAt(performance.now());
       maxMelodyHands=Math.max(maxMelodyHands,r.controllers.filter(c=>c.userData.virtualTutorial&&r.controllerStates.get(c)?.trigger).length);
-      // The scheduler can launch the next bank before the render frame clears
-      // the old transport flag. Its audio is already bounded at the window end.
-      const active=d.ensemble.loopers.filter(h=>{
-        const bank=Number(t.adapter.roleForId(h.id).slice(-1)),assignment=d.ensemble.bankAssignments.get(bank);
-        const window=assignment&&d.ensemble.blocks[assignment.index];
-        return h.transport.playing&&window&&beat>=window.beat&&beat<assignment.endBeat;
-      });maxActive=Math.max(maxActive,active.length);
-      check(active.length<=2,'Duplicate backing banks');
+      const active=d.ensemble.loopers.filter(h=>h.transport.playing);maxActive=Math.max(maxActive,active.length);
+      check(active.length<=2,'Duplicate backing layers');
       const block=d.ensemble.blocks.findLast(b=>beat>=b.beat);
       if(block)blocks.add(block.id);
       if(block&&active.length===2&&beat-block.beat>.1){
         blocks.add(block.id);
-        for(const h of active)maxDriftBeats=Math.max(maxDriftBeats,Math.abs(h.looperData.clockPlaybackStartBeatPosition-(block.beat+4)));
+        for(const h of active)maxDriftBeats=Math.max(maxDriftBeats,Math.abs((h.looperData.clockPlaybackStartBeatPosition-(block.beat+4)) % block.beats));
       }
       analyser.getFloatTimeDomainData(samples);let sum=0;
       for(const value of samples){peak=Math.max(peak,Math.abs(value));sum+=value*value;}rms=Math.max(rms,Math.sqrt(sum/samples.length));

@@ -37,7 +37,7 @@ for (const locked of [false, true]) test(`one versus three ${locked ? 'locked' :
   assert.equal(oscillators.length, 6, 'two actual HonkVoice oscillators per honk');
   assert.equal(new Set(oscillators.flatMap(n => n.starts)).size, 1);
   assert.equal(oscillators[0].starts[0], 1 / 90);
-  assert.equal(chord.counters.queries, 91, 'one trigger-begin selection plus one per held frame');
+  assert.equal(chord.counters.queries, 181, 'one trigger-begin selection plus one per pointing hand per frame');
   assert.equal(chord.counters.locked, 1, 'held squeezes never query locked bodies');
   const revision = chord.contact.graph.revision; chord.frame(); assert.equal(chord.contact.graph.revision, revision);
   solo.release(); chord.release();

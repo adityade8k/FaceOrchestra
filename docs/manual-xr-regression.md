@@ -403,4 +403,15 @@ Never attach private keys, local certificate contents, authentication tokens, or
 - [ ] Put percussion on another output, use individual Play and Start All, and confirm independent simultaneous playback without restarting active parts.
 - [ ] Stop/Pause queued B, re-record it, disconnect or delete it, and stop/restart the clock. None should launch a stale request. Stop/Pause A cancels its pending switch. Resume respects output exclusivity.
 - [ ] Save/load three cables, remove one, and confirm the other two remain. Direct Metronome-to-Honk pulses still work.
-- [ ] Complete the Jog and Kuch switch-and-return exercises in Practice and Demonstrate. Only a fresh learner attempt earns practice credit. Check label legibility, Play-button pulsing, both hands, locked Looper controls, and clean note releases on the headset.
+- [ ] Complete the Jog switch-and-return exercises in Practice and Demonstrate. Only a fresh learner attempt earns practice credit. Check label legibility, Play-button pulsing, both hands, locked Looper controls, and clean note releases on the headset.
+
+## Shared songs and bend feedback (headset checks not yet performed)
+
+- [ ] Open each retained song from Tutorials and Record Songs. Confirm Easy is absent and Nazariya Ki Maari has its new display title.
+- [ ] In Jog, Kuch and Nazariya practice and recording, deliberately fall behind, retry a hold, reverse direction and return to an earlier pitch. Targets must follow the learner in order, require fresh wrist movement and limit turning/final overshoot. Demonstrations retain the authored curves.
+- [ ] In normal Play, test ordinary four-semitone Honks and Kuch's five-semitone G4. The dial must match audible processed pitch, show no target/assessment marker and permit continuous bending. Cross several semitones quickly: one immediate pulse per frame; jitter at a mark must not repeat pulses.
+- [ ] Use both controllers independently. Release, delete a held target, disconnect/reconnect a controller and leave/re-enter XR. No stale dial, target attraction or delayed pulse may survive.
+- [ ] Move, rotate, scale and reset the melody frame in practice and recording. Keep the complete layout reachable and backing stationary.
+- [ ] Listen to every fixed backing phrase, the compact Kuch run-through and both complete pieces. Verify simultaneous layers, unchanged takes/routes, shared-output handoffs, rests and final releases. Confirm the terminal Gap stays silent before Stop; Stop/Exit/restart must cancel queued patterns.
+- [ ] Edit a backing take or connection during a run. Playback must stop, preserve the edit and refuse to overwrite it when changing excerpts. Explicit preparation can rebuild the setup.
+- [ ] Check clean capture excludes both normal-play and tutorial dials; explicitly include guidance and confirm the same feedback is recorded. Check headset audio mix, haptic intensity, tracking and frame responsiveness with the increased full-performance counts (47 Kuch / 70 Rishte instruments).

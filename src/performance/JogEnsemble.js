@@ -4,7 +4,7 @@ import {
   PITCHES,
   TUTORIAL_PRESETS,
   TUTORIAL_LOOPERS,
-} from "../tutorial/composition.js";
+} from "../compositions/jog/definition.js";
 import {
   connectTutorialClock,
   connectTutorialHonk,

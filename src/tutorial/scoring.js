@@ -1,4 +1,4 @@
-import { COMPOSITION as C, TOLERANCES as T } from './composition.js';
+import { COMPOSITION as C, TOLERANCES as T } from '../compositions/jog/definition.js';
 import { expectedForStep, pitchesMatch, validateBend } from './validation.js';
 
 export const PRACTICE_TOLERANCES=Object.freeze({onsetBeats:0.35,holdBeats:0.5,releaseGraceBeats:0.9,untimedTimeoutMs:20000,passScore:70});
@@ -45,8 +45,8 @@ export function scoreAttempt(step,events,{timed=Boolean(step.timed),reason=''}={
   const score=Math.round(Object.entries(components).reduce((n,[key,value])=>n+value*weights[key],0)/weight);
   const suggestions=[];
   if(correct<expected.length||extra)suggestions.push(`${correct}/${expected.length} correct targets${extra?`, ${extra} extra`:''}. Follow the highlighted target and leave rests clear.`);
-  if(timed&&components.timing<85)suggestions.push('Prepare while green shrinks; start as it closes, then release when yellow reaches white.');
-  if(kind==='note'&&components.holdRelease<85)suggestions.push('Hold through the expanded yellow ring; let go as it shrinks.');
+  if(timed&&components.timing<85)suggestions.push('Prepare at the white circle. Press Trigger when the square highlights, then release before the next note.');
+  if(kind==='note'&&components.holdRelease<85)suggestions.push('Hold Trigger for the indicated sustain, then release before pressing for the next note.');
   if(bendCount&&components.bend<85)suggestions.push('Begin on Eb, glide down smoothly, and settle on C before release.');
   if(reason)suggestions.unshift(reason);
   return {ok:!reason&&score>=PRACTICE_TOLERANCES.passScore&&correct===expected.length&&extra===0&&

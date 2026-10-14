@@ -1,5 +1,5 @@
 import { SongRecordingSession } from "./SongRecordingSession.js";
-import { COMPOSITION } from "../tutorial/composition.js";
+import { COMPOSITION } from "../compositions/jog/definition.js";
 import { JogMelodyGuidance } from "./JogMelodyGuidance.js";
 export { PHONE_REMINDER } from "./SongRecordingSession.js";
 // Compatibility entry for existing callers and capture tests.

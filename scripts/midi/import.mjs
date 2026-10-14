@@ -40,7 +40,7 @@ const definition = optionsPath
 const normalizedHash = createHash("sha256")
   .update(JSON.stringify(normalized))
   .digest("hex");
-const normalizedName = `${normalizedHash}.normalized.json`;
+const normalizedName = "normalized.json";
 async function atomicJSON(path, value) {
   const temporary = `${path}.${randomUUID()}.tmp`;
   try {
@@ -84,17 +84,12 @@ await atomicJSON(join(output, "import-options.json"), options);
 const original = join(output, `${normalized.source.sha256}.mid`);
 if (resolve(original) !== resolve(input)) await copyFile(input, original);
 await atomicJSON(join(output, normalizedName), normalized);
-await atomicJSON(join(output, "normalized.json"), normalized);
 await atomicJSON(join(output, "inventory.json"), {
   source: normalized.source,
   inventory: normalized.inventory,
   warnings: normalized.warnings,
 });
 if (definition) {
-  await atomicJSON(
-    join(output, `${definition.contentHash}.composition.json`),
-    definition,
-  );
   await atomicJSON(join(output, "composition.json"), definition);
   console.log(
     `Validated ${definition.id}: ${definition.lessons.length} guided lessons, hash ${definition.contentHash}. Register with loadDataComposition().`,

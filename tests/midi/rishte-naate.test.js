@@ -10,7 +10,7 @@ import { compositionRegistry } from "../../src/compositions/CompositionRegistry.
 import { DataGuidance } from "../../src/compositions/DataEnsemble.js";
 
 const root = new URL("../../src/compositions/rishte-naate/", import.meta.url);
-const definition = JSON.parse(readFileSync(new URL("composition.json", root)));
+const definition = JSON.parse(readFileSync(new URL("provenance/imported-arrangement.json", root)));
 const bytes = readFileSync(new URL(`${definition.source.sha256}.mid`, root));
 
 // Independent source-event walk (does not call normalizeMidi or the arranger).
@@ -58,8 +58,8 @@ test("rishte naate preserves every binary MIDI attack, velocity, key release and
   assert.equal(definition.score.durationSeconds, 74.046177140625);
   assert.equal(definition.arrangement.exclusions.length, 0);
   assert.equal(validateMidiPerformance(definition), definition);
-  assert.deepEqual(compositionRegistry.list().map(e=>e.id), ["virag-2-jog-study", "kuch-to-hua-hai", "rishte-naate"]);
-  const normalized = JSON.parse(readFileSync(new URL(definition.normalizedSource.file, root)));
+  assert.deepEqual(compositionRegistry.list().map(e=>e.id), ["virag-2-jog-study", "kuch-to-hua-hai", "rishte-naate", "tu-kisi-rail-si", "nazariya-honk-bends"]);
+  const normalized = JSON.parse(readFileSync(new URL("normalized.json", root)));
   assert.equal(createHash("sha256").update(JSON.stringify(normalized)).digest("hex"), definition.normalizedSource.sha256);
 });
 

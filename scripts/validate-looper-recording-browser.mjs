@@ -2,7 +2,7 @@
 // No expected score events or timelines are injected into either recorder.
 export async function validateRecordingPreservation(app,controller){
   const THREE=await import('three');
-  const {LESSON_STEPS}=await import('../src/tutorial/lessonSteps.js');
+  const {LESSON_STEPS}=await import('../src/compositions/jog/definition.js');
   const r=app.runtime,t=r.tutorial,a=t.adapter,chords=a.get('chordLooper'),other=a.get('percussionLooper'),metro=a.get('metronome');
   const checks=[],report={checks,takes:[],audio:[],headsetTested:false,acousticListeningTested:false};
   const check=(ok,message)=>{if(!ok)throw new Error(message);checks.push(message);};

@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 const span = (Math.PI * 2) / 3;
 const signed = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
-// One pooled monophonic gauge, shared by tutorial and Record Songs.
+// Shared dial presentation for authored guidance and continuous live play.
 export class BendGauge {
   constructor(scene, createCanvas = () => document.createElement("canvas")) {
     this.root = new THREE.Group();
@@ -28,18 +28,18 @@ export class BendGauge {
     this.track = mesh(new THREE.RingGeometry(1.46, 1.48, 96), 0x8a9f9b);
     this.ticks = [];
     const atlas = createCanvas();
-    atlas.width = 576;
+    atlas.width = 704;
     atlas.height = 64;
     const ac = atlas.getContext("2d");
     ac.fillStyle = "#fff4dd";
     ac.font = "28px sans-serif";
     ac.textAlign = "center";
-    for (let i = -4; i <= 4; i++)
-      ac.fillText(i > 0 ? `+${i}` : String(i), (i + 4) * 64 + 32, 42);
+    for (let i = -5; i <= 5; i++)
+      ac.fillText(i > 0 ? `+${i}` : String(i), (i + 5) * 64 + 32, 42);
     this.tickTexture = new THREE.CanvasTexture(atlas);
     this.tickTexture.colorSpace = THREE.SRGBColorSpace;
     this.tickLabels = [];
-    for (let i = -4; i <= 4; i++) {
+    for (let i = -5; i <= 5; i++) {
       const tick = mesh(
         new THREE.PlaneGeometry(i === 0 ? 0.045 : 0.025, i === 0 ? 0.18 : 0.1),
         0xcbd7d2,
@@ -48,28 +48,33 @@ export class BendGauge {
       this.ticks.push(tick);
       const geometry = new THREE.PlaneGeometry(0.38, 0.38),
         uv = geometry.attributes.uv;
-      for (let j = 0; j < uv.count; j++) uv.setX(j, (uv.getX(j) + i + 4) / 9);
+      for (let j = 0; j < uv.count; j++) uv.setX(j, (uv.getX(j) + i + 5) / 11);
       const label = mesh(geometry, 0xffffff);
       label.material.map = this.tickTexture;
       label.userData.semitones = i;
       this.tickLabels.push(label);
     }
-    this.expected = mesh(new THREE.RingGeometry(0.075, 0.13, 3), 0xffd15a);
+    // At the top of the gauge, the tip faces down toward the Honk. place()
+    // rotates this inward-facing orientation with the marker around the ring.
+    this.expected = mesh(new THREE.CircleGeometry(0.13, 3).rotateZ(-Math.PI / 2), 0xffd15a);
+    // The moving target stays above the gauge ticks and sustain feedback.
+    this.expected.renderOrder = 110;
     this.actual = mesh(new THREE.CircleGeometry(0.075, 16), 0x60ef9b);
     this.destination = mesh(new THREE.PlaneGeometry(0.04, 0.22), 0xffffff);
     // Pooled quarter-semitone sectors share resources. Visibility/rotation are
     // captured by the existing presentation recorder, unlike draw-range edits.
     this.arc = new THREE.Group();
     this.root.add(this.arc);
-    this.arcGeometry = new THREE.RingGeometry(1.1, 1.15, 4, 1, 0, span / 16);
+    this.arcGeometries = [4, 5].map(range => new THREE.RingGeometry(1.1, 1.15, 4, 1, 0, span / (range * 4)));
+    this.arcGeometry = this.arcGeometries[0];
     this.arcMaterial = new THREE.MeshBasicMaterial({
       color: 0x60ef9b,
       depthTest: false,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    this.resources.push(this.arcGeometry, this.arcMaterial);
-    for (let i = -16; i < 16; i++) {
+    this.resources.push(...this.arcGeometries, this.arcMaterial);
+    for (let i = -20; i < 20; i++) {
       const sector = new THREE.Mesh(this.arcGeometry, this.arcMaterial);
       sector.userData.segment = i;
       sector.renderOrder = 105;
@@ -87,7 +92,7 @@ export class BendGauge {
     this.root.visible = false;
   }
   place(node, value, radius, orientation) {
-    const angle = (Math.max(-4, Math.min(4, value)) / 4) * span * orientation;
+    const angle = (Math.max(-this.range, Math.min(this.range, value)) / this.range) * span * orientation;
     node.position.set(Math.sin(angle) * radius, Math.cos(angle) * radius, 0.01);
     node.rotation.z = -angle;
   }
@@ -100,6 +105,7 @@ export class BendGauge {
     binding = null,
     now = 0,
   ) {
+    this.range = state.range === 5 ? 5 : 4;
     this.root.visible = true;
     this.root.position.copy(point);
     this.root.quaternion.copy(quaternion);
@@ -111,15 +117,19 @@ export class BendGauge {
       controller: binding.controller.uuid,
     };
     this.state = state;
-    for (const tick of this.ticks)
+    for (const tick of this.ticks) {
+      tick.visible = Math.abs(tick.userData.semitones) <= this.range;
       this.place(tick, tick.userData.semitones, 1.48, orientation);
+    }
     for (const tick of this.tickLabels) {
+      tick.visible = Math.abs(tick.userData.semitones) <= this.range;
       this.place(tick, tick.userData.semitones, 1.88, orientation);
       tick.rotation.z = 0;
     }
-    this.place(this.expected, state.required, 1.37, orientation);
+    this.expected.visible = this.destination.visible = !state.normalPlay;
+    this.place(this.expected, state.required ?? 0, 1.37, orientation);
     this.expected.material.color.setHex(state.preview ? 0x60ef9b : 0xffd15a);
-    this.place(this.destination, state.destinationSemitones, 1.64, orientation);
+    this.place(this.destination, state.destinationSemitones ?? 0, 1.64, orientation);
     this.actual.visible = this.arc.visible = state.actual !== null;
     if (this.actual.visible) {
       this.place(this.actual, state.actual, 1.18, orientation);
@@ -132,18 +142,19 @@ export class BendGauge {
           : 0x79ceff;
       this.actual.material.color.setHex(color);
       this.arcMaterial.color.setHex(color);
-      const amount = Math.max(-4, Math.min(4, state.actual)) * 4;
+      const amount = Math.max(-this.range, Math.min(this.range, state.actual)) * 4;
       for (const sector of this.arc.children) {
         const i = sector.userData.segment;
+        sector.geometry = this.arcGeometries[this.range === 5 ? 1 : 0];
         sector.visible =
           amount >= 0
             ? i >= 0 && i < Math.floor(amount)
             : i < 0 && i >= Math.ceil(amount);
         sector.rotation.z =
-          Math.PI / 2 - ((orientation > 0 ? i + 1 : -i) * span) / 16;
+          Math.PI / 2 - ((orientation > 0 ? i + 1 : -i) * span) / (this.range * 4);
       }
     }
-    const text = `${state.start} → ${state.destination}\n△ Target ${signed(state.required)} · ● ${state.demonstration ? "Demo" : "You"} ${state.actual === null ? "—" : signed(state.actual)}\n${state.status}`;
+    const text = state.normalPlay ? `Bend ${signed(state.actual)} semitones\nRange −${this.range} to +${this.range}` : `${state.start} → ${state.destination}\n▲ Target ${signed(state.required)} · ● ${state.demonstration ? "Demo" : "You"} ${state.actual === null ? "—" : signed(state.actual)}\n${state.status}`;
     if (
       text !== this.text &&
       (now - (this.labelAt ?? -Infinity) >= 100 ||

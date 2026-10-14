@@ -28,7 +28,8 @@ function fixture(options = {}) {
     audio: {
       context: { currentTime: 1, state: "running" },
       mapping: { sceneTime: 0, contextTime: 1 },
-      countIn() {
+      countIn(contextTime, beatSeconds) {
+        this.countInTiming = { contextTime, beatSeconds };
         log.push("count-in");
       },
       cancelCues() {
@@ -91,7 +92,8 @@ function fixture(options = {}) {
   });
   const ensemble = {
     prepared: false,
-    prepare() {
+    prepare(options) {
+      this.prepareOptions = options;
       this.prepared = true;
       log.push("prepared");
     },
@@ -142,17 +144,17 @@ function fixture(options = {}) {
 
 test('Kuch take metadata, count-in and restart retain the selected arrangement without changing old capture identity',async()=>{
   const {selectArrangement}=await import('../../src/compositions/kuch.js');
-  for(const id of ['original','easier-bends']) {
+  for(const id of ['honk-orchestra','easier-bends']) {
     const module=await selectArrangement(id),f=fixture({composition:module.definition,createGuidance:module.createGuidance});
     await f.mode.action('prepare');await f.mode.action('start');
     const before=f.recorder.metadata.performance,guide=f.mode.guidance(f.mode.anchor.beatZero);
-    assert.equal(before.arrangementId,id);assert.equal(before.arrangementVersion,1);
-    assert.equal(before.compositionVersion,2);assert.equal(before.compositionHash,module.definition.contentHash);
-    assert.equal(guide.step.events.length,id==='original'?185:167);
+    assert.equal(before.arrangementId,"honk-orchestra");assert.equal(before.arrangementVersion,6);
+    assert.equal(before.compositionVersion,7);assert.equal(before.compositionHash,module.definition.contentHash);
+    assert.equal(guide.step.events.length,65);
     assert.equal(guide.beatMs,60000/92);
     await selectArrangement(id==='original'?'easier-bends':'original');
     await f.mode.action('restart');
-    assert.equal(f.recorder.metadata.performance.arrangementId,id);
+    assert.equal(f.recorder.metadata.performance.arrangementId,"honk-orchestra");
     assert.equal(f.recorder.metadata.performance.compositionHash,before.compositionHash);
     assert.equal(f.saved[0].performance.completionAction,'restarted');
     assert.notEqual(f.recorder.metadata.id,f.saved[0].id);
@@ -383,4 +385,44 @@ test("20 serialized restarts retain one owner and unique attempts, with one sync
       .slice(0, -1)
       .every((take) => take.performance.completionAction === "restarted"),
   );
+});
+
+test('Tu Kisi Rail Si records a live-only take with the song identity and a four-beat count-in', async () => {
+  const {definition} = await import('../../src/compositions/tu-kisi-rail-si.js');
+  const f = fixture({composition: definition, createGuidance: anchor => ({anchorMs: anchor, model: () => ({})})});
+  await f.mode.action('prepare');
+  assert.match(f.mode.model().feedback, /no Looper or backing track/);
+  assert.doesNotMatch(f.mode.model().feedback, /backing parts are automatic/);
+  await f.mode.action('start');
+  assert.ok(Math.abs(f.mode.anchor.beatZero - f.mode.anchor.countAt - 2000) < 1e-9);
+  assert.equal(f.recorder.metadata.performance.compositionId, definition.id);
+  assert.equal(f.recorder.metadata.performance.compositionHash, definition.contentHash);
+  f.setTime(f.mode.anchor.beatZero);
+  f.mode.update();
+  assert.equal(f.mode.phase, 'performing');
+  await f.mode.action('stop');
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.saved[0].performance.completionAction, 'stopped');
+  await f.mode.action('exit');
+});
+
+test('a recording tempo override shares the count-in and backing clock', async () => {
+  const { definition: source } = await import('../../src/compositions/tu-kisi-rail-si.js');
+  const definition = { ...source, bpm: 80, recording: { ...source.recording, bpm: 115 } };
+  const f = fixture({ composition: definition, createGuidance: anchor => ({ anchorMs: anchor, model: () => ({}) }) });
+  assert.equal(definition.bpm, 80, 'Tutorial default remains 80 BPM');
+  await f.mode.action('prepare');
+  assert.equal(f.ensemble.prepareOptions.bpm, 115);
+  assert.match(f.mode.model().progress, /115 BPM/);
+  await f.mode.action('start');
+  assert.equal(f.ensemble.anchor.bpm, 115);
+  assert.equal(f.recorder.audio.countInTiming.beatSeconds, 60 / 115);
+  assert.ok(Math.abs(f.mode.anchor.beatZero - f.mode.anchor.countAt - 4 * 60000 / 115) < 1e-9);
+  assert.equal(f.mode.guidance(f.mode.anchor.beatZero).anchorMs, f.ensemble.anchor.beatZero);
+  await f.mode.action('restart');
+  assert.equal(f.ensemble.anchor.bpm, 115);
+  assert.equal(f.saved[0].performance.bpm, 115);
+  assert.equal(f.recorder.metadata.performance.bpm, 115);
+  await f.mode.action('stop');
+  await f.mode.action('exit');
 });

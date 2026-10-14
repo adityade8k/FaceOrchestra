@@ -1,0 +1,1440 @@
+{
+  "schemaVersion": 1,
+  "bpm": 50,
+  "sourcePreview": {
+    "filename": "nazariya-more-bends-50bpm-proposal.json",
+    "sha256": "3f978b5b27f1eea2ced17ae0b5cdac992a90a88b2b5a1b7a2bfccab52fc8a6c3"
+  },
+  "sourceCompositionHash": "0d38bb9c2fe168cf0b2b00b50a4cf0e52cfe558eb1f5c327d41cbecb0459a6a0",
+  "sourceMidiSha256": "d2ca1e4bc2aef6de444843875920e0fe38b06e101e390d52d89a93390b3733f1",
+  "durationBeats": 62.05625,
+  "events": [
+    {
+      "midi": 57,
+      "velocity": 77,
+      "beat": 0.4041666666666667,
+      "beats": 0.296875,
+      "id": "nazariya-1",
+      "previewEventId": "preview-1",
+      "sourceEventId": "t1-e9"
+    },
+    {
+      "midi": 57,
+      "velocity": 77,
+      "beat": 0.7479166666666667,
+      "beats": 0.5125,
+      "id": "nazariya-2",
+      "previewEventId": "preview-2",
+      "sourceEventId": "t1-e13"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 1.30625,
+      "beats": 0.8135416666666667,
+      "id": "nazariya-3",
+      "previewEventId": "preview-3",
+      "sourceEventId": "t1-e17"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 2.1666666666666665,
+      "beats": 0.1545869707826628,
+      "id": "nazariya-4",
+      "previewEventId": "preview-4",
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        3
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 77,
+      "beat": 2.3384299675362916,
+      "beats": 0.2392103370843217,
+      "id": "nazariya-5",
+      "previewEventId": "preview-5",
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        4
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 2.596390304620613,
+      "beats": 2.79731701317051,
+      "id": "nazariya-6",
+      "previewEventId": "preview-6",
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.2186479770187955,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.29371991166591066,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.4230965434501501,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.5088930401897104,
+          "semitones": -3
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -3
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 59,
+      "velocity": 77,
+      "beat": 5.412457317791123,
+      "beats": 2.4748665918151076,
+      "id": "nazariya-7",
+      "previewEventId": "preview-7",
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.12209574252122624,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.21907066666207872,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.3513676438035968,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.4362207024268427,
+          "semitones": 3
+        },
+        {
+          "fraction": 0.4903436666930458,
+          "semitones": 3
+        },
+        {
+          "fraction": 0.5751967253162916,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.7040578383707934,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.8010327625116459,
+          "semitones": 0
+        },
+        {
+          "fraction": 1.0,
+          "semitones": 0
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 7.9060739096062305,
+      "beats": 0.28220372659837434,
+      "id": "nazariya-8",
+      "previewEventId": "preview-8",
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        14
+      ]
+    },
+    {
+      "midi": 59,
+      "velocity": 77,
+      "beat": 8.207027636204606,
+      "beats": 0.28220372659837345,
+      "id": "nazariya-9",
+      "previewEventId": "preview-9",
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        15
+      ]
+    },
+    {
+      "midi": 57,
+      "velocity": 77,
+      "beat": 8.50798136280298,
+      "beats": 0.3013936371970196,
+      "id": "nazariya-10",
+      "previewEventId": "preview-10",
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        16
+      ]
+    },
+    {
+      "midi": 57,
+      "velocity": 77,
+      "beat": 8.959375,
+      "beats": 0.5802083333333333,
+      "id": "nazariya-11",
+      "previewEventId": "preview-11",
+      "sourceEventId": "t1-e181"
+    },
+    {
+      "midi": 57,
+      "velocity": 80,
+      "beat": 9.66875,
+      "beats": 0.878125,
+      "id": "nazariya-12",
+      "previewEventId": "preview-12",
+      "sourceEventId": "t1-e185"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 10.592708333333333,
+      "beats": 0.2760416666666667,
+      "id": "nazariya-13",
+      "previewEventId": "preview-13",
+      "sourceEventId": "t1-e189"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 10.915625,
+      "beats": 0.5770833333333333,
+      "id": "nazariya-14",
+      "previewEventId": "preview-14",
+      "sourceEventId": "t1-e193"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 11.538541666666667,
+      "beats": 0.5125,
+      "id": "nazariya-15",
+      "previewEventId": "preview-15",
+      "sourceEventId": "t1-e197"
+    },
+    {
+      "midi": 66,
+      "velocity": 80,
+      "beat": 12.097916666666666,
+      "beats": 0.819633816083833,
+      "id": "nazariya-16",
+      "previewEventId": "preview-16",
+      "sourceEventId": "t1-e201",
+      "screenshotNoteIds": [
+        24
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 80,
+      "beat": 12.9363004827505,
+      "beats": 0.26070703184134736,
+      "id": "nazariya-17",
+      "previewEventId": "preview-17",
+      "sourceEventId": "t1-e201",
+      "screenshotNoteIds": [
+        25
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 80,
+      "beat": 13.215757514591848,
+      "beats": 0.34049248540815213,
+      "id": "nazariya-18",
+      "previewEventId": "preview-18",
+      "sourceEventId": "t1-e201",
+      "screenshotNoteIds": [
+        26
+      ]
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 13.603125,
+      "beats": 0.8770833333333333,
+      "id": "nazariya-19",
+      "previewEventId": "preview-19",
+      "sourceEventId": "t1-e235"
+    },
+    {
+      "midi": 61,
+      "velocity": 84,
+      "beat": 14.527083333333334,
+      "beats": 2.9692631326638725,
+      "id": "nazariya-20",
+      "previewEventId": "preview-20",
+      "sourceEventId": "t1-e239",
+      "screenshotNoteIds": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.05831853201513899,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.13914666656469787,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.23207230563431502,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.3129004401838739,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.43040907720711713,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5011336949379813,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.5462449262865674,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.6169695440174316,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.7316144047894468,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.8124425393390051,
+          "semitones": -2
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 61,
+      "velocity": 84,
+      "beat": 17.515096465997207,
+      "beats": 0.3037004213554013,
+      "id": "nazariya-21",
+      "previewEventId": "preview-21",
+      "sourceEventId": "t1-e239",
+      "screenshotNoteIds": [
+        36
+      ]
+    },
+    {
+      "midi": 59,
+      "velocity": 84,
+      "beat": 17.83754688735261,
+      "beats": 0.3037004213554013,
+      "id": "nazariya-22",
+      "previewEventId": "preview-22",
+      "sourceEventId": "t1-e239",
+      "screenshotNoteIds": [
+        37
+      ]
+    },
+    {
+      "midi": 57,
+      "velocity": 84,
+      "beat": 18.15999730870801,
+      "beats": 1.1358360246253234,
+      "id": "nazariya-23",
+      "previewEventId": "preview-23",
+      "sourceEventId": "t1-e239",
+      "screenshotNoteIds": [
+        38
+      ]
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 19.342708333333334,
+      "beats": 0.296875,
+      "id": "nazariya-24",
+      "previewEventId": "preview-24",
+      "sourceEventId": "t1-e340"
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 19.686458333333334,
+      "beats": 0.5760416666666667,
+      "id": "nazariya-25",
+      "previewEventId": "preview-25",
+      "sourceEventId": "t1-e344"
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 20.309375,
+      "beats": 0.5125,
+      "id": "nazariya-26",
+      "previewEventId": "preview-26",
+      "sourceEventId": "t1-e348"
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 20.86875,
+      "beats": 0.25416666666666665,
+      "id": "nazariya-27",
+      "previewEventId": "preview-27",
+      "sourceEventId": "t1-e352"
+    },
+    {
+      "midi": 68,
+      "velocity": 84,
+      "beat": 21.169791666666665,
+      "beats": 1.5218750000000014,
+      "id": "nazariya-28",
+      "previewEventId": "preview-28",
+      "sourceEventId": "t1-e356",
+      "screenshotNoteIds": [
+        43,
+        44
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.2690083324707185,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.4267085378095264,
+          "semitones": -2
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 22.738541666666666,
+      "beats": 0.8135416666666667,
+      "id": "nazariya-29",
+      "previewEventId": "preview-29",
+      "sourceEventId": "t1-e376"
+    },
+    {
+      "midi": 69,
+      "velocity": 77,
+      "beat": 23.598958333333332,
+      "beats": 1.8081718032497314,
+      "id": "nazariya-30",
+      "previewEventId": "preview-30",
+      "sourceEventId": "t1-e380",
+      "screenshotNoteIds": [
+        46
+      ]
+    },
+    {
+      "midi": 71,
+      "velocity": 77,
+      "beat": 25.425880136583064,
+      "beats": 0.2822037265983752,
+      "id": "nazariya-31",
+      "previewEventId": "preview-31",
+      "sourceEventId": "t1-e380",
+      "screenshotNoteIds": [
+        47
+      ]
+    },
+    {
+      "midi": 69,
+      "velocity": 77,
+      "beat": 25.72683386318144,
+      "beats": 0.26070703184134913,
+      "id": "nazariya-32",
+      "previewEventId": "preview-32",
+      "sourceEventId": "t1-e380",
+      "screenshotNoteIds": [
+        48
+      ]
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 26.00629089502279,
+      "beats": 0.3037004213554013,
+      "id": "nazariya-33",
+      "previewEventId": "preview-33",
+      "sourceEventId": "t1-e380",
+      "screenshotNoteIds": [
+        49
+      ]
+    },
+    {
+      "midi": 66,
+      "velocity": 77,
+      "beat": 26.328741316378192,
+      "beats": 0.2545920169551401,
+      "id": "nazariya-34",
+      "previewEventId": "preview-34",
+      "sourceEventId": "t1-e380",
+      "screenshotNoteIds": [
+        50
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 26.630208333333332,
+      "beats": 0.42604166666666665,
+      "id": "nazariya-35",
+      "previewEventId": "preview-35",
+      "sourceEventId": "t1-e441"
+    },
+    {
+      "midi": 64,
+      "velocity": 84,
+      "beat": 27.103125,
+      "beats": 1.328125,
+      "id": "nazariya-36",
+      "previewEventId": "preview-36",
+      "sourceEventId": "t1-e445",
+      "screenshotNoteIds": [
+        52,
+        53
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.17858102025692033,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.35928690260986035,
+          "semitones": 2
+        },
+        {
+          "fraction": 1.0,
+          "semitones": 2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 28.478125,
+      "beats": 0.5989583333333334,
+      "id": "nazariya-37",
+      "previewEventId": "preview-37",
+      "sourceEventId": "t1-e465"
+    },
+    {
+      "midi": 68,
+      "velocity": 80,
+      "beat": 29.122916666666665,
+      "beats": 0.85625,
+      "id": "nazariya-38",
+      "previewEventId": "preview-38",
+      "sourceEventId": "t1-e469"
+    },
+    {
+      "midi": 68,
+      "velocity": 77,
+      "beat": 30.026041666666668,
+      "beats": 0.21145833333333333,
+      "id": "nazariya-39",
+      "previewEventId": "preview-39",
+      "sourceEventId": "t1-e473"
+    },
+    {
+      "midi": 68,
+      "velocity": 80,
+      "beat": 30.284375,
+      "beats": 0.5242775037425744,
+      "id": "nazariya-40",
+      "previewEventId": "preview-40",
+      "sourceEventId": "t1-e477",
+      "screenshotNoteIds": [
+        59
+      ]
+    },
+    {
+      "midi": 66,
+      "velocity": 80,
+      "beat": 30.82155052059679,
+      "beats": 0.12069990412271991,
+      "id": "nazariya-41",
+      "previewEventId": "preview-41",
+      "sourceEventId": "t1-e477",
+      "screenshotNoteIds": [
+        60
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 80,
+      "beat": 30.95053068913895,
+      "beats": 0.0828026441943841,
+      "id": "nazariya-42",
+      "previewEventId": "preview-42",
+      "sourceEventId": "t1-e477",
+      "screenshotNoteIds": [
+        61
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 80,
+      "beat": 31.079166666666666,
+      "beats": 0.20456279120620025,
+      "id": "nazariya-43",
+      "previewEventId": "preview-43",
+      "sourceEventId": "t1-e501",
+      "screenshotNoteIds": [
+        62
+      ]
+    },
+    {
+      "midi": 61,
+      "velocity": 80,
+      "beat": 31.29447780525138,
+      "beats": 0.09673512640662096,
+      "id": "nazariya-44",
+      "previewEventId": "preview-44",
+      "sourceEventId": "t1-e501",
+      "screenshotNoteIds": [
+        63
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 80,
+      "beat": 31.401961279036513,
+      "beats": 0.3546954634909447,
+      "id": "nazariya-45",
+      "previewEventId": "preview-45",
+      "sourceEventId": "t1-e501",
+      "screenshotNoteIds": [
+        64,
+        65
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 80,
+      "beat": 31.76740508990597,
+      "beats": 0.09673512640661741,
+      "id": "nazariya-46",
+      "previewEventId": "preview-46",
+      "sourceEventId": "t1-e501",
+      "screenshotNoteIds": [
+        66
+      ]
+    },
+    {
+      "midi": 66,
+      "velocity": 80,
+      "beat": 31.8748885636911,
+      "beats": 0.4042781029755673,
+      "id": "nazariya-47",
+      "previewEventId": "preview-47",
+      "sourceEventId": "t1-e501",
+      "screenshotNoteIds": [
+        67,
+        68
+      ]
+    },
+    {
+      "midi": 68,
+      "velocity": 80,
+      "beat": 32.32604166666667,
+      "beats": 0.6049316348757756,
+      "id": "nazariya-48",
+      "previewEventId": "preview-48",
+      "sourceEventId": "t1-e537",
+      "screenshotNoteIds": [
+        69
+      ]
+    },
+    {
+      "midi": 66,
+      "velocity": 80,
+      "beat": 32.94972330154244,
+      "beats": 0.21771364232729695,
+      "id": "nazariya-49",
+      "previewEventId": "preview-49",
+      "sourceEventId": "t1-e537",
+      "screenshotNoteIds": [
+        70
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 80,
+      "beat": 33.186186943869735,
+      "beats": 0.2325630561302674,
+      "id": "nazariya-50",
+      "previewEventId": "preview-50",
+      "sourceEventId": "t1-e537",
+      "screenshotNoteIds": [
+        71
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 77,
+      "beat": 33.465625,
+      "beats": 0.4479166666666667,
+      "id": "nazariya-51",
+      "previewEventId": "preview-51",
+      "sourceEventId": "t1-e569"
+    },
+    {
+      "midi": 63,
+      "velocity": 80,
+      "beat": 33.96041666666667,
+      "beats": 1.464173226690889,
+      "id": "nazariya-52",
+      "previewEventId": "preview-52",
+      "sourceEventId": "t1-e573",
+      "screenshotNoteIds": [
+        73
+      ]
+    },
+    {
+      "midi": 66,
+      "velocity": 80,
+      "beat": 35.44333989335755,
+      "beats": 0.26070703184134913,
+      "id": "nazariya-53",
+      "previewEventId": "preview-53",
+      "sourceEventId": "t1-e573",
+      "screenshotNoteIds": [
+        74
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 80,
+      "beat": 35.7227969251989,
+      "beats": 0.5772030748010977,
+      "id": "nazariya-54",
+      "previewEventId": "preview-54",
+      "sourceEventId": "t1-e573",
+      "screenshotNoteIds": [
+        75
+      ]
+    },
+    {
+      "midi": 68,
+      "velocity": 80,
+      "beat": 36.34583333333333,
+      "beats": 0.28257146641772124,
+      "id": "nazariya-55",
+      "previewEventId": "preview-55",
+      "sourceEventId": "t1-e607",
+      "screenshotNoteIds": [
+        76
+      ]
+    },
+    {
+      "midi": 66,
+      "velocity": 80,
+      "beat": 36.64715479975105,
+      "beats": 0.2822037265983752,
+      "id": "nazariya-56",
+      "previewEventId": "preview-56",
+      "sourceEventId": "t1-e607",
+      "screenshotNoteIds": [
+        77
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 80,
+      "beat": 36.94810852634942,
+      "beats": 0.21126647365057494,
+      "id": "nazariya-57",
+      "previewEventId": "preview-57",
+      "sourceEventId": "t1-e607",
+      "screenshotNoteIds": [
+        78
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 80,
+      "beat": 37.20625,
+      "beats": 0.3035192847891537,
+      "id": "nazariya-58",
+      "previewEventId": "preview-58",
+      "sourceEventId": "t1-e639",
+      "screenshotNoteIds": [
+        79
+      ]
+    },
+    {
+      "midi": 61,
+      "velocity": 80,
+      "beat": 37.52851928478915,
+      "beats": 0.26070703184134913,
+      "id": "nazariya-59",
+      "previewEventId": "preview-59",
+      "sourceEventId": "t1-e639",
+      "screenshotNoteIds": [
+        80
+      ]
+    },
+    {
+      "midi": 62,
+      "velocity": 80,
+      "beat": 37.807976316630494,
+      "beats": 0.3013986833695057,
+      "id": "nazariya-60",
+      "previewEventId": "preview-60",
+      "sourceEventId": "t1-e639",
+      "screenshotNoteIds": [
+        81
+      ]
+    },
+    {
+      "midi": 59,
+      "velocity": 82,
+      "beat": 38.409375,
+      "beats": 0.28271249642563134,
+      "id": "nazariya-61",
+      "previewEventId": "preview-61",
+      "sourceEventId": "t1-e671",
+      "screenshotNoteIds": [
+        82
+      ]
+    },
+    {
+      "midi": 57,
+      "velocity": 82,
+      "beat": 38.710837496425626,
+      "beats": 0.19621694757027086,
+      "id": "nazariya-62",
+      "previewEventId": "preview-62",
+      "sourceEventId": "t1-e671",
+      "screenshotNoteIds": [
+        83
+      ]
+    },
+    {
+      "midi": 59,
+      "velocity": 82,
+      "beat": 38.925804443995894,
+      "beats": 0.28415037699113554,
+      "id": "nazariya-63",
+      "previewEventId": "preview-63",
+      "sourceEventId": "t1-e671",
+      "screenshotNoteIds": [
+        84
+      ]
+    },
+    {
+      "midi": 61,
+      "velocity": 82,
+      "beat": 39.226758170594266,
+      "beats": 0.16803349607239682,
+      "id": "nazariya-64",
+      "previewEventId": "preview-64",
+      "sourceEventId": "t1-e671",
+      "screenshotNoteIds": [
+        85
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 84,
+      "beat": 39.44166666666667,
+      "beats": 0.3897456518813769,
+      "id": "nazariya-65",
+      "previewEventId": "preview-65",
+      "sourceEventId": "t1-e712",
+      "screenshotNoteIds": [
+        86
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 84,
+      "beat": 39.850162318548044,
+      "beats": 0.21129601478529025,
+      "id": "nazariya-66",
+      "previewEventId": "preview-66",
+      "sourceEventId": "t1-e712",
+      "screenshotNoteIds": [
+        87
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 40.108333333333334,
+      "beats": 0.42604166666666665,
+      "id": "nazariya-67",
+      "previewEventId": "preview-67",
+      "sourceEventId": "t1-e732"
+    },
+    {
+      "midi": 64,
+      "velocity": 84,
+      "beat": 40.58125,
+      "beats": 0.31875,
+      "id": "nazariya-68",
+      "previewEventId": "preview-68",
+      "sourceEventId": "t1-e736"
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 40.946875,
+      "beats": 0.9416666666666667,
+      "id": "nazariya-69",
+      "previewEventId": "preview-69",
+      "sourceEventId": "t1-e740"
+    },
+    {
+      "midi": 64,
+      "velocity": 82,
+      "beat": 41.93541666666667,
+      "beats": 0.5400891069956728,
+      "id": "nazariya-70",
+      "previewEventId": "preview-70",
+      "sourceEventId": "t1-e744",
+      "screenshotNoteIds": [
+        92
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 82,
+      "beat": 42.49425577366234,
+      "beats": 0.26070703184134913,
+      "id": "nazariya-71",
+      "previewEventId": "preview-71",
+      "sourceEventId": "t1-e744",
+      "screenshotNoteIds": [
+        93
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 82,
+      "beat": 42.773712805503685,
+      "beats": 0.27628719449631944,
+      "id": "nazariya-72",
+      "previewEventId": "preview-72",
+      "sourceEventId": "t1-e744",
+      "screenshotNoteIds": [
+        94,
+        95
+      ]
+    },
+    {
+      "midi": 66,
+      "velocity": 77,
+      "beat": 43.09583333333333,
+      "beats": 0.21145833333333333,
+      "id": "nazariya-73",
+      "previewEventId": "preview-73",
+      "sourceEventId": "t1-e776"
+    },
+    {
+      "midi": 66,
+      "velocity": 77,
+      "beat": 43.354166666666664,
+      "beats": 0.583114350473501,
+      "id": "nazariya-74",
+      "previewEventId": "preview-74",
+      "sourceEventId": "t1-e780",
+      "screenshotNoteIds": [
+        97
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 43.95603101714016,
+      "beats": 0.2822037265983681,
+      "id": "nazariya-75",
+      "previewEventId": "preview-75",
+      "sourceEventId": "t1-e780",
+      "screenshotNoteIds": [
+        98
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 77,
+      "beat": 44.25698474373853,
+      "beats": 0.3037004213554084,
+      "id": "nazariya-76",
+      "previewEventId": "preview-76",
+      "sourceEventId": "t1-e780",
+      "screenshotNoteIds": [
+        99
+      ]
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 44.57943516509393,
+      "beats": 0.23921033708432304,
+      "id": "nazariya-77",
+      "previewEventId": "preview-77",
+      "sourceEventId": "t1-e780",
+      "screenshotNoteIds": [
+        100
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 77,
+      "beat": 44.83739550217825,
+      "beats": 0.3615628311550765,
+      "id": "nazariya-78",
+      "previewEventId": "preview-78",
+      "sourceEventId": "t1-e780",
+      "screenshotNoteIds": [
+        101
+      ]
+    },
+    {
+      "midi": 61,
+      "velocity": 84,
+      "beat": 45.24583333333333,
+      "beats": 0.5333333333333333,
+      "id": "nazariya-79",
+      "previewEventId": "preview-79",
+      "sourceEventId": "t1-e841"
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 45.82604166666667,
+      "beats": 0.2760416666666667,
+      "id": "nazariya-80",
+      "previewEventId": "preview-80",
+      "sourceEventId": "t1-e845"
+    },
+    {
+      "midi": 64,
+      "velocity": 77,
+      "beat": 46.14895833333333,
+      "beats": 0.5552083333333333,
+      "id": "nazariya-81",
+      "previewEventId": "preview-81",
+      "sourceEventId": "t1-e849"
+    },
+    {
+      "midi": 64,
+      "velocity": 82,
+      "beat": 46.751041666666666,
+      "beats": 2.0659890603185715,
+      "id": "nazariya-82",
+      "previewEventId": "preview-82",
+      "sourceEventId": "t1-e853",
+      "screenshotNoteIds": [
+        106,
+        107,
+        108,
+        109
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.160567327982104,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.2622135583680574,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.3374529746142827,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.4390992050002361,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.6038681115631904,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.7200352320042805,
+          "semitones": 2
+        },
+        {
+          "fraction": 1.0,
+          "semitones": 2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 64,
+      "velocity": 82,
+      "beat": 48.835780726985234,
+      "beats": 0.26070703184134913,
+      "id": "nazariya-83",
+      "previewEventId": "preview-83",
+      "sourceEventId": "t1-e853",
+      "screenshotNoteIds": [
+        110
+      ]
+    },
+    {
+      "midi": 63,
+      "velocity": 82,
+      "beat": 49.11523775882658,
+      "beats": 1.479553907840085,
+      "id": "nazariya-84",
+      "previewEventId": "preview-84",
+      "sourceEventId": "t1-e853",
+      "screenshotNoteIds": [
+        111,
+        112
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.11705589415076473,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.27926694893440834,
+          "semitones": -2
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 61,
+      "velocity": 80,
+      "beat": 50.641666666666666,
+      "beats": 2.9906236858925723,
+      "id": "nazariya-85",
+      "previewEventId": "preview-85",
+      "sourceEventId": "t1-e939",
+      "screenshotNoteIds": [
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.06504449931629085,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.14529531827828016,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.2303692045755743,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.31062002353756357,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.40572526220510435,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.4759447287968447,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.5279217834837047,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.5981412500754449,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.7191552896899708,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.79940610865196,
+          "semitones": -2
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 61,
+      "velocity": 80,
+      "beat": 53.651040352559235,
+      "beats": 0.26070703184135624,
+      "id": "nazariya-86",
+      "previewEventId": "preview-86",
+      "sourceEventId": "t1-e939",
+      "screenshotNoteIds": [
+        120
+      ]
+    },
+    {
+      "midi": 59,
+      "velocity": 80,
+      "beat": 53.93049738440059,
+      "beats": 0.2822037265983752,
+      "id": "nazariya-87",
+      "previewEventId": "preview-87",
+      "sourceEventId": "t1-e939",
+      "screenshotNoteIds": [
+        121
+      ]
+    },
+    {
+      "midi": 57,
+      "velocity": 80,
+      "beat": 54.23145111099896,
+      "beats": 1.0716738890010404,
+      "id": "nazariya-88",
+      "previewEventId": "preview-88",
+      "sourceEventId": "t1-e939",
+      "screenshotNoteIds": [
+        122
+      ]
+    },
+    {
+      "midi": 57,
+      "velocity": 84,
+      "beat": 55.348958333333336,
+      "beats": 0.4479166666666667,
+      "id": "nazariya-89",
+      "previewEventId": "preview-89",
+      "sourceEventId": "t1-e1042"
+    },
+    {
+      "midi": 57,
+      "velocity": 77,
+      "beat": 55.84375,
+      "beats": 0.18958333333333333,
+      "id": "nazariya-90",
+      "previewEventId": "preview-90",
+      "sourceEventId": "t1-e1046"
+    },
+    {
+      "midi": 57,
+      "velocity": 77,
+      "beat": 56.08020833333333,
+      "beats": 0.23229166666666667,
+      "id": "nazariya-91",
+      "previewEventId": "preview-91",
+      "sourceEventId": "t1-e1050"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 56.359375,
+      "beats": 0.490625,
+      "id": "nazariya-92",
+      "previewEventId": "preview-92",
+      "sourceEventId": "t1-e1054"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 56.896875,
+      "beats": 1.028125,
+      "id": "nazariya-93",
+      "previewEventId": "preview-93",
+      "sourceEventId": "t1-e1058"
+    },
+    {
+      "midi": 66,
+      "velocity": 82,
+      "beat": 57.971875,
+      "beats": 2.2322916666666686,
+      "id": "nazariya-94",
+      "previewEventId": "preview-94",
+      "sourceEventId": "t1-e1062",
+      "screenshotNoteIds": [
+        129,
+        130,
+        131,
+        132
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.3183315531231073,
+          "semitones": 0.0
+        },
+        {
+          "fraction": 0.4258443856009429,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.5821474659254369,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.6762211943435427,
+          "semitones": -3
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -3
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 60.251041666666666,
+      "beats": 0.5760416666666667,
+      "id": "nazariya-95",
+      "previewEventId": "preview-95",
+      "sourceEventId": "t1-e1098"
+    },
+    {
+      "midi": 61,
+      "velocity": 77,
+      "beat": 60.873958333333334,
+      "beats": 1.1822916666666667,
+      "id": "nazariya-96",
+      "previewEventId": "preview-96",
+      "sourceEventId": "t1-e1102"
+    }
+  ],
+  "phrases": [
+    {
+      "id": "phrase-1",
+      "title": "Opening pulses and first turn",
+      "startBeat": 0,
+      "endBeat": 8.959375
+    },
+    {
+      "id": "phrase-2",
+      "title": "Low pulses and answering phrase",
+      "startBeat": 8.959375,
+      "endBeat": 19.342708333333334
+    },
+    {
+      "id": "phrase-3",
+      "title": "High repeated notes and the crest",
+      "startBeat": 19.342708333333334,
+      "endBeat": 27.103125
+    },
+    {
+      "id": "phrase-4",
+      "title": "Fast turns with fewer presses",
+      "startBeat": 27.103125,
+      "endBeat": 33.96041666666667
+    },
+    {
+      "id": "phrase-5",
+      "title": "Answer and return",
+      "startBeat": 33.96041666666667,
+      "endBeat": 41.93541666666667
+    },
+    {
+      "id": "phrase-6",
+      "title": "Rising and falling holds",
+      "startBeat": 41.93541666666667,
+      "endBeat": 50.641666666666666
+    },
+    {
+      "id": "phrase-7",
+      "title": "Closing phrase",
+      "startBeat": 50.641666666666666,
+      "endBeat": 62.05625
+    }
+  ],
+  "summary": {
+    "previousPresses": 52,
+    "proposedPresses": 96,
+    "bentHolds": 9,
+    "keptBendMoves": 24,
+    "newNoteSwitches": 44
+  }
+}

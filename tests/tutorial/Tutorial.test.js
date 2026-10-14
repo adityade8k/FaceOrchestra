@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { COMPOSITION as C, PITCHES, TOLERANCES as T, DESCENDING_BEND, performanceEvents, tuningForMidi } from '../../src/tutorial/composition.js';
-import { LESSON_STEPS } from '../../src/tutorial/lessonSteps.js';
+import { COMPOSITION as C, PITCHES, TOLERANCES as T, DESCENDING_BEND, performanceEvents, tuningForMidi } from '../../src/compositions/jog/definition.js';
+import { LESSON_STEPS } from '../../src/compositions/jog/definition.js';
 import { TutorialSession } from '../../src/tutorial/TutorialSession.js';
 import { validateBend, validateSequence, validateTake } from '../../src/tutorial/validation.js';
 import { CompositionConductor } from '../../src/tutorial/CompositionConductor.js';
@@ -138,7 +138,7 @@ test('tab delays pause instead of dispatching overdue musical gestures',()=>{
 });
 
 test('simulation route uses shared predicates without awarding omitted beginner drills',async()=>{
-  const {SIMULATION_STEPS}=await import('../../src/tutorial/lessonSteps.js');
+  const {SIMULATION_STEPS}=await import('../../src/compositions/jog/definition.js');
   const sim=new TutorialSession({mode:'simulation'}),practice=new TutorialSession();
   assert.equal(sim.steps,SIMULATION_STEPS);assert.equal(practice.steps,LESSON_STEPS);
   assert.ok(sim.steps.some(s=>s.id==='record-chords'));assert.ok(sim.steps.some(s=>s.id==='performance'));

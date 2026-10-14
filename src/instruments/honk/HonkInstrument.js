@@ -1,3 +1,4 @@
+import { getHonkPitchBendRange, MAX_PITCH_BEND_SEMITONES } from "../../config/honk.js";
 import { HONK_MASTER_GAIN } from "../../config/audio.js";
 import { INSTRUMENT_KINDS } from "../core/capabilities.js";
 import { InstrumentEntity } from "../core/InstrumentEntity.js";
@@ -40,6 +41,7 @@ export class HonkInstrument extends InstrumentEntity {
       metadata,
     });
     this.componentId = componentId;
+    this.pitchBendRange = MAX_PITCH_BEND_SEMITONES;
     this.performance = performanceState || new HonkPerformanceState();
     this.morphs = morphController || new MorphTargetController(root, { warnMissingExpectedMorphs });
     this.voiceService = voiceService;
@@ -72,7 +74,7 @@ export class HonkInstrument extends InstrumentEntity {
     const target = this.registerInteractionTarget(role, object3D, options);
     this.targetsByRole.set(role, object3D);
     if (role === HONK_INTERACTION_ROLES.squeeze) {
-      this.squeezeCollider = object3D;
+      this.setSqueezeCollider(object3D);
     }
     return target;
   }
@@ -93,7 +95,7 @@ export class HonkInstrument extends InstrumentEntity {
         this.registerHonkTarget(role, object3D, optionsByRole[role] || {});
       } else {
         this.targetsByRole.set(role, object3D);
-        if (role === HONK_INTERACTION_ROLES.squeeze) this.squeezeCollider = object3D;
+        if (role === HONK_INTERACTION_ROLES.squeeze) this.setSqueezeCollider(object3D);
       }
     }
     return this;
@@ -101,6 +103,17 @@ export class HonkInstrument extends InstrumentEntity {
 
   getTarget(role) {
     return this.targetsByRole.get(role) || null;
+  }
+
+  setSqueezeCollider(target) {
+    if (this.squeezeCollider === target) return;
+    this.squeezeCollider = target;
+    if (!target.raycastLockedBounds) return;
+    const raycastSphere = target.raycast;
+    target.raycast = (raycaster, intersections) => {
+      if (this.locked) target.raycastLockedBounds(raycaster, intersections);
+      else raycastSphere.call(target, raycaster, intersections);
+    };
   }
 
   beginSqueeze(sourceId, value = 1) {
@@ -310,7 +323,7 @@ export class HonkInstrument extends InstrumentEntity {
   updateAudioVoice(
     voiceId,
     performanceState,
-    { gain = HONK_MASTER_GAIN, scheduledTime = undefined } = {},
+    { gain = HONK_MASTER_GAIN, scheduledTime = undefined, bendSnapped = false } = {},
   ) {
     if (!voiceId || !this.activeVoiceIds.has(voiceId)) return;
     const tuning = {
@@ -318,6 +331,9 @@ export class HonkInstrument extends InstrumentEntity {
       pitchSnap: this.pitchSnap || this.tuning.pitchSnap || null,
     };
     const updateOptions = { gain };
+    if (bendSnapped) updateOptions.bendSnapped = true;
+    if (getHonkPitchBendRange(this) !== MAX_PITCH_BEND_SEMITONES)
+      updateOptions.pitchBendRange = getHonkPitchBendRange(this);
     if (Number.isFinite(scheduledTime)) updateOptions.scheduledTime = scheduledTime;
     this.voiceService?.updateVoice?.(
       voiceId,
@@ -363,6 +379,8 @@ export class HonkInstrument extends InstrumentEntity {
     return {
       ...super.serialize(),
       componentId: this.componentId,
+      ...(getHonkPitchBendRange(this) !== MAX_PITCH_BEND_SEMITONES
+        ? { pitchBendRange: getHonkPitchBendRange(this) } : {}),
       tuning: { ...this.tuning },
       performanceDefaults: {
         earLeft: this.performance.liveBase.earLeft,
@@ -375,6 +393,7 @@ export class HonkInstrument extends InstrumentEntity {
 
   restore(serialized = {}) {
     this.resetPresentation();
+    this.pitchBendRange = getHonkPitchBendRange(serialized);
     this.restoreTransform(serialized.transform);
     this.applyTuning(serialized.tuning || this.tuning);
     this.setLivePerformance(serialized.performanceDefaults || {});

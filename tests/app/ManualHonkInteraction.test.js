@@ -25,11 +25,12 @@ for (const locked of [false, true]) {
   }
 }
 
-test('capture survives off-sphere hold/roll, releases owned voices, and cannot authorize another press', async () => {
+test('dwell capture survives off-sphere hold/roll, releases owned voices, and cannot authorize another press', async () => {
   const f = fixture({ count: 3, locked: true });
   f.press(); f.frame(); await flushAudio();
   const controller = f.controllers[0];
   const state = f.host.controllerStates.get(controller);
+  f.frame(100);
   controller.hit = null; controller.lockedHit = null; controller.roll = 0.5;
   for (let i = 0; i < 4; i++) f.frame();
   assert.equal(f.audio.voices.size, 3);
@@ -65,6 +66,8 @@ for (const invalidate of ['hidden', 'hidden-parent', 'detached-root', 'detached-
   test(`captured ${invalidate} honk releases the entire owned chord and rejects stale geometry`, async () => {
     const f = fixture({ count: 3, locked: true });
     f.press(); f.frame(); await flushAudio();
+    f.controllers[0].roll = .5; f.frame(100);
+    assert.equal(f.host.controllerStates.get(f.controllers[0]).raySqueezeLatched, true);
     const h = f.honks[0];
     const sphere = h.squeezeCollider;
     if (invalidate === 'hidden') h.root.visible = false;
@@ -85,6 +88,7 @@ for (const invalidate of ['hidden', 'hidden-parent', 'detached-root', 'detached-
 test('lock/unlock during a gesture preserves capture and bend; locking cancels a morph drag', async () => {
   const f = fixture(); f.press(); f.frame(); await flushAudio();
   const initial = f.audio.voices.get('left:h0');
+  f.controllers[0].roll = .5; f.frame(100);
   for (const locked of [true, false, true]) {
     f.honks[0].locked = locked; f.controllers[0].hit = f.honks[0].getTarget('honk.mouth');
     f.frame(); await flushAudio(); assert.equal(f.audio.voices.get('left:h0'), initial);

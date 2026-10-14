@@ -98,7 +98,10 @@ export class PresentationCapture {
         candidates.push([`wire-${node.id}`, node, "wires", null]);
     if (this.includeUI) {
       // Guidance is opt-in alongside UI; clean MR never binds these roots.
-      for (const node of this.runtime.tutorial?.cues?.captureRoots?.() || [])
+      for (const node of [
+        ...(this.runtime.tutorial?.cues?.captureRoots?.() || []),
+        ...(this.runtime.tutorial?.liveBendFeedback?.captureRoots?.() || []),
+      ])
         candidates.push([`guidance-${node.id}`, node, "tutorial", null]);
       for (const [index, c] of this.runtime.controllers.entries()) {
         if (c.userData.radialMenu)
@@ -324,10 +327,12 @@ export class PresentationCapture {
     });
     return { buffer, nodes, semantic };
   }
-  flushResources(t, { budgetMs = Infinity } = {}) {
+  flushResources(t, { budgetMs = Infinity, maxItems = Infinity } = {}) {
     const began = performance.now();
+    let emitted = 0;
     while (this.pending.length) {
-      if (performance.now() - began >= budgetMs) break;
+      if (emitted >= maxItems || performance.now() - began >= budgetMs) break;
+      emitted++;
       const item = this.pending.shift();
       let data;
       if (item.kind === "geometry") {

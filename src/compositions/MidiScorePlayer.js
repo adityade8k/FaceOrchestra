@@ -1,6 +1,6 @@
 import { HonkVoice } from "../audio/honk/HonkVoice.js";
 import { HONK_MASTER_GAIN } from "../config/audio.js";
-import { tuningForMidi } from "../tutorial/composition.js";
+import { tuningForMidi } from "./jog/definition.js";
 import { createHonkTuning } from "../instruments/honk/HonkTuning.js";
 
 // A bounded look-ahead scheduler for this through-played MIDI score. Each

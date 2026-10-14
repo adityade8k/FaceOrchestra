@@ -1,0 +1,2253 @@
+{
+  "schemaVersion": 1,
+  "bpm": 50,
+  "sourcePreview": {
+    "filename": "nazariya-quick-runs-bends-50bpm-proposal.json",
+    "sha256": "03ccec5d961feea952f852805a709292c58c0de82eb09bbe50a0a6de4a9c81ec"
+  },
+  "sourceCompositionHash": "8ce53598e317f4c68bc341c926efd673f2d275892c2cb9e5fbead61900a7c794",
+  "sourceMidiSha256": "d2ca1e4bc2aef6de444843875920e0fe38b06e101e390d52d89a93390b3733f1",
+  "durationBeats": 62.05625,
+  "instrumentMidis": [
+    57,
+    59,
+    61,
+    62,
+    63,
+    64,
+    66,
+    68,
+    69,
+    71
+  ],
+  "events": [
+    {
+      "id": "nazariya-1",
+      "midi": 57,
+      "velocity": 77,
+      "beat": 0.4041666666666667,
+      "beats": 0.296875,
+      "sourceEventId": "t1-e9"
+    },
+    {
+      "id": "nazariya-2",
+      "midi": 57,
+      "velocity": 77,
+      "beat": 0.7479166666666667,
+      "beats": 0.5125,
+      "sourceEventId": "t1-e13"
+    },
+    {
+      "id": "nazariya-3",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 1.30625,
+      "beats": 0.8135416666666667,
+      "sourceEventId": "t1-e17"
+    },
+    {
+      "id": "run-bend-nazariya-4",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 2.1666666666666665,
+      "beats": 3.2270406511244567,
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.022088897403897304,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.053226258804572074,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.08668116339237236,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.1331633792106741,
+          "semitones": 3
+        },
+        {
+          "fraction": 0.32269545275206896,
+          "semitones": 3
+        },
+        {
+          "fraction": 0.38777055489769136,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.49991895720264634,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.5742905025119293,
+          "semitones": 0
+        },
+        {
+          "fraction": 1.0,
+          "semitones": 0
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-4",
+        "nazariya-5",
+        "nazariya-6"
+      ]
+    },
+    {
+      "id": "nazariya-7",
+      "midi": 59,
+      "velocity": 77,
+      "beat": 5.412457317791123,
+      "beats": 2.4748665918151076,
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.12209574252122624,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.21907066666207872,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.3513676438035968,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.4362207024268427,
+          "semitones": 3
+        },
+        {
+          "fraction": 0.4903436666930458,
+          "semitones": 3
+        },
+        {
+          "fraction": 0.5751967253162916,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.7040578383707934,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.8010327625116459,
+          "semitones": 0
+        },
+        {
+          "fraction": 1,
+          "semitones": 0
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "id": "run-bend-nazariya-8",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 7.9060739096062305,
+      "beats": 0.9033010903937688,
+      "sourceEventId": "t1-e21",
+      "screenshotNoteIds": [
+        14,
+        15,
+        16
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.1302117251001747,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.3331709989048975,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.4633827240050712,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.666341997809794,
+          "semitones": -4
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -4
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-8",
+        "nazariya-9",
+        "nazariya-10"
+      ]
+    },
+    {
+      "id": "nazariya-11",
+      "midi": 57,
+      "velocity": 77,
+      "beat": 8.959375,
+      "beats": 0.5802083333333333,
+      "sourceEventId": "t1-e181"
+    },
+    {
+      "id": "nazariya-12",
+      "midi": 57,
+      "velocity": 80,
+      "beat": 9.66875,
+      "beats": 0.878125,
+      "sourceEventId": "t1-e185"
+    },
+    {
+      "id": "nazariya-13",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 10.592708333333333,
+      "beats": 0.2760416666666667,
+      "sourceEventId": "t1-e189"
+    },
+    {
+      "id": "nazariya-14",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 10.915625,
+      "beats": 0.5770833333333333,
+      "sourceEventId": "t1-e193"
+    },
+    {
+      "id": "nazariya-15",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 11.538541666666667,
+      "beats": 0.5125,
+      "sourceEventId": "t1-e197"
+    },
+    {
+      "id": "run-bend-nazariya-16",
+      "midi": 66,
+      "velocity": 80,
+      "beat": 12.097916666666666,
+      "beats": 1.458333333333334,
+      "sourceEventId": "t1-e201",
+      "screenshotNoteIds": [
+        24,
+        25,
+        26
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.44917747388605705,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5748917596003429,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.6636622957201241,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.7665194385772672,
+          "semitones": -3
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -3
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-16",
+        "nazariya-17",
+        "nazariya-18"
+      ]
+    },
+    {
+      "id": "nazariya-19",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 13.603125,
+      "beats": 0.8770833333333333,
+      "sourceEventId": "t1-e235"
+    },
+    {
+      "id": "nazariya-20",
+      "midi": 61,
+      "velocity": 84,
+      "beat": 14.527083333333334,
+      "beats": 2.9692631326638725,
+      "sourceEventId": "t1-e239",
+      "screenshotNoteIds": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.05831853201513899,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.13914666656469787,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.23207230563431502,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.3129004401838739,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.43040907720711713,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5011336949379813,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.5462449262865674,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.6169695440174316,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.7316144047894468,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.8124425393390051,
+          "semitones": -2
+        },
+        {
+          "fraction": 1,
+          "semitones": -2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "id": "run-bend-nazariya-21",
+      "midi": 61,
+      "velocity": 84,
+      "beat": 17.515096465997207,
+      "beats": 1.7807368673361275,
+      "sourceEventId": "t1-e239",
+      "screenshotNoteIds": [
+        36,
+        37,
+        38
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.07812332668227341,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.1810769616050955,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.2592002882873689,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.362153923210191,
+          "semitones": -4
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -4
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-21",
+        "nazariya-22",
+        "nazariya-23"
+      ]
+    },
+    {
+      "id": "nazariya-24",
+      "midi": 68,
+      "velocity": 77,
+      "beat": 19.342708333333334,
+      "beats": 0.296875,
+      "sourceEventId": "t1-e340"
+    },
+    {
+      "id": "nazariya-25",
+      "midi": 68,
+      "velocity": 77,
+      "beat": 19.686458333333334,
+      "beats": 0.5760416666666667,
+      "sourceEventId": "t1-e344"
+    },
+    {
+      "id": "nazariya-26",
+      "midi": 68,
+      "velocity": 77,
+      "beat": 20.309375,
+      "beats": 0.5125,
+      "sourceEventId": "t1-e348"
+    },
+    {
+      "id": "nazariya-27",
+      "midi": 68,
+      "velocity": 77,
+      "beat": 20.86875,
+      "beats": 0.25416666666666665,
+      "sourceEventId": "t1-e352"
+    },
+    {
+      "id": "nazariya-28",
+      "midi": 68,
+      "velocity": 84,
+      "beat": 21.169791666666665,
+      "beats": 1.5218750000000014,
+      "sourceEventId": "t1-e356",
+      "screenshotNoteIds": [
+        43,
+        44
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.2690083324707185,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.4267085378095264,
+          "semitones": -2
+        },
+        {
+          "fraction": 1,
+          "semitones": -2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "id": "nazariya-29",
+      "midi": 68,
+      "velocity": 77,
+      "beat": 22.738541666666666,
+      "beats": 0.8135416666666667,
+      "sourceEventId": "t1-e376"
+    },
+    {
+      "id": "run-bend-nazariya-30",
+      "midi": 69,
+      "velocity": 77,
+      "beat": 23.598958333333332,
+      "beats": 2.984375,
+      "sourceEventId": "t1-e380",
+      "screenshotNoteIds": [
+        46,
+        47,
+        48,
+        49,
+        50
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5507312150505209,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.6121622796229469,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.6515743485703956,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.7130054131428215,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.7563836855922795,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.8066454656969911,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.853260615610145,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.9146916801825709,
+          "semitones": -3
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -3
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-30",
+        "nazariya-31",
+        "nazariya-32",
+        "nazariya-33",
+        "nazariya-34"
+      ]
+    },
+    {
+      "id": "nazariya-35",
+      "midi": 64,
+      "velocity": 77,
+      "beat": 26.630208333333332,
+      "beats": 0.42604166666666665,
+      "sourceEventId": "t1-e441"
+    },
+    {
+      "id": "nazariya-36",
+      "midi": 64,
+      "velocity": 84,
+      "beat": 27.103125,
+      "beats": 1.328125,
+      "sourceEventId": "t1-e445",
+      "screenshotNoteIds": [
+        52,
+        53
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.17858102025692033,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.35928690260986035,
+          "semitones": 2
+        },
+        {
+          "fraction": 1,
+          "semitones": 2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "id": "nazariya-37",
+      "midi": 68,
+      "velocity": 77,
+      "beat": 28.478125,
+      "beats": 0.5989583333333334,
+      "sourceEventId": "t1-e465"
+    },
+    {
+      "id": "nazariya-38",
+      "midi": 68,
+      "velocity": 80,
+      "beat": 29.122916666666665,
+      "beats": 0.85625,
+      "sourceEventId": "t1-e469"
+    },
+    {
+      "id": "nazariya-39",
+      "midi": 68,
+      "velocity": 77,
+      "beat": 30.026041666666668,
+      "beats": 0.21145833333333333,
+      "sourceEventId": "t1-e473"
+    },
+    {
+      "id": "step-bend-nazariya-40",
+      "midi": 68,
+      "velocity": 80,
+      "beat": 30.284375,
+      "beats": 0.7489583333333333,
+      "sourceEventId": "t1-e477",
+      "screenshotNoteIds": [
+        59,
+        60,
+        61
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5535465924895688,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.56884561891516,
+          "semitones": -0.03369140625
+        },
+        {
+          "fraction": 0.5841446453407511,
+          "semitones": -0.12744140625
+        },
+        {
+          "fraction": 0.6008344923504868,
+          "semitones": -0.2705078125
+        },
+        {
+          "fraction": 0.6161335187760779,
+          "semitones": -0.45166015625
+        },
+        {
+          "fraction": 0.631432545201669,
+          "semitones": -0.66015625
+        },
+        {
+          "fraction": 0.6467315716272601,
+          "semitones": -0.884765625
+        },
+        {
+          "fraction": 0.6620305980528511,
+          "semitones": -1.115234375
+        },
+        {
+          "fraction": 0.6773296244784422,
+          "semitones": -1.33984375
+        },
+        {
+          "fraction": 0.6926286509040334,
+          "semitones": -1.54833984375
+        },
+        {
+          "fraction": 0.7093184979137691,
+          "semitones": -1.7294921875
+        },
+        {
+          "fraction": 0.7246175243393602,
+          "semitones": -1.87255859375
+        },
+        {
+          "fraction": 0.7399165507649513,
+          "semitones": -1.96630859375
+        },
+        {
+          "fraction": 0.7552155771905424,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.8456189151599444,
+          "semitones": -2.14794921875
+        },
+        {
+          "fraction": 0.8595271210013908,
+          "semitones": -2.5185546875
+        },
+        {
+          "fraction": 0.8734353268428373,
+          "semitones": -3
+        },
+        {
+          "fraction": 0.885952712100139,
+          "semitones": -3.4814453125
+        },
+        {
+          "fraction": 0.8998609179415855,
+          "semitones": -3.85205078125
+        },
+        {
+          "fraction": 0.913769123783032,
+          "semitones": -4
+        },
+        {
+          "fraction": 1,
+          "semitones": -4
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-40",
+        "nazariya-41",
+        "nazariya-42"
+      ]
+    },
+    {
+      "id": "step-bend-nazariya-43",
+      "midi": 63,
+      "velocity": 80,
+      "beat": 31.079166666666666,
+      "beats": 1.2,
+      "sourceEventId": "t1-e501",
+      "screenshotNoteIds": [
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.12065972222222222,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.1293402777777778,
+          "semitones": -0.068359375
+        },
+        {
+          "fraction": 0.13802083333333334,
+          "semitones": -0.25244140625
+        },
+        {
+          "fraction": 0.1467013888888889,
+          "semitones": -0.5185546875
+        },
+        {
+          "fraction": 0.15538194444444445,
+          "semitones": -0.833984375
+        },
+        {
+          "fraction": 0.1640625,
+          "semitones": -1.166015625
+        },
+        {
+          "fraction": 0.17274305555555555,
+          "semitones": -1.4814453125
+        },
+        {
+          "fraction": 0.1814236111111111,
+          "semitones": -1.74755859375
+        },
+        {
+          "fraction": 0.19010416666666666,
+          "semitones": -1.931640625
+        },
+        {
+          "fraction": 0.1987847222222222,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.2482638888888889,
+          "semitones": -1.9140625
+        },
+        {
+          "fraction": 0.2578125,
+          "semitones": -1.6875
+        },
+        {
+          "fraction": 0.2664930555555556,
+          "semitones": -1.3671875
+        },
+        {
+          "fraction": 0.2760416666666667,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.2847222222222222,
+          "semitones": -0.6328125
+        },
+        {
+          "fraction": 0.2942708333333333,
+          "semitones": -0.3125
+        },
+        {
+          "fraction": 0.3029513888888889,
+          "semitones": -0.0859375
+        },
+        {
+          "fraction": 0.3125,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.546875,
+          "semitones": 0.07421875
+        },
+        {
+          "fraction": 0.5564236111111112,
+          "semitones": 0.25927734375
+        },
+        {
+          "fraction": 0.5659722222222222,
+          "semitones": 0.5
+        },
+        {
+          "fraction": 0.5746527777777778,
+          "semitones": 0.74072265625
+        },
+        {
+          "fraction": 0.5842013888888888,
+          "semitones": 0.92578125
+        },
+        {
+          "fraction": 0.5928819444444444,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.6423611111111112,
+          "semitones": 1.0859375
+        },
+        {
+          "fraction": 0.6519097222222222,
+          "semitones": 1.3125
+        },
+        {
+          "fraction": 0.6605902777777778,
+          "semitones": 1.6328125
+        },
+        {
+          "fraction": 0.6701388888888888,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.6788194444444444,
+          "semitones": 2.3671875
+        },
+        {
+          "fraction": 0.6883680555555556,
+          "semitones": 2.6875
+        },
+        {
+          "fraction": 0.6970486111111112,
+          "semitones": 2.9140625
+        },
+        {
+          "fraction": 0.7065972222222222,
+          "semitones": 3
+        },
+        {
+          "fraction": 1,
+          "semitones": 3
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-43",
+        "nazariya-44",
+        "nazariya-45",
+        "nazariya-46",
+        "nazariya-47"
+      ]
+    },
+    {
+      "id": "step-bend-nazariya-48",
+      "midi": 68,
+      "velocity": 80,
+      "beat": 32.32604166666667,
+      "beats": 1.0927083333333334,
+      "sourceEventId": "t1-e537",
+      "screenshotNoteIds": [
+        69,
+        70,
+        71
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.45853193517635843,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.4690181124880839,
+          "semitones": -0.025390625
+        },
+        {
+          "fraction": 0.47950428979980936,
+          "semitones": -0.09716796875
+        },
+        {
+          "fraction": 0.4909437559580553,
+          "semitones": -0.2080078125
+        },
+        {
+          "fraction": 0.5014299332697807,
+          "semitones": -0.3505859375
+        },
+        {
+          "fraction": 0.5119161105815062,
+          "semitones": -0.5185546875
+        },
+        {
+          "fraction": 0.5224022878932316,
+          "semitones": -0.7041015625
+        },
+        {
+          "fraction": 0.5328884652049571,
+          "semitones": -0.900390625
+        },
+        {
+          "fraction": 0.5433746425166825,
+          "semitones": -1.099609375
+        },
+        {
+          "fraction": 0.5548141086749285,
+          "semitones": -1.2958984375
+        },
+        {
+          "fraction": 0.5653002859866539,
+          "semitones": -1.4814453125
+        },
+        {
+          "fraction": 0.5757864632983795,
+          "semitones": -1.6494140625
+        },
+        {
+          "fraction": 0.5862726406101049,
+          "semitones": -1.7919921875
+        },
+        {
+          "fraction": 0.5967588179218303,
+          "semitones": -1.90283203125
+        },
+        {
+          "fraction": 0.6081982840800763,
+          "semitones": -1.974609375
+        },
+        {
+          "fraction": 0.6186844613918017,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.7254528122020972,
+          "semitones": -2.03955078125
+        },
+        {
+          "fraction": 0.7359389895138226,
+          "semitones": -2.14794921875
+        },
+        {
+          "fraction": 0.7454718779790277,
+          "semitones": -2.3125
+        },
+        {
+          "fraction": 0.7550047664442326,
+          "semitones": -2.5185546875
+        },
+        {
+          "fraction": 0.765490943755958,
+          "semitones": -2.75244140625
+        },
+        {
+          "fraction": 0.775023832221163,
+          "semitones": -3
+        },
+        {
+          "fraction": 0.784556720686368,
+          "semitones": -3.24755859375
+        },
+        {
+          "fraction": 0.7950428979980935,
+          "semitones": -3.4814453125
+        },
+        {
+          "fraction": 0.8045757864632984,
+          "semitones": -3.6875
+        },
+        {
+          "fraction": 0.8141086749285034,
+          "semitones": -3.85205078125
+        },
+        {
+          "fraction": 0.8245948522402288,
+          "semitones": -3.96044921875
+        },
+        {
+          "fraction": 0.8341277407054337,
+          "semitones": -4
+        },
+        {
+          "fraction": 1,
+          "semitones": -4
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-48",
+        "nazariya-49",
+        "nazariya-50"
+      ]
+    },
+    {
+      "id": "nazariya-51",
+      "midi": 63,
+      "velocity": 77,
+      "beat": 33.465625,
+      "beats": 0.4479166666666667,
+      "sourceEventId": "t1-e569"
+    },
+    {
+      "id": "step-bend-nazariya-52",
+      "midi": 63,
+      "velocity": 80,
+      "beat": 33.96041666666667,
+      "beats": 2.339583333333333,
+      "sourceEventId": "t1-e573",
+      "screenshotNoteIds": [
+        73,
+        74,
+        75
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5814781834372217,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5863757791629564,
+          "semitones": 0.03369140625
+        },
+        {
+          "fraction": 0.5908281389136242,
+          "semitones": 0.12890625
+        },
+        {
+          "fraction": 0.5957257346393589,
+          "semitones": 0.27685546875
+        },
+        {
+          "fraction": 0.6001780943900267,
+          "semitones": 0.46875
+        },
+        {
+          "fraction": 0.6050756901157613,
+          "semitones": 0.69580078125
+        },
+        {
+          "fraction": 0.6095280498664292,
+          "semitones": 0.94921875
+        },
+        {
+          "fraction": 0.6144256455921638,
+          "semitones": 1.22021484375
+        },
+        {
+          "fraction": 0.6188780053428317,
+          "semitones": 1.5
+        },
+        {
+          "fraction": 0.6237756010685663,
+          "semitones": 1.77978515625
+        },
+        {
+          "fraction": 0.6282279608192342,
+          "semitones": 2.05078125
+        },
+        {
+          "fraction": 0.6331255565449688,
+          "semitones": 2.30419921875
+        },
+        {
+          "fraction": 0.6375779162956366,
+          "semitones": 2.53125
+        },
+        {
+          "fraction": 0.6424755120213713,
+          "semitones": 2.72314453125
+        },
+        {
+          "fraction": 0.6469278717720391,
+          "semitones": 2.87109375
+        },
+        {
+          "fraction": 0.6518254674977738,
+          "semitones": 2.96630859375
+        },
+        {
+          "fraction": 0.6562778272484416,
+          "semitones": 3
+        },
+        {
+          "fraction": 0.7186108637577916,
+          "semitones": 2.94970703125
+        },
+        {
+          "fraction": 0.7235084594835263,
+          "semitones": 2.80859375
+        },
+        {
+          "fraction": 0.7279608192341941,
+          "semitones": 2.59423828125
+        },
+        {
+          "fraction": 0.7328584149599288,
+          "semitones": 2.32275390625
+        },
+        {
+          "fraction": 0.7377560106856634,
+          "semitones": 2.01025390625
+        },
+        {
+          "fraction": 0.7422083704363313,
+          "semitones": 1.6728515625
+        },
+        {
+          "fraction": 0.7471059661620659,
+          "semitones": 1.3271484375
+        },
+        {
+          "fraction": 0.7520035618878005,
+          "semitones": 0.98974609375
+        },
+        {
+          "fraction": 0.7569011576135352,
+          "semitones": 0.67724609375
+        },
+        {
+          "fraction": 0.761353517364203,
+          "semitones": 0.40576171875
+        },
+        {
+          "fraction": 0.7662511130899377,
+          "semitones": 0.19140625
+        },
+        {
+          "fraction": 0.7711487088156723,
+          "semitones": 0.05029296875
+        },
+        {
+          "fraction": 0.7756010685663401,
+          "semitones": 0
+        },
+        {
+          "fraction": 1,
+          "semitones": 0
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-52",
+        "nazariya-53",
+        "nazariya-54"
+      ]
+    },
+    {
+      "id": "step-bend-nazariya-55",
+      "midi": 68,
+      "velocity": 80,
+      "beat": 36.34583333333333,
+      "beats": 0.8135416666666667,
+      "sourceEventId": "t1-e607",
+      "screenshotNoteIds": [
+        76,
+        77,
+        78
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.24839948783610755,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.2612035851472471,
+          "semitones": -0.029296875
+        },
+        {
+          "fraction": 0.2752880921895006,
+          "semitones": -0.11083984375
+        },
+        {
+          "fraction": 0.2880921895006402,
+          "semitones": -0.236328125
+        },
+        {
+          "fraction": 0.30217669654289375,
+          "semitones": -0.396484375
+        },
+        {
+          "fraction": 0.31498079385403327,
+          "semitones": -0.5830078125
+        },
+        {
+          "fraction": 0.32778489116517284,
+          "semitones": -0.787109375
+        },
+        {
+          "fraction": 0.3418693982074264,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.3546734955185659,
+          "semitones": -1.212890625
+        },
+        {
+          "fraction": 0.3687580025608195,
+          "semitones": -1.4169921875
+        },
+        {
+          "fraction": 0.38156209987195905,
+          "semitones": -1.603515625
+        },
+        {
+          "fraction": 0.39436619718309857,
+          "semitones": -1.763671875
+        },
+        {
+          "fraction": 0.4084507042253521,
+          "semitones": -1.88916015625
+        },
+        {
+          "fraction": 0.4212548015364917,
+          "semitones": -1.970703125
+        },
+        {
+          "fraction": 0.4353393085787452,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.6325224071702945,
+          "semitones": -2.03369140625
+        },
+        {
+          "fraction": 0.645326504481434,
+          "semitones": -2.12744140625
+        },
+        {
+          "fraction": 0.6594110115236875,
+          "semitones": -2.2705078125
+        },
+        {
+          "fraction": 0.6734955185659411,
+          "semitones": -2.45166015625
+        },
+        {
+          "fraction": 0.6875800256081946,
+          "semitones": -2.66015625
+        },
+        {
+          "fraction": 0.7003841229193342,
+          "semitones": -2.884765625
+        },
+        {
+          "fraction": 0.7144686299615877,
+          "semitones": -3.115234375
+        },
+        {
+          "fraction": 0.7285531370038413,
+          "semitones": -3.33984375
+        },
+        {
+          "fraction": 0.7426376440460948,
+          "semitones": -3.54833984375
+        },
+        {
+          "fraction": 0.7567221510883483,
+          "semitones": -3.7294921875
+        },
+        {
+          "fraction": 0.7695262483994878,
+          "semitones": -3.87255859375
+        },
+        {
+          "fraction": 0.7836107554417413,
+          "semitones": -3.96630859375
+        },
+        {
+          "fraction": 0.7976952624839949,
+          "semitones": -4
+        },
+        {
+          "fraction": 1,
+          "semitones": -4
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-55",
+        "nazariya-56",
+        "nazariya-57"
+      ]
+    },
+    {
+      "id": "step-bend-nazariya-58",
+      "midi": 63,
+      "velocity": 80,
+      "beat": 37.20625,
+      "beats": 0.903125,
+      "sourceEventId": "t1-e639",
+      "screenshotNoteIds": [
+        79,
+        80,
+        81
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.23875432525951557,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.25144175317185696,
+          "semitones": -0.029296875
+        },
+        {
+          "fraction": 0.26412918108419836,
+          "semitones": -0.11083984375
+        },
+        {
+          "fraction": 0.2768166089965398,
+          "semitones": -0.236328125
+        },
+        {
+          "fraction": 0.2895040369088812,
+          "semitones": -0.396484375
+        },
+        {
+          "fraction": 0.3021914648212226,
+          "semitones": -0.5830078125
+        },
+        {
+          "fraction": 0.314878892733564,
+          "semitones": -0.787109375
+        },
+        {
+          "fraction": 0.3275663206459054,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.3391003460207612,
+          "semitones": -1.212890625
+        },
+        {
+          "fraction": 0.3517877739331027,
+          "semitones": -1.4169921875
+        },
+        {
+          "fraction": 0.3644752018454441,
+          "semitones": -1.603515625
+        },
+        {
+          "fraction": 0.3771626297577855,
+          "semitones": -1.763671875
+        },
+        {
+          "fraction": 0.38985005767012687,
+          "semitones": -1.88916015625
+        },
+        {
+          "fraction": 0.40253748558246827,
+          "semitones": -1.970703125
+        },
+        {
+          "fraction": 0.41522491349480967,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.5767012687427913,
+          "semitones": -1.9833984375
+        },
+        {
+          "fraction": 0.5882352941176471,
+          "semitones": -1.93603515625
+        },
+        {
+          "fraction": 0.6009227220299884,
+          "semitones": -1.86474609375
+        },
+        {
+          "fraction": 0.6136101499423299,
+          "semitones": -1.7744140625
+        },
+        {
+          "fraction": 0.6262975778546713,
+          "semitones": -1.669921875
+        },
+        {
+          "fraction": 0.6378316032295271,
+          "semitones": -1.5576171875
+        },
+        {
+          "fraction": 0.6505190311418685,
+          "semitones": -1.4423828125
+        },
+        {
+          "fraction": 0.6632064590542099,
+          "semitones": -1.330078125
+        },
+        {
+          "fraction": 0.6747404844290658,
+          "semitones": -1.2255859375
+        },
+        {
+          "fraction": 0.6874279123414071,
+          "semitones": -1.13525390625
+        },
+        {
+          "fraction": 0.7001153402537486,
+          "semitones": -1.06396484375
+        },
+        {
+          "fraction": 0.7116493656286044,
+          "semitones": -1.0166015625
+        },
+        {
+          "fraction": 0.7243367935409458,
+          "semitones": -1
+        },
+        {
+          "fraction": 1,
+          "semitones": -1
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-58",
+        "nazariya-59",
+        "nazariya-60"
+      ]
+    },
+    {
+      "id": "step-bend-nazariya-61",
+      "midi": 59,
+      "velocity": 82,
+      "beat": 38.409375,
+      "beats": 0.9854166666666667,
+      "sourceEventId": "t1-e671",
+      "screenshotNoteIds": [
+        82,
+        83,
+        84,
+        85
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.20507399577167018,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.2167019027484144,
+          "semitones": -0.03369140625
+        },
+        {
+          "fraction": 0.22832980972515857,
+          "semitones": -0.12744140625
+        },
+        {
+          "fraction": 0.23995771670190275,
+          "semitones": -0.2705078125
+        },
+        {
+          "fraction": 0.25052854122621565,
+          "semitones": -0.45166015625
+        },
+        {
+          "fraction": 0.26215644820295986,
+          "semitones": -0.66015625
+        },
+        {
+          "fraction": 0.273784355179704,
+          "semitones": -0.884765625
+        },
+        {
+          "fraction": 0.2854122621564482,
+          "semitones": -1.115234375
+        },
+        {
+          "fraction": 0.29704016913319237,
+          "semitones": -1.33984375
+        },
+        {
+          "fraction": 0.30761099365750527,
+          "semitones": -1.54833984375
+        },
+        {
+          "fraction": 0.3192389006342495,
+          "semitones": -1.7294921875
+        },
+        {
+          "fraction": 0.3308668076109937,
+          "semitones": -1.87255859375
+        },
+        {
+          "fraction": 0.34249471458773784,
+          "semitones": -1.96630859375
+        },
+        {
+          "fraction": 0.35412262156448204,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.4630021141649049,
+          "semitones": -1.95361328125
+        },
+        {
+          "fraction": 0.47463002114164904,
+          "semitones": -1.82568359375
+        },
+        {
+          "fraction": 0.48625792811839325,
+          "semitones": -1.634765625
+        },
+        {
+          "fraction": 0.4978858350951374,
+          "semitones": -1.39892578125
+        },
+        {
+          "fraction": 0.5095137420718816,
+          "semitones": -1.13623046875
+        },
+        {
+          "fraction": 0.5200845665961945,
+          "semitones": -0.86376953125
+        },
+        {
+          "fraction": 0.5317124735729387,
+          "semitones": -0.60107421875
+        },
+        {
+          "fraction": 0.5433403805496829,
+          "semitones": -0.365234375
+        },
+        {
+          "fraction": 0.554968287526427,
+          "semitones": -0.17431640625
+        },
+        {
+          "fraction": 0.5655391120507399,
+          "semitones": -0.04638671875
+        },
+        {
+          "fraction": 0.5771670190274841,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.7399577167019028,
+          "semitones": 0.03955078125
+        },
+        {
+          "fraction": 0.7515856236786469,
+          "semitones": 0.14794921875
+        },
+        {
+          "fraction": 0.7632135306553911,
+          "semitones": 0.3125
+        },
+        {
+          "fraction": 0.7748414376321353,
+          "semitones": 0.5185546875
+        },
+        {
+          "fraction": 0.7864693446088795,
+          "semitones": 0.75244140625
+        },
+        {
+          "fraction": 0.7980972515856237,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.8097251585623678,
+          "semitones": 1.24755859375
+        },
+        {
+          "fraction": 0.821353065539112,
+          "semitones": 1.4814453125
+        },
+        {
+          "fraction": 0.8329809725158562,
+          "semitones": 1.6875
+        },
+        {
+          "fraction": 0.8435517970401691,
+          "semitones": 1.85205078125
+        },
+        {
+          "fraction": 0.8551797040169133,
+          "semitones": 1.96044921875
+        },
+        {
+          "fraction": 0.8668076109936576,
+          "semitones": 2
+        },
+        {
+          "fraction": 1,
+          "semitones": 2
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-61",
+        "nazariya-62",
+        "nazariya-63",
+        "nazariya-64"
+      ]
+    },
+    {
+      "id": "step-bend-nazariya-65",
+      "midi": 63,
+      "velocity": 84,
+      "beat": 39.44166666666667,
+      "beats": 0.6197916666666666,
+      "sourceEventId": "t1-e712",
+      "screenshotNoteIds": [
+        86,
+        87
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.46218487394957986,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.4789915966386555,
+          "semitones": 0.0126953125
+        },
+        {
+          "fraction": 0.49747899159663866,
+          "semitones": 0.048828125
+        },
+        {
+          "fraction": 0.5159663865546219,
+          "semitones": 0.10400390625
+        },
+        {
+          "fraction": 0.534453781512605,
+          "semitones": 0.17529296875
+        },
+        {
+          "fraction": 0.5529411764705883,
+          "semitones": 0.25927734375
+        },
+        {
+          "fraction": 0.5697478991596638,
+          "semitones": 0.35205078125
+        },
+        {
+          "fraction": 0.5882352941176471,
+          "semitones": 0.4501953125
+        },
+        {
+          "fraction": 0.6067226890756302,
+          "semitones": 0.5498046875
+        },
+        {
+          "fraction": 0.6252100840336134,
+          "semitones": 0.64794921875
+        },
+        {
+          "fraction": 0.6436974789915967,
+          "semitones": 0.74072265625
+        },
+        {
+          "fraction": 0.6621848739495798,
+          "semitones": 0.82470703125
+        },
+        {
+          "fraction": 0.6789915966386555,
+          "semitones": 0.89599609375
+        },
+        {
+          "fraction": 0.6974789915966386,
+          "semitones": 0.951171875
+        },
+        {
+          "fraction": 0.7159663865546219,
+          "semitones": 0.9873046875
+        },
+        {
+          "fraction": 0.7344537815126051,
+          "semitones": 1
+        },
+        {
+          "fraction": 1,
+          "semitones": 1
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-65",
+        "nazariya-66"
+      ]
+    },
+    {
+      "id": "nazariya-67",
+      "midi": 64,
+      "velocity": 77,
+      "beat": 40.108333333333334,
+      "beats": 0.42604166666666665,
+      "sourceEventId": "t1-e732"
+    },
+    {
+      "id": "nazariya-68",
+      "midi": 64,
+      "velocity": 84,
+      "beat": 40.58125,
+      "beats": 0.31875,
+      "sourceEventId": "t1-e736"
+    },
+    {
+      "id": "nazariya-69",
+      "midi": 64,
+      "velocity": 77,
+      "beat": 40.946875,
+      "beats": 0.9416666666666667,
+      "sourceEventId": "t1-e740"
+    },
+    {
+      "id": "run-bend-nazariya-70",
+      "midi": 64,
+      "velocity": 82,
+      "beat": 41.93541666666667,
+      "beats": 1.1145833333333357,
+      "sourceEventId": "t1-e744",
+      "screenshotNoteIds": [
+        92,
+        93,
+        94,
+        95
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.36680891842602215,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.501388357678357,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.617536722694893,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.752116161947228,
+          "semitones": 0
+        },
+        {
+          "fraction": 1.0,
+          "semitones": 0
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-70",
+        "nazariya-71",
+        "nazariya-72"
+      ]
+    },
+    {
+      "id": "nazariya-73",
+      "midi": 66,
+      "velocity": 77,
+      "beat": 43.09583333333333,
+      "beats": 0.21145833333333333,
+      "sourceEventId": "t1-e776"
+    },
+    {
+      "id": "run-bend-nazariya-74",
+      "midi": 66,
+      "velocity": 77,
+      "beat": 43.354166666666664,
+      "beats": 1.8447916666666657,
+      "sourceEventId": "t1-e780",
+      "screenshotNoteIds": [
+        97,
+        98,
+        99,
+        100,
+        101
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.2268716976028016,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.3262505795903775,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.4080775573060365,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.48938755165950837,
+          "semitones": -3
+        },
+        {
+          "fraction": 0.5828671702372559,
+          "semitones": -3
+        },
+        {
+          "fraction": 0.6641771645907277,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.7226988605822291,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.804008854935701,
+          "semitones": -3
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -3
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-74",
+        "nazariya-75",
+        "nazariya-76",
+        "nazariya-77",
+        "nazariya-78"
+      ]
+    },
+    {
+      "id": "nazariya-79",
+      "midi": 61,
+      "velocity": 84,
+      "beat": 45.24583333333333,
+      "beats": 0.5333333333333333,
+      "sourceEventId": "t1-e841"
+    },
+    {
+      "id": "nazariya-80",
+      "midi": 64,
+      "velocity": 77,
+      "beat": 45.82604166666667,
+      "beats": 0.2760416666666667,
+      "sourceEventId": "t1-e845"
+    },
+    {
+      "id": "nazariya-81",
+      "midi": 64,
+      "velocity": 77,
+      "beat": 46.14895833333333,
+      "beats": 0.5552083333333333,
+      "sourceEventId": "t1-e849"
+    },
+    {
+      "id": "run-bend-nazariya-82",
+      "midi": 64,
+      "velocity": 82,
+      "beat": 46.751041666666666,
+      "beats": 3.84375,
+      "sourceEventId": "t1-e853",
+      "screenshotNoteIds": [
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.0863038290876386,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.14093797542910225,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.18137864167156256,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.23601278801302622,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.32457493655018826,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.3870139609404327,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.4946746606790865,
+          "semitones": 2
+        },
+        {
+          "fraction": 0.5423711376438553,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.5760510158464823,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.6150754060903844,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.6601330986110945,
+          "semitones": -1
+        },
+        {
+          "fraction": 0.7225721230013389,
+          "semitones": -3
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -3
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-82",
+        "nazariya-83",
+        "nazariya-84"
+      ]
+    },
+    {
+      "id": "nazariya-85",
+      "midi": 61,
+      "velocity": 80,
+      "beat": 50.641666666666666,
+      "beats": 2.9906236858925723,
+      "sourceEventId": "t1-e939",
+      "screenshotNoteIds": [
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.06504449931629085,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.14529531827828016,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.2303692045755743,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.31062002353756357,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.40572526220510435,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.4759447287968447,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.5279217834837047,
+          "semitones": 1
+        },
+        {
+          "fraction": 0.5981412500754449,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.7191552896899708,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.79940610865196,
+          "semitones": -2
+        },
+        {
+          "fraction": 1,
+          "semitones": -2
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "id": "run-bend-nazariya-86",
+      "midi": 61,
+      "velocity": 80,
+      "beat": 53.651040352559235,
+      "beats": 1.6520846474407662,
+      "sourceEventId": "t1-e939",
+      "screenshotNoteIds": [
+        120,
+        121,
+        122
+      ],
+      "bend": [
+        {
+          "fraction": 0.0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.06658100801001328,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.1691541848501882,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.2403493221255375,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.35132023007346286,
+          "semitones": -4
+        },
+        {
+          "fraction": 1.0,
+          "semitones": -4
+        }
+      ],
+      "bendStyle": "melody",
+      "replaces": [
+        "nazariya-86",
+        "nazariya-87",
+        "nazariya-88"
+      ]
+    },
+    {
+      "id": "nazariya-89",
+      "midi": 57,
+      "velocity": 84,
+      "beat": 55.348958333333336,
+      "beats": 0.4479166666666667,
+      "sourceEventId": "t1-e1042"
+    },
+    {
+      "id": "nazariya-90",
+      "midi": 57,
+      "velocity": 77,
+      "beat": 55.84375,
+      "beats": 0.18958333333333333,
+      "sourceEventId": "t1-e1046"
+    },
+    {
+      "id": "nazariya-91",
+      "midi": 57,
+      "velocity": 77,
+      "beat": 56.08020833333333,
+      "beats": 0.23229166666666667,
+      "sourceEventId": "t1-e1050"
+    },
+    {
+      "id": "nazariya-92",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 56.359375,
+      "beats": 0.490625,
+      "sourceEventId": "t1-e1054"
+    },
+    {
+      "id": "nazariya-93",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 56.896875,
+      "beats": 1.028125,
+      "sourceEventId": "t1-e1058"
+    },
+    {
+      "id": "nazariya-94",
+      "midi": 66,
+      "velocity": 82,
+      "beat": 57.971875,
+      "beats": 2.2322916666666686,
+      "sourceEventId": "t1-e1062",
+      "screenshotNoteIds": [
+        129,
+        130,
+        131,
+        132
+      ],
+      "bend": [
+        {
+          "fraction": 0,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.3183315531231073,
+          "semitones": 0
+        },
+        {
+          "fraction": 0.4258443856009429,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.5821474659254369,
+          "semitones": -2
+        },
+        {
+          "fraction": 0.6762211943435427,
+          "semitones": -3
+        },
+        {
+          "fraction": 1,
+          "semitones": -3
+        }
+      ],
+      "bendStyle": "melody"
+    },
+    {
+      "id": "nazariya-95",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 60.251041666666666,
+      "beats": 0.5760416666666667,
+      "sourceEventId": "t1-e1098"
+    },
+    {
+      "id": "nazariya-96",
+      "midi": 61,
+      "velocity": 77,
+      "beat": 60.873958333333334,
+      "beats": 1.1822916666666667,
+      "sourceEventId": "t1-e1102"
+    }
+  ],
+  "phrases": [
+    {
+      "id": "phrase-1",
+      "title": "Opening pulses and first turn",
+      "startBeat": 0,
+      "endBeat": 8.959375
+    },
+    {
+      "id": "phrase-2",
+      "title": "Low pulses and answering phrase",
+      "startBeat": 8.959375,
+      "endBeat": 19.342708333333334
+    },
+    {
+      "id": "phrase-3",
+      "title": "High repeated notes and the crest",
+      "startBeat": 19.342708333333334,
+      "endBeat": 27.103125
+    },
+    {
+      "id": "phrase-4",
+      "title": "Fast turns with fewer presses",
+      "startBeat": 27.103125,
+      "endBeat": 33.96041666666667
+    },
+    {
+      "id": "phrase-5",
+      "title": "Answer and return",
+      "startBeat": 33.96041666666667,
+      "endBeat": 41.93541666666667
+    },
+    {
+      "id": "phrase-6",
+      "title": "Rising and falling holds",
+      "startBeat": 41.93541666666667,
+      "endBeat": 50.641666666666666
+    },
+    {
+      "id": "phrase-7",
+      "title": "Closing phrase",
+      "startBeat": 50.641666666666666,
+      "endBeat": 62.05625
+    }
+  ],
+  "summary": {
+    "previousAppPresses": 96,
+    "presses": 56,
+    "bentHolds": 23,
+    "restoredRunsInSteps4And5": 8,
+    "additionalRunsJoined": 9
+  }
+}

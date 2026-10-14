@@ -1,0 +1,3083 @@
+{
+  "schemaVersion": 1,
+  "id": "tu-kisi-rail-si",
+  "title": "Tu Kisi Rail Si",
+  "contentVersion": 2,
+  "bpm": 120,
+  "sourceBpm": 120,
+  "practiceBpm": 60,
+  "liveRole": "melody",
+  "playback": "honk-live-two-hand-v1",
+  "source": {
+    "filename": "tu-kisi-rail-si.mid",
+    "sha256": "ce00474f06ea7e4b5af71ae009ca99c12fe8d1ef368d9a06b73dcd7924620f46",
+    "byteLength": 1509,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "tu-kisi-rail-si.mid"
+    },
+    "format": 0,
+    "division": {
+      "kind": "ppq",
+      "ppq": 480
+    }
+  },
+  "importOptions": {
+    "id": "tu-kisi-rail-si",
+    "title": "Tu Kisi Rail Si",
+    "version": 2,
+    "sequence": 0,
+    "live": {
+      "track": 0,
+      "channel": 0,
+      "port": 0
+    },
+    "transpose": 0,
+    "playback": "honk-live-two-hand-v1",
+    "teachingGrid": "Quarter-note pulses at the MIDI tempo; four-pulse count-in. Source has no meter event.",
+    "authoringScript": "scripts/midi/arrange-tu-kisi-rail-si.mjs"
+  },
+  "normalizedSource": {
+    "file": "normalized.json",
+    "sha256": "e2312a185c969fb4b9868d8208ae4d7e91f722a6212bce5be642094210217d40",
+    "sequence": 0
+  },
+  "score": {
+    "events": [
+      {
+        "id": "t0-e3",
+        "sourceIds": [
+          "t0-e3"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 1346,
+        "releaseTick": 1476,
+        "beat": 2.8041666666666667,
+        "beats": 0.2708333333333333,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e5",
+        "sourceIds": [
+          "t0-e5"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 1566,
+        "releaseTick": 1686,
+        "beat": 3.2625,
+        "beats": 0.25,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e7",
+        "sourceIds": [
+          "t0-e7"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 1782,
+        "releaseTick": 2218,
+        "beat": 3.7125,
+        "beats": 0.9083333333333333,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e8",
+        "sourceIds": [
+          "t0-e8"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 2126,
+        "releaseTick": 2327,
+        "beat": 4.429166666666666,
+        "beats": 0.41875,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e11",
+        "sourceIds": [
+          "t0-e11"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 2365,
+        "releaseTick": 2591,
+        "beat": 4.927083333333333,
+        "beats": 0.4708333333333333,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e12",
+        "sourceIds": [
+          "t0-e12"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 2481,
+        "releaseTick": 2859,
+        "beat": 5.16875,
+        "beats": 0.7875,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e14",
+        "sourceIds": [
+          "t0-e14"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 2692,
+        "releaseTick": 3094,
+        "beat": 5.608333333333333,
+        "beats": 0.8375,
+        "hand": "R",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e16",
+        "sourceIds": [
+          "t0-e16"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 3027,
+        "releaseTick": 3247,
+        "beat": 6.30625,
+        "beats": 0.4583333333333333,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e19",
+        "sourceIds": [
+          "t0-e19"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 3280,
+        "releaseTick": 3764,
+        "beat": 6.833333333333333,
+        "beats": 1.0083333333333333,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e20",
+        "sourceIds": [
+          "t0-e20"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 3663,
+        "releaseTick": 4027,
+        "beat": 7.63125,
+        "beats": 0.7583333333333333,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e23",
+        "sourceIds": [
+          "t0-e23"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 4027,
+        "releaseTick": 4899,
+        "beat": 8.389583333333333,
+        "beats": 1.8166666666666667,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e24",
+        "sourceIds": [
+          "t0-e24"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 4818,
+        "releaseTick": 4995,
+        "beat": 10.0375,
+        "beats": 0.36875,
+        "hand": "R",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e27",
+        "sourceIds": [
+          "t0-e27"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 5052,
+        "releaseTick": 5196,
+        "beat": 10.525,
+        "beats": 0.3,
+        "hand": "R",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e29",
+        "sourceIds": [
+          "t0-e29"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 5259,
+        "releaseTick": 5642,
+        "beat": 10.95625,
+        "beats": 0.7979166666666667,
+        "hand": "L",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e30",
+        "sourceIds": [
+          "t0-e30"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 5613,
+        "releaseTick": 5939,
+        "beat": 11.69375,
+        "beats": 0.6791666666666667,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e33",
+        "sourceIds": [
+          "t0-e33"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 5996,
+        "releaseTick": 7246,
+        "beat": 12.491666666666667,
+        "beats": 2.6041666666666665,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e34",
+        "sourceIds": [
+          "t0-e34"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 7131,
+        "releaseTick": 7509,
+        "beat": 14.85625,
+        "beats": 0.7875,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e36",
+        "sourceIds": [
+          "t0-e36"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 7476,
+        "releaseTick": 7931,
+        "beat": 15.575,
+        "beats": 0.9479166666666666,
+        "hand": "R",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e38",
+        "sourceIds": [
+          "t0-e38"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 7835,
+        "releaseTick": 8434,
+        "beat": 16.322916666666668,
+        "beats": 1.2479166666666666,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e40",
+        "sourceIds": [
+          "t0-e40"
+        ],
+        "midi": 53,
+        "velocity": 85,
+        "startTick": 8242,
+        "releaseTick": 8573,
+        "beat": 17.170833333333334,
+        "beats": 0.6895833333333333,
+        "hand": "R",
+        "role": "lead-53"
+      },
+      {
+        "id": "t0-e43",
+        "sourceIds": [
+          "t0-e43"
+        ],
+        "midi": 53,
+        "velocity": 85,
+        "startTick": 8640,
+        "releaseTick": 10110,
+        "beat": 18,
+        "beats": 3.0625,
+        "hand": "L",
+        "role": "lead-53"
+      },
+      {
+        "id": "t0-e44",
+        "sourceIds": [
+          "t0-e44"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 9990,
+        "releaseTick": 10172,
+        "beat": 20.8125,
+        "beats": 0.37916666666666665,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e47",
+        "sourceIds": [
+          "t0-e47"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 10220,
+        "releaseTick": 10392,
+        "beat": 21.291666666666668,
+        "beats": 0.35833333333333334,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e49",
+        "sourceIds": [
+          "t0-e49"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 10435,
+        "releaseTick": 10833,
+        "beat": 21.739583333333332,
+        "beats": 0.8291666666666667,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e50",
+        "sourceIds": [
+          "t0-e50"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 10742,
+        "releaseTick": 11001,
+        "beat": 22.379166666666666,
+        "beats": 0.5395833333333333,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e52",
+        "sourceIds": [
+          "t0-e52"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 10967,
+        "releaseTick": 11193,
+        "beat": 22.847916666666666,
+        "beats": 0.4708333333333333,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e54",
+        "sourceIds": [
+          "t0-e54"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 11073,
+        "releaseTick": 11398,
+        "beat": 23.06875,
+        "beats": 0.6770833333333334,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e56",
+        "sourceIds": [
+          "t0-e56"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 11302,
+        "releaseTick": 11733,
+        "beat": 23.545833333333334,
+        "beats": 0.8979166666666667,
+        "hand": "R",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e58",
+        "sourceIds": [
+          "t0-e58"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 11642,
+        "releaseTick": 11815,
+        "beat": 24.254166666666666,
+        "beats": 0.36041666666666666,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e61",
+        "sourceIds": [
+          "t0-e61"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 11858,
+        "releaseTick": 12327,
+        "beat": 24.704166666666666,
+        "beats": 0.9770833333333333,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e62",
+        "sourceIds": [
+          "t0-e62"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 12236,
+        "releaseTick": 12576,
+        "beat": 25.491666666666667,
+        "beats": 0.7083333333333334,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e65",
+        "sourceIds": [
+          "t0-e65"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 12619,
+        "releaseTick": 13433,
+        "beat": 26.289583333333333,
+        "beats": 1.6958333333333333,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e67",
+        "sourceIds": [
+          "t0-e67"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 13558,
+        "releaseTick": 13707,
+        "beat": 28.245833333333334,
+        "beats": 0.3104166666666667,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e69",
+        "sourceIds": [
+          "t0-e69"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 13768,
+        "releaseTick": 13932,
+        "beat": 28.683333333333334,
+        "beats": 0.3416666666666667,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e71",
+        "sourceIds": [
+          "t0-e71"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 13989,
+        "releaseTick": 14531,
+        "beat": 29.14375,
+        "beats": 1.1291666666666667,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e72",
+        "sourceIds": [
+          "t0-e72"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 14358,
+        "releaseTick": 14664,
+        "beat": 29.9125,
+        "beats": 0.6375,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e75",
+        "sourceIds": [
+          "t0-e75"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 14741,
+        "releaseTick": 15804,
+        "beat": 30.710416666666667,
+        "beats": 2.214583333333333,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e76",
+        "sourceIds": [
+          "t0-e76"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 15752,
+        "releaseTick": 16168,
+        "beat": 32.81666666666667,
+        "beats": 0.8666666666666667,
+        "hand": "R",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e78",
+        "sourceIds": [
+          "t0-e78"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 16154,
+        "releaseTick": 16978,
+        "beat": 33.65416666666667,
+        "beats": 1.7166666666666666,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e80",
+        "sourceIds": [
+          "t0-e80"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 16513,
+        "releaseTick": 16699,
+        "beat": 34.40208333333333,
+        "beats": 0.3875,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e82",
+        "sourceIds": [
+          "t0-e82"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 16877,
+        "releaseTick": 17231,
+        "beat": 35.16041666666667,
+        "beats": 0.7375,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e85",
+        "sourceIds": [
+          "t0-e85"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 17279,
+        "releaseTick": 18452,
+        "beat": 35.99791666666667,
+        "beats": 2.44375,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e87",
+        "sourceIds": [
+          "t0-e87"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 18659,
+        "releaseTick": 18821,
+        "beat": 38.87291666666667,
+        "beats": 0.3375,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e89",
+        "sourceIds": [
+          "t0-e89"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 18869,
+        "releaseTick": 19032,
+        "beat": 39.31041666666667,
+        "beats": 0.33958333333333335,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e91",
+        "sourceIds": [
+          "t0-e91"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 19085,
+        "releaseTick": 19487,
+        "beat": 39.760416666666664,
+        "beats": 0.8375,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e92",
+        "sourceIds": [
+          "t0-e92"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 19449,
+        "releaseTick": 19664,
+        "beat": 40.51875,
+        "beats": 0.4479166666666667,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e94",
+        "sourceIds": [
+          "t0-e94"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 19636,
+        "releaseTick": 19913,
+        "beat": 40.90833333333333,
+        "beats": 0.5770833333333333,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e96",
+        "sourceIds": [
+          "t0-e96"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 19774,
+        "releaseTick": 20143,
+        "beat": 41.19583333333333,
+        "beats": 0.76875,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e98",
+        "sourceIds": [
+          "t0-e98"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 20009,
+        "releaseTick": 20460,
+        "beat": 41.68541666666667,
+        "beats": 0.9395833333333333,
+        "hand": "R",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e100",
+        "sourceIds": [
+          "t0-e100"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 20344,
+        "releaseTick": 20535,
+        "beat": 42.38333333333333,
+        "beats": 0.39791666666666664,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e103",
+        "sourceIds": [
+          "t0-e103"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 20559,
+        "releaseTick": 21086,
+        "beat": 42.83125,
+        "beats": 1.0979166666666667,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e104",
+        "sourceIds": [
+          "t0-e104"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 20938,
+        "releaseTick": 21288,
+        "beat": 43.62083333333333,
+        "beats": 0.7291666666666666,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e107",
+        "sourceIds": [
+          "t0-e107"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 21335,
+        "releaseTick": 22240,
+        "beat": 44.447916666666664,
+        "beats": 1.8854166666666667,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e108",
+        "sourceIds": [
+          "t0-e108"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 22155,
+        "releaseTick": 22308,
+        "beat": 46.15625,
+        "beats": 0.31875,
+        "hand": "R",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e111",
+        "sourceIds": [
+          "t0-e111"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 22360,
+        "releaseTick": 22528,
+        "beat": 46.583333333333336,
+        "beats": 0.35,
+        "hand": "R",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e113",
+        "sourceIds": [
+          "t0-e113"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 22576,
+        "releaseTick": 22887,
+        "beat": 47.03333333333333,
+        "beats": 0.6479166666666667,
+        "hand": "R",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e114",
+        "sourceIds": [
+          "t0-e114"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 22873,
+        "releaseTick": 23290,
+        "beat": 47.65208333333333,
+        "beats": 0.86875,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e117",
+        "sourceIds": [
+          "t0-e117"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 23318,
+        "releaseTick": 24812,
+        "beat": 48.579166666666666,
+        "beats": 3.1125,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e118",
+        "sourceIds": [
+          "t0-e118"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 24664,
+        "releaseTick": 25100,
+        "beat": 51.38333333333333,
+        "beats": 0.9083333333333333,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e120",
+        "sourceIds": [
+          "t0-e120"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 25028,
+        "releaseTick": 25488,
+        "beat": 52.141666666666666,
+        "beats": 0.9583333333333334,
+        "hand": "R",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e122",
+        "sourceIds": [
+          "t0-e122"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 25368,
+        "releaseTick": 25957,
+        "beat": 52.85,
+        "beats": 1.2270833333333333,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e124",
+        "sourceIds": [
+          "t0-e124"
+        ],
+        "midi": 53,
+        "velocity": 85,
+        "startTick": 25780,
+        "releaseTick": 26115,
+        "beat": 53.708333333333336,
+        "beats": 0.6979166666666666,
+        "hand": "R",
+        "role": "lead-53"
+      },
+      {
+        "id": "t0-e127",
+        "sourceIds": [
+          "t0-e127"
+        ],
+        "midi": 53,
+        "velocity": 85,
+        "startTick": 26144,
+        "releaseTick": 27897,
+        "beat": 54.46666666666667,
+        "beats": 3.652083333333333,
+        "hand": "R",
+        "role": "lead-53"
+      },
+      {
+        "id": "t0-e128",
+        "sourceIds": [
+          "t0-e128"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 27634,
+        "releaseTick": 28131,
+        "beat": 57.57083333333333,
+        "beats": 1.0354166666666667,
+        "hand": "L",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e131",
+        "sourceIds": [
+          "t0-e131"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 28184,
+        "releaseTick": 28328,
+        "beat": 58.71666666666667,
+        "beats": 0.3,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e133",
+        "sourceIds": [
+          "t0-e133"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 28376,
+        "releaseTick": 28864,
+        "beat": 59.11666666666667,
+        "beats": 1.0166666666666666,
+        "hand": "L",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e134",
+        "sourceIds": [
+          "t0-e134"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 28735,
+        "releaseTick": 29180,
+        "beat": 59.864583333333336,
+        "beats": 0.9270833333333334,
+        "hand": "R",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e136",
+        "sourceIds": [
+          "t0-e136"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 29103,
+        "releaseTick": 29453,
+        "beat": 60.63125,
+        "beats": 0.7291666666666666,
+        "hand": "L",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e139",
+        "sourceIds": [
+          "t0-e139"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 29520,
+        "releaseTick": 29922,
+        "beat": 61.5,
+        "beats": 0.8375,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e140",
+        "sourceIds": [
+          "t0-e140"
+        ],
+        "midi": 69,
+        "velocity": 85,
+        "startTick": 29826,
+        "releaseTick": 30444,
+        "beat": 62.1375,
+        "beats": 1.2875,
+        "hand": "L",
+        "role": "lead-69"
+      },
+      {
+        "id": "t0-e142",
+        "sourceIds": [
+          "t0-e142"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 30339,
+        "releaseTick": 30655,
+        "beat": 63.20625,
+        "beats": 0.6583333333333333,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e145",
+        "sourceIds": [
+          "t0-e145"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 30655,
+        "releaseTick": 31010,
+        "beat": 63.864583333333336,
+        "beats": 0.7395833333333334,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e146",
+        "sourceIds": [
+          "t0-e146"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 30919,
+        "releaseTick": 31350,
+        "beat": 64.41458333333334,
+        "beats": 0.8979166666666667,
+        "hand": "L",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e148",
+        "sourceIds": [
+          "t0-e148"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 31316,
+        "releaseTick": 32140,
+        "beat": 65.24166666666666,
+        "beats": 1.7166666666666666,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e150",
+        "sourceIds": [
+          "t0-e150"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 32068,
+        "releaseTick": 32547,
+        "beat": 66.80833333333334,
+        "beats": 0.9979166666666667,
+        "hand": "L",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e152",
+        "sourceIds": [
+          "t0-e152"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 32427,
+        "releaseTick": 32767,
+        "beat": 67.55625,
+        "beats": 0.7083333333333334,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e155",
+        "sourceIds": [
+          "t0-e155"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 32868,
+        "releaseTick": 33084,
+        "beat": 68.475,
+        "beats": 0.45,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e157",
+        "sourceIds": [
+          "t0-e157"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 33183,
+        "releaseTick": 33447,
+        "beat": 69.13125,
+        "beats": 0.55,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e159",
+        "sourceIds": [
+          "t0-e159"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 33515,
+        "releaseTick": 34740,
+        "beat": 69.82291666666667,
+        "beats": 2.5520833333333335,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e160",
+        "sourceIds": [
+          "t0-e160"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 34678,
+        "releaseTick": 35056,
+        "beat": 72.24583333333334,
+        "beats": 0.7875,
+        "hand": "R",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e162",
+        "sourceIds": [
+          "t0-e162"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 34999,
+        "releaseTick": 35430,
+        "beat": 72.91458333333334,
+        "beats": 0.8979166666666667,
+        "hand": "L",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e164",
+        "sourceIds": [
+          "t0-e164"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 35358,
+        "releaseTick": 35559,
+        "beat": 73.6625,
+        "beats": 0.41875,
+        "hand": "R",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e166",
+        "sourceIds": [
+          "t0-e166"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 35521,
+        "releaseTick": 35962,
+        "beat": 74.00208333333333,
+        "beats": 0.91875,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e168",
+        "sourceIds": [
+          "t0-e168"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 35832,
+        "releaseTick": 35995,
+        "beat": 74.65,
+        "beats": 0.33958333333333335,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e171",
+        "sourceIds": [
+          "t0-e171"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 36024,
+        "releaseTick": 37791,
+        "beat": 75.05,
+        "beats": 3.68125,
+        "hand": "L",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e172",
+        "sourceIds": [
+          "t0-e172"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 37633,
+        "releaseTick": 38098,
+        "beat": 78.40208333333334,
+        "beats": 0.96875,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e175",
+        "sourceIds": [
+          "t0-e175"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 38146,
+        "releaseTick": 38332,
+        "beat": 79.47083333333333,
+        "beats": 0.3875,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e177",
+        "sourceIds": [
+          "t0-e177"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 38385,
+        "releaseTick": 38801,
+        "beat": 79.96875,
+        "beats": 0.8666666666666667,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e178",
+        "sourceIds": [
+          "t0-e178"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 38734,
+        "releaseTick": 39156,
+        "beat": 80.69583333333334,
+        "beats": 0.8791666666666667,
+        "hand": "L",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e180",
+        "sourceIds": [
+          "t0-e180"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 39093,
+        "releaseTick": 39420,
+        "beat": 81.44375,
+        "beats": 0.68125,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e183",
+        "sourceIds": [
+          "t0-e183"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 39495,
+        "releaseTick": 39917,
+        "beat": 82.28125,
+        "beats": 0.8791666666666667,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e184",
+        "sourceIds": [
+          "t0-e184"
+        ],
+        "midi": 69,
+        "velocity": 85,
+        "startTick": 39827,
+        "releaseTick": 40415,
+        "beat": 82.97291666666666,
+        "beats": 1.225,
+        "hand": "L",
+        "role": "lead-69"
+      },
+      {
+        "id": "t0-e186",
+        "sourceIds": [
+          "t0-e186"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 40357,
+        "releaseTick": 40588,
+        "beat": 84.07708333333333,
+        "beats": 0.48125,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e189",
+        "sourceIds": [
+          "t0-e189"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 40679,
+        "releaseTick": 40980,
+        "beat": 84.74791666666667,
+        "beats": 0.6270833333333333,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e190",
+        "sourceIds": [
+          "t0-e190"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 40913,
+        "releaseTick": 41272,
+        "beat": 85.23541666666667,
+        "beats": 0.7479166666666667,
+        "hand": "L",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e192",
+        "sourceIds": [
+          "t0-e192"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 41234,
+        "releaseTick": 41996,
+        "beat": 85.90416666666667,
+        "beats": 1.5875,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e194",
+        "sourceIds": [
+          "t0-e194"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 41924,
+        "releaseTick": 42302,
+        "beat": 87.34166666666667,
+        "beats": 0.7875,
+        "hand": "L",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e196",
+        "sourceIds": [
+          "t0-e196"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 42254,
+        "releaseTick": 42623,
+        "beat": 88.02916666666667,
+        "beats": 0.76875,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e199",
+        "sourceIds": [
+          "t0-e199"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 42685,
+        "releaseTick": 42920,
+        "beat": 88.92708333333333,
+        "beats": 0.4895833333333333,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e201",
+        "sourceIds": [
+          "t0-e201"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 43040,
+        "releaseTick": 43260,
+        "beat": 89.66666666666667,
+        "beats": 0.4583333333333333,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e203",
+        "sourceIds": [
+          "t0-e203"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 43332,
+        "releaseTick": 44395,
+        "beat": 90.275,
+        "beats": 2.214583333333333,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e204",
+        "sourceIds": [
+          "t0-e204"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 44357,
+        "releaseTick": 44554,
+        "beat": 92.41041666666666,
+        "beats": 0.41041666666666665,
+        "hand": "L",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e206",
+        "sourceIds": [
+          "t0-e206"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 44549,
+        "releaseTick": 44749,
+        "beat": 92.81041666666667,
+        "beats": 0.4166666666666667,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e208",
+        "sourceIds": [
+          "t0-e208"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 44721,
+        "releaseTick": 44889,
+        "beat": 93.16875,
+        "beats": 0.35,
+        "hand": "L",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e211",
+        "sourceIds": [
+          "t0-e211"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 44893,
+        "releaseTick": 45204,
+        "beat": 93.52708333333334,
+        "beats": 0.6479166666666667,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e212",
+        "sourceIds": [
+          "t0-e212"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 45099,
+        "releaseTick": 45999,
+        "beat": 93.95625,
+        "beats": 1.875,
+        "hand": "L",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e215",
+        "sourceIds": [
+          "t0-e215"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 46076,
+        "releaseTick": 46589,
+        "beat": 95.99166666666666,
+        "beats": 1.06875,
+        "hand": "L",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e216",
+        "sourceIds": [
+          "t0-e216"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 46430,
+        "releaseTick": 46703,
+        "beat": 96.72916666666667,
+        "beats": 0.56875,
+        "hand": "R",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e218",
+        "sourceIds": [
+          "t0-e218"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 46679,
+        "releaseTick": 47049,
+        "beat": 97.24791666666667,
+        "beats": 0.7708333333333334,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e220",
+        "sourceIds": [
+          "t0-e220"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 46953,
+        "releaseTick": 47163,
+        "beat": 97.81875,
+        "beats": 0.4375,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e223",
+        "sourceIds": [
+          "t0-e223"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 47163,
+        "releaseTick": 47671,
+        "beat": 98.25625,
+        "beats": 1.0583333333333333,
+        "hand": "L",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e224",
+        "sourceIds": [
+          "t0-e224"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 47522,
+        "releaseTick": 48164,
+        "beat": 99.00416666666666,
+        "beats": 1.3375,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e227",
+        "sourceIds": [
+          "t0-e227"
+        ],
+        "midi": 65,
+        "velocity": 85,
+        "startTick": 48222,
+        "releaseTick": 48677,
+        "beat": 100.4625,
+        "beats": 0.9479166666666666,
+        "hand": "R",
+        "role": "lead-65"
+      },
+      {
+        "id": "t0-e228",
+        "sourceIds": [
+          "t0-e228"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 48542,
+        "releaseTick": 48787,
+        "beat": 101.12916666666666,
+        "beats": 0.5104166666666666,
+        "hand": "L",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e230",
+        "sourceIds": [
+          "t0-e230"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 48768,
+        "releaseTick": 49165,
+        "beat": 101.6,
+        "beats": 0.8270833333333333,
+        "hand": "R",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e232",
+        "sourceIds": [
+          "t0-e232"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 49041,
+        "releaseTick": 49204,
+        "beat": 102.16875,
+        "beats": 0.33958333333333335,
+        "hand": "L",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e235",
+        "sourceIds": [
+          "t0-e235"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 49241,
+        "releaseTick": 50425,
+        "beat": 102.58541666666666,
+        "beats": 2.466666666666667,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e237",
+        "sourceIds": [
+          "t0-e237"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 50592,
+        "releaseTick": 50770,
+        "beat": 105.4,
+        "beats": 0.37083333333333335,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e239",
+        "sourceIds": [
+          "t0-e239"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 50770,
+        "releaseTick": 50946,
+        "beat": 105.77083333333333,
+        "beats": 0.36666666666666664,
+        "hand": "L",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e241",
+        "sourceIds": [
+          "t0-e241"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 50989,
+        "releaseTick": 51387,
+        "beat": 106.22708333333334,
+        "beats": 0.8291666666666667,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e242",
+        "sourceIds": [
+          "t0-e242"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 51321,
+        "releaseTick": 51536,
+        "beat": 106.91875,
+        "beats": 0.4479166666666667,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e244",
+        "sourceIds": [
+          "t0-e244"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 51502,
+        "releaseTick": 51760,
+        "beat": 107.29583333333333,
+        "beats": 0.5375,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e246",
+        "sourceIds": [
+          "t0-e246"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 51651,
+        "releaseTick": 52048,
+        "beat": 107.60625,
+        "beats": 0.8270833333333333,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e248",
+        "sourceIds": [
+          "t0-e248"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 51885,
+        "releaseTick": 52273,
+        "beat": 108.09375,
+        "beats": 0.8083333333333333,
+        "hand": "R",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e250",
+        "sourceIds": [
+          "t0-e250"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 52167,
+        "releaseTick": 52359,
+        "beat": 108.68125,
+        "beats": 0.4,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e253",
+        "sourceIds": [
+          "t0-e253"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 52359,
+        "releaseTick": 52838,
+        "beat": 109.08125,
+        "beats": 0.9979166666666667,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e254",
+        "sourceIds": [
+          "t0-e254"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 52718,
+        "releaseTick": 53082,
+        "beat": 109.82916666666667,
+        "beats": 0.7583333333333333,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e257",
+        "sourceIds": [
+          "t0-e257"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 53082,
+        "releaseTick": 55497,
+        "beat": 110.5875,
+        "beats": 5.03125,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e258",
+        "sourceIds": [
+          "t0-e258"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 54902,
+        "releaseTick": 56090,
+        "beat": 114.37916666666666,
+        "beats": 2.475,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e260",
+        "sourceIds": [
+          "t0-e260"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 56042,
+        "releaseTick": 56229,
+        "beat": 116.75416666666666,
+        "beats": 0.38958333333333334,
+        "hand": "R",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e263",
+        "sourceIds": [
+          "t0-e263"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 56287,
+        "releaseTick": 56415,
+        "beat": 117.26458333333333,
+        "beats": 0.26666666666666666,
+        "hand": "R",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e265",
+        "sourceIds": [
+          "t0-e265"
+        ],
+        "midi": 51,
+        "velocity": 85,
+        "startTick": 56497,
+        "releaseTick": 56875,
+        "beat": 117.70208333333333,
+        "beats": 0.7875,
+        "hand": "L",
+        "role": "lead-51"
+      },
+      {
+        "id": "t0-e266",
+        "sourceIds": [
+          "t0-e266"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 56818,
+        "releaseTick": 57197,
+        "beat": 118.37083333333334,
+        "beats": 0.7895833333333333,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e269",
+        "sourceIds": [
+          "t0-e269"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 57197,
+        "releaseTick": 58939,
+        "beat": 119.16041666666666,
+        "beats": 3.629166666666667,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e270",
+        "sourceIds": [
+          "t0-e270"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 58830,
+        "releaseTick": 59299,
+        "beat": 122.5625,
+        "beats": 0.9770833333333333,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e272",
+        "sourceIds": [
+          "t0-e272"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 59213,
+        "releaseTick": 59649,
+        "beat": 123.36041666666667,
+        "beats": 0.9083333333333333,
+        "hand": "L",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e274",
+        "sourceIds": [
+          "t0-e274"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 59529,
+        "releaseTick": 60376,
+        "beat": 124.01875,
+        "beats": 1.7645833333333334,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e276",
+        "sourceIds": [
+          "t0-e276"
+        ],
+        "midi": 53,
+        "velocity": 85,
+        "startTick": 59897,
+        "releaseTick": 60080,
+        "beat": 124.78541666666666,
+        "beats": 0.38125,
+        "hand": "L",
+        "role": "lead-53"
+      },
+      {
+        "id": "t0-e278",
+        "sourceIds": [
+          "t0-e278"
+        ],
+        "midi": 53,
+        "velocity": 85,
+        "startTick": 60319,
+        "releaseTick": 62302,
+        "beat": 125.66458333333334,
+        "beats": 4.13125,
+        "hand": "L",
+        "role": "lead-53"
+      },
+      {
+        "id": "t0-e280",
+        "sourceIds": [
+          "t0-e280"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 62115,
+        "releaseTick": 62325,
+        "beat": 129.40625,
+        "beats": 0.4375,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e283",
+        "sourceIds": [
+          "t0-e283"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 62325,
+        "releaseTick": 62541,
+        "beat": 129.84375,
+        "beats": 0.45,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e285",
+        "sourceIds": [
+          "t0-e285"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 62575,
+        "releaseTick": 63006,
+        "beat": 130.36458333333334,
+        "beats": 0.8979166666666667,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e286",
+        "sourceIds": [
+          "t0-e286"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 62910,
+        "releaseTick": 63163,
+        "beat": 131.0625,
+        "beats": 0.5270833333333333,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e288",
+        "sourceIds": [
+          "t0-e288"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 63131,
+        "releaseTick": 63370,
+        "beat": 131.52291666666667,
+        "beats": 0.4979166666666667,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e290",
+        "sourceIds": [
+          "t0-e290"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 63254,
+        "releaseTick": 63542,
+        "beat": 131.77916666666667,
+        "beats": 0.6,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e292",
+        "sourceIds": [
+          "t0-e292"
+        ],
+        "midi": 57,
+        "velocity": 85,
+        "startTick": 63442,
+        "releaseTick": 63935,
+        "beat": 132.17083333333332,
+        "beats": 1.0270833333333333,
+        "hand": "R",
+        "role": "lead-57"
+      },
+      {
+        "id": "t0-e294",
+        "sourceIds": [
+          "t0-e294"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 63801,
+        "releaseTick": 64001,
+        "beat": 132.91875,
+        "beats": 0.4166666666666667,
+        "hand": "L",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e297",
+        "sourceIds": [
+          "t0-e297"
+        ],
+        "midi": 55,
+        "velocity": 85,
+        "startTick": 64001,
+        "releaseTick": 64524,
+        "beat": 133.33541666666667,
+        "beats": 1.0895833333333333,
+        "hand": "R",
+        "role": "lead-55"
+      },
+      {
+        "id": "t0-e298",
+        "sourceIds": [
+          "t0-e298"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 64409,
+        "releaseTick": 64725,
+        "beat": 134.18541666666667,
+        "beats": 0.6583333333333333,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e301",
+        "sourceIds": [
+          "t0-e301"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 64773,
+        "releaseTick": 66013,
+        "beat": 134.94375,
+        "beats": 2.5833333333333335,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e303",
+        "sourceIds": [
+          "t0-e303"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 66095,
+        "releaseTick": 66252,
+        "beat": 137.69791666666666,
+        "beats": 0.32708333333333334,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e305",
+        "sourceIds": [
+          "t0-e305"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 66305,
+        "releaseTick": 66473,
+        "beat": 138.13541666666666,
+        "beats": 0.35,
+        "hand": "L",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e307",
+        "sourceIds": [
+          "t0-e307"
+        ],
+        "midi": 58,
+        "velocity": 85,
+        "startTick": 66521,
+        "releaseTick": 67081,
+        "beat": 138.58541666666667,
+        "beats": 1.1666666666666667,
+        "hand": "R",
+        "role": "lead-58"
+      },
+      {
+        "id": "t0-e308",
+        "sourceIds": [
+          "t0-e308"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 66924,
+        "releaseTick": 67268,
+        "beat": 139.425,
+        "beats": 0.7166666666666667,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e311",
+        "sourceIds": [
+          "t0-e311"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 67268,
+        "releaseTick": 68532,
+        "beat": 140.14166666666668,
+        "beats": 2.6333333333333333,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e312",
+        "sourceIds": [
+          "t0-e312"
+        ],
+        "midi": 63,
+        "velocity": 85,
+        "startTick": 68436,
+        "releaseTick": 68916,
+        "beat": 142.575,
+        "beats": 1,
+        "hand": "R",
+        "role": "lead-63"
+      },
+      {
+        "id": "t0-e314",
+        "sourceIds": [
+          "t0-e314"
+        ],
+        "midi": 62,
+        "velocity": 85,
+        "startTick": 68868,
+        "releaseTick": 69667,
+        "beat": 143.475,
+        "beats": 1.6645833333333333,
+        "hand": "L",
+        "role": "lead-62"
+      },
+      {
+        "id": "t0-e316",
+        "sourceIds": [
+          "t0-e316"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 69538,
+        "releaseTick": 69902,
+        "beat": 144.87083333333334,
+        "beats": 0.7583333333333333,
+        "hand": "R",
+        "role": "lead-60"
+      },
+      {
+        "id": "t0-e319",
+        "sourceIds": [
+          "t0-e319"
+        ],
+        "midi": 60,
+        "velocity": 85,
+        "startTick": 69940,
+        "releaseTick": 71516,
+        "beat": 145.70833333333334,
+        "beats": 3.283333333333333,
+        "hand": "R",
+        "role": "lead-60"
+      }
+    ],
+    "durationBeats": 148.99166666666667,
+    "durationSeconds": 74.49583333333332,
+    "sourceTempo": [
+      {
+        "tick": 0,
+        "us": 500000,
+        "seconds": 0
+      }
+    ],
+    "sourceMeter": []
+  },
+  "arrangement": {
+    "id": "live-melody",
+    "title": "Two-hand live melody",
+    "version": 2,
+    "recipes": [
+      {
+        "kind": "honk",
+        "role": "lead-51",
+        "midi": 51,
+        "position": [
+          -0.4,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-53",
+        "midi": 53,
+        "position": [
+          -0.2,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-55",
+        "midi": 55,
+        "position": [
+          0,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-57",
+        "midi": 57,
+        "position": [
+          0.2,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-58",
+        "midi": 58,
+        "position": [
+          0.4,
+          0.19,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-60",
+        "midi": 60,
+        "position": [
+          -0.4,
+          0.43,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-62",
+        "midi": 62,
+        "position": [
+          -0.2,
+          0.43,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-63",
+        "midi": 63,
+        "position": [
+          0,
+          0.43,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-65",
+        "midi": 65,
+        "position": [
+          0.2,
+          0.43,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-69",
+        "midi": 69,
+        "position": [
+          0.4,
+          0.43,
+          0.2
+        ],
+        "scale": 0.85
+      },
+      {
+        "kind": "metronome",
+        "role": "metronome",
+        "position": [
+          -0.85,
+          -0.6,
+          0.05
+        ],
+        "scale": 0.65
+      }
+    ],
+    "backing": [],
+    "provenance": "All 159 notes from MIDI ce00474f06ea7e4b5af71ae009ca99c12fe8d1ef368d9a06b73dcd7924620f46; no automatic backing.",
+    "roleAssignments": [
+      {
+        "role": "melody",
+        "sequence": 0,
+        "source": {
+          "track": 0,
+          "channel": 0,
+          "port": 0
+        }
+      }
+    ],
+    "exclusions": [],
+    "decisions": [
+      "Every source attack and key release is retained, including the opening rest and all two-note overlaps. No transposition, quantization, merging or trimming.",
+      "One shared Honk per distinct pitch, reused for every repeated note. Two-hand assignments preserve independent overlapping holds; either hand can play each target. Highlighting uses plain squares.",
+      "No Looper instruments, Looper tracks, or automatic accompaniment. The Metronome supplies timing only.",
+      "Source piano timbre is replaced by the normal Honk voice. MIDI velocity remains provenance; normal Trigger dynamics apply.",
+      "Quarter-note pulses at the MIDI tempo; four-pulse count-in. Source has no meter event."
+    ]
+  },
+  "lessons": [
+    {
+      "id": "phrase-1",
+      "title": "Phrase 1",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 0,
+      "endBeat": 12.491666666666667,
+      "eventIds": [
+        "t0-e3",
+        "t0-e5",
+        "t0-e7",
+        "t0-e8",
+        "t0-e11",
+        "t0-e12",
+        "t0-e14",
+        "t0-e16",
+        "t0-e19",
+        "t0-e20",
+        "t0-e23",
+        "t0-e24",
+        "t0-e27",
+        "t0-e29",
+        "t0-e30"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-2",
+      "title": "Phrase 2",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 12.491666666666667,
+      "endBeat": 21.739583333333332,
+      "eventIds": [
+        "t0-e33",
+        "t0-e34",
+        "t0-e36",
+        "t0-e38",
+        "t0-e40",
+        "t0-e43",
+        "t0-e44",
+        "t0-e47"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-3",
+      "title": "Phrase 3",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 21.739583333333332,
+      "endBeat": 30.710416666666667,
+      "eventIds": [
+        "t0-e49",
+        "t0-e50",
+        "t0-e52",
+        "t0-e54",
+        "t0-e56",
+        "t0-e58",
+        "t0-e61",
+        "t0-e62",
+        "t0-e65",
+        "t0-e67",
+        "t0-e69",
+        "t0-e71",
+        "t0-e72"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-4",
+      "title": "Phrase 4",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 30.710416666666667,
+      "endBeat": 39.760416666666664,
+      "eventIds": [
+        "t0-e75",
+        "t0-e76",
+        "t0-e78",
+        "t0-e80",
+        "t0-e82",
+        "t0-e85",
+        "t0-e87",
+        "t0-e89"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-5",
+      "title": "Phrase 5",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 39.760416666666664,
+      "endBeat": 48.579166666666666,
+      "eventIds": [
+        "t0-e91",
+        "t0-e92",
+        "t0-e94",
+        "t0-e96",
+        "t0-e98",
+        "t0-e100",
+        "t0-e103",
+        "t0-e104",
+        "t0-e107",
+        "t0-e108",
+        "t0-e111",
+        "t0-e113",
+        "t0-e114"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-6",
+      "title": "Phrase 6",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 48.579166666666666,
+      "endBeat": 58.71666666666667,
+      "eventIds": [
+        "t0-e117",
+        "t0-e118",
+        "t0-e120",
+        "t0-e122",
+        "t0-e124",
+        "t0-e127",
+        "t0-e128"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-7",
+      "title": "Phrase 7",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 58.71666666666667,
+      "endBeat": 68.475,
+      "eventIds": [
+        "t0-e131",
+        "t0-e133",
+        "t0-e134",
+        "t0-e136",
+        "t0-e139",
+        "t0-e140",
+        "t0-e142",
+        "t0-e145",
+        "t0-e146",
+        "t0-e148",
+        "t0-e150",
+        "t0-e152"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-8",
+      "title": "Phrase 8",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 68.475,
+      "endBeat": 79.47083333333333,
+      "eventIds": [
+        "t0-e155",
+        "t0-e157",
+        "t0-e159",
+        "t0-e160",
+        "t0-e162",
+        "t0-e164",
+        "t0-e166",
+        "t0-e168",
+        "t0-e171",
+        "t0-e172"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-9",
+      "title": "Phrase 9",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 79.47083333333333,
+      "endBeat": 89.66666666666667,
+      "eventIds": [
+        "t0-e175",
+        "t0-e177",
+        "t0-e178",
+        "t0-e180",
+        "t0-e183",
+        "t0-e184",
+        "t0-e186",
+        "t0-e189",
+        "t0-e190",
+        "t0-e192",
+        "t0-e194",
+        "t0-e196",
+        "t0-e199"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-10",
+      "title": "Phrase 10",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 89.66666666666667,
+      "endBeat": 100.4625,
+      "eventIds": [
+        "t0-e201",
+        "t0-e203",
+        "t0-e204",
+        "t0-e206",
+        "t0-e208",
+        "t0-e211",
+        "t0-e212",
+        "t0-e215",
+        "t0-e216",
+        "t0-e218",
+        "t0-e220",
+        "t0-e223",
+        "t0-e224"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-11",
+      "title": "Phrase 11",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 100.4625,
+      "endBeat": 110.5875,
+      "eventIds": [
+        "t0-e227",
+        "t0-e228",
+        "t0-e230",
+        "t0-e232",
+        "t0-e235",
+        "t0-e237",
+        "t0-e239",
+        "t0-e241",
+        "t0-e242",
+        "t0-e244",
+        "t0-e246",
+        "t0-e248",
+        "t0-e250",
+        "t0-e253",
+        "t0-e254"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-12",
+      "title": "Phrase 12",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 110.5875,
+      "endBeat": 119.16041666666666,
+      "eventIds": [
+        "t0-e257",
+        "t0-e258",
+        "t0-e260",
+        "t0-e263",
+        "t0-e265",
+        "t0-e266"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-13",
+      "title": "Phrase 13",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 119.16041666666666,
+      "endBeat": 129.84375,
+      "eventIds": [
+        "t0-e269",
+        "t0-e270",
+        "t0-e272",
+        "t0-e274",
+        "t0-e276",
+        "t0-e278",
+        "t0-e280"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-14",
+      "title": "Phrase 14",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 129.84375,
+      "endBeat": 140.14166666666668,
+      "eventIds": [
+        "t0-e283",
+        "t0-e285",
+        "t0-e286",
+        "t0-e288",
+        "t0-e290",
+        "t0-e292",
+        "t0-e294",
+        "t0-e297",
+        "t0-e298",
+        "t0-e301",
+        "t0-e303",
+        "t0-e305",
+        "t0-e307",
+        "t0-e308"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-15",
+      "title": "Phrase 15",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 140.14166666666668,
+      "endBeat": 148.99166666666667,
+      "eventIds": [
+        "t0-e311",
+        "t0-e312",
+        "t0-e314",
+        "t0-e316",
+        "t0-e319"
+      ],
+      "recommendedBpm": 60,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "performance",
+      "title": "Complete guided performance",
+      "goal": "Play the labelled melody targets with both hands. Hold each note until its release cue, including overlaps. Keep your wrist neutral.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": true,
+      "startBeat": 0,
+      "endBeat": 148.99166666666667,
+      "eventIds": [
+        "t0-e3",
+        "t0-e5",
+        "t0-e7",
+        "t0-e8",
+        "t0-e11",
+        "t0-e12",
+        "t0-e14",
+        "t0-e16",
+        "t0-e19",
+        "t0-e20",
+        "t0-e23",
+        "t0-e24",
+        "t0-e27",
+        "t0-e29",
+        "t0-e30",
+        "t0-e33",
+        "t0-e34",
+        "t0-e36",
+        "t0-e38",
+        "t0-e40",
+        "t0-e43",
+        "t0-e44",
+        "t0-e47",
+        "t0-e49",
+        "t0-e50",
+        "t0-e52",
+        "t0-e54",
+        "t0-e56",
+        "t0-e58",
+        "t0-e61",
+        "t0-e62",
+        "t0-e65",
+        "t0-e67",
+        "t0-e69",
+        "t0-e71",
+        "t0-e72",
+        "t0-e75",
+        "t0-e76",
+        "t0-e78",
+        "t0-e80",
+        "t0-e82",
+        "t0-e85",
+        "t0-e87",
+        "t0-e89",
+        "t0-e91",
+        "t0-e92",
+        "t0-e94",
+        "t0-e96",
+        "t0-e98",
+        "t0-e100",
+        "t0-e103",
+        "t0-e104",
+        "t0-e107",
+        "t0-e108",
+        "t0-e111",
+        "t0-e113",
+        "t0-e114",
+        "t0-e117",
+        "t0-e118",
+        "t0-e120",
+        "t0-e122",
+        "t0-e124",
+        "t0-e127",
+        "t0-e128",
+        "t0-e131",
+        "t0-e133",
+        "t0-e134",
+        "t0-e136",
+        "t0-e139",
+        "t0-e140",
+        "t0-e142",
+        "t0-e145",
+        "t0-e146",
+        "t0-e148",
+        "t0-e150",
+        "t0-e152",
+        "t0-e155",
+        "t0-e157",
+        "t0-e159",
+        "t0-e160",
+        "t0-e162",
+        "t0-e164",
+        "t0-e166",
+        "t0-e168",
+        "t0-e171",
+        "t0-e172",
+        "t0-e175",
+        "t0-e177",
+        "t0-e178",
+        "t0-e180",
+        "t0-e183",
+        "t0-e184",
+        "t0-e186",
+        "t0-e189",
+        "t0-e190",
+        "t0-e192",
+        "t0-e194",
+        "t0-e196",
+        "t0-e199",
+        "t0-e201",
+        "t0-e203",
+        "t0-e204",
+        "t0-e206",
+        "t0-e208",
+        "t0-e211",
+        "t0-e212",
+        "t0-e215",
+        "t0-e216",
+        "t0-e218",
+        "t0-e220",
+        "t0-e223",
+        "t0-e224",
+        "t0-e227",
+        "t0-e228",
+        "t0-e230",
+        "t0-e232",
+        "t0-e235",
+        "t0-e237",
+        "t0-e239",
+        "t0-e241",
+        "t0-e242",
+        "t0-e244",
+        "t0-e246",
+        "t0-e248",
+        "t0-e250",
+        "t0-e253",
+        "t0-e254",
+        "t0-e257",
+        "t0-e258",
+        "t0-e260",
+        "t0-e263",
+        "t0-e265",
+        "t0-e266",
+        "t0-e269",
+        "t0-e270",
+        "t0-e272",
+        "t0-e274",
+        "t0-e276",
+        "t0-e278",
+        "t0-e280",
+        "t0-e283",
+        "t0-e285",
+        "t0-e286",
+        "t0-e288",
+        "t0-e290",
+        "t0-e292",
+        "t0-e294",
+        "t0-e297",
+        "t0-e298",
+        "t0-e301",
+        "t0-e303",
+        "t0-e305",
+        "t0-e307",
+        "t0-e308",
+        "t0-e311",
+        "t0-e312",
+        "t0-e314",
+        "t0-e316",
+        "t0-e319"
+      ],
+      "recommendedBpm": 120,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.15,
+        "durationBeats": 0.2
+      }
+    }
+  ],
+  "recording": {
+    "countIn": 4,
+    "tailMs": 500,
+    "end": "manual",
+    "synchronization": "captured-noise-once",
+    "instructions": "Play every melody note live with both hands. Aim at the Honk with the highlighted square and hold Trigger to play; the gray circle marks the next note. Release Trigger before pressing again for the next note. This song has no Looper or backing track."
+  },
+  "requirements": {
+    "maxHonks": 10,
+    "maxLoopers": 0,
+    "maxLiveVoices": 2
+  },
+  "warnings": [
+    {
+      "sequence": 0,
+      "issue": "no meter; teaching grid must be declared"
+    }
+  ],
+  "compatibility": {
+    "recordingHashes": [
+      "f51df80ee0abf932bf302a160039b5567483d5ec1f7c4bd96ffb9af16fc4d459"
+    ],
+    "progressVersion": 2
+  },
+  "contentHash": "9e1860898bb7836304fd3aede4bf24e6fd0339ac4954c77694c79bb748a93bf0"
+}

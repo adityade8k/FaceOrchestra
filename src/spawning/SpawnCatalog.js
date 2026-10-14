@@ -1,4 +1,4 @@
-import { TUTORIAL_PRESETS, TUTORIAL_LOOPERS } from '../tutorial/composition.js';
+import { TUTORIAL_PRESETS, TUTORIAL_LOOPERS } from '../compositions/jog/definition.js';
 import {
   SPAWN_CATALOG_ENTRIES,
   SPAWN_RADIAL_CATEGORIES,

@@ -108,6 +108,26 @@ export class CaptureRecorder extends EventTarget {
       throw new Error(this.message || "Capture was not ready.");
     return result;
   }
+  async prepareResources() {
+    // A fixed backing setup can exceed the existing send queue in aggregate.
+    // Drain each complete resource before emitting the next; retain every byte
+    // and the same queue limit. Audio has not started at this point.
+    do {
+      if (this.startCancelled) throw new Error(this.startCancelled);
+      this.presentation.flushResources(0, { maxItems: 1 });
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.drainReady = null;
+          reject(new Error("Scene capture preparation is still pending. Reconnect the receiver."));
+        }, 20000);
+        this.drainReady = () => {
+          clearTimeout(timeout); this.drainReady = null; resolve();
+        };
+        this.worker.postMessage({ type: "barrier" });
+      });
+    } while (this.presentation.pending.length);
+    if (this.startCancelled) throw new Error(this.startCancelled);
+  }
   async prepareTake({
     synthetic = false,
     performance: performanceMetadata = null,
@@ -223,24 +243,7 @@ export class CaptureRecorder extends EventTarget {
         // ensemble must not exhaust the worklet pool behind initial resources.
         const sample = this.presentation.sample(0);
         this.presentation.recycle(sample.buffer);
-        this.presentation.flushResources(0);
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            this.drainReady = null;
-            reject(
-              new Error(
-                "Scene capture preparation is still pending. Reconnect the receiver.",
-              ),
-            );
-          }, 20000);
-          this.drainReady = () => {
-            clearTimeout(timeout);
-            this.drainReady = null;
-            resolve();
-          };
-          this.worker.postMessage({ type: "barrier" });
-        });
-        if (this.startCancelled) throw new Error(this.startCancelled);
+        await this.prepareResources();
       }
       this.active = true;
       this.synthetic = synthetic;

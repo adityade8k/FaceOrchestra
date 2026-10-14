@@ -1,0 +1,15 @@
+{
+  "id": "nazariya-honk-bends",
+  "title": "Nazariya Ki Maari — Honk Bends",
+  "version": 5,
+  "sequence": 0,
+  "live": {
+    "track": 1,
+    "channel": 0,
+    "port": 0
+  },
+  "transpose": 0,
+  "playback": "honk-live-two-hand-v1",
+  "approvedArrangement": "approved-70bpm-screenshot-arrangement.json",
+  "authoringScript": "scripts/midi/arrange-nazariya-honk-bends.mjs"
+}

@@ -1,5 +1,5 @@
-import { validateComposition } from "./CompositionRegistry.js";
-import { tuningForMidi } from "../tutorial/composition.js";
+import { validateComposition } from "./CompositionDefinition.js";
+import { tuningForMidi } from "./jog/definition.js";
 import { compilePattern } from "./CompositionCompiler.js";
 import { validateDataArrangement } from "./DataValidation.js";
 import { Quaternion } from "three";

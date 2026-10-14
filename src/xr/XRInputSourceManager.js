@@ -24,7 +24,9 @@ export class XRInputSourceManager {
       controller.userData.index = index;
       controller.userData.controllerId = `controller-${index}`;
       controller.userData.handedness = "none";
+      controller.userData.inputConnected = false;
       controller.addEventListener("connected", (event) => {
+        controller.userData.inputConnected = true;
         controller.userData.handedness =
           event.data.handedness || controller.userData.handedness;
         controller.userData.gamepad = event.data.gamepad || null;
@@ -40,6 +42,7 @@ export class XRInputSourceManager {
         this.hardwareStates.set(controller, hardware);
       });
       controller.addEventListener("disconnected", () => {
+        controller.userData.inputConnected = false;
         controller.userData.gamepad = null;
         this.hardwareStates.set(controller, createHardwareState());
       });
@@ -160,6 +163,7 @@ export class XRInputSourceManager {
 
   resetSession() {
     for (const controller of this.controllers) {
+      controller.userData.inputConnected = false;
       controller.userData.gamepad = null;
       this.hardwareStates.set(controller, createHardwareState());
       if (controller.userData.rayLine)

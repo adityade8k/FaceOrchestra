@@ -1,9 +1,9 @@
 // Exercises the shipped model, controller inputs, transport and Web Audio.
 export async function validateBeatFeatures(app, controller) {
   const THREE=await import('three');
-  const {LESSON_STEPS}=await import('../src/tutorial/lessonSteps.js');
+  const {LESSON_STEPS}=await import('../src/compositions/jog/definition.js');
   const {getLooperControlColliderPosition}=await import('../src/instruments/looper/view/looperControlPresentation.js');
-  const {bendAt,DESCENDING_BEND}=await import('../src/tutorial/composition.js');
+  const {bendAt,DESCENDING_BEND}=await import('../src/compositions/jog/definition.js');
   const {BEND_SENSITIVITY,MAX_PITCH_BEND_SEMITONES}=await import('../src/config/honk.js');
   const r=app.runtime,t=r.tutorial,a=t.adapter,chords=a.get('chordLooper'),drums=a.get('percussionLooper'),metro=a.get('metronome');
   const report={checks:[],handles:[],takes:[],bends:[],headsetTested:false};
@@ -118,7 +118,7 @@ export async function renderFeatureViews(app) {
   const THREE=await import('three');
   const {TutorialTimingCues}=await import('../src/tutorial/TutorialTimingCues.js');
   const {TutorialSession}=await import('../src/tutorial/TutorialSession.js');
-  const {LESSON_STEPS}=await import('../src/tutorial/lessonSteps.js');
+  const {LESSON_STEPS}=await import('../src/compositions/jog/definition.js');
   const r=app.runtime,a=r.tutorial.adapter,h=a.get('chordLooper'),honk=a.get('melody-Eb4');
   const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(1600,900);renderer.setPixelRatio(1);
   const scene=new THREE.Scene();scene.background=new THREE.Color('#102d2b');

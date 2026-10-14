@@ -10,8 +10,8 @@ export async function validate() {
    if(!changed&&beat>d.step.startBeat+.6){metro.setBpm(40);changed=true;}
    d.ensemble.hands.play(d.guide.step.events,beat,now,{swapHands:true});
    if(changed&&beat>d.step.startBeat+1)for(const h of d.ensemble.loopers.filter(h=>h.transport.playing)){
-    const bank=Number(a.roleForId(h.id).slice(-1)),index=d.ensemble.bankAssignments.get(bank)?.index;
-    if(index!==undefined)drift=Math.max(drift,Math.abs(h.looperController.getAbsoluteSourcePosition(h,now)/(60000/d.definition.bpm)-(beat-d.ensemble.blocks[index].beat)));
+    const block=d.ensemble.blocks.find(b=>beat>=b.beat&&beat<b.beat+b.beats);
+    if(block)drift=Math.max(drift,Math.abs(h.looperController.getAbsoluteSourcePosition(h,now)/(60000/d.definition.bpm)-(beat-block.beat)));
    }
   }
   update(now);
@@ -24,18 +24,20 @@ export async function validate() {
  d.index=0;d.cancel();metro.setBpm(75);await t.action('step-practice');check(d.heard.length===0,'Retry reused observations');
  const retryDeadline=performance.now()+14000;while(d.phase&&performance.now()<retryDeadline)await wait(40);
  check(!d.phase&&d.outcomes[d.step.id]==='retry','Empty practice passed');
- const h=a.get('foundation-0'),c=h.looperController;
+ let h=d.ensemble.loopers[0],c=h.looperController;
  const takeRole=a.roleForId(h.tracks.find(tr=>tr.connectedHonkId!=null).connectedHonkId);
  metro.beatOriginMs=null;metro.play(performance.now());c.startRecording(h,performance.now());
  a.setVirtualsActive(true,'learner');a.squeeze(takeRole,true);await wait(550);a.squeeze(null,false);await wait(150);c.stopRecording(h,performance.now());a.setVirtualsActive(false);metro.pause();
  check(h.timeline.hasRecording(),'Real recorded take missing');const take=JSON.stringify(c.serializeState(h));
  await t.action('rishte-preview');await wait(400);await t.action('rishte-stop');check(JSON.stringify(c.serializeState(h))===take,'Preview lost take');
  await t.action('next-step');await t.action('previous-step');check(JSON.stringify(c.serializeState(h))===take,'Navigation lost take');
- await t.action('rishte-preview');await wait(200);c.startRecording(h,performance.now());await wait(150);
- check(!d.phase&&JSON.stringify(c.serializeState(h))===take,'Cancelled record arm replaced take');
- await t.action('rishte-preview');await wait(200);c.clearRecording(h);await wait(150);check(!d.phase&&!h.timeline.hasRecording(),'New take overwritten');
- await t.action('rishte-preview');await wait(200);metro.pause();await wait(150);check(!d.phase,'Metronome stop left playback');
- d.index=8;d.cancel();metro.setBpm(75);await t.action('step-practice');check(metro.bpm===40,'Fast phrase should initially slow to 40 BPM');await t.action('rishte-stop');
+ check(!d.phase,'Edited backing should prevent playback');
+ d.prepare();await t.action('rishte-preview');await wait(200);h=d.ensemble.loopers[0];c=h.looperController;
+ const armedTake=JSON.stringify(h.timeline.toJSON());c.startRecording(h,performance.now());await wait(150);
+ check(!d.phase&&JSON.stringify(h.timeline.toJSON())===armedTake,'Cancelled record arm replaced take');
+ d.prepare();await t.action('rishte-preview');await wait(200);h=d.ensemble.loopers[0];c=h.looperController;c.clearRecording(h);await wait(150);check(!d.phase&&!h.timeline.hasRecording(),'New take overwritten');
+ d.prepare();await t.action('rishte-preview');await wait(200);d.ensemble.metro.pause();await wait(150);check(!d.phase,'Metronome stop left playback');
+ d.index=8;d.cancel();d.ensemble.metro.setBpm(75);await t.action('step-practice');check(d.ensemble.metro.bpm===40,'Fast phrase should initially slow to 40 BPM');await t.action('rishte-stop');
  d.index=d.definition.lessons.length-1;d.cancel();check(d.step.completePerformance,'Complete melody lesson missing');
  await t.action('step-practice');await wait(200);await t.action('exit');check(!t.dataTutorial&&r.instrumentRegistry.size===0,'Exit did not restore Play');
  r.createSpawnedComponent('honk',{name:'Saved learner Honk'});const savedHonk=r.activeInstrumentState;

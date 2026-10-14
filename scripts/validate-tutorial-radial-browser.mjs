@@ -3,9 +3,9 @@
 export async function validateLearnerFlow(app) {
   const THREE = await import("three");
   const { COMPOSITION: C, TUTORIAL_LOOPERS } = await import(
-    "../src/tutorial/composition.js"
+    "../src/compositions/jog/definition.js"
   );
-  const { LESSON_STEPS } = await import("../src/tutorial/lessonSteps.js");
+  const { LESSON_STEPS } = await import("../src/compositions/jog/definition.js");
   const { LESSON_CONTROL_IDS, isSetupStep } = await import(
     "../src/tutorial/TutorialLessonPolicy.js"
   );

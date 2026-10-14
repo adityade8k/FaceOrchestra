@@ -79,7 +79,7 @@ const report = {
   scenarios,
 };
 await writeFile(
-  "docs/audits/contact-performance.json",
+  "/tmp/honk-contact-performance.json",
   JSON.stringify(report, null, 2),
 );
 await rm(baselineRoot, { recursive: true, force: true });

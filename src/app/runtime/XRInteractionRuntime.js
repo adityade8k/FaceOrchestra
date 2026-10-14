@@ -56,7 +56,7 @@ export const XRInteractionRuntimeMethods = {
         (instrumentState.kind === "honk" || instrumentState.kind === "looper" || instrumentState.kind === "metronome"),
       );
     },
-    handleTriggerBeginIntent(controller) {
+    handleTriggerBeginIntent(controller, now = performance.now()) {
       if (this.tutorial?.capturePanelTrigger(controller)) return;
       if (this.pendingSpawnPlacement) {
         this.placePendingSpawnPlacement(controller);
@@ -75,6 +75,8 @@ export const XRInteractionRuntimeMethods = {
       this.initializeRaySqueeze(controller);
       controllerState.activeTriggerInteraction = null;
       const hit = this.getCurrentHit(controller);
+      if (this.getRaySqueezeHit(controller, hit)?.object !== controllerState.raySqueezeTarget)
+        this.releaseRaySqueeze(controllerState);
   
       if (hit?.object?.userData.isCloseButton) {
         this.closeInstructionPanel();
@@ -138,7 +140,7 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
   
-      if (this.captureRaySqueezeTarget(controller, controllerState, hit)) {
+      if (this.captureRaySqueezeTarget(controller, controllerState, hit, now)) {
         controllerState.activeTriggerInteraction = null;
         return;
       }
@@ -188,6 +190,7 @@ export const XRInteractionRuntimeMethods = {
       }
     },
     handleTriggerEndIntent(controller) {
+      const controllerState = this.controllerStates.get(controller);
       if (this.pendingSpawnPlacement?.controller === controller) {
         this.pendingSpawnPlacement.waitForTriggerRelease = false;
       }
@@ -196,7 +199,6 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
   
-      const controllerState = this.controllerStates.get(controller);
       if (controllerState?.suppressTriggerUntilRelease) {
         controllerState.suppressTriggerUntilRelease = false;
         controllerState.activeTriggerInteraction = null;
@@ -238,22 +240,36 @@ export const XRInteractionRuntimeMethods = {
         return;
       }
   
-      this.releaseRaySqueeze(controllerState);
       controllerState.raySqueezeVoiceId = this.getControllerVoiceId(controller);
+      controllerState.raySqueezeLatched = false;
+      controllerState.raySqueezeAcquiredAt = null;
       this.resetRaySqueezeReference(controller, controllerState);
     },
-    captureRaySqueezeTarget(controller, controllerState, hit) {
+    captureRaySqueezeTarget(controller, controllerState, hit, now = performance.now()) {
+      if (!controllerState.trigger) return false;
+      hit = this.getRaySqueezeHit(controller, hit);
       const instrument = this.instrumentRegistry.getFromObject3D(hit?.object);
       if (!isHonkSqueezeTarget(instrument, hit?.object) ||
           this.instrumentRegistry.get(instrument.id) !== instrument) return false;
       if (controllerState.raySqueezeInstrumentState !== instrument ||
-          controllerState.raySqueezeTarget !== hit.object) {
+          controllerState.raySqueezeTarget !== hit.object ||
+          controllerState.raySqueezeAcquiredAt === null) {
+        controllerState.raySqueezeLatched = false;
+        controllerState.raySqueezeAcquiredAt = now;
         this.resetRaySqueezeReference(controller, controllerState);
       }
       controllerState.raySqueezeInstrumentState = instrument;
       controllerState.raySqueezeTarget = hit.object;
       this.activeInstrumentState = instrument;
       return true;
+    },
+    getRaySqueezeHit(controller, hit) {
+      const instrument = this.instrumentRegistry.getFromObject3D(hit?.object);
+      if (instrument?.kind !== "honk" || !instrument.locked ||
+          isHonkSqueezeTarget(instrument, hit?.object)) return hit;
+      // A socket can win normal hit priority. Ray play still reaches this
+      // locked Honk when the same ray intersects its bounding box.
+      return this.raycastSystem?.getHonkSqueezeHit(controller, instrument) || hit;
     },
     resetRaySqueezeReference(controller, controllerState) {
       controller.updateMatrixWorld(true);
@@ -271,6 +287,8 @@ export const XRInteractionRuntimeMethods = {
       controllerState.raySqueezeActiveVoiceIds.clear();
       controllerState.raySqueezeInstrumentState = null;
       controllerState.raySqueezeTarget = null;
+      controllerState.raySqueezeLatched = false;
+      controllerState.raySqueezeAcquiredAt = null;
     },
     updateTriggerInteraction() {
       for (const controller of this.controllers) {
@@ -457,7 +475,8 @@ export const XRInteractionRuntimeMethods = {
         const rawTarget = hit?.object?.userData.isHitTarget ? hit.object : null;
         const lockedInstrumentState = this.getLockedInstrumentStateFromRay(controller);
         const hitInstrumentState = this.instrumentRegistry.getFromObject3D(rawTarget);
-        const squeezeTarget = isHonkSqueezeTarget(hitInstrumentState, rawTarget) ? rawTarget : null;
+        const squeezeHit = this.getRaySqueezeHit(controller, hit);
+        const squeezeTarget = isHonkSqueezeTarget(hitInstrumentState, squeezeHit?.object) ? squeezeHit.object : null;
         const nextTarget = hitInstrumentState?.kind === "honk" && hitInstrumentState.locked &&
           !rawTarget?.userData.isBodyGripTarget && !rawTarget?.userData.isHonkConnectionTarget
           ? squeezeTarget : rawTarget;

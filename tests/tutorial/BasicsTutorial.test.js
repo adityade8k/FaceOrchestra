@@ -155,3 +155,19 @@ test('setup and non-learner strikes cannot earn credit', () => {
   t.accept({ kind: 'strike', startMs: 200, origin: 'demonstration', withdrawn: true, targetId: 'h' });
   assert.equal(t.objectives.size, 0);
 });
+
+
+test('onboarding requires a fresh Trigger hold; aiming alone never completes the Honk lesson', () => {
+  const { t, c, s, horn } = fixture('honk');
+  t.fresh.clear(); s.trigger = false;
+  t.sample(110); t.sample(300);
+  assert.equal(t.completed.size, 0, 'Inherited aiming does not pass a new lesson');
+  s.raySqueezeInstrumentState = null; t.sample(310);
+  s.raySqueezeInstrumentState = horn; t.sample(320);
+  s.raySqueezeInstrumentState = null; t.sample(400);
+  s.raySqueezeInstrumentState = horn; t.sample(410); t.sample(500);
+  assert.equal(t.completed.size, 0, 'Aiming cannot earn Honk credit');
+  t.sample(600); assert.equal(t.completed.has('honk'), false);
+  s.trigger = true; t.fresh.set(c, { trigger: true });
+  t.sample(610); t.sample(810); assert.equal(t.completed.has('honk'), true);
+});

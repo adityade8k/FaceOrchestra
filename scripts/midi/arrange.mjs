@@ -125,7 +125,7 @@ export function arrangeMidi(normalized, options, previous = null) {
     source: normalized.source,
     importOptions: structuredClone(options),
     normalizedSource: {
-      file: `${hash(normalized)}.normalized.json`,
+      file: "normalized.json",
       sha256: hash(normalized),
       sequence: options.sequence ?? 0,
     },

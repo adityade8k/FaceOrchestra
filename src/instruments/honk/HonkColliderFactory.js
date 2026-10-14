@@ -39,8 +39,29 @@ export class HonkColliderFactory {
       const collider = this.createInteractionTarget(parent, bendAlignedGroup, config);
       targets[roleForInteraction(config)] = collider;
     }
+    targets[HONK_INTERACTION_ROLES.squeeze].raycastLockedBounds =
+      this.createLockedBoundsRaycast(root, targets[HONK_INTERACTION_ROLES.squeeze]);
     targets[HONK_INTERACTION_ROLES.looperConnector] = this.createLooperConnector(root);
     return { targets, bendAlignedGroup };
+  }
+
+  createLockedBoundsRaycast(root, target) {
+    // Measure before adding labels or controls. Keep the box in model space so
+    // placement, rotation and scale move the playable volume with the Honk.
+    const inverse = new this.THREE.Matrix4().copy(root.matrixWorld).invert();
+    const bounds = this.box.clone().applyMatrix4(inverse);
+    const ray = new this.THREE.Ray();
+    const point = new this.THREE.Vector3();
+    return (raycaster, intersections) => {
+      inverse.copy(root.matrixWorld).invert();
+      ray.copy(raycaster.ray).applyMatrix4(inverse);
+      if (!ray.intersectBox(bounds, point)) return;
+      point.applyMatrix4(root.matrixWorld);
+      const distance = raycaster.ray.origin.distanceTo(point);
+      if (distance < raycaster.near || distance > raycaster.far) return;
+      // Use the existing squeeze identity and voice owner, not the body mesh.
+      intersections.push({ distance, point: point.clone(), object: target });
+    };
   }
 
   measureModel(root) {

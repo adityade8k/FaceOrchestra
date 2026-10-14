@@ -1,9 +1,10 @@
+import { BEND_SENSITIVITY, MAX_PITCH_BEND_SEMITONES } from "../../src/config/honk.js";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { recordingGuidance } from '../../src/tutorial/recordingGuidance.js';
 import { bendCueState, bendCueDisplacement } from '../../src/tutorial/bendCueState.js';
-import { DESCENDING_BEND, bendAt } from '../../src/tutorial/composition.js';
-import { LESSON_STEPS } from '../../src/tutorial/lessonSteps.js';
+import { DESCENDING_BEND, bendAt } from '../../src/compositions/jog/definition.js';
+import { LESSON_STEPS } from '../../src/compositions/jog/definition.js';
 import { TutorialSession } from '../../src/tutorial/TutorialSession.js';
 import { setupStatus, LESSON_CONTROL_IDS } from '../../src/tutorial/TutorialLessonPolicy.js';
 import { createHarness, setHonk } from '../helpers/looperCaptureHarness.js';
@@ -48,7 +49,7 @@ for(const hand of ['left','right'])test(`${hand} bend guide preserves score hold
   for(const t of [0,.1,.2])assert.equal(bendCueState(DESCENDING_BEND,t).semitones,0);
   for(const t of [.25,.4,.55,.7,.8,1]){
     const cue=bendCueState(DESCENDING_BEND,t);assert.equal(cue.semitones,bendAt(DESCENDING_BEND,t));
-    assert.equal(cue.rollRadians*2.5*4,cue.semitones);
+    assert.ok(Math.abs(cue.rollRadians * BEND_SENSITIVITY * MAX_PITCH_BEND_SEMITONES - cue.semitones) < 1e-9);
     assert.ok(bendCueDisplacement(cue.rollRadians,1,0)>0);assert.ok(bendCueDisplacement(cue.rollRadians,-1,0)<0);
     assert.ok(Math.abs(bendCueDisplacement(cue.rollRadians,1,0))<=.55);
   }

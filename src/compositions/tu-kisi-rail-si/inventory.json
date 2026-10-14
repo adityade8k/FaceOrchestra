@@ -1,0 +1,65 @@
+{
+  "source": {
+    "filename": "tu-kisi-rail-si.mid",
+    "sha256": "ce00474f06ea7e4b5af71ae009ca99c12fe8d1ef368d9a06b73dcd7924620f46",
+    "byteLength": 1509,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "tu-kisi-rail-si.mid"
+    },
+    "format": 0,
+    "division": {
+      "kind": "ppq",
+      "ppq": 480
+    }
+  },
+  "inventory": [
+    {
+      "sequence": "sequence-0",
+      "duration": 74.49583333333332,
+      "soundingEnd": 74.49583333333332,
+      "tracks": [
+        {
+          "track": 0,
+          "name": "Tu Kisi Rail Si - approximate performance",
+          "channels": [
+            0
+          ],
+          "ports": [
+            0
+          ],
+          "notes": 159,
+          "pitchRange": [
+            51,
+            69
+          ],
+          "maximumPolyphony": 2,
+          "density": 2.134347558588288,
+          "programs": [
+            {
+              "deltaTime": 0,
+              "channel": 0,
+              "type": "programChange",
+              "programNumber": 0,
+              "id": "t0-e1",
+              "track": 0,
+              "index": 1,
+              "port": 0,
+              "tick": 0,
+              "seconds": 0,
+              "quarterBeat": 0
+            }
+          ],
+          "likelyRole": "chords/support"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "sequence": 0,
+      "issue": "no meter; teaching grid must be declared"
+    }
+  ]
+}

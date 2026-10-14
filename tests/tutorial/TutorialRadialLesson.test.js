@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { committedRoleBindings } from '../../src/tutorial/TutorialRoleBindings.js';
 import { isSetupStep, musicUnavailable, setupStatus } from '../../src/tutorial/TutorialLessonPolicy.js';
 import { TutorialSession } from '../../src/tutorial/TutorialSession.js';
-import { LESSON_STEPS, SIMULATION_STEPS } from '../../src/tutorial/lessonSteps.js';
-import { COMPOSITION as C, PITCHES } from '../../src/tutorial/composition.js';
+import { LESSON_STEPS, SIMULATION_STEPS } from '../../src/compositions/jog/definition.js';
+import { COMPOSITION as C, PITCHES } from '../../src/compositions/jog/definition.js';
 import { SpawnCatalog } from '../../src/spawning/SpawnCatalog.js';
 import { TutorialLessonFlow } from '../../src/tutorial/TutorialLessonFlow.js';
 

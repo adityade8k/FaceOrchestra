@@ -1,7 +1,7 @@
 export async function validate() {
   const { r, t, d, check, wait } = window.__rishte;
   const a = t.adapter, metro = a.get("metronome"), f = d.ensemble.layoutFrame;
-  const outcomes = JSON.stringify(d.outcomes), takes = JSON.stringify(d.ensemble.loopers.map(h => h.looperController.serializeState(h)));
+  const outcomes = JSON.stringify(d.outcomes); let takes;
   const placed = f.root.position.clone(), scale = f.scale, steps = [], originals = [];
   let calls = [], recoveries = [];
   const controller = d.ensemble.loopers[0].looperController, reconcile = controller.reconcileScheduledAudioAtSource;
@@ -42,6 +42,7 @@ export async function validate() {
       const startLimit = performance.now() + 2000;
       while (!d.phase && performance.now() < startLimit) await wait(20);
       check(d.phase === "demo", "Demonstrate did not start " + lesson.title + ": " + d.feedback);
+      takes = JSON.stringify(d.ensemble.loopers.map(h => h.looperController.serializeState(h)));
       check(!f.enabled && !f.root.visible && f.controls.hidden, "Demonstration allowed frame movement");
       check(d.guide.startBeat === lesson.startBeat && d.guide.endBeat === lesson.endBeat, "Wrong demonstration range");
       check(JSON.stringify(d.guide.step.events.map(e => e.id)) === JSON.stringify(lesson.eventIds), "Wrong demonstration notes");
@@ -70,7 +71,8 @@ export async function validate() {
       if (lesson.completePerformance) {
         window.__rishte.demoCalls = calls;
         check(melody.length === 175 && backing.length === 121, "Final arrangement counts " + JSON.stringify({melody:melody.length,backing:backing.length,recoveries,backingCalls:backing}));
-        check(maximumHands === 2 && d.ensemble.handoffs.length === 12, "Missing overlapping holds or backing transitions");
+        const transitions=d.ensemble.blocks.slice(0,-1).reduce((count,b,i)=>count+b.patterns.filter((role,lane)=>role&&d.ensemble.blocks[i+1].patterns[lane]&&role!==d.ensemble.blocks[i+1].patterns[lane]).length,0);
+        check(maximumHands === 2 && d.ensemble.handoffs.length === transitions, "Missing overlapping holds or backing transitions");
         const beatMs = 60000 / expectedBpm, audioZero = audioAnchor.audioSeconds + (anchor - audioAnchor.wallMs) / 1000;
         let backingError = 0;
         for (const role of new Set(d.definition.arrangement.backing.map(e => e.role))) {

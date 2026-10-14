@@ -60,7 +60,7 @@ const definition = {
   schemaVersion: 1, id: options.id, title: options.title, contentVersion: 1,
   playback: "polyphonic-midi-v1", bpm, liveRole: "melody", source: normalized.source,
   importOptions: options,
-  normalizedSource: { file: `${hash(normalized)}.normalized.json`, sha256: hash(normalized), sequence: 0 },
+  normalizedSource: { file: "../normalized.json", sha256: hash(normalized), sequence: 0 },
   score: { events, durationSeconds: duration, tempo: sequence.tempo, meter: sequence.meter },
   arrangement: { recipes, backing: [],
     provenance: `MIDI ${expected}; all 296 notes retained with key and pedal releases`,
@@ -80,6 +80,6 @@ const definition = {
 };
 validateMidiPerformance(definition);
 definition.contentHash = hash(definition);
-for (const [name, value] of [["import-options.json", options], ["composition.json", definition], [`${definition.contentHash}.composition.json`, definition]])
+for (const [name, value] of [["import-options.json", options], ["provenance/imported-arrangement.json", definition]])
   await writeFile(new URL(name, root), JSON.stringify(value, null, 2) + "\n");
 console.log(JSON.stringify({ notes: events.length, roles: Object.fromEntries(["melody","bass","harmony"].map(p=>[p,events.filter(e=>e.part===p).length])), lessons: ranges, honks: recipes.length-1, contentHash: definition.contentHash }));

@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {LESSON_STEPS,SIMULATION_STEPS} from '../../src/tutorial/lessonSteps.js';
-import {COMPOSITION as C,TUTORIAL_LOOPERS} from '../../src/tutorial/composition.js';
-import {STEPS as KUCH_STEPS} from '../../src/tutorial/kuch/score.js';
+import {LESSON_STEPS,SIMULATION_STEPS} from '../../src/compositions/jog/definition.js';
+import {COMPOSITION as C,TUTORIAL_LOOPERS} from '../../src/compositions/jog/definition.js';
 import {TutorialSession} from '../../src/tutorial/TutorialSession.js';
 import {validateSetup,validateSwitchExercise,validateTake} from '../../src/tutorial/validation.js';
 import {connectTutorialClock} from '../../src/tutorial/TutorialRoutes.js';
@@ -17,7 +16,6 @@ test('all tutorial routes teach separate recordings, shared alternatives, indepe
     assert.ok(steps.some(s=>s.type==='clock-wire'&&s.looperRole==='alternativeLooper'));
     assert.ok(steps.some(s=>s.type==='record'&&s.looperRole==='percussionLooper'));
   }
-  assert.ok(KUCH_STEPS.some(s=>s.kind==='switch'));
   assert.equal(TUTORIAL_LOOPERS.length,3);
   assert.notDeepEqual(C.alternateBacking,C.backing);
 });

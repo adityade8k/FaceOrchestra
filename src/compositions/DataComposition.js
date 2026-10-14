@@ -1,4 +1,4 @@
-import { validateComposition } from "./CompositionRegistry.js";
+import { validateComposition } from "./CompositionDefinition.js";
 import { GenericTutorial } from "../tutorial/GenericTutorial.js";
 import { validateDataArrangement } from "./DataValidation.js";
 import { DataEnsemble, DataGuidance } from "./DataEnsemble.js";

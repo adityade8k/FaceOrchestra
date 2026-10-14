@@ -1,0 +1,58 @@
+{
+  "source": {
+    "filename": "nazariya-honk-bends-70bpm.mid",
+    "sha256": "d2ca1e4bc2aef6de444843875920e0fe38b06e101e390d52d89a93390b3733f1",
+    "byteLength": 3844,
+    "importerVersion": 1,
+    "parserVersion": "midi-file@1.2.4",
+    "options": {
+      "filename": "nazariya-honk-bends-70bpm.mid"
+    },
+    "format": 1,
+    "division": {
+      "kind": "ppq",
+      "ppq": 960
+    }
+  },
+  "inventory": [
+    {
+      "sequence": "sequence-0",
+      "duration": 53.191080293750005,
+      "soundingEnd": 53.191080293750005,
+      "tracks": [
+        {
+          "track": 0,
+          "name": "Nazariya - Honk bends - 70 BPM",
+          "channels": [],
+          "ports": [],
+          "notes": 0,
+          "pitchRange": [],
+          "maximumPolyphony": 0,
+          "density": 0,
+          "programs": [],
+          "likelyRole": "melody-or-bass (confirm)"
+        },
+        {
+          "track": 1,
+          "name": "Nazariya - Honk bends - 70 BPM",
+          "channels": [
+            0
+          ],
+          "ports": [
+            0
+          ],
+          "notes": 61,
+          "pitchRange": [
+            57,
+            69
+          ],
+          "maximumPolyphony": 1,
+          "density": 1.146808819507423,
+          "programs": [],
+          "likelyRole": "melody-or-bass (confirm)"
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

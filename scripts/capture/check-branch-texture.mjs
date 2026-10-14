@@ -75,7 +75,7 @@ try {
   );
   delete result.image;
   await writeFile(
-    "docs/audits/branch-texture.json",
+    "/tmp/honk-branch-texture.json",
     JSON.stringify({ passed: true, ...result }, null, 2) + "\n",
   );
   console.log(

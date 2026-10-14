@@ -35,7 +35,7 @@ export async function validate(app,{onProgress=()=>{}}={}) {
   // Reuse the actual completed recordings for practice. No generated takes or
   // artificial handoff events: every selection goes through normal Play.
   const {TutorialSession}=await import('../src/tutorial/TutorialSession.js');
-  const {LESSON_STEPS}=await import('../src/tutorial/lessonSteps.js');
+  const {LESSON_STEPS}=await import('../src/compositions/jog/definition.js');
   const step=LESSON_STEPS.find(s=>s.type==='switch');
   t.conductor.stop();t.conductor=null;t.report=null;
   t.session=new TutorialSession({steps:[step],now:performance.now()});

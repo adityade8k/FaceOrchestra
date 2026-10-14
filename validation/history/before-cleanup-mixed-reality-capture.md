@@ -1,0 +1,190 @@
+# Mixed Reality Capture
+
+Record final instrument presentation and the actual post-master audio to your laptop, then overlay a presentation-only replay on fixed-phone footage. The recorder is independent of the musical Loopers. Capture, editing and export run locally after dependency setup.
+
+For a practical walkthrough, start with the [step-by-step recording and editing guide](mixed-reality-step-by-step.md).
+
+## Setup and pairing
+
+Use Node 22+ (tested with 24.7), npm, desktop Chrome, and optional FFmpeg. From this repository:
+
+```sh
+npm ci
+npm run capture:serve
+```
+
+The postinstall copies pinned **Three.js 0.164.1**, addons, fonts and license to gitignored `vendor/three`. `npm run capture:setup` recreates these copies. `ws` is pinned to **8.21.3**. No CDN, telemetry or cloud service is used at runtime.
+
+The receiver reuses `certs/localhost.pem` and `certs/localhost-key.pem`. For a local CA certificate, install mkcert, run `mkcert -install`, then issue a certificate containing the laptop's actual LAN IP and hostname:
+
+```sh
+mkdir -p certs
+mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 YOUR_LAN_IP YOUR_LAPTOP_HOSTNAME
+```
+
+Trust the issuing CA on the headset through its supported certificate-management workflow. Laptop trust does **not** establish headset trust. The certificate must cover the exact hostname/IP used. If the headset reports an untrusted connection, fix its trust configuration before recording; do not disable browser security or allow mixed content. Never transfer the CA private key to the headset.
+
+Keep laptop and headset on the same LAN, allow TCP **8443** through the laptop firewall, and check that Wi-Fi client isolation does not prevent communication. Keep the receiver terminal open.
+
+- Headset app: `https://YOUR_LAN_IP:8443/`. The headset's `localhost` refers to the headset, not the laptop.
+- Laptop editor: `https://localhost:8443/capture/`.
+- Pair each browser with the six-digit code printed by the receiver, before entering XR. A server restart requires pairing again.
+- Custom hostname allowlist: comma-separated `CAPTURE_HOSTNAMES`. Other settings: `CAPTURE_PORT`, `CAPTURE_HOST`, `CAPTURE_CERT`, `CAPTURE_KEY`, `CAPTURE_DIR`, `FFMPEG` (encoder executable).
+
+Install FFmpeg locally for MP4 encoding, e.g. `brew install ffmpeg` on a Homebrew Mac. Without it, transparent PNG/WAV export still works. `npm run dev` remains loopback desktop preview, and `npm run dev:https` remains static HTTPS; neither accepts recording streams. All included servers exclude captures, certificates, keys and Git files from static serving. Do not use an unrestricted file server on the repository once it contains private recordings.
+
+## Capture
+
+1. Fix the phone securely in **portrait 9:16**. Start video first. Use standard SDR initially, keep one lens/zoom, avoid automatic lens switching, lock focus/exposure where available, and disable dynamic stabilization/cropping. A fixed phone with a changing digital crop is not a fixed projection.
+2. Expand **Mixed Reality Capture** on the app page, pair, and confirm **Receiver ready**. Native XR sampling is the default; optional 60/30 Hz maximum sampling and menu/tutorial/ray recording can be selected before starting. Optional UI layers increase encoding/data cost.
+3. Enter XR. Use the existing radial menu (hold right A / left Y), select **Capture**, pull into its child menu, then choose **Start Mixed Reality Recording**. It becomes **Stop Mixed Reality Recording** while active. The receiver must acknowledge the take and asset snapshot before recording is reported active. Controller and desktop status show connection, state, elapsed time and recovery messages. Capture commands do not spawn instruments or advance tutorial lessons.
+4. **Mark Sync** near the beginning. It logs a timestamp and plays three short rising tones through the recorded master bus. The phone microphone must hear the headset speakers. A virtual flash would not be visible to the phone. A recognizable controller gesture can be used for manual synchronization instead.
+5. Make **4–6 still calibration holds**, spread across the image at different heights and depths, preferably with varied orientations. **Mark Calibration Pose** bookmarks a hold. Collect 8–12 fitting observations plus at least two held-out observations from additional frames where possible. Three holds do not guarantee calibration.
+6. Perform normally, including tutorials if desired. Add another sync cue near the end. Stop and keep the tab open until **Take saved**. Normal Stop retains **500 ms** of release tails while leaving live voices untouched. Session end, hidden/interrupted XR, audio suspension or reference-space reset flush immediately without that tail; these stops are conservatively labeled incomplete.
+
+Recenter/reset ends the take with an explicit reset event. Start a new take and calibrate again. The recorder never joins incompatible reference spaces. A phone movement also requires new calibration.
+
+## Record Raag Jog in mixed reality
+
+Pair the headset and computer with the existing receiver code. Enter XR, then choose **Record Raag Jog in mixed reality** beside **Play** and **Tutorials**. Selecting it on desktop instead shows **Prepare ensemble**; enter XR before preparing.
+
+The mode saves your current free-play scene in memory and prepares the canonical `virag-2-jog-study` version 3 arrangement at 80 BPM: the seven-note melody row, four chord groups, percussion Honk, Metronome, and three recorded Loopers. All transports start stopped. Move instruments to comfortable positions before starting. The chord and alternative Loopers share one output; percussion uses another. The standard chord pattern and percussion start together; the alternative recording remains available through the ordinary Looper controls. There are no demonstration hands, melody autoplay, lesson steps or scoring.
+
+1. Start the external phone video and let its microphone hear the headset speakers. Phone recording stays independent and may run across several attempts.
+2. Press **Start**. The app checks tracking, pairing, audio and the prepared ensemble. It opens a distinct take, prepares its presentation resources, and waits for receiver and PCM readiness. One automatic **Mark Sync** cue plays, followed by **4, 3, 2, 1**, then **Play**. Sync and count-in are included in master audio. The two backing parts use the same scheduled beat-zero anchor as the count-in.
+3. Perform the melody yourself with the tutorial's guidance. Green rings shrink toward the next Honk; squeeze Trigger when yellow opens, hold while it stays open, and release as it shrinks. The orange wrist guide follows each held Eb-to-C bend. The panel names the current and next note, beat/phrase, rests and bend instructions. All cues follow the same scheduled beat zero as the backing and restart from the beginning on each take. These rings appear only for the player: they are excluded from recorded scene data, replay and composite exports, even with UI capture enabled. At the end of the written melody, guidance clears and the panel invites you to continue freely. Recording and backing continue until you stop. **Restart Recording** and **Stop Recording** remain on the XR panel during the count-in and performance.
+4. **Restart Recording** cancels pending cues, backing starts and pattern switches, releases voices, records the normal release tail, and waits for acknowledged saving. It then opens the next numbered take with a fresh sync and count-in. Recordings, instrument placement and XR origin stay in place.
+5. **Stop Recording** follows the same save path and returns to Start. **Exit** saves an active take before restoring your prior free-play scene. Exit from ready creates no take. Saved scenes and tutorial progress are not overwritten.
+
+**Saving…** means the receiver has not yet acknowledged finalization. If saving times out, keep the tab and receiver open, restore the connection, and choose **Check saving**. The current worker and spool remain available; no new take replaces them. A late acknowledgement returns to ready without an automatic retry. XR/session loss, hidden XR, tracking loss, reference-space reset, audio suspension or a capture gap cancels musical actions. Start again explicitly after an interruption. Desktop/radial capture commands use the same recorder owner; Mark Sync cannot add a second cue to this mode's attempt.
+
+In the paired computer editor, each attempt appears as **Raag Jog — Take 01**, **Take 02**, and so on, with its date, musical completion action and capture status. **restarted** describes the performance choice; it does not make an otherwise intact take incomplete. The information panel shows the performance-start time in take seconds for trimming. Align each take's own sync cue to the corresponding point in the continuously recorded phone video. Every saved attempt can be selected, replayed and downloaded as a portable take.
+
+Optional `take.performance` metadata keeps the mode, composition ID/version, session `groupId`, attempt number, readable label, sync cue, scheduled and actual performance-start timestamps, and completion action (`stopped`, `restarted`, `interrupted`). Ordinary take ID/creation time and capture integrity (`complete`, `gaps`, missing streams, reason) keep their existing meanings. Timestamped events carry updates through recovery. Portable archives and receiver reopens retain the metadata; older takes need none of these fields.
+
+### Implementation and local validation
+
+Changed files for this workflow:
+
+- Preparation, performance ownership and melody guidance: `src/performance/JogEnsemble.js`, `JogRecordingSession.js`, `JogMelodyGuidance.js`; the existing `src/tutorial/TutorialTimingCues.js` renders the rings outside capture roots.
+- Launch, XR panel and tracking integration: `src/tutorial/TutorialRuntime.js`, `src/tutorial/TutorialRoutes.js`, `src/app/FaceOrchestraApp.js`.
+- Capture readiness, finalization and cues: `src/capture/CaptureRecorder.js`, `AudioCapture.js`, `CaptureControls.js`, `pcm-worklet.js`, `stream-worker.js` in that same directory.
+- Optional take metadata and editor labels: `scripts/capture/storage.mjs`, `capture/editor.js`. The archive format and capture protocol remain version 1.
+- Validation: `tests/performance/JogEnsemble.test.js`, `JogRecordingSession.test.js`, `JogMelodyGuidance.test.js`; `tests/capture/lifecycle.test.js`, `jog-archive.test.js`, `audio.test.js`, `worker.test.js`; `scripts/capture/check-jog.mjs`; the `test:jog:browser` command in `package.json`; this document.
+
+Local checks on 2026-09-24: `npm run verify` (603 passing tests, including capture, transport, persistence, tutorial and guidance regressions), `npm run test:capture:server`, `npm run test:capture:browser`, and `node scripts/capture/check-jog.mjs` (`npm run test:jog:browser`). The Jog browser fixture created three distinct complete takes, restarted during count-in and performance, cancelled an alternative-pattern queue, checked captured sync/count-in/backing audio and common backing onset, preserved adjusted resting placement, restored a nonempty free-play scene, replayed all three takes in the editor, and downloaded/imported a portable take. It also verified visible melody cues sharing the backing anchor, cleared cues after Stop, fitting panel text, and no timing-ring nodes in stored take data. Unit checks cover every phrase, rests, bend phases, retry anchors and exclusion of ring nodes/resources with UI capture enabled or disabled. Synthetic rays reached both ready-panel actions within the existing 2.5 m ray limit. Browser reports and screenshots are in gitignored `test-results/jog/` and `test-results/capture/`.
+
+The Jog fixture uses an isolated Chrome profile, temporary receiver storage, synthetic tracking/capture, and reduced raster resolution for the software renderer. Browser texture encoding caused startup audio gaps during development; presentation preparation and the bounded PCM reserve resolved those gaps in the final fixture. Native headset frame rate and acoustic timing still require the checks below.
+
+### Headset check
+
+- Reach Start, Restart Recording, Stop Recording and Exit with both controllers; confirm the side panel does not obstruct the melody row.
+- Hear one rising sync cue, then four evenly spaced count-in clicks without overlap. Confirm the phone records that cue.
+- Check that chord and percussion begin together on Play, and that selecting the alternative never layers both chord patterns on their shared output.
+- Follow the highlighted melody Honks, hold/release rings, rests and orange Eb-to-C wrist guide through all six phrases. Check readability from playing position; verify the rings stay out of the computer composite. After the melody ends, keep playing and confirm capture/backing continue.
+- Restart once during count-in and once while holding a note. Check for cancelled old cues, no stuck notes, unchanged placement and a fresh count-in each time.
+- Stop, wait for **Take saved**, then Exit and inspect the restored scene. Verify at least two distinct numbered takes in the computer editor, replay both, and download/import one.
+- Interrupt tracking or Wi-Fi during an attempt. Confirm music stops, saving is reported honestly, and recovery does not automatically restart a count-in or move the ensemble.
+
+The automated browser fixture uses synthetic capture, real app instruments and Web Audio, and a local receiver. It does not verify headset controllers, tracking quality, audible speaker/phone alignment or device performance.
+
+## Storage, recovery and portability
+
+Each take is written incrementally under gitignored `captures/<take-id>/`: metadata, sample/event/audio NDJSON streams, PCM, finalized WAV and a snapshot of model/texture assets. Access is through paired local API endpoints. HTTPS/WSS use same-origin/host checks and HttpOnly pairing cookies; there is no cloud account system.
+
+Samples, events and audio have independent sequences. Acknowledgements follow writes and `datasync`. Duplicates do not produce duplicate records; sequence gaps are rejected. Reconnection resends unacknowledged packets from the receiver's durable counters. A **32 MiB** worker queue and four-buffer frame handoff bound memory. The same pending queue is spooled to IndexedDB; it is not a whole-take download. Spool availability/quota errors are shown. Queue exhaustion stops capture, records its affected stream/time interval and preserves recovery. The XR callback never waits on disk or network.
+
+Keep the tab open during reconnection. After a tab reload, pair and use **Recover this browser's pending takes**, one take per click. If the headset tab is unavailable, select the take in the editor and use **Finalize interrupted take** to rebuild WAV from intact PCM. Known missing intervals are displayed; an unknown end is explicitly unknown. Incomplete presentation resources hide affected nodes and report the problem, while intact data remains usable. Power loss may lose unspooled/unacknowledged data, but the laptop's durable portions remain.
+
+**Download portable take** streams a `.honk` archive with metadata, state, PCM/WAV and pinned model/texture files. Import it in this repository's editor on another machine. Asset checksums are verified; import gets a new local ID and retains original identity for project matching. Existing takes are not overwritten. Import limits are 8 GiB total and 4 GiB per file. Version 1 uses RIFF WAV, so split very long recordings before the 4 GiB audio limit.
+
+## Align the fixed phone camera
+
+Select a take and local video. The video does not need to upload to the receiver. Browser decoding respects rotation metadata; preview uses decoded dimensions. Output uses aspect-preserving portrait crop with optional pan/zoom, never stretching. All calibration coordinates mean **1080 × 1920 cropped-output pixels**, origin top left, even at a smaller preview/export size. Changing crop invalidates observations/calibration.
+
+Phone and headset recording start/stop are independent; headset capture does not remotely control the phone. Alignment is manual using a shared sync cue or gesture, then trim selects the portion covered by both recordings. The mapping is `sceneTime = a * videoTime + b`. One anchor fits offset `b`; two anchors at least one second apart also fit clock drift `a`. Use cue positions in phone audio or controller gestures. The clean WAV starts at scene time zero, including initial silence. Phone audio is muted in final exports. **Listen to phone audio for sync** temporarily replaces clean preview audio instead of doubling it. Calibration clicks use the displayed video frame's presentation timestamp. Frame-step buttons step the selected 30/60 fps output grid, not an assumed constant input rate.
+
+After matching timing:
+
+1. Drag the timeline forward or backward to scrub continuously, or use **← Frame / Frame →** and the numeric video-time field. Dragging pauses video and clean audio. Both views follow decoded frames at the same playhead; rapid drags skip intermediate queued positions and settle at your latest choice. Pause on a clear pose for alignment.
+2. In **3D scene**, use **Inspect scene** to orbit (drag), pan (right-drag) or zoom (scroll). This changes only your inspection viewpoint. The labeled headset, green left grip and orange right grip show the recorded tracking poses; the yellow phone and portrait frustum show the composite camera.
+3. Select **Translate** (**W**, selected by default) and drag its arrows or plane squares. Select **Rotate** (**E**) and drag its rings. Select **Scale** (**R**) and drag a box outward to widen the camera view or inward to narrow it. Scaling changes the lens uniformly, preserving the portrait aspect and metric scene; it does not stretch the phone or instruments. **Q** selects **Inspect scene**. Shortcuts are inactive while typing in fields or exporting. Editing pauses video and clean audio. Orbit is disabled while dragging a handle; dragging elsewhere still lets you inspect the scene.
+4. Adjust **Lens / field of view** while watching **Video + instruments**. **Undo camera edit** reverses a complete translation, rotation, scale drag, lens change, numeric edit, reset or solver fit. **Reset camera** returns to the initial camera and can itself be undone.
+5. Press **Save this frame**, then click the real **left** and **right** controller grip centers in the phone image (wearer's hands). Instruments are hidden during matching. Skip an occluded controller; lost tracking cannot supply a match. Each completed frame refines the one fixed camera across all saved matches. The first frames use a regularized estimate near the current camera; at least eight well-spread matches enable the full pose/FOV solve. Use 4–6 varied poses. The displayed pixel error is fitting error in 1080 × 1920 coordinates, not independent validation. Grip-center clicks are approximate physical correspondences, kept separate from verified measured landmarks. They do not promise a perfect fit or adjust temporal synchronization.
+6. Click saved timestamps to revisit them; save again to replace their clicks, or use **×** to remove a frame and its constraints. Cancel leaves previous matches intact. Each automatic camera change can be undone. Inconsistent full fits are rejected without moving the camera. Open **Fine camera adjustments** for exact position, pitch/yaw/roll, vertical FOV and image-center offsets. The lens readout rounds for display; project files retain full numeric precision. Set trim/output and export after checking an additional pose.
+
+**Controller spheres** and **Controller rays (exported)**, directly below **Video + instruments**, are enabled by default for new projects and can be toggled independently. Solid green/left and orange/right spheres mark tracked grip origins. Matching rays follow the recorded target-ray positions and orientations, even when optional ray presentation objects were not recorded. **Ray appearance** provides independent left/right colors, shared opacity (0–100%) and shared length (0–10 m). Defaults are green/orange, 85% opacity and 1.5 m; **Reset ray appearance** restores them. Length scales only the beam along its pointing direction, preserving origin, orientation and thickness. Rays are direction indicators, not reconstructed hit distances. When enabled, they appear in both the composite preview and exported MP4/PNG frames with the same style. Overall **Overlay** opacity multiplies ray opacity too. Settings are saved as `rayStyle`; old projects without it retain the original appearance. **Headset guide** is a separate optional toggle. Spheres are approximate grip markers, not physical controller outlines. Inspection grid, labels, phone/frustum and handles live in a separate inspection scene. Tracked preview spheres and the headset proxy are also separate from the recorded scene and appear only in the composite preview. Inspection helpers, controller spheres and the headset proxy never render in exports. Controller rays have their own output layer and use the same recorded target-ray poses in preview and export. Guide toggles are saved with the project, including explicit off settings in older projects. Recorded instrument labels remain controlled by **Visible instrument layers**.
+
+Save a project to keep its camera, saved timestamps and controller clicks (`frameMatches`). Reopening restores them; reselect the matching local video. Version 1 projects without matches or saved frames still open. Selecting a different take clears saved frames and resets the camera. Selecting a different video clears saved frames and observations and requires checking timing again. Video matching uses filename, size and decoded dimensions/duration; it is not a content fingerprint. Crop changes keep timestamps but clear image measurements. Timing changes re-sample saved matches from recorded grip poses and refit; advanced measured observations must be collected again. Undo history belongs to the current editing session and is cleared on source/project replacement.
+
+### Optional measured-landmark calibration
+
+Manual alignment requires no landmark offsets or solver setup. Expand **Advanced calibration** only to fit a camera from measured physical landmarks.
+
+Identify a visible physical point on the correct controller model. Enter a **calibrated offset from that controller's XR grip origin**, in meters, and name the landmark. Obtain it from a verified model/profile coordinate mapping or prior measured calibration. This version does not assert a physical landmark for arbitrary controllers or estimate unknown offsets. A generic sphere/grip origin is only a proxy; do not mark its offset verified without an actual calibration. Handedness, profile and offset are saved per observation.
+
+At each synchronized still frame choose the hand, press **Click a controller landmark in video**, and click that physical point. Repeat across holds, reserving at least two additional observations as held-out. The 3D point comes from the recorded **grip pose**, independently of target ray. Lost tracking cannot provide a landmark.
+
+The JavaScript solver fits one fixed metric camera with Huber-weighted nonlinear least squares and multiple pose/FOV initializations. Pose-only mode retains known FOV; pose + focal mode also fits FOV with a fixed image center (centered initially). Insufficient/degenerate/planar observations are rejected. Fitting and held-out pixel errors stay visible. A fit above 15 px fitting RMS or 20 px held-out RMS is flagged failed; it cannot silently become a successful export calibration. Two held-out observations below threshold are needed for the validation indicator. These thresholds do not establish real-camera accuracy.
+
+Fine camera adjustments retain position, pitch/yaw/roll, vertical FOV and image-center offsets. Rotation is Three.js `YXZ` Euler order, displayed as pitch/yaw/roll degrees; camera forward is `-Z`. Projection uses Three.js conventions directly, avoiding an OpenCV axis conversion. Metric scene scale stays fixed. Calibration dots appear on matching frames and are hidden in export, along with controller/headset proxies. Save a project to retain the fixed camera, saved frames, landmarks, profile offsets, fit, mapping, crop, layers, trim, output and take identity. Reselect its video when reopening. Recalibrate after phone movement or an XR-origin change.
+
+## Export and Premiere
+
+Default output is **1080 × 1920**, selectable 30/60 fps. Smaller portrait sizes help testing. Trim is in **video seconds**. Export pauses playback, seeks/decode-waits at each chosen output timestamp, renders through the same camera/crop/layers, then streams one PNG at a time to disk. It does not rely on realtime screen recording or store all rendered frames in browser memory. Cancellation leaves partial files and does not claim a finished movie.
+
+Video presentation callbacks can precede `seeked` and decoded-data readiness. Export waits for completed seeking and `HAVE_CURRENT_DATA`, then copies the phone pixels into a fixed snapshot before compositing. Same-source-frame seeks do not require a fresh presentation callback. Decode failures stop export with the video timestamp; the preview's loading/selection placeholder is never a valid export background. Re-export affected older movies from the saved project and original video.
+
+With FFmpeg the service produces H.264/yuv420p MP4 with AAC. Clean audio is resampled using the same mapping and trim, including silence where samples are absent. Download MP4, WAV or PNG archive. Files also remain in `captures/exports/<export-id>/`.
+
+Without FFmpeg, **Transparent PNG sequence + WAV** downloads a standard `.tar` with `frame-000000.png` onward, aligned `audio.wav`, project and instructions. Extract it. In Premiere:
+
+1. Import the first PNG with **Image Sequence**, and interpret it at the selected 30/60 fps.
+2. Create a matching portrait sequence and place the image sequence at zero.
+3. Put the phone video underneath, using identical crop and video trim. Mute phone audio.
+4. Put exported `audio.wav` at zero; offset/drift/trim are already applied, so do not apply them twice.
+
+When FFmpeg is present, the downloadable PNGs already contain the composite. Encoder failures report real errors and preserve intermediate PNG/WAV files. Unsupported video codecs report an actionable local conversion, for example for an **SDR** source:
+
+```sh
+ffmpeg -i phone.mov -vf format=yuv420p -c:v libx264 -crf 18 -c:a aac phone-sdr.mp4
+```
+
+HDR requires a deliberate local tone-mapping/color-management conversion first. The editor is SDR/sRGB and does not promise HDR matching. Lens distortion is not fitted; use a normal stable lens and inspect held-out errors, especially near the edges.
+
+## Format and implementation
+
+Take version 1 includes commit, source hash, asset SHA-256 versions, Three version, timebase, sampling rate, profiles, coordinate policy and initial structural snapshot. Full presentation keyframes supply what ordinary persistence omits: pending spawns, transient Looper states, equipped Sticks and animation. Assets use recorded authored GLB node paths and resource IDs; replay does not depend on new runtime UUIDs matching old ones.
+
+Roots use capture/world meters, right-handed, +Y up. Children/bones use local space; equipped roots include their parent transform exactly once. Cached bindings sample actual animated transforms/scales, visibility, morphs and material presentation. Resources are referenced once; procedural label geometry is saved on changes. Wires reconstruct recorded Bezier segments, radius and subdivision counts. The worker emits delta samples, full keyframes at least once per second and separate lifecycle/state events. Continuous transforms/morphs interpolate with quaternion slerp; discrete state steps. Deleted/invalid poses, gaps and reference discontinuities are not interpolated together.
+
+Capture runs after runtime updates, immediately before render, outside scheduler phases that can exit early during spawn preview. Serialization/resource encoding is deferred outside the XR callback. AudioWorklet captures an independent branch of `MasterBus.output`, leaving the speaker connection and gain untouched; its own output is silent. The ordinary recorder uses an eight-buffer pool of stereo blocks of 2048 frames. Jog performance mode requests a bounded 64-buffer reserve (1 MiB) so brief texture-encoding stalls can recycle PCM without dropping blocks; block size and timestamps are unchanged. Sample-index and AudioContext-frame timestamps map to scene time through recorded clock anchors with quantum uncertainty and output-latency diagnostics. PCM is placed at its scene-time offset, preserving gaps. Audio suspension ends/flags the take. External speaker/phone latency is handled by video sync anchors.
+
+Replay constructs only Three presentation objects and shared lighting, with alpha background and no fallback environment, transport, collisions, haptics or synth. Recorded layers cover instruments, labels, wires, tutorial and rays; tracked controller spheres and headset guides are preview-only. Controller target rays are a separate selectable output layer. RGB video has **no reliable body depth**: an overlaid instrument covers a foreground hand. No automatic segmentation or correct occlusion is claimed. The alpha/layer structure supports future imported masks or foreground/background assignments; a person silhouette alone would not solve all hand/instrument ordering.
+
+## Verification and synthetic demo
+
+```sh
+npm run verify
+npm run test:capture:server
+npm run test:capture:browser
+npm run test:jog:browser
+npm run capture:demo
+```
+
+Browser verification/demo generation launches an isolated headless Chrome profile and a loopback-only HTTP fixture service. This is desktop testing, not a headset security workaround. Set `CHROME_BIN` if Chrome is elsewhere. Production remains HTTPS/WSS. Evidence and screenshot are in gitignored `test-results/capture/`.
+
+`capture:demo` creates an explicitly labeled synthetic take plus `captures/demo/phone.webm`, `project.json` and `evidence.json`. Start the regular receiver, select that take, choose the video and load its project. Generated dots are known synthetic landmarks, not a physical-controller recipe. See [verification evidence](mixed-reality-verification.md) for tests, measurements and limits.
+
+### Real-device acceptance still required
+
+- Trust HTTPS and pair; check capture/readiness/status/menu access in normal play and a tutorial.
+- Record a **two-minute** fixed-phone take with a bent Honk note, chord, Stick strike, Looper switch, lock/unlock, moved/scaled object, spawn/delete and spawn preview during playback.
+- Place sync cues at both ends and make 4–6 calibration holds. Verify the actual controller/profile offsets, fit one camera and inspect withheld frames throughout the image.
+- Briefly disconnect/reconnect the headset LAN; verify recovery/final flush or exact reported gaps, then reopen after receiver restart.
+- Compare clean audio with live sound, release tails and alignment at both ends. Confirm phone audio is muted in final output.
+- Exercise visibility loss, recenter and audio suspension. Check safe finalization and fresh calibration where needed.
+- Measure headset frame cost/memory at native refresh for the full take, including spawning and optional UI layers; select lower-rate sampling and retest if needed. Desktop results do not validate headset performance.
+- Inspect full portrait MP4 or PNG/WAV in Premiere for crop, rotation, timing, color and expected hand/body occlusion limitations.
+
+API semantics: [WebXR grip space](https://developer.mozilla.org/en-US/docs/Web/API/XRInputSource/gripSpace), [reference-space reset](https://developer.mozilla.org/en-US/docs/Web/API/XRReferenceSpace/reset_event), [video presentation callbacks](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback), [audio output timestamps](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/getOutputTimestamp).

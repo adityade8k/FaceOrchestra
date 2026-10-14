@@ -38,3 +38,27 @@ test('native XR recording distinguishes grip/ray, actual handedness and loss; re
     let reason;recorder.stop=value=>{reason=value;recorder.active=false;};recorder.onSession(new EventTarget());reference.dispatchEvent(new Event('reset'));assert.equal(reason,'reference-space-reset');
   }finally{globalThis.document=oldDocument;}
 });
+test('large prepared scenes drain between resources without dropping detail',async()=>{
+  const scene=new THREE.Scene(),root=new THREE.Group();scene.add(root);
+  for(let i=0;i<3;i++)root.add(new THREE.Mesh(new THREE.BoxGeometry(1+i),new THREE.MeshBasicMaterial()));
+  const capture=new PresentationCapture({scene,instrumentRegistry:new Map([['scene',{id:'scene',kind:'honk',root}]]),controllers:[]},()=>{});
+  const sample=capture.sample(0);capture.recycle(sample.buffer);
+  const total=capture.pending.length,emitted=[],barriers=[];
+  capture.emit=(kind,data)=>{if(kind==='resource')emitted.push(data);};
+  const recorder=Object.create(CaptureRecorder.prototype);recorder.presentation=capture;
+  recorder.worker={postMessage(message){assert.equal(message.type,'barrier');barriers.push(recorder.drainReady);}};
+  const ready=recorder.prepareResources();
+  assert.equal(emitted.length,1);
+  while(emitted.length<total){const before=emitted.length;barriers.shift()();await Promise.resolve();assert.equal(emitted.length,before+1);}
+  barriers.shift()();await ready;
+  assert.equal(new Set(emitted.map(e=>e.id)).size,total);
+  assert.equal(capture.pending.length,0);
+  root.traverse(node=>{node.geometry?.dispose();node.material?.dispose();});
+});
+test('interrupted preparation does not enqueue another resource',async()=>{
+  const recorder=Object.create(CaptureRecorder.prototype),sent=[];
+  recorder.presentation={pending:[1,2],flushResources(){sent.push(this.pending.shift());}};
+  recorder.worker={postMessage(){}};
+  const ready=recorder.prepareResources();recorder.startCancelled='interrupted';recorder.drainReady();
+  await assert.rejects(ready,/interrupted/);assert.deepEqual(sent,[1]);
+});

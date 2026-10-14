@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Honk Orchestra XR</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three/build/three.module.js",
+          "three/addons/": "/vendor/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="app">
+      <div id="status">
+        <strong>Honk Orchestra XR</strong>
+        <span
+          >Enter AR/VR, hold right A or left Y and roll to choose a category,
+          pull toward you and roll to choose an item, then release to preview.
+          Thumbstick scales; Trigger places.</span
+        >
+      </div>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  <section style="position:fixed;left:16px;top:16px;z-index:99999;background:#fff;color:#111;padding:14px;max-width:600px;white-space:pre-wrap;font:14px sans-serif"><button id="run-check">Run Nazariya checks</button><pre id="check-result">Ready</pre></section>
+<script type="module">
+import {app} from '/src/main.js';
+import {validate} from '/scripts/validate-nazariya-browser.mjs';
+const output=document.getElementById('check-result');
+document.getElementById('run-check').onclick=async()=>{
+ output.textContent='Running…';
+ try { const result=await validate(message=>output.textContent=message);output.textContent='PASS\n'+JSON.stringify(result,null,2); }
+ catch(error){output.textContent='FAIL\n'+error.stack;}
+};
+</script></body>
+</html>

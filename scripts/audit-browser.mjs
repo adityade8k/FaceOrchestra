@@ -1,6 +1,6 @@
 import { startServer } from "./capture/server.mjs";
 import { launchChrome } from "./capture/chrome.mjs";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 const root = await mkdtemp(join(tmpdir(), "honk-audit-"));
@@ -29,9 +29,7 @@ try {
     check(['recenter','exit','play-alternativeLooper','play-chordLooper'].every(id=>t.panel.buttons.some(b=>b.visible&&b.userData.action===id)),'Switching exercise displaced XR session controls');
     await t.enterPlay();await t.action('tutorials');
     await t.action('composition:kuch-to-hua-hai');
-    check(t.compositionOptions?.arrangementId==='easier-bends','Default Kuch arrangement');
-    await t.action('composition-start');
-    check(t.kuch,'Kuch tutorial failed: '+t.uiFeedback);
+    check(t.dataTutorial?.ensemble.prepared,'Kuch tutorial failed: '+t.uiFeedback);
     const count=r.instrumentRegistry.size;
     t.menu.toggle();check(!t.panel.group.visible&&t.panel.dom.hidden,'Menu hide');t.menu.toggle();check(r.instrumentRegistry.size===count,'Menu must preserve scene');
     await t.enterPlay();check(r.instrumentRegistry.size===0,'Restore empty Play');
@@ -75,7 +73,8 @@ try {
     return {userAgent:navigator.userAgent,scenes,transitions:50,instrumentsAfter:r.instrumentRegistry.size,xrClockPersistence:true,indexedDBRecovery:true,basicsHelpPreservation:true,manualHonkRegression,errors:[]};
   })()`);
   result.errors = browser.errors;
-  await writeFile("docs/audits/browser.json", JSON.stringify(result, null, 2));
+  await mkdir("test-results/audits",{recursive:true});
+  await writeFile("test-results/audits/browser.json", JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));
 } finally {
   await browser?.close();
