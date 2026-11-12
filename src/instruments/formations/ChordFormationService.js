@@ -15,9 +15,7 @@ export class ChordFormationService {
 
   getFormations({ includeSingletons = false } = {}) {
     const minimumSize = includeSingletons ? 1 : this.minimumMembers;
-    return this.contactGraph
-      .getConnectedComponents({ minimumSize })
-      .map(createFormation);
+    return this.contactGraph.getConnectedComponents({ minimumSize }).map(createFormation);
   }
 
   areInSameFormation(firstId, secondId) {

@@ -1,13 +1,16 @@
 import { AudioContextService } from "./AudioContextService.js";
 import { MasterBus } from "./MasterBus.js";
 import { getHonkNoteGainFromNose, HONK_MASTER_GAIN } from "../config/audio.js";
-import { MAX_PITCH_BEND_SEMITONES } from "../config/honk.js";
+import { getHonkPitchBendRange } from "../config/honk.js";
 import { HonkVoiceService } from "./honk/HonkVoiceService.js";
 import { PercussionVoiceService } from "./percussion/PercussionVoiceService.js";
 import { METRONOME_SETTINGS } from "../config/metronome.js";
 
 export class AudioSystem {
-  constructor({ audioContextService = new AudioContextService(), masterBus = new MasterBus() } = {}) {
+  constructor({
+    audioContextService = new AudioContextService(),
+    masterBus = new MasterBus(),
+  } = {}) {
     this.audioContextService = audioContextService;
     this.masterBus = masterBus;
 
@@ -16,7 +19,11 @@ export class AudioSystem {
       getDestination: (context) => this.masterBus.input || context.destination,
     };
     this.honkVoices = new HonkVoiceService(dependencies);
-    this.percussionVoices = new PercussionVoiceService(dependencies);
+    this.percussionVoices = new PercussionVoiceService({
+      ...dependencies,
+      getDestination: (context) =>
+        this.masterBus.getInput?.("percussion") || this.masterBus.input || context.destination,
+    });
   }
 
   async ensureContext() {
@@ -29,23 +36,47 @@ export class AudioSystem {
     await this.ensureContext();
   }
 
-  startVoice(voiceId = "main") {
-    return this.honkVoices.startVoice(voiceId);
+  getCurrentTime() {
+    return this.audioContextService.context?.currentTime ?? null;
   }
 
-  updateVoice(voiceId, performanceState = {}, tuning = {}, { gain = HONK_MASTER_GAIN } = {}) {
-    this.honkVoices.updateVoice(voiceId, {
-      hornAmount: performanceState.squeeze ?? 0,
-      masterGain: gain,
-      leftEar: performanceState.earLeft ?? tuning.pitchControl ?? 0,
-      rightEar: performanceState.earRight ?? tuning.octaveControl ?? 0,
-      noteGain: getHonkNoteGainFromNose(performanceState.nose ?? 0),
-      vowel: performanceState.vowel && performanceState.vowel !== "neutral"
-        ? performanceState.vowel
-        : "A",
-      pitchBendSemitones: (performanceState.bend ?? 0) * MAX_PITCH_BEND_SEMITONES,
-      pitchSnap: tuning.pitchSnap || null,
-    });
+  startVoice(voiceId = "main", options = {}) {
+    return this.honkVoices.startVoice(voiceId, options);
+  }
+
+  hasVoice(voiceId) {
+    return this.honkVoices.hasVoice(voiceId);
+  }
+
+  updateVoice(
+    voiceId,
+    performanceState = {},
+    tuning = {},
+    {
+      gain = HONK_MASTER_GAIN,
+      scheduledTime = undefined,
+      pitchBendRange,
+      bendSnapped = false,
+    } = {},
+  ) {
+    this.honkVoices.updateVoice(
+      voiceId,
+      {
+        hornAmount: performanceState.squeeze ?? 0,
+        masterGain: gain,
+        leftEar: performanceState.earLeft ?? tuning.pitchControl ?? 0,
+        rightEar: performanceState.earRight ?? tuning.octaveControl ?? 0,
+        noteGain: getHonkNoteGainFromNose(performanceState.nose ?? 0),
+        vowel:
+          performanceState.vowel && performanceState.vowel !== "neutral"
+            ? performanceState.vowel
+            : "A",
+        pitchBendSemitones:
+          (performanceState.bend ?? 0) * getHonkPitchBendRange({ pitchBendRange }),
+        pitchSnap: tuning.pitchSnap || null,
+      },
+      { scheduledTime, ...(bendSnapped ? { bendSnapped: true } : {}) },
+    );
   }
 
   setVoiceVowel(voiceId, vowel) {
@@ -57,13 +88,18 @@ export class AudioSystem {
     this.honkVoices.releaseVoice(voiceId, options);
   }
 
+  cancelVoice(voiceId = "main", options = {}) {
+    this.honkVoices.cancelVoice(voiceId, options);
+  }
+
   releaseAll() {
     this.honkVoices.releaseAll();
   }
 
   suspend() {
     const context = this.audioContextService.context;
-    if (!context || context.state === "closed" || context.state === "suspended") return Promise.resolve();
+    if (!context || context.state === "closed" || context.state === "suspended")
+      return Promise.resolve();
     return context.suspend?.() || Promise.resolve();
   }
 
@@ -72,6 +108,7 @@ export class AudioSystem {
   }
 
   async triggerMetronomeClick({ volume = 1 } = {}) {
+    if (!(volume > 0)) return;
     const context = await this.ensureContext();
     const oscillator = context.createOscillator();
     const gain = context.createGain();
@@ -85,9 +122,13 @@ export class AudioSystem {
     gain.connect(this.masterBus.input || context.destination);
     oscillator.start(now);
     oscillator.stop(now + duration);
-    oscillator.addEventListener?.("ended", () => {
-      oscillator.disconnect();
-      gain.disconnect();
-    }, { once: true });
+    oscillator.addEventListener?.(
+      "ended",
+      () => {
+        oscillator.disconnect();
+        gain.disconnect();
+      },
+      { once: true },
+    );
   }
 }

@@ -3,13 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Face Orchestra XR</title>
+    <title>Honk Orchestra XR</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./style.css" />
     <script type="importmap">
       {
         "imports": {
-          "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+          "three": "/vendor/three/build/three.module.js",
+          "three/addons/": "/vendor/three/examples/jsm/"
         }
       }
     </script>
@@ -17,8 +18,11 @@
   <body>
     <main id="app">
       <div id="status">
-        <strong>Face Orchestra XR</strong>
-        <span>Enter AR/VR, hold A and roll to choose a category, pull toward you and roll to choose an item, then release to preview. Right stick scales; Trigger places.</span>
+        <strong>Honk Orchestra XR</strong>
+        <span
+          >Enter AR/VR, hold right A or left Y and roll to choose a category, pull toward you and
+          roll to choose an item, then release to preview. Thumbstick scales; Trigger places.</span
+        >
       </div>
     </main>
     <script type="module" src="./src/main.js"></script>

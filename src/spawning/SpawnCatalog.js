@@ -1,11 +1,14 @@
-import {
-  SPAWN_CATALOG_ENTRIES,
-  SPAWN_RADIAL_CATEGORIES,
-} from "../config/spawning.js";
+import { SPAWN_CATALOG_ENTRIES, SPAWN_RADIAL_CATEGORIES } from "../config/spawning.js";
 
 export class SpawnCatalog {
   constructor(entries = SPAWN_CATALOG_ENTRIES, categories = SPAWN_RADIAL_CATEGORIES) {
-    this.entries = entries.map((entry) => Object.freeze({ ...entry }));
+    const visibleIds = new Set(categories.flatMap((category) => category.childIds));
+    this.entries = entries.map((entry) =>
+      Object.freeze({
+        ...entry,
+        visibleInRadial: entry.visibleInRadial !== false && visibleIds.has(entry.id),
+      }),
+    );
     this.byId = new Map(this.entries.map((entry) => [entry.id, entry]));
     if (this.byId.size !== this.entries.length) {
       throw new Error("Spawn catalog entry IDs must be unique.");
@@ -42,30 +45,32 @@ export function resolveCatalogInstrumentSpawn(entry, fallbackComponentId) {
 function resolveRadialCategories(categories, entriesById) {
   const categoryIds = new Set();
   const childIds = new Set();
-  return Object.freeze(categories.map((category) => {
-    if (categoryIds.has(category.id) || entriesById.has(category.id)) {
-      throw new Error(`Duplicate radial category ID: ${category.id}`);
-    }
-    categoryIds.add(category.id);
-    const entries = category.childIds.map((childId) => {
-      if (childIds.has(childId)) {
-        throw new Error(`Duplicate radial child ID: ${childId}`);
+  return Object.freeze(
+    categories.map((category) => {
+      if (categoryIds.has(category.id) || entriesById.has(category.id)) {
+        throw new Error(`Duplicate radial category ID: ${category.id}`);
       }
-      childIds.add(childId);
-      const entry = entriesById.get(childId);
-      if (!entry) {
-        throw new Error(`Missing radial child entry: ${childId}`);
-      }
-      if (entry.visibleInRadial === false) {
-        throw new Error(`Hidden catalog entry cannot be a radial child: ${childId}`);
-      }
-      return entry;
-    });
-    return Object.freeze({
-      id: category.id,
-      label: category.label,
-      color: category.color,
-      entries: Object.freeze(entries),
-    });
-  }));
+      categoryIds.add(category.id);
+      const entries = category.childIds.map((childId) => {
+        if (childIds.has(childId)) {
+          throw new Error(`Duplicate radial child ID: ${childId}`);
+        }
+        childIds.add(childId);
+        const entry = entriesById.get(childId);
+        if (!entry) {
+          throw new Error(`Missing radial child entry: ${childId}`);
+        }
+        if (entry.visibleInRadial === false) {
+          throw new Error(`Hidden catalog entry cannot be a radial child: ${childId}`);
+        }
+        return entry;
+      });
+      return Object.freeze({
+        id: category.id,
+        label: category.label,
+        color: category.color,
+        entries: Object.freeze(entries),
+      });
+    }),
+  );
 }

@@ -21,9 +21,7 @@ export function snapToPitchSteps(value, steps) {
 export function getPitchSemitones(leftEar, pitchSnap = null) {
   const pitchControl = clamp(leftEar, -1, 1);
   const rawPitchSemitones =
-    pitchControl < 0
-      ? mapLinear(pitchControl, -1, 0, -5, 0)
-      : mapLinear(pitchControl, 0, 1, 0, 7);
+    pitchControl < 0 ? mapLinear(pitchControl, -1, 0, -5, 0) : mapLinear(pitchControl, 0, 1, 0, 7);
   const snapSteps = PITCH_SNAP_STEPS[pitchSnap];
   return snapSteps ? snapToPitchSteps(rawPitchSemitones, snapSteps) : rawPitchSemitones;
 }

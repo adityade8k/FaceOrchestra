@@ -1,0 +1,435 @@
+import { PracticeTempoControls } from "./PracticeTempoControls.js";
+import * as THREE from "three";
+const WIDTH = 1.05,
+  HEIGHT = 1.42,
+  CW = 1152,
+  CH = 1560;
+const buttonRects = Array.from({ length: 10 }, (_, i) => ({
+  x: i % 2 ? 592 : 40,
+  y: i < 4 ? 132 + Math.floor(i / 2) * 92 : 1440 - Math.floor((i - 4) / 2) * 92,
+  w: 520,
+  h: 76,
+}));
+const regions = {
+  title: { x: 40, y: 354, w: 1072, h: 112, font: 48 },
+  instruction: { x: 40, y: 490, w: 1072, h: 226, font: 38 },
+  feedback: { x: 40, y: 854, w: 1072, h: 546, font: 36 },
+};
+const compactHeight = 0.66,
+  compactCanvasHeight = 720;
+const compactRects = Array.from({ length: 8 }, (_, i) => ({
+  x: 32 + (i % 4) * 276,
+  y: 518 + Math.floor(i / 4) * 96,
+  w: 260,
+  h: 76,
+}));
+const compactRegions = {
+  title: { x: 40, y: 86, w: 1072, h: 52, font: 38 },
+  instruction: { x: 40, y: 150, w: 1072, h: 164, font: 40 },
+  feedback: { x: 40, y: 332, w: 1072, h: 172, font: 31 },
+};
+export class TutorialPanel {
+  constructor({ scene, camera, renderer, onAction }) {
+    Object.assign(this, {
+      camera,
+      renderer,
+      onAction,
+      key: "",
+      xr: false,
+      buttonNodes: new Map(),
+      layout: [],
+      menuVisible: true,
+    });
+    this.group = new THREE.Group();
+    this.group.name = "Composition tutorial";
+    scene.add(this.group);
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = CW;
+    this.canvas.height = CH;
+    this.texture = new THREE.CanvasTexture(this.canvas);
+    this.texture.colorSpace = THREE.SRGBColorSpace;
+    this.surface = new THREE.Mesh(
+      new THREE.PlaneGeometry(WIDTH, HEIGHT),
+      new THREE.MeshBasicMaterial({
+        map: this.texture,
+        side: THREE.DoubleSide,
+      }),
+    );
+    this.surface.userData.tutorialPanel = true;
+    this.group.add(this.surface);
+    this.buttons = buttonRects.map((rect) => {
+      const b = new THREE.Mesh(
+        new THREE.PlaneGeometry((rect.w / CW) * WIDTH, (rect.h / CH) * HEIGHT),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+        }),
+      );
+      b.position.set(
+        ((rect.x + rect.w / 2) / CW - 0.5) * WIDTH,
+        (0.5 - (rect.y + rect.h / 2) / CH) * HEIGHT,
+        0.003,
+      );
+      b.userData.tutorialPanel = true;
+      b.visible = false;
+      this.group.add(b);
+      return b;
+    });
+    this.handle = new THREE.Mesh(
+      new THREE.PlaneGeometry(WIDTH, 0.09),
+      new THREE.MeshBasicMaterial({
+        color: 0x83dfbd,
+        transparent: true,
+        opacity: 0.15,
+      }),
+    );
+    this.handle.position.set(0, HEIGHT / 2 - 0.04, 0.006);
+    this.handle.userData.menuHandle = true;
+    this.handle.userData.action = "menu-home";
+    this.group.add(this.handle);
+    this.statusCanvas = document.createElement("canvas");
+    this.statusCanvas.width = 1072;
+    this.statusCanvas.height = 108;
+    this.statusTexture = new THREE.CanvasTexture(this.statusCanvas);
+    this.statusTexture.colorSpace = THREE.SRGBColorSpace;
+    this.statusPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry((1072 / CW) * WIDTH, (108 / CH) * HEIGHT),
+      new THREE.MeshBasicMaterial({
+        map: this.statusTexture,
+        transparent: true,
+        depthWrite: false,
+      }),
+    );
+    this.statusPlane.position.set(0, (0.5 - 780 / CH) * HEIGHT, 0.002);
+    this.statusPlane.raycast = () => {};
+    this.group.add(this.statusPlane);
+    const corners = [
+      [-WIDTH / 2, -HEIGHT / 2],
+      [WIDTH / 2, -HEIGHT / 2],
+      [WIDTH / 2, HEIGHT / 2],
+      [-WIDTH / 2, HEIGHT / 2],
+    ].map(([x, y]) => new THREE.Vector3(x, y, 0.005));
+    this.effect = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(corners),
+      new THREE.LineBasicMaterial({
+        color: 0x83dfbd,
+        transparent: true,
+        opacity: 0,
+      }),
+    );
+    this.effect.raycast = () => {};
+    this.group.add(this.effect);
+    this.dom = document.createElement("aside");
+    this.dom.className = "tutorial-panel";
+    this.dom.setAttribute("aria-label", "Composition tutorial");
+    this.dom.innerHTML =
+      '<p class="tutorial-eyebrow"></p><nav class="tutorial-navigation" aria-label="Lesson controls"></nav><div class="tutorial-copy"><h1></h1><p class="tutorial-instruction"></p><p class="tutorial-target"></p><p class="tutorial-feedback" role="status" aria-live="polite"></p></div><div class="tutorial-actions" aria-label="Session controls"></div>';
+    this.nodes = {};
+    for (const key of ["eyebrow", "instruction", "target", "feedback", "navigation", "actions"])
+      this.nodes[key] = this.dom.querySelector(".tutorial-" + key);
+    this.nodes.title = this.dom.querySelector("h1");
+    document.body.appendChild(this.dom);
+    this.tempoControls = new PracticeTempoControls(this);
+    this.click = (e) => {
+      const b = e.target.closest("button[data-action]");
+      if (b && !b.disabled) this.onAction(b.dataset.action);
+    };
+    this.dom.addEventListener("click", this.click);
+    this.ray = new THREE.Raycaster();
+    this.move = (e) => {
+      if (this.xr) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      this.ray.setFromCamera(
+        {
+          x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+          y: 1 - ((e.clientY - rect.top) / rect.height) * 2,
+        },
+        camera,
+      );
+      this.hover(this.hit(this.ray)?.object);
+    };
+    renderer.domElement.addEventListener("pointermove", this.move);
+    this.group.visible = false;
+    this.recenter(camera);
+  }
+  setText(node, value = "") {
+    if (node.textContent !== value) node.textContent = value;
+  }
+  render(model) {
+    this.setCompact(Boolean(model.compact));
+    const key = JSON.stringify(model);
+    if (key === this.key) return;
+    this.key = key;
+    this.model = model;
+    const domHidden = !this.menuVisible || !model.visible || this.xr;
+    if (this.dom.hidden !== domHidden) this.dom.hidden = domHidden;
+    this.group.visible = Boolean(this.menuVisible && model.visible && this.xr);
+    // Keep the latest model while hidden. Reopening renders it synchronously;
+    // invisible menu updates need no text layout, DOM edits or texture redraw.
+    if (!this.menuVisible) return;
+    for (const [name, value] of Object.entries({
+      eyebrow: model.progress || "HONK ORCHESTRA",
+      title: model.title,
+      instruction: model.instruction,
+      feedback: model.feedback,
+    }))
+      this.setText(this.nodes[name], value);
+    this.tempoControls.setModel(model.practiceTempo);
+    this.nodes.navigation.hidden = !model.navigation?.length;
+    this.dom.dataset.result = model.result || "";
+    const actions = [...(model.navigation || []), ...(model.actions || [])],
+      ids = new Set(actions.map((a) => a.id));
+    const extended = !this.compact && Boolean(model.navigation?.length === 4 && actions.length > 6);
+    // Keep Recenter/Exit at their established XR locations; contextual pattern
+    // buttons get their own row instead of displacing those two controls.
+    const xrActions = extended
+      ? [...model.navigation, ...model.actions.slice(-2), ...model.actions.slice(0, -2)]
+      : actions;
+    for (const [id, node] of this.buttonNodes)
+      if (!ids.has(id)) {
+        node.remove();
+        this.buttonNodes.delete(id);
+      }
+    for (const [container, items] of [
+      [this.nodes.navigation, model.navigation || []],
+      [this.nodes.actions, model.actions || []],
+    ])
+      items.forEach((a, i) => {
+        let node = this.buttonNodes.get(a.id);
+        if (!node) {
+          node = document.createElement("button");
+          node.type = "button";
+          node.dataset.action = a.id;
+          this.buttonNodes.set(a.id, node);
+        }
+        if (container.children[i] !== node)
+          container.insertBefore(node, container.children[i] || null);
+        this.setText(node, a.label);
+        if (node.disabled !== Boolean(a.disabled)) node.disabled = Boolean(a.disabled);
+        if (node.title !== (a.reason || "")) node.title = a.reason || "";
+        for (const name of ["primary", "active"])
+          if (node.dataset[name] !== String(Boolean(a[name])))
+            node.dataset[name] = String(Boolean(a[name]));
+        if (node.getAttribute("aria-pressed") !== String(Boolean(a.active)))
+          node.setAttribute("aria-pressed", String(Boolean(a.active)));
+      });
+    const ctx = this.canvas.getContext("2d");
+    ctx.fillStyle = "#102321";
+    ctx.fillRect(0, 0, CW, this.canvas.height);
+    ctx.fillStyle = "#83dfbd";
+    ctx.font = "600 32px sans-serif";
+    ctx.fillText(model.progress || "HONK ORCHESTRA · GRIP HEADER TO MOVE", 40, 66);
+    this.layout = [];
+    for (const [name, originalRegion] of Object.entries(this.compact ? compactRegions : regions)) {
+      const region =
+        name === "feedback" && model.practiceTempo
+          ? { ...originalRegion, h: 252 }
+          : name === "feedback" && extended
+            ? { ...originalRegion, h: actions.length > 8 ? 362 : 454 }
+            : originalRegion;
+      const text = model[name] || "",
+        color =
+          name === "title"
+            ? "#fff4dd"
+            : name === "instruction"
+              ? "#e4ece5"
+              : model.result === "passed"
+                ? "#a7f1c5"
+                : "#ffd591";
+      const drawn = drawText(ctx, text, region, {
+        color,
+        weight: name === "title" ? 700 : 400,
+      });
+      this.layout.push({ name, ...drawn, limit: region.y + region.h });
+    }
+    this.buttons.forEach((b, i) => {
+      // Launch screens use the footer and second navigation row; lessons always
+      // use the same four navigation and two session control positions.
+      const a = model.navigation ? xrActions[i] : i < 6 ? model.actions?.[i - 2] : null;
+      b.visible = Boolean(a) && (!this.compact || i < compactRects.length);
+      b.userData.action = a?.id;
+      b.userData.disabled = Boolean(a?.disabled);
+      if (!b.visible) return;
+      const rect = (this.compact ? compactRects : buttonRects)[i];
+      ctx.fillStyle = a.disabled
+        ? "#233430"
+        : a.active
+          ? "#52774a"
+          : a.primary
+            ? "#496943"
+            : "#2e5149";
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      drawText(
+        ctx,
+        a.label,
+        {
+          x: rect.x + 14,
+          y: rect.y + 4,
+          w: rect.w - 28,
+          h: rect.h - 8,
+          font: this.compact ? 31 : 38,
+        },
+        { color: a.disabled ? "#9bada5" : "#fff4dd", weight: 600 },
+      );
+    });
+    this.hitTargets = [
+      this.handle,
+      this.surface,
+      ...this.buttons.filter((b) => b.visible),
+      ...(model.practiceTempo ? this.tempoControls.targets : []),
+    ];
+    this.texture.needsUpdate = true;
+  }
+  setCompact(compact) {
+    if (this.compact === compact) return;
+    this.compact = compact;
+    this.key = "";
+    const height = compact ? compactHeight : HEIGHT;
+    const ch = compact ? compactCanvasHeight : CH;
+    this.group.scale.setScalar(compact ? 0.8 : 1);
+    if (this.canvas.height !== ch) {
+      // WebGL texture storage keeps its original dimensions after upload.
+      // Recreate it when switching layouts so the new canvas fills the panel.
+      this.texture.dispose();
+      this.canvas.height = ch;
+      this.texture = new THREE.CanvasTexture(this.canvas);
+      this.texture.colorSpace = THREE.SRGBColorSpace;
+      this.surface.material.map = this.texture;
+    }
+    this.surface.scale.y = height / HEIGHT;
+    this.effect.scale.y = height / HEIGHT;
+    this.statusPlane.visible = !compact;
+    this.handle.position.y = height / 2 - (compact ? 0.025 : 0.04);
+    this.handle.scale.y = compact ? 0.45 : 1;
+    this.buttons.forEach((b, i) => {
+      const rect = (compact ? compactRects[i] : buttonRects[i]) || buttonRects[i];
+      b.scale.set(
+        rect.w / buttonRects[i].w,
+        ((rect.h / ch) * height) / ((buttonRects[i].h / CH) * HEIGHT),
+        1,
+      );
+      b.position.set(
+        ((rect.x + rect.w / 2) / CW - 0.5) * WIDTH,
+        (0.5 - (rect.y + rect.h / 2) / ch) * height,
+        0.003,
+      );
+    });
+    this.texture.needsUpdate = true;
+  }
+  setTransport(text = "") {
+    this.transportText = text;
+    if (!this.menuVisible || this.renderedTransportText === text) return;
+    this.renderedTransportText = text;
+    this.setText(this.nodes.target, text);
+    const ctx = this.statusCanvas.getContext("2d");
+    ctx.clearRect(0, 0, 1072, 108);
+    const color = text.includes("Ending soon") ? "#ff996c" : "#ffd591";
+    this.nodes.target.style.color = color;
+    drawText(ctx, text, { x: 0, y: 0, w: 1072, h: 108, font: 38 }, { color });
+    this.statusTexture.needsUpdate = true;
+  }
+  completeEffect(now, ok) {
+    this.effectAt = now;
+    this.effect.material.color.setHex(ok ? 0x83dfbd : 0xffcf83);
+    this.dom.classList.remove("tutorial-complete");
+    void this.dom.offsetWidth;
+    this.dom.classList.add("tutorial-complete");
+  }
+  animate(now) {
+    const phase = (now - (this.effectAt ?? -Infinity)) / 850;
+    this.effect.material.opacity = phase < 1 ? Math.sin(Math.max(phase, 0) * Math.PI) * 0.95 : 0;
+  }
+  setVisible(visible) {
+    if (!visible) this.tempoControls.cancel();
+    this.menuVisible = visible;
+    this.key = "";
+    if (this.model) this.render(this.model);
+    if (visible) this.setTransport(this.transportText || "");
+  }
+  setXR(active, camera = this.camera) {
+    this.xr = active;
+    this.key = "";
+    if (this.model) this.render(this.model);
+  }
+  recenter(camera = this.camera, lesson = false) {
+    const p = new THREE.Vector3(),
+      q = new THREE.Quaternion(),
+      forward = new THREE.Vector3(0, 0, -1),
+      right = new THREE.Vector3(1, 0, 0);
+    camera.getWorldPosition(p);
+    camera.getWorldQuaternion(q);
+    forward.applyQuaternion(q);
+    forward.y = 0;
+    forward.normalize();
+    right.applyQuaternion(q);
+    right.y = 0;
+    right.normalize();
+    this.group.position
+      .copy(p)
+      .addScaledVector(forward, 1.35)
+      .addScaledVector(right, lesson ? -0.98 : 0);
+    this.group.position.y = p.y - 0.1;
+    this.group.lookAt(p.x, this.group.position.y, p.z);
+    this.group.updateMatrixWorld(true);
+  }
+  hit(ray) {
+    if (!this.group.visible) return null;
+    return ray.intersectObjects(this.hitTargets || [this.surface], false)[0] || null;
+  }
+  hover(object) {
+    for (const b of this.buttons)
+      b.material.opacity = b === object && !b.userData.disabled ? 0.16 : 0;
+  }
+  activate(object) {
+    if (object?.userData.action && !object.userData.disabled) this.onAction(object.userData.action);
+  }
+  dispose() {
+    this.tempoControls.dispose();
+    this.dom.removeEventListener("click", this.click);
+    this.renderer.domElement.removeEventListener("pointermove", this.move);
+    this.dom.remove();
+    this.group.removeFromParent();
+    this.texture.dispose();
+    this.statusTexture.dispose();
+    this.group.traverse((o) => {
+      o.geometry?.dispose();
+      o.material?.dispose();
+    });
+  }
+}
+function textLines(ctx, text, width) {
+  const lines = [];
+  for (const paragraph of String(text).split("\n")) {
+    let line = "";
+    for (const word of paragraph.split(/\s+/)) {
+      if (line && ctx.measureText(line + " " + word).width > width) {
+        lines.push(line);
+        line = word;
+      } else line = line ? line + " " + word : word;
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+function drawText(ctx, text, region, { color = "#fff4dd", weight = 400 } = {}) {
+  let font = region.font,
+    lines,
+    lineHeight;
+  do {
+    ctx.font = weight + " " + font + "px sans-serif";
+    lineHeight = font * 1.2;
+    lines = textLines(ctx, text, region.w);
+    if (lines.length * lineHeight <= region.h) break;
+    font--;
+  } while (font > 12);
+  ctx.fillStyle = color;
+  ctx.textBaseline = "alphabetic";
+  lines.forEach((line, i) => ctx.fillText(line, region.x, region.y + font + i * lineHeight));
+  return {
+    font,
+    lines: lines.length,
+    bottom: region.y + lines.length * lineHeight,
+  };
+}

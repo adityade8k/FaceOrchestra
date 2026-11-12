@@ -107,9 +107,10 @@ export class MorphTargetController {
   }
 
   getEarAmount(side) {
-    const names = side === "left"
-      ? [MORPH_TARGET_NAMES.ears.leftUp, MORPH_TARGET_NAMES.ears.leftDown]
-      : [MORPH_TARGET_NAMES.ears.rightUp, MORPH_TARGET_NAMES.ears.rightDown];
+    const names =
+      side === "left"
+        ? [MORPH_TARGET_NAMES.ears.leftUp, MORPH_TARGET_NAMES.ears.leftDown]
+        : [MORPH_TARGET_NAMES.ears.rightUp, MORPH_TARGET_NAMES.ears.rightDown];
     return this.getValue(names[0]) - this.getValue(names[1]);
   }
 

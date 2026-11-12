@@ -6,7 +6,9 @@ const userPosition = new THREE.Vector3();
 export class FaceOrchestraApp {
   constructor({ sceneRuntime, runtime, frameScheduler = new FrameScheduler() } = {}) {
     if (!sceneRuntime || !runtime) {
-      throw new TypeError("FaceOrchestraApp requires sceneRuntime and the composed runtime services.");
+      throw new TypeError(
+        "FaceOrchestraApp requires sceneRuntime and the composed runtime services.",
+      );
     }
     this.sceneRuntime = sceneRuntime;
     this.runtime = runtime;
@@ -31,13 +33,16 @@ export class FaceOrchestraApp {
     if (this.running) return;
     this.running = true;
     this.sceneRuntime.start();
-    this.sceneRuntime.renderer.setAnimationLoop((frameMs) => {
+    this.sceneRuntime.renderer.setAnimationLoop((frameMs, xrFrame) => {
       if (this.computeSuspended) return;
       const now = Number.isFinite(frameMs) ? frameMs : performance.now();
       const delta = this.lastFrameMs === null ? 0 : Math.max((now - this.lastFrameMs) / 1000, 0);
       this.lastFrameMs = now;
       this.elapsedSeconds += delta;
+      this.runtime.tutorial?.recording.observeXRFrame?.(now, xrFrame);
       this.update(delta, this.elapsedSeconds, now);
+      // Deliberately outside the scheduler: preview phases can exit early.
+      this.runtime.capture?.sample(now, xrFrame);
       this.sceneRuntime.render();
     });
   }
@@ -58,10 +63,12 @@ export class FaceOrchestraApp {
     this.computeSuspended = false;
     this.sceneRuntime.setXRBlendMode(session?.environmentBlendMode);
     this.runtime.onXRSessionStart();
+    this.runtime.capture?.onSession(session);
     this.start();
   }
 
   onXRSessionEnd() {
+    this.runtime.capture?.stop("session-end", { tailMs: 0 });
     // Quiesce frame work immediately, but let Three.js and the browser finish
     // dismantling the XR compositor before detaching the renderer loop or
     // doing synchronous persistence work.
@@ -76,6 +83,10 @@ export class FaceOrchestraApp {
         console.warn("XR session cleanup failed:", error);
       } finally {
         this.sceneRuntime.resetAfterXR();
+        if (this.runtime.tutorial?.ready && this.initialized) {
+          this.computeSuspended = false;
+          this.start();
+        }
       }
     }, 0);
     return true;
@@ -87,10 +98,10 @@ export class FaceOrchestraApp {
     else this.onXRSessionEnd();
   }
 
-  dispose() {
+  async dispose() {
     if (!this.initialized && !this.running) return;
     this.stopCompute();
-    this.runtime.dispose();
+    await this.runtime.dispose();
     this.sceneRuntime.dispose();
     this.initialized = false;
   }
@@ -98,62 +109,91 @@ export class FaceOrchestraApp {
   configureFramePhases() {
     const runtime = this.runtime;
 
-    this.frameScheduler.add("INPUT", (frame) => {
-      frame.hadPendingSpawn = Boolean(runtime.pendingSpawnPlacement);
-      runtime.pollControllers(frame.now);
-    }, { label: "poll XR hardware" });
+    this.frameScheduler.add(
+      "INPUT",
+      (frame) => {
+        frame.hadPendingSpawn = Boolean(runtime.spawn.pendingSpawnPlacement);
+        runtime.pollControllers(frame.now);
+        runtime.tutorial?.beforeFrame(frame.now);
+      },
+      { label: "poll XR hardware" },
+    );
 
-    this.frameScheduler.add("INTENT", () => {
-      runtime.interactionCoordinator.flushInputs();
-    }, { label: "route semantic intents" });
+    this.frameScheduler.add(
+      "INTENT",
+      () => {
+        runtime.interactionCoordinator.flushInputs();
+      },
+      { label: "route semantic intents" },
+    );
 
-    this.frameScheduler.add("TRANSFORM", (frame) => {
-      runtime.updatePendingPanelPlacement();
-      if (runtime.pendingSpawnPlacement) {
-        runtime.updatePendingSpawnPreview();
-        runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
-        frame.skipRemaining = true;
-        return;
-      }
-      if (frame.hadPendingSpawn) {
-        runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
-        frame.skipRemaining = true;
-        return;
-      }
-      runtime.updateRadialMenus();
-      runtime.updateRaycastHover();
-      runtime.updateTriggerInteraction();
-      runtime.updateGripTransform();
-    }, { label: "preview, ray, and grip transforms" });
+    this.frameScheduler.add(
+      "TRANSFORM",
+      (frame) => {
+        runtime.updatePendingPanelPlacement();
+        if (runtime.spawn.pendingSpawnPlacement) {
+          runtime.spawn.updatePendingSpawnPreview();
+          runtime.spawn.updateLooperPlaybackDuringPendingSpawn(frame.now);
+          runtime.tutorial?.afterFrame(frame.now);
+          frame.skipRemaining = true;
+          return;
+        }
+        if (frame.hadPendingSpawn) {
+          runtime.spawn.updateLooperPlaybackDuringPendingSpawn(frame.now);
+          runtime.tutorial?.afterFrame(frame.now);
+          frame.skipRemaining = true;
+          return;
+        }
+        runtime.spawn.updateRadialMenus();
+        runtime.updateRaycastHover();
+        runtime.updateTriggerInteraction();
+        runtime.updateGripTransform();
+      },
+      { label: "preview, ray, and grip transforms" },
+    );
 
-    this.frameScheduler.add("COLLISION", (frame) => {
-      runtime.honkContactSystem.update();
-      runtime.getUserCamera().getWorldPosition(userPosition);
-      runtime.stickCollisionSystem.update(frame.now, { userPosition });
-    }, { label: "honk contacts and stick strikes" });
+    this.frameScheduler.add(
+      "COLLISION",
+      (frame) => {
+        runtime.honkContactSystem.update();
+        runtime.getUserCamera().getWorldPosition(userPosition);
+        runtime.stickCollisionSystem.update(frame.now, { userPosition });
+      },
+      { label: "honk contacts and stick strikes" },
+    );
 
-    this.frameScheduler.add("RELATIONSHIPS", (frame) => {
-      runtime.validateMetronomeConnections();
-      runtime.updateLooperFollowerTransforms();
-      runtime.updateLockedHonkGroupTransforms();
-      runtime.updateShakeDisconnect(frame.now);
-      runtime.updateMetronomes(frame.now);
-      runtime.updateClockedLooperTransports(frame.now);
-    }, { label: "locks and looper assignments" });
+    this.frameScheduler.add(
+      "RELATIONSHIPS",
+      (frame) => {
+        runtime.metronomeConnections.validateMetronomeConnections();
+        runtime.looperConnections.updateLooperFollowerTransforms();
+        runtime.updateLockedHonkGroupTransforms();
+        runtime.looperConnections.updateShakeDisconnect(frame.now);
+        runtime.presentation.updateMetronomes(frame.now);
+        runtime.updateClockedLooperTransports(frame.now);
+      },
+      { label: "locks and looper assignments" },
+    );
 
-    this.frameScheduler.add("AUTOMATION", (frame) => {
-      runtime.updateLooperRecordings(frame.now);
-    }, { label: "record and advance looper transport" });
+    this.frameScheduler.add(
+      "PERFORMANCE",
+      (frame) => {
+        runtime.metronomeConnections.updateMetronomeConnections(frame.now);
+        runtime.updateHorn(frame.now);
+        runtime.updateLooperRecordings(frame.now);
+      },
+      { label: "resolve current live input, then record its canonical state" },
+    );
 
-    this.frameScheduler.add("PERFORMANCE", (frame) => {
-      runtime.updateMetronomeConnections(frame.now);
-      runtime.updateHorn(frame.now);
-    }, { label: "resolve live input plus automation" });
-
-    this.frameScheduler.add("PRESENTATION", (frame) => {
-      runtime.updateLooperMorphAnimations(frame.now);
-      runtime.updateLooperWires();
-      runtime.updateMetronomeConnectionWires();
-    }, { label: "morphs, audio, wires, and UI" });
+    this.frameScheduler.add(
+      "PRESENTATION",
+      (frame) => {
+        runtime.updateLooperMorphAnimations(frame.now);
+        runtime.looperConnections.updateLooperWires();
+        runtime.metronomeConnections.updateMetronomeConnectionWires();
+        runtime.tutorial?.afterFrame(frame.now);
+      },
+      { label: "morphs, audio, wires, and UI" },
+    );
   }
 }

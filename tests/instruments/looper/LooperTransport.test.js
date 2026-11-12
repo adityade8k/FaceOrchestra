@@ -83,10 +83,12 @@ test("stopping transport clears applied Honk automation", () => {
 
   assert.equal(transport.state, LooperTransportState.STOPPED);
   assert.equal(applier.appliedTracks.size, 0);
-  assert.deepEqual(cleared, [{
-    honkId: "honk-a",
-    layerId: "looper-looper-a:track-0",
-  }]);
+  assert.deepEqual(cleared, [
+    {
+      honkId: "honk-a",
+      layerId: "looper-looper-a:track-0",
+    },
+  ]);
 });
 
 test("Looper note-off passes the configured action release fade", () => {
@@ -108,9 +110,11 @@ test("Looper note-off passes the configured action release fade", () => {
   applier.applyTrackSnapshot(looper, track, { squeeze: 0 });
   applier.updateAudio();
 
-  assert.deepEqual(releases, [{
-    voiceId: "looper-looper-a:track-0:instrument-honk-a:action",
-    honkId: "honk-a",
-    options: { fadeSeconds: HONK_RELEASE_SETTINGS.looperActionFadeSeconds },
-  }]);
+  assert.deepEqual(releases, [
+    {
+      voiceId: "looper-looper-a:track-0:instrument-honk-a:action",
+      honkId: "honk-a",
+      options: { fadeSeconds: HONK_RELEASE_SETTINGS.looperActionFadeSeconds },
+    },
+  ]);
 });

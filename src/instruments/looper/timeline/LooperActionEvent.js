@@ -1,3 +1,4 @@
+import { getPercussionDurationMs } from "../../../audio/percussion/percussionProfiles.js";
 import { ACTION_FIELDS, actionStateToJSON } from "./actionState.js";
 
 export const LooperActionEventType = Object.freeze({
@@ -29,6 +30,12 @@ export function getEventFieldValue(event, field) {
   if (!event) {
     return undefined;
   }
+  // Schema-v5 recordings keep the performed note gate separate from the
+  // expressive squeeze curve. Older recordings did not have gateOnly and
+  // therefore continue to use their gate values as squeeze samples.
+  if (event.gateOnly) {
+    return undefined;
+  }
   if (EVENT_FIELD_BY_TYPE[event.type] === field) {
     return event.value;
   }
@@ -46,6 +53,13 @@ export function isDrumHitEvent(event) {
   return event?.type === LooperActionEventType.DrumHit;
 }
 
+export function isHonkGateEvent(event) {
+  return (
+    event?.type === LooperActionEventType.SqueezeStart ||
+    event?.type === LooperActionEventType.SqueezeEnd
+  );
+}
+
 export class LooperActionEvent {
   constructor({
     id,
@@ -54,6 +68,13 @@ export class LooperActionEvent {
     value = undefined,
     values = null,
     interpolation = "step",
+    synthetic = false,
+    gateOnly = false,
+    support = false,
+    preserveDuration = false,
+    releaseOrigin = null,
+    durationMs = null,
+    gain = undefined,
   } = {}) {
     this.id = id;
     this.timeMs = Math.max(Number.isFinite(timeMs) ? timeMs : 0, 0);
@@ -61,6 +82,15 @@ export class LooperActionEvent {
     this.value = value;
     this.values = values ? actionStateToJSON(values) : null;
     this.interpolation = interpolation;
+    this.synthetic = Boolean(synthetic);
+    this.gateOnly = Boolean(gateOnly);
+    this.support = Boolean(support);
+    this.preserveDuration = Boolean(preserveDuration);
+    this.releaseOrigin = releaseOrigin || null;
+    if (isDrumHitEvent(this) && Number.isFinite(gain)) this.gain = Math.max(0, Math.min(1, gain));
+    if (isDrumHitEvent(this))
+      this.durationMs =
+        Number.isFinite(durationMs) && durationMs > 0 ? durationMs : getPercussionDurationMs(value);
   }
 
   clone() {
@@ -80,6 +110,15 @@ export class LooperActionEvent {
     if (this.values) {
       serialized.values = actionStateToJSON(this.values);
     }
+    if (this.synthetic) {
+      serialized.synthetic = true;
+    }
+    if (this.gateOnly) serialized.gateOnly = true;
+    if (this.support) serialized.support = true;
+    if (this.preserveDuration) serialized.preserveDuration = true;
+    if (this.releaseOrigin) serialized.releaseOrigin = this.releaseOrigin;
+    if (this.durationMs > 0) serialized.durationMs = this.durationMs;
+    if (this.gain !== undefined) serialized.gain = this.gain;
     return serialized;
   }
 
@@ -91,6 +130,13 @@ export class LooperActionEvent {
       value: serialized.value,
       values: serialized.values,
       interpolation: serialized.interpolation || "step",
+      synthetic: serialized.synthetic,
+      gateOnly: serialized.gateOnly,
+      support: serialized.support,
+      preserveDuration: serialized.preserveDuration,
+      releaseOrigin: serialized.releaseOrigin,
+      durationMs: serialized.durationMs,
+      gain: serialized.gain,
     });
   }
 }
@@ -98,7 +144,7 @@ export class LooperActionEvent {
 export function getRecordedFieldsForEvent(event) {
   const fields = [];
   const eventField = EVENT_FIELD_BY_TYPE[event?.type];
-  if (eventField) {
+  if (eventField && !event?.gateOnly) {
     fields.push(eventField);
   }
   if (

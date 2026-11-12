@@ -2,6 +2,7 @@ export const LOOPER_COMPONENT_ID = "looper";
 export const HONK_CONNECTION_TARGET_NAME = "HIT_honkConnection";
 
 export const LOOPER_TRACK_COUNT = 8;
+export const LOOPER_STANDALONE_BPM = 70;
 export const LOOPER_COLLIDER_OPACITY = 0.34;
 export const HONK_CONNECTION_COLLIDER_OPACITY = 0.32;
 export const LOOPER_WIRE_SETTINGS = {
@@ -27,6 +28,15 @@ export const LOOPER_WIRE_SETTINGS = {
 };
 export const LOOPER_MIN_ACTION_DURATION_MS = 24;
 export const LOOPER_GESTURE_SAMPLE_INTERVAL_MS = 33;
+export const LOOPER_GESTURE_EVENT_EPSILONS = Object.freeze({
+  squeeze: 0.018,
+  bend: 0.02,
+  earLeft: 0.015,
+  earRight: 0.015,
+  nose: 0.015,
+});
+export const LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD = 0.025;
+export const LOOPER_SQUEEZE_GATE_CLOSE_THRESHOLD = 0.015;
 export const LOOPER_MAX_RECORDING_DURATION_MS = 120000;
 export const LOOPER_BEAT_DETECTION_SETTINGS = Object.freeze({
   minBpm: 60,
@@ -41,6 +51,12 @@ export const LOOPER_SHAKE_DISCONNECT_SETTINGS = {
   intensity: 0.85,
   range: 0.16,
   cooldownMs: 700,
+  minReversals: 2,
+  reversalTravel: 0.055,
+  minTravel: 0.38,
+  maxFrameGapMs: 100,
+  maxStepMeters: 0.3,
+  maxSpeed: 8,
 };
 export const LOOPER_BUTTON_ACTIONS = ["play", "pause", "record", "stop"];
 export const LOOPER_WIRE_COLORS = [0x2f80ff, 0xff4f5e];
@@ -60,6 +76,7 @@ export const LOOPER_DEBUG_COLORS = {
   playing: 0xf7d04a,
   controlVolume: 0x9e8cff,
   controlGap: 0x5ac8fa,
+  controlRecordLength: 0xf0a23c,
 };
 
 export const LOOPER_MORPH_TARGET_NAMES = {
@@ -67,6 +84,8 @@ export const LOOPER_MORPH_TARGET_NAMES = {
   buttonStop: "button_stop_recording",
   buttonPlay: "button_play",
   buttonPause: "button_pause",
+  bottomHandleDown: "bottom_handle_down",
+  bottomHandleUp: "bottom_handle_up",
   rightHandleDown: "Right_handle_down",
   rightHandleUp: "right_handle_up",
   leftHandleUp: "Left_handle_up",
@@ -87,6 +106,10 @@ export const LOOPER_CONTROL_MORPH_TARGETS = {
     up: LOOPER_MORPH_TARGET_NAMES.leftHandleUp,
   },
   gap: {
+    down: LOOPER_MORPH_TARGET_NAMES.bottomHandleDown,
+    up: LOOPER_MORPH_TARGET_NAMES.bottomHandleUp,
+  },
+  recordLength: {
     down: LOOPER_MORPH_TARGET_NAMES.rightHandleDown,
     up: LOOPER_MORPH_TARGET_NAMES.rightHandleUp,
   },
@@ -95,7 +118,10 @@ export const LOOPER_CONTROL_MORPH_TARGETS = {
 export const LOOPER_CONTROL_DEFAULT_VALUES = Object.freeze({
   volume: 0,
   gap: -1,
+  recordLength: 1,
 });
+
+export const LOOPER_RECORD_BEATS = Object.freeze([0, 2, 4, 8, 16]);
 
 export const LOOPER_MORPH_SETTINGS = {
   buttonPressDurationMs: 140,
@@ -126,7 +152,7 @@ export const LOOPER_BUTTON_COLLIDERS = {
     morphTarget: LOOPER_BUTTON_MORPH_TARGETS.pause,
   },
   record: {
-    x: 0.10,
+    x: 0.1,
     y: -0.275,
     z: 0.28,
     rotationDegrees: { x: 0, y: 40, z: 0 },
@@ -145,7 +171,10 @@ export const LOOPER_BUTTON_COLLIDERS = {
 
 export const LOOPER_NODE_COLLIDER_LAYOUT = {
   center: { x: -0.068, y: -0.04, z: -0.05 },
-  wireDirection: { x: 0, y: 0, z: 1 },
+  banks: [
+    { id: "left", outward: { x: -1, y: 0, z: 0 } },
+    { id: "right", outward: { x: 1, y: 0, z: 0 } },
+  ],
   columns: 2,
   minColumns: 1,
   centerColumn: 0.5,
@@ -161,13 +190,15 @@ export const LOOPER_COLLIDER_GEOMETRY = {
   minModelSize: 0.1,
   renderOrder: 24,
   buttonScale: { x: 0.09, y: 0.045, z: 0.026 },
-  controlSphereScale: 0.044,
+  controlColliderThicknessPadding: 1.15,
   controlSphereSegments: 24,
   controlSphereRings: 16,
   buttonDefaultTransform: { x: 0, y: 0.34, z: 0.56 },
-  controlDefaultTransform: { x: 0, y: -0.08, z: 0.56 },
   buttonDebugAxisScale: 0.07,
   controlDebugAxisScale: 0.065,
+  // Handle morphs also move the stems. Keep the collider centered on the
+  // end-ball vertices, whose up-to-down travel is at least half the maximum.
+  controlTipMotionRatio: 0.5,
 };
 
 export const LOOPER_COLLIDER_TRANSFORM_DEFAULTS = {
@@ -176,54 +207,17 @@ export const LOOPER_COLLIDER_TRANSFORM_DEFAULTS = {
   scale: { x: 1, y: 1, z: 1 },
 };
 
-export const LOOPER_CONTROL_MOTION_DEFAULTS = {
-  movementMode: "vertical",
-  movementRange: 0.24,
-  dragSensitivity: 1,
-  minDragSensitivity: 0,
-  minDragRange: 0.0001,
-  defaultArcRadius: 0.18,
-  minArcRadius: 0.0001,
-  defaultArcMinDegrees: -48,
-  defaultArcMaxDegrees: 48,
-  defaultArcSide: 1,
-  arcSideNegativeThreshold: 0,
-  defaultArcRotationZ: 0,
-};
-
-export const LOOPER_CONTROL_COLLIDERS = {
-  volume: {
-    x: -0.32,
-    y: 0.16,
-    z: 0,
-    rotationDegrees: { x: 0, y: 0, z: -45 },
-    scale: { x: 0.8, y: 0.8, z: 0.8 },
-    movementMode: "arc",
-    movementRange: 0.24,
-    dragSensitivity: 3,
-    arc: {
-      side: 1,
-      radius: 0.18,
-      minDegrees: -30,
-      maxDegrees: 30,
-    },
+export const LOOPER_CONTROL_COLLIDERS = Object.freeze({
+  recordLength: Object.freeze({
+    colliderColor: LOOPER_DEBUG_COLORS.controlRecordLength,
+    morphTargets: LOOPER_CONTROL_MORPH_TARGETS.recordLength,
+  }),
+  volume: Object.freeze({
+    colliderColor: LOOPER_DEBUG_COLORS.controlVolume,
     morphTargets: LOOPER_CONTROL_MORPH_TARGETS.volume,
-  },
-  gap: {
-    x: 0.18,
-    y: 0.16,
-    z: 0,
-    rotationDegrees: { x: 0, y: 0, z: 45 },
-    scale: { x: 0.8, y: 0.8, z: 0.8 },
-    movementMode: "arc",
-    movementRange: 0.24,
-    dragSensitivity: 3,
-    arc: {
-      side: -1,
-      radius: 0.28,
-      minDegrees: -20,
-      maxDegrees: 20,
-    },
+  }),
+  gap: Object.freeze({
+    colliderColor: LOOPER_DEBUG_COLORS.controlGap,
     morphTargets: LOOPER_CONTROL_MORPH_TARGETS.gap,
-  },
-};
+  }),
+});

@@ -1,20 +1,76 @@
 import { clamp, lerp } from "../audioMath.js";
-import { PERCUSSION_PROFILES, PERCUSSION_TYPES } from "./percussionProfiles.js";
+import {
+  PERCUSSION_PROFILES,
+  PERCUSSION_TYPES,
+  getPercussionDurationMs,
+} from "./percussionProfiles.js";
 
 export class PercussionVoiceService {
   constructor({ ensureAudio, getDestination }) {
     this.ensureAudio = ensureAudio;
     this.getDestination = getDestination;
+    this.ownedOutputs = new Map();
+    this.ownerEpochs = new Map();
+    this.pendingTriggers = new Set();
   }
 
-  async trigger(type, { volume = 1 } = {}) {
-    const context = await this.ensureAudio();
+  async trigger(type, { volume = 1, scheduledTime = undefined, ownerId = null } = {}) {
+    const epoch = this.ownerEpochs.get(ownerId) || 0;
+    const request = { ownerId, scheduledTime, cancelled: false };
+    this.pendingTriggers.add(request);
+    let context;
+    try {
+      context = await this.ensureAudio();
+    } finally {
+      this.pendingTriggers.delete(request);
+    }
+    if (request.cancelled || (ownerId && epoch !== (this.ownerEpochs.get(ownerId) || 0))) return;
+    const startTime = Number.isFinite(scheduledTime)
+      ? Math.max(scheduledTime, context.currentTime)
+      : context.currentTime;
     if (type === PERCUSSION_TYPES.hihat) {
-      this.triggerHihat(context, volume);
+      this.triggerHihat(context, volume, startTime, ownerId);
+      return;
+    }
+    if (type === PERCUSSION_TYPES.metronomeWood) {
+      this.triggerMetronomeWood(context, volume, startTime, ownerId);
       return;
     }
 
-    this.triggerBoink(context, volume);
+    this.triggerBoink(context, volume, startTime, ownerId);
+  }
+
+  ownOutput(ownerId, output, context, startsAt) {
+    if (!ownerId) return;
+    let outputs = this.ownedOutputs.get(ownerId);
+    if (!outputs) this.ownedOutputs.set(ownerId, (outputs = new Set()));
+    const entry = { output, context, startsAt };
+    outputs.add(entry);
+    const originalDisconnect = output.disconnect.bind(output);
+    output.disconnect = (...args) => {
+      outputs.delete(entry);
+      if (!outputs.size && this.ownedOutputs.get(ownerId) === outputs)
+        this.ownedOutputs.delete(ownerId);
+      return originalDisconnect(...args);
+    };
+  }
+
+  cancelOwner(ownerId, { scheduledTime, afterTime } = {}) {
+    for (const request of this.pendingTriggers) {
+      if (
+        request.ownerId === ownerId &&
+        (!Number.isFinite(afterTime) || request.scheduledTime >= afterTime - 1e-7)
+      )
+        request.cancelled = true;
+    }
+    if (!Number.isFinite(afterTime))
+      this.ownerEpochs.set(ownerId, (this.ownerEpochs.get(ownerId) || 0) + 1);
+    for (const { output, context, startsAt } of this.ownedOutputs.get(ownerId) || []) {
+      if (Number.isFinite(afterTime) && startsAt < afterTime - 1e-7) continue;
+      const when = Math.max(scheduledTime ?? context.currentTime, context.currentTime);
+      output.gain.cancelScheduledValues(when);
+      output.gain.setValueAtTime(0, when);
+    }
   }
 
   createSoftClipCurve(amount = 1.4) {
@@ -31,14 +87,15 @@ export class PercussionVoiceService {
     return curve;
   }
 
-  triggerBoink(context, volume = 1) {
+  triggerBoink(context, volume = 1, startTime = context?.currentTime, ownerId = null) {
     if (!context) {
       return;
     }
 
     const settings = PERCUSSION_PROFILES.boink;
-    const now = context.currentTime;
+    const now = Math.max(startTime, context.currentTime);
     const output = context.createGain();
+    this.ownOutput(ownerId, output, context, now);
     const bodyBus = context.createGain();
     const bodyDrive = context.createWaveShaper();
     const bodyTone = context.createBiquadFilter();
@@ -62,8 +119,7 @@ export class PercussionVoiceService {
     const shellSeconds = Math.max(settings.shellSeconds ?? bodySeconds * 0.72, 0.03);
     const malletSeconds = Math.max(settings.malletSeconds ?? 0.04, 0.005);
     const roomTailSeconds = Math.max(settings.roomTailSeconds ?? 0.16, 0);
-    const stopAt =
-      now + Math.max(bodySeconds, subSeconds, shellSeconds, malletSeconds) + roomTailSeconds + 0.05;
+    const stopAt = now + getPercussionDurationMs(PERCUSSION_TYPES.boink) / 1000;
     const malletSampleCount = Math.max(Math.floor(context.sampleRate * malletSeconds), 1);
     const malletBuffer = context.createBuffer(1, malletSampleCount, context.sampleRate);
     const malletSamples = malletBuffer.getChannelData(0);
@@ -71,7 +127,13 @@ export class PercussionVoiceService {
       malletSamples[index] = Math.random() * 2 - 1;
     }
 
-    output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
+    scheduleOutputEnvelope(
+      output,
+      Math.max(volume, 0) * settings.gain,
+      now,
+      stopAt,
+      Math.max(settings.bodyAttackSeconds ?? 0.004, 0.003),
+    );
     output.connect(this.getDestination(context));
     bodyBus.gain.setValueAtTime(1, now);
     bodyDrive.curve = this.createSoftClipCurve(settings.bodyDrive ?? 1.4);
@@ -184,13 +246,13 @@ export class PercussionVoiceService {
     };
   }
 
-  triggerHihat(context, volume = 1) {
+  triggerHihat(context, volume = 1, startTime = context?.currentTime, ownerId = null) {
     if (!context) {
       return;
     }
 
     const settings = PERCUSSION_PROFILES.hihat;
-    const now = context.currentTime;
+    const now = Math.max(startTime, context.currentTime);
     const sampleCount = Math.max(Math.floor(context.sampleRate * settings.noiseSeconds), 1);
     const noiseBuffer = context.createBuffer(1, sampleCount, context.sampleRate);
     const samples = noiseBuffer.getChannelData(0);
@@ -199,6 +261,7 @@ export class PercussionVoiceService {
     }
 
     const output = context.createGain();
+    this.ownOutput(ownerId, output, context, now);
     const source = context.createBufferSource();
     const highpass = context.createBiquadFilter();
     const bandpass = context.createBiquadFilter();
@@ -211,19 +274,21 @@ export class PercussionVoiceService {
     const metallicEchoDamping = context.createBiquadFilter();
     const metallicEchoGain = context.createGain();
     const noiseSeconds = Math.max(settings.noiseSeconds, 0.01);
-    const noiseAttackSeconds = Math.min(
-      settings.noiseAttackSeconds ?? 0.0015,
-      noiseSeconds * 0.25,
-    );
+    const noiseAttackSeconds = Math.min(settings.noiseAttackSeconds ?? 0.0015, noiseSeconds * 0.25);
     const metallicDecaySeconds = Math.max(
       settings.metallicDecaySeconds ?? noiseSeconds,
       noiseSeconds,
     );
     const metallicEchoTailSeconds = Math.max(settings.metallicEchoTailSeconds ?? 0.2, 0);
-    const stopAt =
-      now + Math.max(noiseSeconds, metallicDecaySeconds) + metallicEchoTailSeconds + 0.06;
+    const stopAt = now + getPercussionDurationMs(PERCUSSION_TYPES.hihat) / 1000;
 
-    output.gain.setValueAtTime(Math.max(volume, 0) * settings.gain, now);
+    scheduleOutputEnvelope(
+      output,
+      Math.max(volume, 0) * settings.gain,
+      now,
+      stopAt,
+      Math.max(settings.noiseAttackSeconds ?? 0.003, 0.003),
+    );
     output.connect(this.getDestination(context));
 
     source.buffer = noiseBuffer;
@@ -245,7 +310,10 @@ export class PercussionVoiceService {
       now,
     );
     metallicEchoDamping.type = "lowpass";
-    metallicEchoDamping.frequency.setValueAtTime(settings.metallicEchoDampingFrequency ?? 7600, now);
+    metallicEchoDamping.frequency.setValueAtTime(
+      settings.metallicEchoDampingFrequency ?? 7600,
+      now,
+    );
     metallicEchoGain.gain.setValueAtTime(settings.metallicEchoGain ?? 0.12, now);
 
     source.connect(highpass);
@@ -315,6 +383,93 @@ export class PercussionVoiceService {
     const cleanupSource = metallicOscillators.at(-1)?.oscillator || source;
     cleanupSource.onended = cleanup;
   }
+
+  triggerMetronomeWood(context, volume = 1, startTime = context?.currentTime, ownerId = null) {
+    if (!context) {
+      return;
+    }
+
+    const settings = PERCUSSION_PROFILES.metronomeWood;
+    const now = Math.max(startTime, context.currentTime);
+    const output = context.createGain();
+    this.ownOutput(ownerId, output, context, now);
+    const bodyBus = context.createGain();
+    const bodyFilter = context.createBiquadFilter();
+    const noiseSource = context.createBufferSource();
+    const noiseFilter = context.createBiquadFilter();
+    const noiseGain = context.createGain();
+    const bodySeconds = Math.max(settings.bodyDecaySeconds, 0.03);
+    const noiseSeconds = Math.max(settings.noiseSeconds, 0.005);
+    const stopAt = now + getPercussionDurationMs(PERCUSSION_TYPES.metronomeWood) / 1000;
+
+    scheduleOutputEnvelope(
+      output,
+      Math.max(volume, 0) * settings.gain,
+      now,
+      stopAt,
+      settings.bodyAttackSeconds ?? 0.0015,
+    );
+    output.connect(this.getDestination(context));
+    bodyFilter.type = "bandpass";
+    bodyFilter.frequency.setValueAtTime(settings.bodyFrequencies[1], now);
+    bodyFilter.Q.setValueAtTime(0.7, now);
+    bodyBus.connect(bodyFilter);
+    bodyFilter.connect(output);
+
+    const oscillators = settings.bodyFrequencies.map((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = index === 0 ? "triangle" : "sine";
+      oscillator.frequency.setValueAtTime(frequency, now);
+      oscillator.frequency.exponentialRampToValueAtTime(
+        frequency * settings.pitchDropRatio,
+        now + bodySeconds,
+      );
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(
+        settings.bodyGains[index] ?? 0.1,
+        now + settings.bodyAttackSeconds,
+      );
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + bodySeconds / Math.sqrt(index + 1));
+      oscillator.connect(gain);
+      gain.connect(bodyBus);
+      oscillator.start(now);
+      oscillator.stop(stopAt);
+      return { oscillator, gain };
+    });
+
+    const sampleCount = Math.max(Math.floor(context.sampleRate * noiseSeconds), 1);
+    const noiseBuffer = context.createBuffer(1, sampleCount, context.sampleRate);
+    const samples = noiseBuffer.getChannelData(0);
+    for (let index = 0; index < sampleCount; index += 1) {
+      samples[index] = Math.random() * 2 - 1;
+    }
+    noiseSource.buffer = noiseBuffer;
+    noiseFilter.type = "bandpass";
+    noiseFilter.frequency.setValueAtTime(settings.noiseFilterFrequency, now);
+    noiseFilter.Q.setValueAtTime(settings.noiseFilterQ, now);
+    noiseGain.gain.setValueAtTime(settings.noiseGain, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + noiseSeconds);
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(output);
+    noiseSource.start(now);
+    noiseSource.stop(now + noiseSeconds);
+
+    const cleanup = () => {
+      for (const { oscillator, gain } of oscillators) {
+        disconnectNode(oscillator);
+        disconnectNode(gain);
+      }
+      disconnectNode(noiseSource);
+      disconnectNode(noiseFilter);
+      disconnectNode(noiseGain);
+      disconnectNode(bodyBus);
+      disconnectNode(bodyFilter);
+      disconnectNode(output);
+    };
+    oscillators[0].oscillator.onended = cleanup;
+  }
 }
 
 function disconnectNode(node, destination = undefined) {
@@ -327,4 +482,15 @@ function disconnectNode(node, destination = undefined) {
   } catch {
     // Already disconnected.
   }
+}
+
+// Finish on the audio clock. JavaScript onended is only resource cleanup and
+// may run late; a short fade prevents that callback from cutting off a live tail.
+function scheduleOutputEnvelope(output, level, start, end, attackSeconds) {
+  // Restore the short Ver-7 attack ramp; an instant full-level transient was
+  // flattening against the boosted master and adding an unwanted hard edge.
+  output.gain.setValueAtTime(0, start);
+  output.gain.linearRampToValueAtTime(level, Math.min(start + attackSeconds, end - 0.005));
+  output.gain.setValueAtTime(level, Math.max(start, end - 0.005));
+  output.gain.linearRampToValueAtTime(0, end);
 }

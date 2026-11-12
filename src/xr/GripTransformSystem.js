@@ -1,8 +1,5 @@
 import * as THREE from "three";
-import {
-  clearControllerGripTarget,
-  setControllerGripTarget,
-} from "./controllerGripState.js";
+import { clearControllerGripTarget, setControllerGripTarget } from "./controllerGripState.js";
 
 const tempMatrix = new THREE.Matrix4();
 const tempPosition = new THREE.Vector3();
@@ -10,7 +7,13 @@ const tempQuaternion = new THREE.Quaternion();
 const tempScale = new THREE.Vector3();
 
 export class GripTransformSystem {
-  constructor({ controllers, controllerStates, resolveOwner, getPointedTarget, transformTargetResolver }) {
+  constructor({
+    controllers,
+    controllerStates,
+    resolveOwner,
+    getPointedTarget,
+    transformTargetResolver,
+  }) {
     this.controllers = controllers;
     this.controllerStates = controllerStates;
     this.resolveOwner = resolveOwner;
@@ -27,7 +30,10 @@ export class GripTransformSystem {
     setControllerGripTarget(controllerState, target, source);
     controller.updateMatrixWorld(true);
     target.root.updateMatrixWorld(true);
-    controllerState.gripOffsetMatrix.copy(controller.matrixWorld).invert().multiply(target.root.matrixWorld);
+    controllerState.gripOffsetMatrix
+      .copy(controller.matrixWorld)
+      .invert()
+      .multiply(target.root.matrixWorld);
     return target;
   }
 

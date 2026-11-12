@@ -1,20 +1,19 @@
-import {
-  METRONOME_HANDLE_CONTROLS,
-  METRONOME_SETTINGS,
-} from "../../config/metronome.js";
+import { METRONOME_HANDLE_CONTROLS, METRONOME_SETTINGS } from "../../config/metronome.js";
 import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
 import {
   clamp,
+  generateArcPoints,
   mapAngleToValue,
   mapValueToAngle,
   projectOntoPlane,
+  rotateOffsetAroundAxis,
   signedAngleOnPlane,
   unwrapAngleDelta,
   vectorLength,
-} from "./metronomeArcMath.js";
+} from "../core/arcMotionMath.js";
 
-const PLANE_TOLERANCE = 1e-4;
 const RAY_EPSILON = 1e-5;
+const PLANE_TOLERANCE = 1e-4;
 
 export class MetronomeHandleRig {
   constructor({ THREE, root, configs = METRONOME_HANDLE_CONTROLS, showDebug = true } = {}) {
@@ -23,56 +22,112 @@ export class MetronomeHandleRig {
     this.controls = new Map();
     this.targets = {};
     this.disposables = new Set();
+    this.originalChildIndices = new Map();
+    for (const config of configs) {
+      const handle = this.root.getObjectByName(config.nodeName);
+      if (handle?.parent)
+        this.originalChildIndices.set(handle, handle.parent.children.indexOf(handle));
+    }
     for (const config of configs) this.createControl(config, showDebug);
   }
 
   createControl(config, showDebug) {
     const handle = this.root.getObjectByName(config.nodeName);
     if (!handle) {
-      console.warn(`Metronome handle node "${config.nodeName}" was not found; ${config.parameter} control disabled.`);
+      console.warn(
+        `Metronome handle node "${config.nodeName}" was not found; ${config.parameter} control disabled.`,
+      );
+      return;
+    }
+    if (!handle.geometry) {
+      console.warn(
+        `Metronome handle node "${config.nodeName}" has no geometry; ${config.parameter} control disabled.`,
+      );
       return;
     }
     const axis = vector(this.THREE, config.axis);
     if (axis.lengthSq() < 1e-12) {
-      console.warn(`Metronome handle "${config.nodeName}" has a zero-length rotation axis; control disabled.`);
+      console.warn(
+        `Metronome handle "${config.nodeName}" has a zero-length rotation axis; control disabled.`,
+      );
       return;
     }
     axis.normalize();
-    const rawOffset = vector(this.THREE, config.colliderOffset);
-    const normalDistance = rawOffset.dot(axis);
-    const projectedOffset = rawOffset.clone().addScaledVector(axis, -normalDistance);
-    const radius = projectedOffset.length();
+
+    const colliderOffset = vector(this.THREE, config.colliderOffset);
+    const axialDistance = colliderOffset.dot(axis);
+    const radialOffset = colliderOffset.clone().addScaledVector(axis, -axialDistance);
+    const radius = radialOffset.length();
     if (radius < 1e-6) {
-      console.warn(`Metronome handle "${config.nodeName}" collider offset produces a zero arc radius; control disabled.`);
+      console.warn(
+        `Metronome handle "${config.nodeName}" collider offset produces a zero arc radius; control disabled.`,
+      );
       return;
     }
-    if (Math.abs(normalDistance) > Math.max(radius * 0.01, PLANE_TOLERANCE)) {
-      console.warn(`Metronome handle "${config.nodeName}" collider offset is outside its movement plane; projecting it onto the plane.`);
+    if (Math.abs(axialDistance) > Math.max(radius * 0.01, PLANE_TOLERANCE)) {
+      console.warn(
+        `Metronome handle "${config.nodeName}" collider offset is outside its movement plane; projecting it onto the plane.`,
+      );
+      colliderOffset.copy(radialOffset);
     }
+
+    const originalParent = handle.parent;
+    const originalChildIndex = this.originalChildIndices.get(handle);
+    const importedPosition = handle.position.clone();
+    const importedQuaternion = handle.quaternion.clone();
+    const importedScale = handle.scale.clone();
+
+    const pivotGroup = new this.THREE.Group();
+    pivotGroup.name = `METRONOME_${config.parameter}_pivot`;
+    pivotGroup.position.copy(vector(this.THREE, config.pivot));
+    originalParent.add(pivotGroup);
+    const restPivotPosition = pivotGroup.position.clone();
+    const restPivotQuaternion = pivotGroup.quaternion.clone();
+    const restPivotScale = pivotGroup.scale.clone();
+
+    // The pivot is an identity transform apart from translation and shares the
+    // handle's original parent, so this preserves the imported parent-space
+    // transform exactly at rest.
+    pivotGroup.add(handle);
+    handle.position.copy(importedPosition).sub(restPivotPosition);
+    handle.quaternion.copy(importedQuaternion);
+    handle.scale.copy(importedScale);
+
+    const rootAxis = resolveHandleAxisInRootSpace({
+      THREE: this.THREE,
+      root: this.root,
+      handle: pivotGroup,
+      localAxis: axis,
+      restQuaternion: restPivotQuaternion,
+    });
 
     const restFrame = new this.THREE.Group();
     restFrame.name = `METRONOME_${config.parameter}_rest_frame`;
-    restFrame.position.copy(handle.position);
-    restFrame.quaternion.copy(handle.quaternion);
-    restFrame.scale.copy(handle.scale);
-    handle.parent.add(restFrame);
+    restFrame.position.copy(restPivotPosition);
+    restFrame.quaternion.copy(restPivotQuaternion);
+    restFrame.scale.copy(restPivotScale);
+    originalParent.add(restFrame);
 
-    const geometry = owned(new this.THREE.SphereGeometry(
-      config.colliderRadius,
-      METRONOME_SETTINGS.sphereSegments,
-      METRONOME_SETTINGS.sphereRings,
-    ));
-    const material = owned(new this.THREE.MeshBasicMaterial({
-      color: config.colliderColor,
-      transparent: true,
-      opacity: showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
-      depthTest: !showDebug,
-      depthWrite: false,
-      wireframe: showDebug,
-    }));
+    const geometry = owned(
+      new this.THREE.SphereGeometry(
+        config.colliderRadius,
+        METRONOME_SETTINGS.sphereSegments,
+        METRONOME_SETTINGS.sphereRings,
+      ),
+    );
+    const material = owned(
+      new this.THREE.MeshBasicMaterial({
+        color: config.colliderColor,
+        transparent: true,
+        opacity: showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
+        depthTest: !showDebug,
+        depthWrite: false,
+        wireframe: showDebug,
+      }),
+    );
     const collider = new this.THREE.Mesh(geometry, material);
     collider.name = `HIT_metronome_${config.parameter}`;
-    collider.position.copy(projectedOffset);
+    collider.position.copy(colliderOffset);
     collider.renderOrder = METRONOME_SETTINGS.renderOrder;
     Object.assign(collider.userData, {
       isHitTarget: true,
@@ -82,19 +137,28 @@ export class MetronomeHandleRig {
       interactionRole: METRONOME_INTERACTION_ROLES[config.parameter],
       baseHitOpacity: showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
     });
-    handle.add(collider);
+    pivotGroup.add(collider);
 
     const control = {
       config,
       handle,
       collider,
+      pivotGroup,
       restFrame,
       axis,
-      neutralDirection: projectedOffset.clone().normalize(),
+      rootAxis,
+      colliderOffset,
+      radialOffset,
+      neutralDirection: radialOffset.clone().normalize(),
       radius,
-      restPosition: handle.position.clone(),
-      restQuaternion: handle.quaternion.clone(),
-      restScale: handle.scale.clone(),
+      originalParent,
+      originalChildIndex,
+      importedPosition,
+      importedQuaternion,
+      importedScale,
+      restPivotPosition,
+      restPivotQuaternion,
+      restPivotScale,
       minAngle: this.THREE.MathUtils.degToRad(config.minAngleDegrees),
       maxAngle: this.THREE.MathUtils.degToRad(config.maxAngleDegrees),
       referenceAngle: this.THREE.MathUtils.degToRad(config.referenceAngleDegrees || 0),
@@ -124,11 +188,10 @@ export class MetronomeHandleRig {
       control.axis,
       control.angle + control.referenceAngle,
     );
-    control.handle.position.copy(control.restPosition);
-    control.handle.quaternion.copy(control.restQuaternion).multiply(delta);
-    control.handle.scale.copy(control.restScale);
-    control.collider.position.copy(control.neutralDirection).multiplyScalar(control.radius);
-    control.handle.updateMatrixWorld(true);
+    control.pivotGroup.position.copy(control.restPivotPosition);
+    control.pivotGroup.quaternion.copy(control.restPivotQuaternion).multiply(delta);
+    control.pivotGroup.scale.copy(control.restPivotScale);
+    control.pivotGroup.updateMatrixWorld(true);
   }
 
   beginDrag(parameter, rayOrigin, rayDirection) {
@@ -176,12 +239,10 @@ export class MetronomeHandleRig {
   }
 
   getPointerAngle(control, rayOrigin, rayDirection) {
-    control.restFrame.updateMatrixWorld(true);
-    const pivot = control.restFrame.getWorldPosition(new this.THREE.Vector3());
-    const normal = control.axis.clone().transformDirection(control.restFrame.matrixWorld).normalize();
+    const { point: planePoint, normal } = this.getDragPlane(control);
     const denominator = rayDirection.dot(normal);
     if (Math.abs(denominator) < RAY_EPSILON) return null;
-    const distance = pivot.clone().sub(rayOrigin).dot(normal) / denominator;
+    const distance = planePoint.clone().sub(rayOrigin).dot(normal) / denominator;
     if (!Number.isFinite(distance)) return null;
     const intersection = rayOrigin.clone().addScaledVector(rayDirection, distance);
     const local = control.restFrame.worldToLocal(intersection.clone());
@@ -190,36 +251,94 @@ export class MetronomeHandleRig {
     return signedAngleOnPlane(control.neutralDirection, projected, control.axis);
   }
 
+  getDragPlane(control) {
+    control.restFrame.updateMatrixWorld(true);
+    return {
+      point: control.restFrame.localToWorld(new this.THREE.Vector3()),
+      normal: control.axis.clone().transformDirection(control.restFrame.matrixWorld).normalize(),
+    };
+  }
+
   createDebugGeometry(control) {
     const settings = METRONOME_SETTINGS.debug;
     const group = control.restFrame;
     group.userData.isMetronomeDebug = true;
-    const basis = createPlaneBasis(this.THREE, control.axis, control.neutralDirection);
+    const arcConfig = {
+      center: { x: 0, y: 0, z: 0 },
+      axis: vectorObject(control.axis),
+      colliderOffset: vectorObject(control.colliderOffset),
+      minAngleDegrees: control.config.minAngleDegrees,
+      maxAngleDegrees: control.config.maxAngleDegrees,
+      referenceAngleDegrees: control.config.referenceAngleDegrees || 0,
+    };
 
     const pivot = new this.THREE.Mesh(
       owned(new this.THREE.SphereGeometry(settings.pivotRadius, 12, 8)),
-      owned(new this.THREE.MeshBasicMaterial({ color: control.config.pivotColor, depthTest: false })),
+      owned(
+        new this.THREE.MeshBasicMaterial({ color: control.config.pivotColor, depthTest: false }),
+      ),
     );
     group.add(pivot);
+    this.disposables.add(pivot.geometry);
+    this.disposables.add(pivot.material);
 
-    const circlePoints = arcPoints(this.THREE, basis, control.radius, 0, Math.PI * 2, settings.circleSegments);
-    group.add(line(this.THREE, circlePoints, control.config.planeColor, settings.ringOpacity, this.disposables, true));
-
-    const arc = arcPoints(
-      this.THREE, basis, control.radius,
-      control.minAngle, control.maxAngle, settings.circleSegments,
+    const axisExtent = control.axis.clone().multiplyScalar(control.radius);
+    group.add(
+      line(
+        this.THREE,
+        [axisExtent.clone().multiplyScalar(-1), axisExtent],
+        control.config.pivotColor,
+        settings.arcOpacity,
+        this.disposables,
+        false,
+      ),
     );
-    group.add(line(this.THREE, arc, control.config.arcColor, settings.arcOpacity, this.disposables, false));
+
+    const circlePoints = toThreePoints(
+      this.THREE,
+      generateArcPoints(arcConfig, {
+        startAngleDegrees: -180 - arcConfig.referenceAngleDegrees,
+        endAngleDegrees: 180 - arcConfig.referenceAngleDegrees,
+        segments: settings.circleSegments,
+      }),
+    );
+    group.add(
+      line(
+        this.THREE,
+        circlePoints,
+        control.config.planeColor,
+        settings.ringOpacity,
+        this.disposables,
+        true,
+      ),
+    );
+
+    const arc = toThreePoints(
+      this.THREE,
+      generateArcPoints(arcConfig, {
+        segments: settings.circleSegments,
+      }),
+    );
+    group.add(
+      line(this.THREE, arc, control.config.arcColor, settings.arcOpacity, this.disposables, false),
+    );
 
     const plane = new this.THREE.Mesh(
-      owned(new this.THREE.CircleGeometry(control.radius * settings.planeSizeMultiplier, settings.circleSegments)),
-      owned(new this.THREE.MeshBasicMaterial({
-        color: control.config.planeColor,
-        transparent: true,
-        opacity: settings.planeOpacity,
-        side: this.THREE.DoubleSide,
-        depthWrite: false,
-      })),
+      owned(
+        new this.THREE.CircleGeometry(
+          control.radius * settings.planeSizeMultiplier,
+          settings.circleSegments,
+        ),
+      ),
+      owned(
+        new this.THREE.MeshBasicMaterial({
+          color: control.config.planeColor,
+          transparent: true,
+          opacity: settings.planeOpacity,
+          side: this.THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      ),
     );
     plane.quaternion.setFromUnitVectors(new this.THREE.Vector3(0, 0, 1), control.axis);
     plane.userData.isMetronomeDebug = true;
@@ -229,16 +348,22 @@ export class MetronomeHandleRig {
 
     if (settings.radialLimits) {
       for (const angle of [control.minAngle, control.maxAngle]) {
-        const endpoint = rotateAroundAxis(this.THREE, control.neutralDirection, control.axis, angle)
-          .multiplyScalar(control.radius);
-        group.add(line(
-          this.THREE,
-          [new this.THREE.Vector3(), endpoint],
-          control.config.arcColor,
-          settings.arcOpacity,
-          this.disposables,
-          false,
-        ));
+        const rotated = rotateOffsetAroundAxis(
+          arcConfig.colliderOffset,
+          arcConfig.axis,
+          angle + control.referenceAngle,
+        );
+        const endpoint = vector(this.THREE, rotated);
+        group.add(
+          line(
+            this.THREE,
+            [new this.THREE.Vector3(), endpoint],
+            control.config.arcColor,
+            settings.arcOpacity,
+            this.disposables,
+            false,
+          ),
+        );
       }
     }
     group.traverse((object) => {
@@ -250,12 +375,39 @@ export class MetronomeHandleRig {
   dispose() {
     for (const control of this.controls.values()) {
       control.collider.removeFromParent();
+      control.originalParent.add(control.handle);
+      control.handle.position.copy(control.importedPosition);
+      control.handle.quaternion.copy(control.importedQuaternion);
+      control.handle.scale.copy(control.importedScale);
+      restoreChildIndex(control.originalParent, control.handle, control.originalChildIndex);
+      control.pivotGroup.removeFromParent();
       control.restFrame.removeFromParent();
+      delete this.targets[METRONOME_INTERACTION_ROLES[control.config.parameter]];
     }
     for (const disposable of this.disposables) disposable.dispose?.();
     this.disposables.clear();
+    this.originalChildIndices.clear();
     this.controls.clear();
   }
+}
+
+export function resolveHandleAxisInRootSpace({
+  THREE,
+  root,
+  handle,
+  localAxis,
+  restQuaternion = handle?.quaternion,
+} = {}) {
+  root?.updateMatrixWorld?.(true);
+  handle?.parent?.updateMatrixWorld?.(true);
+  const parentWorldQuaternion = handle.parent.getWorldQuaternion(new THREE.Quaternion());
+  const rootWorldQuaternion = root.getWorldQuaternion(new THREE.Quaternion());
+  return localAxis
+    .clone()
+    .applyQuaternion(restQuaternion)
+    .applyQuaternion(parentWorldQuaternion)
+    .applyQuaternion(rootWorldQuaternion.invert())
+    .normalize();
 }
 
 function getValueRange(parameter) {
@@ -274,25 +426,18 @@ function owned(resource) {
   return resource;
 }
 
-function createPlaneBasis(THREE, axis, neutral) {
-  return { axis, first: neutral, second: new THREE.Vector3().crossVectors(axis, neutral).normalize() };
-}
-
-function arcPoints(THREE, basis, radius, start, end, segments) {
-  const points = [];
-  for (let index = 0; index <= segments; index += 1) {
-    const angle = start + (end - start) * (index / segments);
-    points.push(
-      basis.first.clone().multiplyScalar(Math.cos(angle) * radius)
-        .addScaledVector(basis.second, Math.sin(angle) * radius),
-    );
-  }
-  return points;
+function restoreChildIndex(parent, child, index) {
+  const currentIndex = parent.children.indexOf(child);
+  if (currentIndex < 0 || currentIndex === index) return;
+  parent.children.splice(currentIndex, 1);
+  parent.children.splice(Math.min(index, parent.children.length), 0, child);
 }
 
 function line(THREE, points, color, opacity, disposables, loop) {
   const geometry = owned(new THREE.BufferGeometry().setFromPoints(points));
-  const material = owned(new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthTest: false }));
+  const material = owned(
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthTest: false }),
+  );
   const result = loop ? new THREE.LineLoop(geometry, material) : new THREE.Line(geometry, material);
   result.userData.isMetronomeDebug = true;
   result.renderOrder = METRONOME_SETTINGS.renderOrder - 1;
@@ -301,6 +446,10 @@ function line(THREE, points, color, opacity, disposables, loop) {
   return result;
 }
 
-function rotateAroundAxis(THREE, vectorValue, axis, angle) {
-  return vectorValue.clone().applyAxisAngle(axis, angle);
+function vectorObject(value) {
+  return { x: value.x, y: value.y, z: value.z };
+}
+
+function toThreePoints(THREE, points) {
+  return points.map((point) => vector(THREE, point));
 }

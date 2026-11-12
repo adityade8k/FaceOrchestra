@@ -1,5 +1,13 @@
+import { AsyncSceneStore } from "../../persistence/AsyncSceneStore.js";
+import { TutorialRuntime } from "../../tutorial/TutorialRuntime.js";
+import { CaptureRecorder } from "../../capture/CaptureRecorder.js";
+import { installCaptureControls } from "../../capture/CaptureControls.js";
 import * as THREE from "three";
-import { INSTRUMENT_MAX_SCALE, INSTRUMENT_MIN_SCALE, INSTRUMENT_SCALE_STEP } from "../../config/honk.js";
+import {
+  INSTRUMENT_MAX_SCALE,
+  INSTRUMENT_MIN_SCALE,
+  INSTRUMENT_SCALE_STEP,
+} from "../../config/honk.js";
 import { AssetRepository } from "../../scene/AssetRepository.js";
 import { InstrumentFactory } from "../../instruments/core/InstrumentFactory.js";
 import { InstrumentLifecycleService } from "../../instruments/core/InstrumentLifecycleService.js";
@@ -11,26 +19,30 @@ import { FormationTransformResolver } from "../../instruments/formations/Formati
 import { HonkContactGraph } from "../../instruments/formations/HonkContactGraph.js";
 import { HonkContactSystem } from "../../instruments/formations/HonkContactSystem.js";
 import { HonkLockService } from "../../instruments/formations/HonkLockService.js";
-import { getFormationRecipe } from "../../instruments/formations/formationRecipes.js";
 import { HonkColliderFactory } from "../../instruments/honk/HonkColliderFactory.js";
 import { HonkInstrument } from "../../instruments/honk/HonkInstrument.js";
 import { METRONOME_SETTINGS } from "../../config/metronome.js";
+import { DEBUG_MODE } from "../../config/debug.js";
 import { RADIAL_MENU_HAPTICS } from "../../config/spawning.js";
 import { LooperInstrument } from "../../instruments/looper/LooperInstrument.js";
 import { MetronomeColliderFactory } from "../../instruments/metronome/MetronomeColliderFactory.js";
 import { MetronomeConnectionManager } from "../../instruments/metronome/MetronomeConnectionManager.js";
 import { MetronomeInstrument } from "../../instruments/metronome/MetronomeInstrument.js";
 import { StickColliderFactory } from "../../instruments/stick/StickColliderFactory.js";
-import { StickCollisionSystem, ThreeStickCollisionAdapter } from "../../instruments/stick/StickCollisionSystem.js";
+import {
+  StickCollisionSystem,
+  ThreeStickCollisionAdapter,
+} from "../../instruments/stick/StickCollisionSystem.js";
 import { StickEquipmentSystem } from "../../instruments/stick/StickEquipmentSystem.js";
 import { StickHapticsAdapter } from "../../instruments/stick/StickHapticsAdapter.js";
 import { StickInstrument } from "../../instruments/stick/StickInstrument.js";
+import { routeStickStrikeToLooperRecordings } from "../../instruments/stick/StickLooperRecordingRouter.js";
 import { PersistenceStore } from "../../persistence/PersistenceStore.js";
 import { ScenePersistence } from "../../persistence/ScenePersistence.js";
 import { SceneRestorer } from "../../persistence/SceneRestorer.js";
 import { SceneSerializer } from "../../persistence/SceneSerializer.js";
 import { FormationSpawner } from "../../spawning/FormationSpawner.js";
-import { SpawnCatalog } from "../../spawning/SpawnCatalog.js";
+import { createCompositionSetup } from "../../compositions/setup.js";
 import { SpawnMenuController } from "../../spawning/SpawnMenuController.js";
 import { SpawnPlacementController } from "../../spawning/SpawnPlacementController.js";
 import { SpawnPreview } from "../../spawning/SpawnPreview.js";
@@ -42,17 +54,20 @@ import { XRInputSourceManager } from "../../xr/XRInputSourceManager.js";
 import { XRIntentMapper } from "../../xr/XRIntentMapper.js";
 import { XRInteractionCoordinator } from "../../xr/XRInteractionCoordinator.js";
 import { HonkPerformanceRuntimeMethods } from "./HonkPerformanceRuntime.js";
-import { HonkPresentationRuntimeMethods } from "./HonkPresentationRuntime.js";
+import { HonkPresentationRuntime } from "./HonkPresentationRuntime.js";
 import { InstrumentAssetRuntimeMethods } from "./InstrumentAssetRuntime.js";
 import { LifecycleRuntimeMethods } from "./LifecycleRuntime.js";
-import { LooperConnectionRuntimeMethods } from "./LooperConnectionRuntime.js";
+import { LooperConnectionRuntime } from "./LooperConnectionRuntime.js";
 import { LooperTransportRuntimeMethods } from "./LooperTransportRuntime.js";
-import { MetronomeConnectionRuntimeMethods } from "./MetronomeConnectionRuntime.js";
-import { MetronomePulseRuntimeMethods } from "./MetronomePulseRuntime.js";
-import { PendingSpawnSafeRuntimeMethods } from "./PendingSpawnSafeRuntime.js";
+import { MetronomeConnectionRuntime } from "./MetronomeConnectionRuntime.js";
+import { MetronomePulseRuntime } from "./MetronomePulseRuntime.js";
 import { RelationshipRuntimeMethods } from "./RelationshipRuntime.js";
+import {
+  restorePersistedSceneForRuntime,
+  savePersistedSceneForRuntime,
+} from "./RuntimePersistencePolicy.js";
 import { SessionRuntimeMethods } from "./SessionRuntime.js";
-import { SpawnRuntimeMethods } from "./SpawnRuntime.js";
+import { SpawnRuntime } from "./SpawnRuntime.js";
 import { StickRuntimeMethods } from "./StickRuntime.js";
 import { XRInteractionRuntimeMethods } from "./XRInteractionRuntime.js";
 
@@ -64,27 +79,44 @@ import { XRInteractionRuntimeMethods } from "./XRInteractionRuntime.js";
  * InstrumentRegistry. Domain services remain independently testable.
  */
 export class RuntimeHost {
-  constructor({ scene, camera, renderer, audioSystem, assetRepository = null, storage = globalThis.localStorage } = {}) {
+  constructor({
+    scene,
+    camera,
+    renderer,
+    audioSystem,
+    assetRepository = null,
+    storage,
+    debugMode = DEBUG_MODE,
+  } = {}) {
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
     this.audioSystem = audioSystem;
+    this.debugMode = Boolean(debugMode);
+    this.sessionMode = "launch";
+    this.spawn = new SpawnRuntime(this);
+    this.looperConnections = new LooperConnectionRuntime(this);
+    this.metronomeConnections = new MetronomeConnectionRuntime(this);
+    this.metronomePulses = new MetronomePulseRuntime(this);
+    this.presentation = new HonkPresentationRuntime(this);
 
     this.assetRepository = assetRepository || new AssetRepository();
 
     this.instrumentRegistry = new InstrumentRegistry();
+    this.instrumentRegistry.admission.onRejected = (message) => this.showRuntimeFeedback(message);
     this.interactionTargetRegistry = new InteractionTargetRegistry();
     this.instrumentFactory = new InstrumentFactory({
       registry: this.instrumentRegistry,
       interactionTargetRegistry: this.interactionTargetRegistry,
     });
-    this.metronomeConnectionWires = new Map();
-    this.metronomePulseStates = new Map();
+    this.metronomeConnections.metronomeConnectionWires = new Map();
+    this.metronomePulses.metronomePulseStates = new Map();
     this.metronomeConnectionManager = new MetronomeConnectionManager({
       registry: this.instrumentRegistry,
-      onConnectionAdded: (connection) => this.handleMetronomeConnectionAdded(connection),
+      onConnectionAdded: (connection) =>
+        this.metronomeConnections.handleMetronomeConnectionAdded(connection),
       onConnectionRemoved: (connection, reason) =>
-        this.handleMetronomeConnectionRemoved(connection, reason),
+        this.metronomeConnections.handleMetronomeConnectionRemoved(connection, reason),
     });
 
     this.honkContactGraph = new HonkContactGraph();
@@ -92,31 +124,43 @@ export class RuntimeHost {
       graph: this.honkContactGraph,
       instrumentRegistry: this.instrumentRegistry,
     });
-    this.chordFormationService = new ChordFormationService({ contactGraph: this.honkContactGraph });
+    this.chordFormationService = new ChordFormationService({
+      contactGraph: this.honkContactGraph,
+    });
     this.honkLockService = new HonkLockService({
       instrumentRegistry: this.instrumentRegistry,
       formationService: this.chordFormationService,
     });
-    this.formationTransformResolver = new FormationTransformResolver({ lockService: this.honkLockService });
+    this.formationTransformResolver = new FormationTransformResolver({
+      lockService: this.honkLockService,
+    });
     this.transformTargetResolver = new TransformTargetResolver({
       instrumentRegistry: this.instrumentRegistry,
       formationTransformResolver: this.formationTransformResolver,
       profileResolver: (_target, source) => this.getTransformProfile(source),
     });
 
-    this.honkColliderFactory = new HonkColliderFactory({ THREE });
-    this.metronomeColliderFactory = new MetronomeColliderFactory({ THREE });
+    this.honkColliderFactory = new HonkColliderFactory({
+      THREE,
+      showDebug: this.debugMode,
+    });
+    this.metronomeColliderFactory = new MetronomeColliderFactory({
+      THREE,
+      showDebug: this.debugMode,
+    });
     this.stickColliderFactory = new StickColliderFactory({ THREE });
     this.stickEquipmentSystem = new StickEquipmentSystem({
-      controllerResolver: (controllerId) => this.controllers.find(
-        (controller) => controller.userData.controllerId === controllerId,
-      ),
+      controllerResolver: (controllerId) =>
+        this.controllers.find((controller) => controller.userData.controllerId === controllerId),
     });
     this.stickCollisionAdapter = new ThreeStickCollisionAdapter({ THREE });
     this.stickCollisionSystem = new StickCollisionSystem({
       getSticks: () => this.instrumentRegistry.getByKind("stick"),
       getTargets: () => this.instrumentStates,
-      collisionTester: (context) => this.stickCollisionAdapter.intersects(context),
+      collisionTester: (context) =>
+        context.target?.withInteractionPose
+          ? context.target.withInteractionPose(() => this.stickCollisionAdapter.intersects(context))
+          : this.stickCollisionAdapter.intersects(context),
     });
     this.instrumentLifecycle = new InstrumentLifecycleService({
       instrumentRegistry: this.instrumentRegistry,
@@ -126,33 +170,34 @@ export class RuntimeHost {
       releaseInstrumentAudio: (instrument) => {
         instrument.releaseAllAudioVoices?.();
       },
-      sessionResetters: [() => this.resetMetronomeConnectionRuntime({ clearRelationships: true })],
+      sessionResetters: [
+        () =>
+          this.metronomeConnections.resetMetronomeConnectionRuntime({ clearRelationships: true }),
+      ],
     });
 
-    this.spawnCatalog = new SpawnCatalog();
-    this.radialSpawnMenu = new RadialSpawnMenu({
-      categories: this.spawnCatalog.getRadialCategories(),
+    const compositionSetup = createCompositionSetup();
+    this.spawn.spawnCatalog = compositionSetup.catalog;
+    this.spawn.radialSpawnMenu = new RadialSpawnMenu({
+      categories: this.spawn.spawnCatalog.getRadialCategories(),
       getViewerWorldPosition: (target) => this.getUserCamera().getWorldPosition(target),
     });
-    this.spawnMenuController = new SpawnMenuController({
-      view: this.radialSpawnMenu,
-      catalog: this.spawnCatalog,
-      onStateChange: (controller, change) => this.pulseRadialMenuStateChange(
-        controller,
-        change,
-        RADIAL_MENU_HAPTICS,
-      ),
+    this.spawn.spawnMenuController = new SpawnMenuController({
+      view: this.spawn.radialSpawnMenu,
+      catalog: this.spawn.spawnCatalog,
+      onStateChange: (controller, change) =>
+        this.spawn.pulseRadialMenuStateChange(controller, change, RADIAL_MENU_HAPTICS),
     });
-    this.formationSpawner = new FormationSpawner({
-      recipes: { get: getFormationRecipe },
+    this.spawn.formationSpawner = new FormationSpawner({
+      recipes: compositionSetup.recipes,
       spawnHonk: ({ tuning, name }) => {
         this.createSpawnedComponent("honk", { tuning, name });
         return this.activeInstrumentState;
       },
     });
-    this.spawnPlacementController = new SpawnPlacementController({
+    this.spawn.spawnPlacementController = new SpawnPlacementController({
       scene: this.scene,
-      createEntry: (entry) => this.createPendingSpawnComponents(entry?.id)?.instruments || [],
+      createEntry: (entry) => this.spawn.createPendingSpawnComponents(entry?.id)?.instruments || [],
       previewFactory: (options) => new SpawnPreview(options),
     });
 
@@ -166,10 +211,10 @@ export class RuntimeHost {
     this.noteFont = null;
     this.noteFontLoadPromise = null;
     this.activeInstrumentState = null;
-    this.pendingSpawnPlacement = null;
+    this.spawn.pendingSpawnPlacement = null;
     this.xrSessionActive = false;
-    this.currentVowelIndex = -1;
-    this.currentVowelLetter = "neutral";
+    this.presentation.currentVowelIndex = -1;
+    this.presentation.currentVowelLetter = "neutral";
     this.instructionPanelView = null;
     this.instructionPanel = null;
     this.closeButton = null;
@@ -182,12 +227,43 @@ export class RuntimeHost {
     this.configurePersistence(storage);
     this.configureStickEvents();
     this.configureRelationshipEvents();
+    this.tutorial = new TutorialRuntime(this);
+    this.capture = new CaptureRecorder(this);
   }
 
+  showRuntimeFeedback(message) {
+    if (this.tutorial) {
+      this.tutorial.uiFeedback = message;
+      this.tutorial.lastDraw = -Infinity;
+    }
+    if (!this.runtimeFeedbackElement && typeof document !== "undefined") {
+      this.runtimeFeedbackElement = document.createElement("div");
+      this.runtimeFeedbackElement.setAttribute("role", "status");
+      this.runtimeFeedbackElement.style.cssText =
+        "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#102321;color:#fff4dd;padding:12px 18px;border-radius:8px;z-index:100;pointer-events:none";
+      document.body.appendChild(this.runtimeFeedbackElement);
+    }
+    if (this.runtimeFeedbackElement) {
+      this.runtimeFeedbackElement.hidden = false;
+      this.runtimeFeedbackElement.textContent = message;
+      clearTimeout(this.runtimeFeedbackTimer);
+      this.runtimeFeedbackTimer = setTimeout(() => {
+        this.runtimeFeedbackElement.hidden = true;
+        if (this.tutorial?.uiFeedback === message) {
+          this.tutorial.uiFeedback = "";
+          this.tutorial.lastDraw = -Infinity;
+        }
+      }, 5000);
+    }
+  }
+  getUserCamera() {
+    if (this.renderer.xr.isPresenting) {
+      return this.renderer.xr.getCamera(this.camera);
+    }
+    return this.camera;
+  }
   get instrumentStates() {
-    return [...this.instrumentRegistry.values()].filter(
-      ({ kind }) => kind === "honk" || kind === "looper" || kind === "metronome",
-    );
+    return this.instrumentRegistry.getInstrumentStates();
   }
 
   get controllers() {
@@ -200,24 +276,44 @@ export class RuntimeHost {
 
   configureInstrumentFactory() {
     this.instrumentFactory
-      .register("honk", (options) => new HonkInstrument({
-        ...options,
-        voiceService: this.audioSystem,
-      }))
-      .register("looper", (options) => new LooperInstrument({
-        ...options,
-        instrumentRegistry: this.instrumentRegistry,
-        looperAdapter: this.createLooperAdapter(),
-      }))
+      .register(
+        "honk",
+        (options) =>
+          new HonkInstrument({
+            ...options,
+            voiceService: this.audioSystem,
+          }),
+      )
+      .register(
+        "looper",
+        (options) =>
+          new LooperInstrument({
+            ...options,
+            instrumentRegistry: this.instrumentRegistry,
+            looperAdapter: this.createLooperAdapter(),
+          }),
+      )
       .register("stick", (options) => new StickInstrument(options))
-      .register("metronome", (options) => new MetronomeInstrument({
-        ...options,
-        audioSystem: this.audioSystem,
-        onTransportChange: ({ metronome, playing }) => {
-          if (playing) return;
-          this.releaseMetronomePulsesForMetronome(metronome.id);
-        },
-      }));
+      .register(
+        "metronome",
+        (options) =>
+          new MetronomeInstrument({
+            ...options,
+            audioSystem: this.audioSystem,
+            onTransportChange: ({ metronome, playing, now }) => {
+              if (playing) return;
+              this.metronomePulses.releaseMetronomePulsesForMetronome(metronome.id);
+              for (const connection of this.metronomeConnectionManager.getConnectionsForMetronome(
+                metronome.id,
+              )) {
+                if (connection.targetKind !== "looper") continue;
+                const looper = this.instrumentRegistry.get(connection.targetId);
+                looper?.looperController.recording.stopRecording(looper, now);
+                looper?.looperController.stopPlayback(looper);
+              }
+            },
+          }),
+      );
   }
 
   configureXR() {
@@ -225,17 +321,25 @@ export class RuntimeHost {
     this.interactionCoordinator = new XRInteractionCoordinator({
       intentMapper: this.intentMapper,
       handlers: {
-        onSpawnMenuOpen: (controller, gripPressed) => this.handleSpawnMenuOpenIntent(controller, gripPressed),
-        onSpawnMenuConfirm: (controller) => this.handleSpawnMenuConfirmIntent(controller),
+        captureIntent: (intent, state) =>
+          this.tutorial?.captureLayoutIntent(intent, state) ||
+          this.tutorial?.navigation.menu?.capture(intent, state) ||
+          this.tutorial?.basics?.captureIntent(intent, state),
+        onIntentHandled: (intent) => this.tutorial?.basics?.onIntent(intent),
+        onSpawnMenuOpen: (controller, gripPressed) =>
+          this.spawn.handleSpawnMenuOpenIntent(controller, gripPressed),
+        onSpawnMenuConfirm: (controller) => this.spawn.handleSpawnMenuConfirmIntent(controller),
         onContextSecondary: (controller) => this.handleContextSecondaryIntent(controller),
         onInstrumentDelete: (controller) => this.handleInstrumentDeleteIntent(controller),
         onTriggerBegin: (controller) => this.handleTriggerBeginIntent(controller),
         onTriggerEnd: (controller) => this.handleTriggerEndIntent(controller),
-        onSpawnMenuCancel: (controller) => this.cancelRadialMenu(controller),
+        onSpawnMenuCancel: (controller) => this.spawn.cancelRadialMenu(controller),
         onGripBegin: (controller) => this.handleGripBeginIntent(controller),
         onGripEnd: (controller) => this.handleGripEndIntent(controller),
-        onHorizontalScaleStep: (controller, direction) => this.handleHorizontalScaleStepIntent(controller, direction),
-        onPreviewDistanceStep: (controller, direction) => this.handlePreviewDistanceStepIntent(controller, direction),
+        onHorizontalScaleStep: (controller, direction) =>
+          this.handleHorizontalScaleStepIntent(controller, direction),
+        onPreviewDistanceStep: (controller, direction) =>
+          this.handlePreviewDistanceStepIntent(controller, direction),
       },
     });
     this.inputSourceManager = new XRInputSourceManager({
@@ -243,7 +347,10 @@ export class RuntimeHost {
       scene: this.scene,
       createRayLine: () => this.createRayLine(),
       createRadialMenu: () => this.createRadialMenu(),
-      onInput: (event) => this.interactionCoordinator.enqueueInput(event),
+      onInput: (event) => {
+        this.scenePersistence?.markDirty();
+        this.interactionCoordinator.enqueueInput(event);
+      },
     });
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = 1.6;
@@ -268,9 +375,10 @@ export class RuntimeHost {
       gamepadResolver: (controller) => this.getControllerGamepad(controller),
     });
     this.stickHaptics = new StickHapticsAdapter({
-      gamepadResolver: (controllerId) => this.getControllerGamepad(
-        this.controllers.find((controller) => controller.userData.controllerId === controllerId),
-      ),
+      gamepadResolver: (controllerId) =>
+        this.getControllerGamepad(
+          this.controllers.find((controller) => controller.userData.controllerId === controllerId),
+        ),
     });
   }
 
@@ -287,26 +395,28 @@ export class RuntimeHost {
       lockService: this.honkLockService,
       metronomeConnectionManager: this.metronomeConnectionManager,
       createInstrument: async (saved) => {
-        const componentId = saved.kind === "looper" || saved.kind === "metronome"
-          ? saved.kind
-          : saved.componentId || "honk";
+        const componentId =
+          saved.kind === "looper" || saved.kind === "metronome"
+            ? saved.kind
+            : saved.componentId || "honk";
         const baseScale = getSerializedUniformScale(saved.transform?.scale);
-        this.createSpawnedComponent(componentId, {
+        const root = this.createSpawnedComponent(componentId, {
           id: saved.id,
           tuning: saved.tuning,
           bpm: saved.bpm,
           volume: saved.volume,
           ...(baseScale === null ? {} : { baseScale }),
         });
-        return this.activeInstrumentState;
+        return root ? this.instrumentRegistry.get(saved.id) : null;
       },
       onEquipment: (equipment) => this.stickEquipmentSystem.restoreEquipmentPreference(equipment),
       onInstrumentRestored: (instrument, saved) => {
-        if (instrument.kind === "looper") this.updateLockVisual(instrument);
+        if (["looper", "metronome"].includes(instrument.kind))
+          this.presentation.updateLockVisual(instrument);
         if (instrument.kind === "honk") {
           const resolved = instrument.getResolvedPerformanceState?.();
           if (resolved) this.applyResolvedHonkMorphState(instrument, resolved);
-          this.syncMorphColliderTravel(instrument);
+          this.presentation.syncMorphColliderTravel(instrument);
           this.updateBendAlignedColliders(instrument);
         }
         const baseScale = getSerializedUniformScale(saved.transform?.scale);
@@ -314,29 +424,36 @@ export class RuntimeHost {
           instrument.baseScale = baseScale;
           this.applyInstrumentVisualScale(instrument, 1);
         }
-        this.syncLooperTransformReference(instrument);
+        this.spawn.syncLooperTransformReference(instrument);
       },
     });
     this.scenePersistence = new ScenePersistence({
-      store: this.persistenceStore,
+      store: new AsyncSceneStore(this.persistenceStore),
       serializer: this.sceneSerializer,
       restorer: this.sceneRestorer,
     });
+    this.scenePersistence.canCheckpoint = () =>
+      !this.debugMode && ["play", "launch"].includes(this.sessionMode);
+    this.persistenceUnsubscribe = this.instrumentRegistry.subscribe(() =>
+      this.scenePersistence.markDirty(),
+    );
   }
 
   configureStickEvents() {
     this.stickCollisionSystem.subscribe((event, context) => {
-      this.stickHaptics.handleStrike(event)?.catch?.((error) => console.warn("Stick haptics failed:", error));
+      this.stickHaptics
+        .handleStrike(event)
+        ?.catch?.((error) => console.warn("Stick haptics failed:", error));
       this.playStickPercussion(event.percussionType, { volume: 1 });
       const target = context.target;
-      if (target?.kind === "looper") {
-        target.recordSelfDrumHit(event.percussionType, event.timestamp);
-        return;
-      }
-      for (const looper of this.instrumentRegistry.getByKind("looper")) {
-        const track = looper.tracks.find(({ connectedHonkId }) => connectedHonkId === target?.id);
-        if (track) looper.recordTrackDrumHit(track.trackId, event.percussionType, event.timestamp);
-      }
+      const recordedCount = routeStickStrikeToLooperRecordings({
+        event,
+        target,
+        loopers: this.instrumentRegistry.getByKind("looper"),
+        metronomeConnectionManager: this.metronomeConnectionManager,
+        resolveInstrument: (instrumentId) => this.instrumentRegistry.get(instrumentId),
+      });
+      this.tutorial?.observeStrike(event, context, recordedCount);
     });
   }
 
@@ -347,7 +464,10 @@ export class RuntimeHost {
     });
     this.instrumentLifecycle.subscribe((event) => {
       if (event.type === "instrument.deleting") {
-        this.metronomeConnectionManager.disconnectInstrument(event.instrumentId, "endpoint-deleting");
+        this.metronomeConnectionManager.disconnectInstrument(
+          event.instrumentId,
+          "endpoint-deleting",
+        );
       }
     });
   }
@@ -355,9 +475,12 @@ export class RuntimeHost {
   createLooperAdapter() {
     return {
       ensureAudio: () => this.audioSystem.ensureAudio(),
+      getAudioCurrentTime: () => this.audioSystem.getCurrentTime?.(),
       resolveHonk: (honkId) => this.instrumentRegistry.get(honkId),
       isPlayableHonkId: (honkId) => this.instrumentRegistry.get(honkId)?.isPlayable?.() || false,
-      captureActionByHonkId: (honkId) => this.captureLooperActionFromHonk(this.instrumentRegistry.get(honkId)),
+      captureActionByHonkId: (honkId) =>
+        this.captureLooperActionFromHonk(this.instrumentRegistry.get(honkId)),
+      getPlaybackTargetsRevision: () => this.honkContactGraph.revision,
       getPlaybackTargetIds: (_track, honkId) => {
         const component = this.honkContactGraph.getConnectedComponent(honkId);
         return component.size > 0 ? [...component] : [honkId];
@@ -369,23 +492,42 @@ export class RuntimeHost {
         this.instrumentRegistry.get(honkId)?.setAutomationLayer(layerId, snapshot),
       clearAutomationLayerByHonkId: (honkId, layerId) =>
         this.instrumentRegistry.get(honkId)?.clearAutomationLayer(layerId),
-      startActionVoice: (voiceId, honkId) =>
-        this.instrumentRegistry.get(honkId)?.startAudioVoice(voiceId),
+      startActionVoice: (voiceId, honkId, options = {}) =>
+        this.instrumentRegistry.get(honkId)?.startAudioVoice(voiceId, options),
       releaseActionVoice: (voiceId, honkId, options = {}) => {
         const honk = this.instrumentRegistry.get(honkId);
-        if (honk?.activeVoiceIds?.has(voiceId)) {
-          honk.releaseAudioVoice(voiceId, options);
-        }
+        if (honk) honk.releaseAudioVoice(voiceId, options);
         else this.releaseHonkVoice(voiceId, options);
       },
-      updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume) =>
-        this.updateLooperActionVoice(voiceId, this.instrumentRegistry.get(honkId), snapshot, volume),
+      cancelActionVoice: (voiceId, honkId, options = {}) => {
+        const honk = this.instrumentRegistry.get(honkId);
+        if (honk) honk.cancelAudioVoice?.(voiceId, options);
+        else this.audioSystem.cancelVoice?.(voiceId, options);
+      },
+      updateActionVoiceByHonkId: (voiceId, honkId, snapshot, volume, options = {}) =>
+        this.updateLooperActionVoice(
+          voiceId,
+          this.instrumentRegistry.get(honkId),
+          snapshot,
+          volume,
+          options,
+        ),
       playStickPercussion: (type, options) => this.playStickPercussion(type, options),
+      cancelLooperPercussion: (id, options) =>
+        this.audioSystem.percussionVoices.cancelOwner(id, options),
+      getPortTransport: () => this.metronomeConnectionManager.portTransport,
       getTimingForLooper: (looperId, now) =>
         this.metronomeConnectionManager.getTimingForLooper(looperId, now),
-      updateWireForTrack: (looper, track) => this.updateLooperWireForTrack(looper, track),
-      disposeWireMesh: (wire) => this.disposeWireMesh(wire),
-      updateVisuals: (looper) => this.updateLooperVisuals(looper),
+      updateWireForTrack: (looper, track) =>
+        this.looperConnections.updateLooperWireForTrack(looper, track),
+      disposeWireMesh: (wire) => this.looperConnections.disposeWireMesh(wire),
+      updateVisuals: (looper) => this.looperConnections.updateLooperVisuals(looper),
+      getLoopers: () => this.instrumentRegistry.getByKind("looper"),
+      onAutomaticRecordingStop: (looper, now) => {
+        this.scenePersistence?.markDirty();
+        this.triggerLooperButtonMorph(looper, "stop", now);
+        this.tutorial?.flow.rememberAutomaticCompletion(looper);
+      },
     };
   }
 
@@ -409,26 +551,57 @@ export class RuntimeHost {
 
   setupControllers() {
     if (this.inputSourceManager.controllers.length > 0) return;
-    this.inputSourceManager.setup((controller) => this.interactionCoordinator.registerController(controller));
+    this.inputSourceManager.setup((controller) => {
+      this.interactionCoordinator.registerController(controller);
+      const disconnected = () => {
+        const state = this.controllerStates.get(controller);
+        if (state?.activeTriggerInteraction?.type === "metronomeWire")
+          this.metronomeConnections.cancelMetronomeWireInteraction(state.activeTriggerInteraction);
+        this.clearControllerTriggerInteraction(state);
+        this.handleGripEndIntent(controller);
+        this.spawn.closeRadialMenu(controller);
+        if (this.spawn.pendingSpawnPlacement?.controller === controller)
+          this.spawn.deletePendingSpawnPlacement();
+        this.interactionCoordinator.resetController(controller);
+        this.tutorial?.navigation.menu?.disconnect(controller);
+        this.tutorial?.recording.session?.interrupt("controller-disconnected");
+        this.tutorial?.dataTutorial?.cancel();
+        this.tutorial?.liveBendFeedback?.reset();
+      };
+      controller.addEventListener("disconnected", disconnected);
+      (this.controllerDisposers ||= []).push(() =>
+        controller.removeEventListener("disconnected", disconnected),
+      );
+    });
   }
 
   async initialize() {
+    const assets = await Promise.allSettled([
+      this.loadInstrument(),
+      this.loadStick(),
+      this.loadNoteFont(),
+    ]);
+    const failure = assets.find((result) => result.status === "rejected");
+    if (failure) {
+      await this.assetRepository.clear();
+      this.componentTemplates.clear();
+      throw failure.reason;
+    }
     this.setupControllers();
     this.createInstructionPanel();
-    await this.loadInstrument();
-    await this.loadStick();
-    await this.loadNoteFont();
     await this.restorePersistedScene();
     this.onRuntimeInitialized();
+    this.tutorial.initialize();
+    this.disposeCaptureControls = installCaptureControls(this.capture);
     return this;
   }
 
   savePersistedSceneOnXRExit() {
-    return this.scenePersistence.save();
+    return savePersistedSceneForRuntime(this);
   }
 
   async restorePersistedScene() {
-    return this.scenePersistence.restore();
+    return restorePersistedSceneForRuntime(this);
   }
 
   resetSubsystemsAfterSession() {
@@ -437,15 +610,20 @@ export class RuntimeHost {
       if (!state) continue;
       if (state.hoveredTarget) this.setTargetHighlight(state.hoveredTarget, false);
       this.releaseRaySqueeze(state);
-      this.closeRadialMenu(controller);
+      this.spawn.closeRadialMenu(controller);
     }
     for (const looper of this.instrumentRegistry.getByKind("looper")) looper.stop();
-    this.resetMetronomeConnectionRuntime({ clearRelationships: true });
+    // XR interruption stops transport but preserves the user's wiring. Later
+    // checkpoints must not replace the saved workspace with disconnected ports.
+    this.metronomeConnections.resetMetronomeConnectionRuntime({ clearRelationships: false });
     for (const honk of this.instrumentRegistry.getByKind("honk")) {
       honk.hornHolders?.clear();
       honk.activeBends?.clear();
       honk.targetBendValue = 0;
       honk.resetLivePerformance();
+      honk.applyMorphPerformanceState(honk.getResolvedPerformanceState());
+      this.updateBendAlignedColliders(honk);
+      this.applyInstrumentVisualScale(honk, 1);
       honk.releaseAllAudioVoices();
     }
     for (const metronome of this.instrumentRegistry.getByKind("metronome")) metronome.pause();
@@ -458,7 +636,17 @@ export class RuntimeHost {
     this.audioSystem.releaseAll();
   }
 
-  dispose() {
+  async dispose() {
+    await this.scenePersistence?.checkpoint({ force: true });
+    this.scenePersistence?.dispose();
+    this.persistenceUnsubscribe?.();
+    for (const dispose of this.controllerDisposers || []) dispose();
+    this.controllerDisposers = [];
+    await this.capture?.dispose();
+    this.disposeCaptureControls?.();
+    clearTimeout(this.runtimeFeedbackTimer);
+    this.runtimeFeedbackElement?.remove();
+    this.tutorial?.dispose();
     this.resetSubsystemsAfterSession();
     this.honkContactSystem.reset();
     this.honkLockService.dispose();
@@ -466,7 +654,8 @@ export class RuntimeHost {
     this.instrumentLifecycle.dispose();
     this.instrumentRegistry.clear();
     this.interactionTargetRegistry.clear();
-    this.assetRepository.clear();
+    await this.assetRepository.clear();
+    await this.scenePersistence?.store.close?.();
   }
 }
 
@@ -474,17 +663,11 @@ Object.assign(
   RuntimeHost.prototype,
   InstrumentAssetRuntimeMethods,
   SessionRuntimeMethods,
-  SpawnRuntimeMethods,
   LifecycleRuntimeMethods,
   XRInteractionRuntimeMethods,
   StickRuntimeMethods,
   LooperTransportRuntimeMethods,
-  MetronomeConnectionRuntimeMethods,
-  MetronomePulseRuntimeMethods,
-  PendingSpawnSafeRuntimeMethods,
-  LooperConnectionRuntimeMethods,
   HonkPerformanceRuntimeMethods,
-  HonkPresentationRuntimeMethods,
   RelationshipRuntimeMethods,
 );
 

@@ -1,4 +1,4 @@
-import { XR_AXES, XR_BUTTONS } from "./controllerBindings.js";
+import { XR_AXES, XR_BUTTONS, thumbstickButton } from "./controllerBindings.js";
 import { SCALE_JOYSTICK_DEADZONE } from "../config/spawning.js";
 
 export class XRInputSourceManager {
@@ -17,12 +17,22 @@ export class XRInputSourceManager {
       const controller = this.renderer.xr.getController(index);
       controller.userData.index = index;
       controller.userData.controllerId = `controller-${index}`;
-      controller.userData.handedness = index === 1 ? "right" : "left";
+      controller.userData.handedness = "none";
+      controller.userData.inputConnected = false;
       controller.addEventListener("connected", (event) => {
+        controller.userData.inputConnected = true;
         controller.userData.handedness = event.data.handedness || controller.userData.handedness;
         controller.userData.gamepad = event.data.gamepad || null;
+        controller.userData.profiles = event.data.profiles || [];
+        const hardware = createHardwareState();
+        // A stick already held during connection is not a fresh press edge.
+        hardware.buttons.thumbstick = Boolean(
+          thumbstickButton(controller.userData.gamepad, controller.userData.profiles)?.pressed,
+        );
+        this.hardwareStates.set(controller, hardware);
       });
       controller.addEventListener("disconnected", () => {
+        controller.userData.inputConnected = false;
         controller.userData.gamepad = null;
         this.hardwareStates.set(controller, createHardwareState());
       });
@@ -56,6 +66,7 @@ export class XRInputSourceManager {
     if (!state || !gamepad) return;
 
     const nextButtons = {
+      thumbstick: Boolean(thumbstickButton(gamepad, controller.userData.profiles)?.pressed),
       trigger: Boolean(gamepad.buttons[XR_BUTTONS.trigger]?.pressed),
       grip: Boolean(gamepad.buttons[XR_BUTTONS.grip]?.pressed),
       primary: Boolean(gamepad.buttons[XR_BUTTONS.primary]?.pressed),
@@ -96,7 +107,7 @@ export class XRInputSourceManager {
   }
 
   findGamepad(handedness) {
-    const gamepads = navigator.getGamepads?.() || [];
+    const gamepads = globalThis.navigator?.getGamepads?.() || [];
     for (const gamepad of gamepads) {
       if (gamepad?.hand === handedness) return gamepad;
     }
@@ -113,7 +124,9 @@ export class XRInputSourceManager {
     const fallbackIndex = axis === "thumbstickX" ? 0 : 1;
     const value = Number.isFinite(configured)
       ? configured
-      : Number.isFinite(axes[fallbackIndex]) ? axes[fallbackIndex] : 0;
+      : Number.isFinite(axes[fallbackIndex])
+        ? axes[fallbackIndex]
+        : 0;
     if (axis === "thumbstickX") {
       if (value > SCALE_JOYSTICK_DEADZONE) return 1;
       if (value < -SCALE_JOYSTICK_DEADZONE) return -1;
@@ -125,11 +138,15 @@ export class XRInputSourceManager {
   }
 
   getRightController() {
-    return this.controllers.find(({ userData }) => userData.handedness === "right") || this.controllers[1];
+    return (
+      this.controllers.find(({ userData }) => userData.handedness === "right") ||
+      this.controllers[1]
+    );
   }
 
   resetSession() {
     for (const controller of this.controllers) {
+      controller.userData.inputConnected = false;
       controller.userData.gamepad = null;
       this.hardwareStates.set(controller, createHardwareState());
       if (controller.userData.rayLine) controller.userData.rayLine.visible = false;
@@ -140,7 +157,13 @@ export class XRInputSourceManager {
 
 function createHardwareState() {
   return {
-    buttons: { trigger: false, grip: false, primary: false, secondary: false },
+    buttons: {
+      thumbstick: false,
+      trigger: false,
+      grip: false,
+      primary: false,
+      secondary: false,
+    },
     thumbstickDirections: { thumbstickX: 0, thumbstickY: 0 },
   };
 }

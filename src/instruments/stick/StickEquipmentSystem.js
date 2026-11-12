@@ -1,7 +1,11 @@
 import { STICK_SETTINGS } from "../../config/stick.js";
 
 export class StickEquipmentSystem {
-  constructor({ controllerResolver = null, transform = STICK_SETTINGS, preferredStickType = "default" } = {}) {
+  constructor({
+    controllerResolver = null,
+    transform = STICK_SETTINGS,
+    preferredStickType = "default",
+  } = {}) {
     this.controllerResolver = controllerResolver;
     this.transform = transform;
     this.stickByControllerId = new Map();
@@ -14,9 +18,14 @@ export class StickEquipmentSystem {
       throw new TypeError("StickEquipmentSystem requires a StickInstrument.");
     }
     const controllerId = getControllerId(controllerOrId);
-    const controller = controllerObject || getControllerObject(controllerOrId) || this.controllerResolver?.(controllerId);
+    const controller =
+      controllerObject ||
+      getControllerObject(controllerOrId) ||
+      this.controllerResolver?.(controllerId);
     if (!controllerId || !controller?.add) {
-      throw new Error(`Cannot equip ${stick.id}; controller ${String(controllerId)} is unavailable.`);
+      throw new Error(
+        `Cannot equip ${stick.id}; controller ${String(controllerId)} is unavailable.`,
+      );
     }
 
     const previousStick = this.stickByControllerId.get(controllerId);
@@ -39,9 +48,10 @@ export class StickEquipmentSystem {
   }
 
   unequip(stickOrControllerId) {
-    const stick = typeof stickOrControllerId === "string"
-      ? this.stickByControllerId.get(stickOrControllerId)
-      : stickOrControllerId;
+    const stick =
+      typeof stickOrControllerId === "string"
+        ? this.stickByControllerId.get(stickOrControllerId)
+        : stickOrControllerId;
     if (!stick) {
       return null;
     }
@@ -95,9 +105,13 @@ export function applyLocalTransform(object, config = {}) {
 
 function getControllerId(controllerOrId) {
   if (typeof controllerOrId === "string") return controllerOrId;
-  return controllerOrId?.userData?.controllerId
-    || controllerOrId?.userData?.handedness
-    || (Number.isFinite(controllerOrId?.userData?.index) ? `controller-${controllerOrId.userData.index}` : null);
+  return (
+    controllerOrId?.userData?.controllerId ||
+    controllerOrId?.userData?.handedness ||
+    (Number.isFinite(controllerOrId?.userData?.index)
+      ? `controller-${controllerOrId.userData.index}`
+      : null)
+  );
 }
 
 function getControllerObject(controllerOrId) {
@@ -105,5 +119,5 @@ function getControllerObject(controllerOrId) {
 }
 
 function degreesToRadians(value) {
-  return value * Math.PI / 180;
+  return (value * Math.PI) / 180;
 }

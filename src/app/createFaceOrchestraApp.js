@@ -3,7 +3,12 @@ import { SceneRuntime } from "../scene/SceneRuntime.js";
 import { FaceOrchestraApp } from "./FaceOrchestraApp.js";
 import { RuntimeHost } from "./runtime/RuntimeHost.js";
 
-export function createFaceOrchestraApp({ container, sceneRuntime = null, audioSystem = null, storage } = {}) {
+export function createFaceOrchestraApp({
+  container,
+  sceneRuntime = null,
+  audioSystem = null,
+  storage,
+} = {}) {
   const scene = sceneRuntime || new SceneRuntime({ container });
   const audio = audioSystem || new AudioSystem();
   const runtime = new RuntimeHost({

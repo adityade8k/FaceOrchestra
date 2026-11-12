@@ -6,12 +6,14 @@ import { XR_OPTIONAL_FEATURES } from "./config/xr.js";
 
 const container = document.querySelector("#app");
 const status = document.querySelector("#status span");
-const app = createFaceOrchestraApp({ container });
+export const app = createFaceOrchestraApp({ container });
 const { renderer } = app.sceneRuntime;
 
 renderer.xr.addEventListener("sessionstart", () => {
   app.onXRSessionStart();
-  setStatus("XR active. Hold A, roll a category, pull toward you, roll an item, and release to preview.");
+  setStatus(
+    "XR active. Hold right A or left Y, roll a category, pull toward you, roll an item, and release to preview.",
+  );
 });
 
 renderer.xr.addEventListener("sessionend", () => {
@@ -24,10 +26,13 @@ setupXRButton(renderer).catch((error) => {
   setStatus("WebXR setup failed. Desktop preview is still available.");
 });
 
-app.initialize()
+app
+  .initialize()
   .then(() => {
     app.start();
-    setStatus("Enter AR/VR, hold A and roll a category, pull toward you and roll an item, then release to preview.");
+    setStatus(
+      "Enter AR/VR, hold right A or left Y, roll a category, pull toward you and roll an item, then release to preview.",
+    );
   })
   .catch((error) => {
     console.error(error);
@@ -49,10 +54,12 @@ async function setupXRButton(webglRenderer) {
   }
 
   if (supportsAR) {
-    document.body.appendChild(ARButton.createButton(webglRenderer, {
-      optionalFeatures: XR_OPTIONAL_FEATURES,
-      domOverlay: { root: document.body },
-    }));
+    document.body.appendChild(
+      ARButton.createButton(webglRenderer, {
+        optionalFeatures: XR_OPTIONAL_FEATURES,
+        domOverlay: { root: document.body },
+      }),
+    );
     setStatus("Quest passthrough ready. Enter AR to begin.");
     return;
   }

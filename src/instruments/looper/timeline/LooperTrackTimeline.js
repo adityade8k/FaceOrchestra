@@ -11,6 +11,7 @@ import {
   getEventFieldValue,
   getRecordedFieldsForEvent,
   isDrumHitEvent,
+  isHonkGateEvent,
 } from "./LooperActionEvent.js";
 
 const SQUEEZE_ONSET_THRESHOLD = 0.025;
@@ -26,13 +27,19 @@ export class LooperTrackTimeline {
     this.nextEventId = 1;
     this.sorted = true;
     this.recordedFields = new Set();
+    this.fieldEvents = new Map();
+    this.gateEvents = [];
+    this.performanceEvents = [];
+    this.drumEvents = [];
+    this.eventOwners = new Map();
+    this.hasDiscreteGates = false;
   }
 
   setBaseline(actionState) {
     copyActionState(this.baselineActionState, actionState);
   }
 
-  addFieldEvent(field, timeMs, value, interpolation = "linear") {
+  addFieldEvent(field, timeMs, value, interpolation = "linear", synthetic = false, metadata = {}) {
     const type = {
       squeeze: LooperActionEventType.Squeeze,
       bend: LooperActionEventType.Bend,
@@ -44,10 +51,24 @@ export class LooperTrackTimeline {
     if (!type) {
       return null;
     }
-    return this.addEvent(type, timeMs, { value, interpolation });
+    return this.addEvent(type, timeMs, { value, interpolation, synthetic, ...metadata });
   }
 
-  addEvent(type, timeMs, { value = undefined, values = null, interpolation = "step" } = {}) {
+  addEvent(
+    type,
+    timeMs,
+    {
+      value = undefined,
+      values = null,
+      interpolation = "step",
+      synthetic = false,
+      gateOnly = false,
+      support = false,
+      preserveDuration = false,
+      releaseOrigin = null,
+      gain = undefined,
+    } = {},
+  ) {
     const event = new LooperActionEvent({
       id: this.nextEventId,
       type,
@@ -55,6 +76,12 @@ export class LooperTrackTimeline {
       value,
       values,
       interpolation,
+      synthetic,
+      gateOnly,
+      support,
+      preserveDuration,
+      releaseOrigin,
+      gain,
     });
     this.nextEventId += 1;
     this.events.push(event);
@@ -64,12 +91,13 @@ export class LooperTrackTimeline {
     return event;
   }
 
-  addDrumHit(timeMs, drumType) {
+  addDrumHit(timeMs, drumType, gain = undefined) {
     if (!drumType) {
       return null;
     }
     return this.addEvent(LooperActionEventType.DrumHit, timeMs, {
       value: drumType,
+      gain,
       interpolation: "step",
     });
   }
@@ -93,17 +121,39 @@ export class LooperTrackTimeline {
   }
 
   getContentEndMs() {
-    let endMs = 0;
+    this.sortEvents();
+    let endMs = 0,
+      held = false;
     for (const event of this.events) {
-      endMs = Math.max(endMs, event.timeMs);
+      if (event.support) continue;
+      if (isDrumHitEvent(event)) {
+        endMs = Math.max(endMs, event.timeMs + event.durationMs);
+        continue;
+      }
+      if (event.type === LooperActionEventType.SqueezeStart) held = true;
+      // A release closes the entire performed hold, including a forced Stop.
+      if (held) endMs = Math.max(endMs, event.timeMs);
+      if (event.type === LooperActionEventType.SqueezeEnd) held = false;
+      if (!this.hasDiscreteGates && !isHonkGateEvent(event)) {
+        const squeeze = getEventFieldValue(event, "squeeze");
+        if (squeeze !== undefined) {
+          held = Number(squeeze) > SQUEEZE_ONSET_THRESHOLD;
+          if (held) endMs = Math.max(endMs, event.timeMs);
+        }
+      }
     }
     return endMs;
+  }
+
+  getIntentionalContentEndMs() {
+    return this.getContentEndMs();
   }
 
   getMusicalOnsetTimes() {
     this.sortEvents();
     const onsets = [];
     let squeezeActive = false;
+    const hasDiscreteGateTrack = this.hasDiscreteGates;
 
     for (const event of this.events) {
       if (isDrumHitEvent(event)) {
@@ -111,16 +161,24 @@ export class LooperTrackTimeline {
         continue;
       }
 
+      if (event.type === LooperActionEventType.SqueezeStart) {
+        onsets.push(event.timeMs);
+        squeezeActive = true;
+        continue;
+      }
+      if (event.type === LooperActionEventType.SqueezeEnd) {
+        squeezeActive = false;
+        continue;
+      }
+
       const squeeze = getEventFieldValue(event, "squeeze");
+      if (hasDiscreteGateTrack) continue;
       if (squeeze === undefined) {
         continue;
       }
 
       const active = Number(squeeze) > SQUEEZE_ONSET_THRESHOLD;
-      if (
-        event.type === LooperActionEventType.SqueezeStart ||
-        (active && !squeezeActive)
-      ) {
+      if (event.type === LooperActionEventType.SqueezeStart || (active && !squeezeActive)) {
         onsets.push(event.timeMs);
       }
       squeezeActive = active;
@@ -135,29 +193,115 @@ export class LooperTrackTimeline {
     }
     const typeOrder = {
       [LooperActionEventType.SqueezeEnd]: 0,
-      [LooperActionEventType.Squeeze]: 1,
-      [LooperActionEventType.Bend]: 2,
-      [LooperActionEventType.MorphSnapshot]: 3,
-      [LooperActionEventType.GestureSnapshot]: 4,
-      [LooperActionEventType.Vowel]: 5,
-      [LooperActionEventType.SqueezeStart]: 6,
+      [LooperActionEventType.SqueezeStart]: 1,
+      [LooperActionEventType.Squeeze]: 2,
+      [LooperActionEventType.Bend]: 3,
+      [LooperActionEventType.MorphSnapshot]: 4,
+      [LooperActionEventType.GestureSnapshot]: 5,
+      [LooperActionEventType.Vowel]: 6,
       [LooperActionEventType.DrumHit]: 7,
     };
-    this.events.sort((first, second) =>
-      first.timeMs - second.timeMs ||
-      (typeOrder[first.type] ?? 10) - (typeOrder[second.type] ?? 10) ||
-      first.id - second.id,
+    this.events.sort(
+      (first, second) =>
+        first.timeMs - second.timeMs ||
+        // Equal-time gates keep their recorded order: release then reattack for
+        // adjacent notes, or start then release for a same-frame capture.
+        (isHonkGateEvent(first) && isHonkGateEvent(second) ? first.id - second.id : 0) ||
+        (typeOrder[first.type] ?? 10) - (typeOrder[second.type] ?? 10) ||
+        first.id - second.id,
     );
     this.sorted = true;
+    this.rebuildIndexes();
   }
 
-  normalize(offsetMs) {
-    if (!Number.isFinite(offsetMs) || offsetMs <= 0) {
-      return;
-    }
+  rebuildIndexes() {
+    this.fieldEvents.clear();
+    this.gateEvents = [];
+    this.performanceEvents = [];
+    this.drumEvents = [];
+    this.eventOwners = new Map();
+    this.hasDiscreteGates = false;
+    let owner, releasedOwner, releasedAt;
     for (const event of this.events) {
-      event.timeMs = Math.max(event.timeMs - offsetMs, 0);
+      if (event.type === LooperActionEventType.SqueezeStart) owner = event;
+      // The final expressive sample can follow its gate release at the same
+      // timestamp. It still belongs to that voice, never to the next cycle.
+      this.eventOwners.set(event, owner || (event.timeMs === releasedAt ? releasedOwner : owner));
+      if (event.type === LooperActionEventType.SqueezeEnd) {
+        releasedOwner = owner;
+        releasedAt = event.timeMs;
+        owner = null;
+      }
+      if (event.gateOnly && isHonkGateEvent(event)) this.hasDiscreteGates = true;
+      if (isDrumHitEvent(event)) this.drumEvents.push(event);
+      if (isHonkGateEvent(event)) this.gateEvents.push(event);
+      if (!isDrumHitEvent(event)) this.performanceEvents.push(event);
+      for (const field of NUMERIC_ACTION_FIELDS) {
+        if (getEventFieldValue(event, field) === undefined) continue;
+        const entries = this.fieldEvents.get(field) || [];
+        entries.push(event);
+        this.fieldEvents.set(field, entries);
+      }
+      if (getEventFieldValue(event, "vowel") !== undefined) {
+        const entries = this.fieldEvents.get("vowel") || [];
+        entries.push(event);
+        this.fieldEvents.set("vowel", entries);
+      }
     }
+  }
+
+  getGateEventsAt(timeMs, epsilon = 0.001) {
+    this.sortEvents();
+    return sliceEventsBetween(this.gateEvents, timeMs - epsilon, timeMs + epsilon, {
+      includeStart: true,
+      includeEnd: true,
+    });
+  }
+
+  getGateEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
+    this.sortEvents();
+    return sliceEventsBetween(this.gateEvents, startMs, endMs, { includeStart, includeEnd });
+  }
+
+  getPerformanceEventsAt(timeMs, epsilon = 0.001) {
+    this.sortEvents();
+    return sliceEventsBetween(this.performanceEvents, timeMs - epsilon, timeMs + epsilon, {
+      includeStart: true,
+      includeEnd: true,
+    });
+  }
+
+  getPerformanceEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
+    this.sortEvents();
+    return sliceEventsBetween(this.performanceEvents, startMs, endMs, { includeStart, includeEnd });
+  }
+
+  normalize(offsetMs, endMs = Infinity) {
+    if (!Number.isFinite(offsetMs) || offsetMs < 0) return;
+    if (!offsetMs && this.events.every((event) => event.timeMs <= endMs)) return;
+    this.sortEvents();
+    // Sample before removing pre-onset automation. Preserve its interpolation
+    // mode so all tracks retain the exact state at the shared first onset.
+    const support = [];
+    for (const [field, events] of this.fieldEvents) {
+      const previous = events[upperBoundByTime(events, offsetMs) - 1];
+      if (!offsetMs || !previous || previous.timeMs === offsetMs) continue;
+      const value =
+        field === "vowel"
+          ? this.sampleStepField(field, offsetMs)
+          : this.sampleNumericField(field, offsetMs);
+      if (value !== undefined)
+        support.push({ field, value, interpolation: previous?.interpolation || "linear" });
+    }
+    this.events = this.events.filter((event) => event.timeMs >= offsetMs && event.timeMs <= endMs);
+    for (const event of this.events) {
+      event.timeMs -= offsetMs;
+    }
+    for (const point of support)
+      this.addFieldEvent(point.field, 0, point.value, point.interpolation, false, {
+        support: true,
+      });
+    this.rebuildRecordedFields();
     this.sorted = false;
   }
 
@@ -173,25 +317,42 @@ export class LooperTrackTimeline {
     }
 
     this.sortEvents();
-    return this.events.filter(
-      (event) => isDrumHitEvent(event) && Math.abs(event.timeMs - timeMs) <= epsilon,
-    );
+    return sliceEventsBetween(this.drumEvents, timeMs - epsilon, timeMs + epsilon, {
+      includeStart: true,
+      includeEnd: true,
+    });
   }
 
   getDrumHitEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
-    if (!this.active || endMs < startMs) {
-      return [];
-    }
-
     this.sortEvents();
-    return this.events.filter((event) => {
-      if (!isDrumHitEvent(event)) {
-        return false;
-      }
-      const afterStart = includeStart ? event.timeMs >= startMs : event.timeMs > startMs;
-      const beforeEnd = includeEnd ? event.timeMs <= endMs : event.timeMs < endMs;
-      return afterStart && beforeEnd;
-    });
+    return sliceEventsBetween(this.drumEvents, startMs, endMs, { includeStart, includeEnd });
+  }
+
+  getOwningNote(event, durationMs = Infinity) {
+    this.sortEvents();
+    if (!this.eventOwners.has(event)) return null;
+    const owner = this.eventOwners.get(event);
+    if (owner) return { event: owner, cycleOffset: 0 };
+    if (owner === null) return null;
+    const last = this.gateEvents.at(-1);
+    const previous =
+      last?.timeMs <= event.timeMs + durationMs
+        ? last
+        : this.gateEvents[upperBoundByTime(this.gateEvents, event.timeMs + durationMs) - 1];
+    return previous?.type === LooperActionEventType.SqueezeStart
+      ? { event: previous, cycleOffset: -1 }
+      : null;
+  }
+
+  getActiveNote(timeMs, durationMs) {
+    this.sortEvents();
+    const current = this.gateEvents[upperBoundByTime(this.gateEvents, timeMs) - 1];
+    // Before this cycle's first gate, the preceding cycle can still own a note.
+    const previous = this.gateEvents[upperBoundByTime(this.gateEvents, timeMs + durationMs) - 1];
+    const event = current || previous;
+    return event?.type === LooperActionEventType.SqueezeStart
+      ? { event, cycleOffset: current ? 0 : -1 }
+      : null;
   }
 
   sample(timeMs, target, { inTailPadding = false } = {}) {
@@ -215,32 +376,34 @@ export class LooperTrackTimeline {
       target[field] = this.sampleNumericField(field, timeMs);
     }
     target.vowel = this.sampleStepField("vowel", timeMs);
+    if (this.hasDiscreteGates && !this.sampleGateActive(timeMs)) {
+      target.squeeze = 0;
+    }
     return target;
   }
 
+  sampleGateActive(timeMs) {
+    this.sortEvents();
+    const event = this.gateEvents[upperBoundByTime(this.gateEvents, timeMs) - 1];
+    return event?.type === LooperActionEventType.SqueezeStart;
+  }
+
   sampleNumericField(field, timeMs) {
+    this.sortEvents();
     if (!this.hasRecordedField(field)) {
       return undefined;
     }
 
-    let previousEvent = null;
-    let previousValue = undefined;
-    let nextEvent = null;
-    let nextValue = undefined;
+    const events = this.fieldEvents.get(field) || [];
+    const nextIndex = upperBoundByTime(events, timeMs);
+    let previousEvent = events[nextIndex - 1] || null;
+    const nextEvent = events[nextIndex] || null;
+    let previousValue = getEventFieldValue(previousEvent, field);
+    const nextValue = getEventFieldValue(nextEvent, field);
 
-    for (const event of this.events) {
-      const value = getEventFieldValue(event, field);
-      if (value === undefined) {
-        continue;
-      }
-      if (event.timeMs <= timeMs) {
-        previousEvent = event;
-        previousValue = value;
-        continue;
-      }
-      nextEvent = event;
-      nextValue = value;
-      break;
+    if (previousValue === undefined && this.baselineActionState[field] !== undefined) {
+      previousValue = this.baselineActionState[field];
+      previousEvent = { timeMs: 0, interpolation: "linear", synthetic: false };
     }
 
     if (previousValue === undefined) {
@@ -255,12 +418,20 @@ export class LooperTrackTimeline {
       return previousValue;
     }
 
+    // Stop-generated safety resets must not pull the preceding recorded curve
+    // toward neutral. They exist only to guarantee release at their timestamp;
+    // loop wrapping handles that release when the event is on/outside the end.
+    if (nextEvent.synthetic) {
+      return previousValue;
+    }
+
     // SqueezeStart/SqueezeEnd are note gates, not automation points. A linear
     // ramp from a release toward the next attack would fill a recorded rest with
     // a gradually rising Honk.
     if (
       field === "squeeze" &&
       (previousEvent.type === LooperActionEventType.SqueezeEnd ||
+        nextEvent.type === LooperActionEventType.SqueezeEnd ||
         nextEvent.type === LooperActionEventType.SqueezeStart)
     ) {
       return previousValue;
@@ -271,21 +442,14 @@ export class LooperTrackTimeline {
   }
 
   sampleStepField(field, timeMs) {
+    this.sortEvents();
     if (!this.hasRecordedField(field)) {
       return undefined;
     }
 
-    let latestValue = undefined;
-    for (const event of this.events) {
-      if (event.timeMs > timeMs) {
-        break;
-      }
-      const value = getEventFieldValue(event, field);
-      if (value !== undefined) {
-        latestValue = value;
-      }
-    }
-    return latestValue;
+    const events = this.fieldEvents.get(field) || [];
+    const previousEvent = events[upperBoundByTime(events, timeMs) - 1];
+    return getEventFieldValue(previousEvent, field) ?? this.baselineActionState[field];
   }
 
   clone() {
@@ -320,7 +484,7 @@ export class LooperTrackTimeline {
         })
       : [];
     timeline.nextEventId = timeline.events.reduce(
-      (nextId, event) => Number.isFinite(event.id) ? Math.max(nextId, event.id + 1) : nextId,
+      (nextId, event) => (Number.isFinite(event.id) ? Math.max(nextId, event.id + 1) : nextId),
       1,
     );
     timeline.sorted = false;
@@ -328,4 +492,35 @@ export class LooperTrackTimeline {
     timeline.rebuildRecordedFields();
     return timeline;
   }
+}
+
+function upperBoundByTime(events, timeMs) {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (events[middle].timeMs <= timeMs) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function sliceEventsBetween(events, startMs, endMs, { includeStart, includeEnd }) {
+  if (endMs < startMs) return [];
+  const startIndex = includeStart
+    ? lowerBoundByTime(events, startMs)
+    : upperBoundByTime(events, startMs);
+  const endIndex = includeEnd ? upperBoundByTime(events, endMs) : lowerBoundByTime(events, endMs);
+  return events.slice(startIndex, endIndex);
+}
+
+function lowerBoundByTime(events, timeMs) {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (events[middle].timeMs < timeMs) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }

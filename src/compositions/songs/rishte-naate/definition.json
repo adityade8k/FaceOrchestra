@@ -1,0 +1,3929 @@
+{
+  "schemaVersion": 1,
+  "id": "rishte-naate",
+  "title": "rishte naate.mid",
+  "contentVersion": 3,
+  "bpm": 100,
+  "sourceBpm": 115,
+  "practiceBpm": 75,
+  "liveRole": "melody",
+  "playback": "honk-looper-two-hand-v1",
+  "source": {
+    "sha256": "b5f63cb589b93c0bdab89edbcdaf44a1b0ce6ad4e3e72b6575cf0b96d70eea35"
+  },
+  "score": {
+    "events": [
+      {
+        "id": "t0-e25",
+        "sourceIds": ["t0-e25"],
+        "midi": 71,
+        "velocity": 78,
+        "beat": 4.809375,
+        "beats": 0.56875,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e27",
+        "sourceIds": ["t0-e27"],
+        "midi": 73,
+        "velocity": 77,
+        "beat": 5.604166666666667,
+        "beats": 0.7552083333333334,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e32",
+        "sourceIds": ["t0-e32"],
+        "midi": 70,
+        "velocity": 76,
+        "beat": 6.432291666666667,
+        "beats": 0.6625,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e40",
+        "sourceIds": ["t0-e40"],
+        "midi": 71,
+        "velocity": 66,
+        "beat": 7.186458333333333,
+        "beats": 0.35208333333333336,
+        "hand": "L",
+        "role": "lead-L-71"
+      },
+      {
+        "id": "t0-e44",
+        "sourceIds": ["t0-e44"],
+        "midi": 73,
+        "velocity": 66,
+        "beat": 7.594791666666667,
+        "beats": 0.5572916666666666,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e47",
+        "sourceIds": ["t0-e47"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 8.416666666666666,
+        "beats": 0.7822916666666667,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e49",
+        "sourceIds": ["t0-e49"],
+        "midi": 78,
+        "velocity": 67,
+        "beat": 9.217708333333333,
+        "beats": 0.24375,
+        "hand": "L",
+        "role": "lead-L-78"
+      },
+      {
+        "id": "t0-e51",
+        "sourceIds": ["t0-e51"],
+        "midi": 73,
+        "velocity": 81,
+        "beat": 9.634375,
+        "beats": 2.4135416666666667,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e53",
+        "sourceIds": ["t0-e53"],
+        "midi": 76,
+        "velocity": 78,
+        "beat": 12.133333333333333,
+        "beats": 1.509375,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e64",
+        "sourceIds": ["t0-e64"],
+        "midi": 76,
+        "velocity": 68,
+        "beat": 13.736458333333333,
+        "beats": 0.5104166666666666,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e68",
+        "sourceIds": ["t0-e68"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 14.504166666666666,
+        "beats": 0.6166666666666667,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e71",
+        "sourceIds": ["t0-e71"],
+        "midi": 76,
+        "velocity": 76,
+        "beat": 15.29375,
+        "beats": 0.525,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e73",
+        "sourceIds": ["t0-e73"],
+        "midi": 76,
+        "velocity": 79,
+        "beat": 16.057291666666668,
+        "beats": 0.5364583333333334,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e75",
+        "sourceIds": ["t0-e75"],
+        "midi": 76,
+        "velocity": 76,
+        "beat": 16.841666666666665,
+        "beats": 0.23958333333333334,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e77",
+        "sourceIds": ["t0-e77"],
+        "midi": 75,
+        "velocity": 66,
+        "beat": 17.21875,
+        "beats": 0.209375,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e79",
+        "sourceIds": ["t0-e79"],
+        "midi": 73,
+        "velocity": 66,
+        "beat": 17.623958333333334,
+        "beats": 0.6135416666666667,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e81",
+        "sourceIds": ["t0-e81"],
+        "midi": 71,
+        "velocity": 78,
+        "beat": 18.398958333333333,
+        "beats": 0.54375,
+        "hand": "L",
+        "role": "lead-L-71"
+      },
+      {
+        "id": "t0-e83",
+        "sourceIds": ["t0-e83"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 19.210416666666667,
+        "beats": 0.68125,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e89",
+        "sourceIds": ["t0-e89"],
+        "midi": 75,
+        "velocity": 76,
+        "beat": 19.98125,
+        "beats": 1.0364583333333333,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e95",
+        "sourceIds": ["t0-e95"],
+        "midi": 73,
+        "velocity": 79,
+        "beat": 21.160416666666666,
+        "beats": 0.7739583333333333,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e96",
+        "sourceIds": ["t0-e96"],
+        "midi": 71,
+        "velocity": 73,
+        "beat": 21.913541666666667,
+        "beats": 0.3385416666666667,
+        "hand": "L",
+        "role": "lead-L-71"
+      },
+      {
+        "id": "t0-e99",
+        "sourceIds": ["t0-e99"],
+        "midi": 70,
+        "velocity": 66,
+        "beat": 22.305208333333333,
+        "beats": 0.196875,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e115",
+        "sourceIds": ["t0-e115"],
+        "midi": 71,
+        "velocity": 77,
+        "beat": 25.505208333333332,
+        "beats": 0.28125,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e123",
+        "sourceIds": ["t0-e123"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 26.283333333333335,
+        "beats": 0.39375,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e124",
+        "sourceIds": ["t0-e124"],
+        "midi": 71,
+        "velocity": 60,
+        "beat": 26.292708333333334,
+        "beats": 0.9875,
+        "hand": "L",
+        "role": "lead-L-71"
+      },
+      {
+        "id": "t0-e126",
+        "sourceIds": ["t0-e126"],
+        "midi": 75,
+        "velocity": 79,
+        "beat": 26.719791666666666,
+        "beats": 0.6145833333333334,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e131",
+        "sourceIds": ["t0-e131"],
+        "midi": 75,
+        "velocity": 77,
+        "beat": 27.534375,
+        "beats": 0.8104166666666667,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e132",
+        "sourceIds": ["t0-e132"],
+        "midi": 73,
+        "velocity": 66,
+        "beat": 28.33125,
+        "beats": 0.375,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e135",
+        "sourceIds": ["t0-e135"],
+        "midi": 71,
+        "velocity": 73,
+        "beat": 28.748958333333334,
+        "beats": 1.2927083333333333,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e137",
+        "sourceIds": ["t0-e137"],
+        "midi": 71,
+        "velocity": 79,
+        "beat": 30.386458333333334,
+        "beats": 0.5947916666666667,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e139",
+        "sourceIds": ["t0-e139"],
+        "midi": 73,
+        "velocity": 76,
+        "beat": 31.172916666666666,
+        "beats": 0.778125,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e142",
+        "sourceIds": ["t0-e142"],
+        "midi": 70,
+        "velocity": 73,
+        "beat": 31.971875,
+        "beats": 0.6375,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e152",
+        "sourceIds": ["t0-e152"],
+        "midi": 71,
+        "velocity": 68,
+        "beat": 32.78333333333333,
+        "beats": 0.3802083333333333,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e156",
+        "sourceIds": ["t0-e156"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 33.2,
+        "beats": 0.5447916666666667,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e159",
+        "sourceIds": ["t0-e159"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 34.00625,
+        "beats": 0.7260416666666667,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e161",
+        "sourceIds": ["t0-e161"],
+        "midi": 78,
+        "velocity": 67,
+        "beat": 34.760416666666664,
+        "beats": 0.27291666666666664,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e163",
+        "sourceIds": ["t0-e163"],
+        "midi": 73,
+        "velocity": 81,
+        "beat": 35.170833333333334,
+        "beats": 2.2802083333333334,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e165",
+        "sourceIds": ["t0-e165"],
+        "midi": 76,
+        "velocity": 78,
+        "beat": 37.49791666666667,
+        "beats": 1.2385416666666667,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e176",
+        "sourceIds": ["t0-e176"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 39.08229166666667,
+        "beats": 0.55625,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e180",
+        "sourceIds": ["t0-e180"],
+        "midi": 76,
+        "velocity": 72,
+        "beat": 39.880208333333336,
+        "beats": 0.6322916666666667,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e183",
+        "sourceIds": ["t0-e183"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 40.67395833333333,
+        "beats": 0.6083333333333333,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e185",
+        "sourceIds": ["t0-e185"],
+        "midi": 76,
+        "velocity": 77,
+        "beat": 41.46458333333333,
+        "beats": 0.55625,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e187",
+        "sourceIds": ["t0-e187"],
+        "midi": 76,
+        "velocity": 77,
+        "beat": 42.24583333333333,
+        "beats": 0.284375,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e189",
+        "sourceIds": ["t0-e189"],
+        "midi": 75,
+        "velocity": 78,
+        "beat": 42.61875,
+        "beats": 0.20416666666666666,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e191",
+        "sourceIds": ["t0-e191"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 43.021875,
+        "beats": 0.6458333333333334,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e193",
+        "sourceIds": ["t0-e193"],
+        "midi": 71,
+        "velocity": 77,
+        "beat": 43.78333333333333,
+        "beats": 0.5822916666666667,
+        "hand": "L",
+        "role": "lead-L-71"
+      },
+      {
+        "id": "t0-e196",
+        "sourceIds": ["t0-e196"],
+        "midi": 73,
+        "velocity": 83,
+        "beat": 44.584375,
+        "beats": 0.6552083333333333,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e206",
+        "sourceIds": ["t0-e206"],
+        "midi": 75,
+        "velocity": 79,
+        "beat": 45.365625,
+        "beats": 1.0375,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e211",
+        "sourceIds": ["t0-e211"],
+        "midi": 73,
+        "velocity": 81,
+        "beat": 46.575,
+        "beats": 0.8364583333333333,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e212",
+        "sourceIds": ["t0-e212"],
+        "midi": 71,
+        "velocity": 72,
+        "beat": 47.364583333333336,
+        "beats": 0.471875,
+        "hand": "L",
+        "role": "lead-L-71"
+      },
+      {
+        "id": "t0-e214",
+        "sourceIds": ["t0-e214"],
+        "midi": 70,
+        "velocity": 67,
+        "beat": 47.753125,
+        "beats": 0.7125,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e217",
+        "sourceIds": ["t0-e217"],
+        "midi": 75,
+        "velocity": 73,
+        "beat": 48.834375,
+        "beats": 0.4010416666666667,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e218",
+        "sourceIds": ["t0-e218"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 49.2,
+        "beats": 0.434375,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e220",
+        "sourceIds": ["t0-e220"],
+        "midi": 76,
+        "velocity": 76,
+        "beat": 49.58229166666667,
+        "beats": 0.3572916666666667,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e223",
+        "sourceIds": ["t0-e223"],
+        "midi": 75,
+        "velocity": 59,
+        "beat": 49.978125,
+        "beats": 0.4739583333333333,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e224",
+        "sourceIds": ["t0-e224"],
+        "midi": 73,
+        "velocity": 67,
+        "beat": 50.35729166666667,
+        "beats": 0.371875,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e227",
+        "sourceIds": ["t0-e227"],
+        "midi": 71,
+        "velocity": 77,
+        "beat": 50.7625,
+        "beats": 0.33229166666666665,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e235",
+        "sourceIds": ["t0-e235"],
+        "midi": 71,
+        "velocity": 63,
+        "beat": 51.528125,
+        "beats": 0.6541666666666667,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e237",
+        "sourceIds": ["t0-e237"],
+        "midi": 71,
+        "velocity": 74,
+        "beat": 52.321875,
+        "beats": 0.5802083333333333,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e241",
+        "sourceIds": ["t0-e241"],
+        "midi": 71,
+        "velocity": 77,
+        "beat": 53.134375,
+        "beats": 0.5333333333333333,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e243",
+        "sourceIds": ["t0-e243"],
+        "midi": 71,
+        "velocity": 77,
+        "beat": 53.940625,
+        "beats": 0.5302083333333333,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e245",
+        "sourceIds": ["t0-e245"],
+        "midi": 71,
+        "velocity": 83,
+        "beat": 54.72708333333333,
+        "beats": 0.48854166666666665,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e247",
+        "sourceIds": ["t0-e247"],
+        "midi": 71,
+        "velocity": 87,
+        "beat": 55.53854166666667,
+        "beats": 0.5677083333333334,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e249",
+        "sourceIds": ["t0-e249"],
+        "midi": 73,
+        "velocity": 98,
+        "beat": 56.30833333333333,
+        "beats": 0.675,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e252",
+        "sourceIds": ["t0-e252"],
+        "midi": 70,
+        "velocity": 79,
+        "beat": 57.12291666666667,
+        "beats": 0.465625,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e262",
+        "sourceIds": ["t0-e262"],
+        "midi": 70,
+        "velocity": 53,
+        "beat": 57.952083333333334,
+        "beats": 1.015625,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e267",
+        "sourceIds": ["t0-e267"],
+        "midi": 70,
+        "velocity": 77,
+        "beat": 59.19479166666667,
+        "beats": 0.8541666666666666,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e268",
+        "sourceIds": ["t0-e268"],
+        "midi": 68,
+        "velocity": 76,
+        "beat": 59.965625,
+        "beats": 0.23020833333333332,
+        "hand": "L",
+        "role": "lead-L-68"
+      },
+      {
+        "id": "t0-e271",
+        "sourceIds": ["t0-e271"],
+        "midi": 70,
+        "velocity": 81,
+        "beat": 60.35520833333333,
+        "beats": 2.20625,
+        "hand": "R",
+        "role": "lead-R-70"
+      },
+      {
+        "id": "t0-e273",
+        "sourceIds": ["t0-e273"],
+        "midi": 71,
+        "velocity": 78,
+        "beat": 62.85729166666667,
+        "beats": 0.484375,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e274",
+        "sourceIds": ["t0-e274"],
+        "midi": 70,
+        "velocity": 67,
+        "beat": 63.24270833333333,
+        "beats": 0.3260416666666667,
+        "hand": "L",
+        "role": "lead-L-70"
+      },
+      {
+        "id": "t0-e278",
+        "sourceIds": ["t0-e278"],
+        "midi": 68,
+        "velocity": 69,
+        "beat": 63.646875,
+        "beats": 0.4510416666666667,
+        "hand": "R",
+        "role": "lead-R-68"
+      },
+      {
+        "id": "t0-e286",
+        "sourceIds": ["t0-e286"],
+        "midi": 72,
+        "velocity": 91,
+        "beat": 65.25729166666666,
+        "beats": 0.5697916666666667,
+        "hand": "R",
+        "role": "lead-R-72"
+      },
+      {
+        "id": "t0-e288",
+        "sourceIds": ["t0-e288"],
+        "midi": 72,
+        "velocity": 76,
+        "beat": 66.01458333333333,
+        "beats": 0.503125,
+        "hand": "R",
+        "role": "lead-R-72"
+      },
+      {
+        "id": "t0-e290",
+        "sourceIds": ["t0-e290"],
+        "midi": 72,
+        "velocity": 72,
+        "beat": 66.8,
+        "beats": 0.5020833333333333,
+        "hand": "R",
+        "role": "lead-R-72"
+      },
+      {
+        "id": "t0-e291",
+        "sourceIds": ["t0-e291"],
+        "midi": 75,
+        "velocity": 85,
+        "beat": 66.80416666666666,
+        "beats": 0.5552083333333333,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e294",
+        "sourceIds": ["t0-e294"],
+        "midi": 75,
+        "velocity": 81,
+        "beat": 67.571875,
+        "beats": 0.728125,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e295",
+        "sourceIds": ["t0-e295"],
+        "midi": 72,
+        "velocity": 74,
+        "beat": 67.584375,
+        "beats": 0.51875,
+        "hand": "R",
+        "role": "lead-R-72"
+      },
+      {
+        "id": "t0-e298",
+        "sourceIds": ["t0-e298"],
+        "midi": 72,
+        "velocity": 76,
+        "beat": 68.35833333333333,
+        "beats": 0.559375,
+        "hand": "R",
+        "role": "lead-R-72"
+      },
+      {
+        "id": "t0-e299",
+        "sourceIds": ["t0-e299"],
+        "midi": 80,
+        "velocity": 87,
+        "beat": 68.36770833333334,
+        "beats": 0.5927083333333333,
+        "hand": "L",
+        "role": "lead-L-80"
+      },
+      {
+        "id": "t0-e305",
+        "sourceIds": ["t0-e305"],
+        "midi": 80,
+        "velocity": 81,
+        "beat": 69.13645833333334,
+        "beats": 0.5302083333333333,
+        "hand": "L",
+        "role": "lead-L-80"
+      },
+      {
+        "id": "t0-e306",
+        "sourceIds": ["t0-e306"],
+        "midi": 72,
+        "velocity": 72,
+        "beat": 69.15104166666667,
+        "beats": 0.284375,
+        "hand": "R",
+        "role": "lead-R-72"
+      },
+      {
+        "id": "t0-e308",
+        "sourceIds": ["t0-e308"],
+        "midi": 78,
+        "velocity": 72,
+        "beat": 69.5125,
+        "beats": 0.30833333333333335,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e312",
+        "sourceIds": ["t0-e312"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 69.89583333333333,
+        "beats": 0.53125,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e322",
+        "sourceIds": ["t0-e322"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 70.69583333333334,
+        "beats": 1.0166666666666666,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e327",
+        "sourceIds": ["t0-e327"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 71.93958333333333,
+        "beats": 0.26875,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e329",
+        "sourceIds": ["t0-e329"],
+        "midi": 78,
+        "velocity": 74,
+        "beat": 72.32083333333334,
+        "beats": 0.30416666666666664,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e331",
+        "sourceIds": ["t0-e331"],
+        "midi": 75,
+        "velocity": 70,
+        "beat": 72.67916666666666,
+        "beats": 0.33645833333333336,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e333",
+        "sourceIds": ["t0-e333"],
+        "midi": 76,
+        "velocity": 74,
+        "beat": 73.06458333333333,
+        "beats": 1.9802083333333333,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e335",
+        "sourceIds": ["t0-e335"],
+        "midi": 76,
+        "velocity": 78,
+        "beat": 75.646875,
+        "beats": 0.528125,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e336",
+        "sourceIds": ["t0-e336"],
+        "midi": 75,
+        "velocity": 70,
+        "beat": 76.03333333333333,
+        "beats": 0.2916666666666667,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e342",
+        "sourceIds": ["t0-e342"],
+        "midi": 73,
+        "velocity": 67,
+        "beat": 76.45729166666666,
+        "beats": 0.5208333333333334,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e350",
+        "sourceIds": ["t0-e350"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 77.19479166666666,
+        "beats": 0.5916666666666667,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e354",
+        "sourceIds": ["t0-e354"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 78.021875,
+        "beats": 0.7083333333333334,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e357",
+        "sourceIds": ["t0-e357"],
+        "midi": 76,
+        "velocity": 78,
+        "beat": 78.78020833333333,
+        "beats": 0.484375,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e358",
+        "sourceIds": ["t0-e358"],
+        "midi": 75,
+        "velocity": 79,
+        "beat": 79.1625,
+        "beats": 0.328125,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e361",
+        "sourceIds": ["t0-e361"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 79.5625,
+        "beats": 0.6291666666666667,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e363",
+        "sourceIds": ["t0-e363"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 80.365625,
+        "beats": 0.5916666666666667,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e365",
+        "sourceIds": ["t0-e365"],
+        "midi": 73,
+        "velocity": 81,
+        "beat": 81.14895833333334,
+        "beats": 0.45625,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e367",
+        "sourceIds": ["t0-e367"],
+        "midi": 78,
+        "velocity": 103,
+        "beat": 81.94895833333334,
+        "beats": 0.628125,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e372",
+        "sourceIds": ["t0-e372"],
+        "midi": 78,
+        "velocity": 85,
+        "beat": 82.71770833333333,
+        "beats": 0.5541666666666667,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e379",
+        "sourceIds": ["t0-e379"],
+        "midi": 78,
+        "velocity": 73,
+        "beat": 83.50833333333334,
+        "beats": 0.9916666666666667,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e385",
+        "sourceIds": ["t0-e385"],
+        "midi": 80,
+        "velocity": 85,
+        "beat": 84.6625,
+        "beats": 0.371875,
+        "hand": "L",
+        "role": "lead-L-80"
+      },
+      {
+        "id": "t0-e387",
+        "sourceIds": ["t0-e387"],
+        "midi": 82,
+        "velocity": 78,
+        "beat": 85.06666666666666,
+        "beats": 0.290625,
+        "hand": "R",
+        "role": "lead-R-82"
+      },
+      {
+        "id": "t0-e389",
+        "sourceIds": ["t0-e389"],
+        "midi": 80,
+        "velocity": 83,
+        "beat": 85.46145833333334,
+        "beats": 0.19479166666666667,
+        "hand": "L",
+        "role": "lead-L-80"
+      },
+      {
+        "id": "t0-e391",
+        "sourceIds": ["t0-e391"],
+        "midi": 78,
+        "velocity": 98,
+        "beat": 85.84895833333333,
+        "beats": 1.115625,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e392",
+        "sourceIds": ["t0-e392"],
+        "midi": 76,
+        "velocity": 72,
+        "beat": 86.95625,
+        "beats": 0.2916666666666667,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e395",
+        "sourceIds": ["t0-e395"],
+        "midi": 75,
+        "velocity": 65,
+        "beat": 87.36145833333333,
+        "beats": 0.5760416666666667,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e397",
+        "sourceIds": ["t0-e397"],
+        "midi": 71,
+        "velocity": 87,
+        "beat": 88.12916666666666,
+        "beats": 0.31666666666666665,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e399",
+        "sourceIds": ["t0-e399"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 88.46979166666667,
+        "beats": 0.303125,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e404",
+        "sourceIds": ["t0-e404"],
+        "midi": 75,
+        "velocity": 87,
+        "beat": 88.85833333333333,
+        "beats": 0.5395833333333333,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e411",
+        "sourceIds": ["t0-e411"],
+        "midi": 75,
+        "velocity": 67,
+        "beat": 89.65,
+        "beats": 0.6885416666666667,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e417",
+        "sourceIds": ["t0-e417"],
+        "midi": 75,
+        "velocity": 81,
+        "beat": 90.509375,
+        "beats": 0.6708333333333333,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e421",
+        "sourceIds": ["t0-e421"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 91.30833333333334,
+        "beats": 0.45208333333333334,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e422",
+        "sourceIds": ["t0-e422"],
+        "midi": 75,
+        "velocity": 67,
+        "beat": 91.6625,
+        "beats": 0.3229166666666667,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e427",
+        "sourceIds": ["t0-e427"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 92.096875,
+        "beats": 0.5302083333333333,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e436",
+        "sourceIds": ["t0-e436"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 92.89583333333333,
+        "beats": 0.9458333333333333,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e443",
+        "sourceIds": ["t0-e443"],
+        "midi": 75,
+        "velocity": 83,
+        "beat": 94.078125,
+        "beats": 0.68125,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e445",
+        "sourceIds": ["t0-e445"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 94.828125,
+        "beats": 0.21770833333333334,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e449",
+        "sourceIds": ["t0-e449"],
+        "midi": 75,
+        "velocity": 74,
+        "beat": 95.21666666666667,
+        "beats": 2.2114583333333333,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e461",
+        "sourceIds": ["t0-e461"],
+        "midi": 68,
+        "velocity": 93,
+        "beat": 97.25625,
+        "beats": 0.4125,
+        "hand": "R",
+        "role": "lead-R-68"
+      },
+      {
+        "id": "t0-e463",
+        "sourceIds": ["t0-e463"],
+        "midi": 73,
+        "velocity": 81,
+        "beat": 97.66354166666666,
+        "beats": 0.75625,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e467",
+        "sourceIds": ["t0-e467"],
+        "midi": 71,
+        "velocity": 81,
+        "beat": 98.46979166666667,
+        "beats": 1.26875,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e469",
+        "sourceIds": ["t0-e469"],
+        "midi": 71,
+        "velocity": 79,
+        "beat": 101.05520833333334,
+        "beats": 0.44375,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e470",
+        "sourceIds": ["t0-e470"],
+        "midi": 73,
+        "velocity": 72,
+        "beat": 101.45833333333333,
+        "beats": 0.2916666666666667,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e476",
+        "sourceIds": ["t0-e476"],
+        "midi": 75,
+        "velocity": 91,
+        "beat": 101.84791666666666,
+        "beats": 0.6,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e484",
+        "sourceIds": ["t0-e484"],
+        "midi": 75,
+        "velocity": 77,
+        "beat": 102.66354166666666,
+        "beats": 0.5572916666666666,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e489",
+        "sourceIds": ["t0-e489"],
+        "midi": 75,
+        "velocity": 78,
+        "beat": 103.46666666666667,
+        "beats": 0.3229166666666667,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e491",
+        "sourceIds": ["t0-e491"],
+        "midi": 78,
+        "velocity": 72,
+        "beat": 103.83645833333334,
+        "beats": 0.4197916666666667,
+        "hand": "L",
+        "role": "lead-L-78"
+      },
+      {
+        "id": "t0-e495",
+        "sourceIds": ["t0-e495"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 104.26041666666667,
+        "beats": 0.275,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e497",
+        "sourceIds": ["t0-e497"],
+        "midi": 75,
+        "velocity": 79,
+        "beat": 104.64479166666666,
+        "beats": 0.2916666666666667,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e502",
+        "sourceIds": ["t0-e502"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 105.03333333333333,
+        "beats": 0.5895833333333333,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e510",
+        "sourceIds": ["t0-e510"],
+        "midi": 73,
+        "velocity": 77,
+        "beat": 105.83125,
+        "beats": 1.0364583333333333,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e517",
+        "sourceIds": ["t0-e517"],
+        "midi": 75,
+        "velocity": 79,
+        "beat": 107.028125,
+        "beats": 0.6833333333333333,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e519",
+        "sourceIds": ["t0-e519"],
+        "midi": 73,
+        "velocity": 81,
+        "beat": 107.78854166666666,
+        "beats": 0.37916666666666665,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e524",
+        "sourceIds": ["t0-e524"],
+        "midi": 71,
+        "velocity": 83,
+        "beat": 108.18229166666667,
+        "beats": 0.75625,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e537",
+        "sourceIds": ["t0-e537"],
+        "midi": 83,
+        "velocity": 81,
+        "beat": 110.134375,
+        "beats": 0.7885416666666667,
+        "hand": "R",
+        "role": "lead-R-83"
+      },
+      {
+        "id": "t0-e539",
+        "sourceIds": ["t0-e539"],
+        "midi": 82,
+        "velocity": 72,
+        "beat": 110.93541666666667,
+        "beats": 0.41041666666666665,
+        "hand": "L",
+        "role": "lead-L-82"
+      },
+      {
+        "id": "t0-e541",
+        "sourceIds": ["t0-e541"],
+        "midi": 78,
+        "velocity": 66,
+        "beat": 111.36354166666666,
+        "beats": 0.63125,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e543",
+        "sourceIds": ["t0-e543"],
+        "midi": 76,
+        "velocity": 69,
+        "beat": 112.52916666666667,
+        "beats": 0.225,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e545",
+        "sourceIds": ["t0-e545"],
+        "midi": 75,
+        "velocity": 66,
+        "beat": 112.95520833333333,
+        "beats": 0.55625,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e547",
+        "sourceIds": ["t0-e547"],
+        "midi": 71,
+        "velocity": 78,
+        "beat": 113.73541666666667,
+        "beats": 0.3125,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e549",
+        "sourceIds": ["t0-e549"],
+        "midi": 73,
+        "velocity": 69,
+        "beat": 114.11979166666667,
+        "beats": 0.2947916666666667,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e554",
+        "sourceIds": ["t0-e554"],
+        "midi": 75,
+        "velocity": 85,
+        "beat": 114.51458333333333,
+        "beats": 0.5885416666666666,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e562",
+        "sourceIds": ["t0-e562"],
+        "midi": 75,
+        "velocity": 73,
+        "beat": 115.31145833333333,
+        "beats": 0.6666666666666666,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e567",
+        "sourceIds": ["t0-e567"],
+        "midi": 75,
+        "velocity": 78,
+        "beat": 116.14375,
+        "beats": 0.66875,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e571",
+        "sourceIds": ["t0-e571"],
+        "midi": 76,
+        "velocity": 79,
+        "beat": 116.91354166666666,
+        "beats": 0.4875,
+        "hand": "L",
+        "role": "lead-L-76"
+      },
+      {
+        "id": "t0-e572",
+        "sourceIds": ["t0-e572"],
+        "midi": 75,
+        "velocity": 72,
+        "beat": 117.28333333333333,
+        "beats": 0.325,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e578",
+        "sourceIds": ["t0-e578"],
+        "midi": 73,
+        "velocity": 85,
+        "beat": 117.71458333333334,
+        "beats": 0.5416666666666666,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e586",
+        "sourceIds": ["t0-e586"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 118.503125,
+        "beats": 0.9916666666666667,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e593",
+        "sourceIds": ["t0-e593"],
+        "midi": 75,
+        "velocity": 83,
+        "beat": 119.69895833333334,
+        "beats": 0.6833333333333333,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e595",
+        "sourceIds": ["t0-e595"],
+        "midi": 76,
+        "velocity": 78,
+        "beat": 120.48958333333333,
+        "beats": 0.25625,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e601",
+        "sourceIds": ["t0-e601"],
+        "midi": 75,
+        "velocity": 70,
+        "beat": 120.90104166666667,
+        "beats": 2.24375,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e611",
+        "sourceIds": ["t0-e611"],
+        "midi": 68,
+        "velocity": 89,
+        "beat": 122.92395833333333,
+        "beats": 0.6291666666666667,
+        "hand": "R",
+        "role": "lead-R-68"
+      },
+      {
+        "id": "t0-e613",
+        "sourceIds": ["t0-e613"],
+        "midi": 73,
+        "velocity": 74,
+        "beat": 123.30833333333334,
+        "beats": 0.7760416666666666,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e617",
+        "sourceIds": ["t0-e617"],
+        "midi": 71,
+        "velocity": 81,
+        "beat": 124.09895833333333,
+        "beats": 1.1989583333333333,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e619",
+        "sourceIds": ["t0-e619"],
+        "midi": 71,
+        "velocity": 79,
+        "beat": 126.63958333333333,
+        "beats": 0.43333333333333335,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e620",
+        "sourceIds": ["t0-e620"],
+        "midi": 73,
+        "velocity": 76,
+        "beat": 127.00833333333334,
+        "beats": 0.33229166666666665,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e627",
+        "sourceIds": ["t0-e627"],
+        "midi": 75,
+        "velocity": 81,
+        "beat": 127.409375,
+        "beats": 0.58125,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e634",
+        "sourceIds": ["t0-e634"],
+        "midi": 75,
+        "velocity": 81,
+        "beat": 128.20416666666668,
+        "beats": 0.6020833333333333,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e639",
+        "sourceIds": ["t0-e639"],
+        "midi": 75,
+        "velocity": 79,
+        "beat": 129.00625,
+        "beats": 0.41875,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e640",
+        "sourceIds": ["t0-e640"],
+        "midi": 78,
+        "velocity": 77,
+        "beat": 129.39166666666668,
+        "beats": 0.4625,
+        "hand": "L",
+        "role": "lead-L-78"
+      },
+      {
+        "id": "t0-e644",
+        "sourceIds": ["t0-e644"],
+        "midi": 76,
+        "velocity": 73,
+        "beat": 129.77083333333334,
+        "beats": 0.30833333333333335,
+        "hand": "R",
+        "role": "lead-R-76"
+      },
+      {
+        "id": "t0-e647",
+        "sourceIds": ["t0-e647"],
+        "midi": 75,
+        "velocity": 73,
+        "beat": 130.171875,
+        "beats": 0.271875,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e653",
+        "sourceIds": ["t0-e653"],
+        "midi": 73,
+        "velocity": 78,
+        "beat": 130.55729166666666,
+        "beats": 0.540625,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e660",
+        "sourceIds": ["t0-e660"],
+        "midi": 73,
+        "velocity": 73,
+        "beat": 131.346875,
+        "beats": 1.021875,
+        "hand": "R",
+        "role": "lead-R-73"
+      },
+      {
+        "id": "t0-e665",
+        "sourceIds": ["t0-e665"],
+        "midi": 75,
+        "velocity": 78,
+        "beat": 132.54895833333333,
+        "beats": 0.6927083333333334,
+        "hand": "R",
+        "role": "lead-R-75"
+      },
+      {
+        "id": "t0-e669",
+        "sourceIds": ["t0-e669"],
+        "midi": 73,
+        "velocity": 77,
+        "beat": 133.33125,
+        "beats": 0.32916666666666666,
+        "hand": "L",
+        "role": "lead-L-73"
+      },
+      {
+        "id": "t0-e676",
+        "sourceIds": ["t0-e676"],
+        "midi": 71,
+        "velocity": 78,
+        "beat": 133.72395833333334,
+        "beats": 0.6677083333333333,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e683",
+        "sourceIds": ["t0-e683"],
+        "midi": 63,
+        "velocity": 70,
+        "beat": 134.896875,
+        "beats": 0.6010416666666667,
+        "hand": "R",
+        "role": "lead-R-63"
+      },
+      {
+        "id": "t0-e684",
+        "sourceIds": ["t0-e684"],
+        "midi": 66,
+        "velocity": 81,
+        "beat": 135.30729166666666,
+        "beats": 0.27708333333333335,
+        "hand": "L",
+        "role": "lead-L-66"
+      },
+      {
+        "id": "t0-e687",
+        "sourceIds": ["t0-e687"],
+        "midi": 71,
+        "velocity": 73,
+        "beat": 135.70625,
+        "beats": 0.41458333333333336,
+        "hand": "R",
+        "role": "lead-R-71"
+      },
+      {
+        "id": "t0-e688",
+        "sourceIds": ["t0-e688"],
+        "midi": 75,
+        "velocity": 67,
+        "beat": 136.11875,
+        "beats": 0.5614583333333333,
+        "hand": "L",
+        "role": "lead-L-75"
+      },
+      {
+        "id": "t0-e690",
+        "sourceIds": ["t0-e690"],
+        "midi": 78,
+        "velocity": 73,
+        "beat": 136.55520833333333,
+        "beats": 0.31875,
+        "hand": "R",
+        "role": "lead-R-78"
+      },
+      {
+        "id": "t0-e693",
+        "sourceIds": ["t0-e693"],
+        "midi": 83,
+        "velocity": 73,
+        "beat": 136.95416666666668,
+        "beats": 0.8489583333333334,
+        "hand": "L",
+        "role": "lead-L-83"
+      }
+    ],
+    "durationBeats": 141.921875
+  },
+  "arrangement": {
+    "id": "screenshot-two-hand",
+    "title": "Screenshot melody with two-hand guidance",
+    "version": 3,
+    "recipes": [
+      {
+        "kind": "honk",
+        "role": "lead-R-71",
+        "midi": 71,
+        "hand": "R",
+        "position": [0.24, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-73",
+        "midi": 73,
+        "hand": "L",
+        "position": [-0.4, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-70",
+        "midi": 70,
+        "hand": "R",
+        "position": [0.08, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-71",
+        "midi": 71,
+        "hand": "L",
+        "position": [-0.56, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-73",
+        "midi": 73,
+        "hand": "R",
+        "position": [0.08, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-78",
+        "midi": 78,
+        "hand": "L",
+        "position": [-0.4, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-76",
+        "midi": 76,
+        "hand": "L",
+        "position": [-0.24, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-76",
+        "midi": 76,
+        "hand": "R",
+        "position": [0.24, 0.67, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-75",
+        "midi": 75,
+        "hand": "L",
+        "position": [-0.24, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-75",
+        "midi": 75,
+        "hand": "R",
+        "position": [0.24, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-78",
+        "midi": 78,
+        "hand": "R",
+        "position": [0.4, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-68",
+        "midi": 68,
+        "hand": "L",
+        "position": [-0.4, -0.05, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-70",
+        "midi": 70,
+        "hand": "L",
+        "position": [-0.56, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-68",
+        "midi": 68,
+        "hand": "R",
+        "position": [0.4, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-72",
+        "midi": 72,
+        "hand": "R",
+        "position": [0.56, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-80",
+        "midi": 80,
+        "hand": "L",
+        "position": [-0.08, 0.43, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-82",
+        "midi": 82,
+        "hand": "R",
+        "position": [0.56, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-83",
+        "midi": 83,
+        "hand": "R",
+        "position": [0.4, -0.05, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-82",
+        "midi": 82,
+        "hand": "L",
+        "position": [-0.24, -0.05, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-R-63",
+        "midi": 63,
+        "hand": "R",
+        "position": [0.24, -0.05, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-66",
+        "midi": 66,
+        "hand": "L",
+        "position": [-0.08, 0.19, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "lead-L-83",
+        "midi": 83,
+        "hand": "L",
+        "position": [-0.24, 0.67, 0.2],
+        "scale": 0.85
+      },
+      {
+        "kind": "honk",
+        "role": "backing-40",
+        "midi": 40,
+        "position": [-0.72, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-42",
+        "midi": 42,
+        "position": [-0.56, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-44",
+        "midi": 44,
+        "position": [-0.4, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-47",
+        "midi": 47,
+        "position": [-0.24, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-49",
+        "midi": 49,
+        "position": [-0.08, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-51",
+        "midi": 51,
+        "position": [0.08, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-52",
+        "midi": 52,
+        "position": [0.24, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-54",
+        "midi": 54,
+        "position": [0.4, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-56",
+        "midi": 56,
+        "position": [0.56, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-58",
+        "midi": 58,
+        "position": [0.72, -0.52, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-59",
+        "midi": 59,
+        "position": [-0.72, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-61",
+        "midi": 61,
+        "position": [-0.56, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-63",
+        "midi": 63,
+        "position": [-0.4, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-64",
+        "midi": 64,
+        "position": [-0.24, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-66",
+        "midi": 66,
+        "position": [-0.08, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-68",
+        "midi": 68,
+        "position": [0.08, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-70",
+        "midi": 70,
+        "position": [0.24, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-71",
+        "midi": 71,
+        "position": [0.4, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-73",
+        "midi": 73,
+        "position": [0.56, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-75",
+        "midi": 75,
+        "position": [0.72, -0.76, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-76",
+        "midi": 76,
+        "position": [-0.72, -1, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-78",
+        "midi": 78,
+        "position": [-0.56, -1, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-80",
+        "midi": 80,
+        "position": [-0.4, -1, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-82",
+        "midi": 82,
+        "position": [-0.24, -1, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "honk",
+        "role": "backing-83",
+        "midi": 83,
+        "position": [-0.08, -1, -0.7],
+        "scale": 0.8
+      },
+      {
+        "kind": "metronome",
+        "role": "metronome",
+        "position": [-0.85, -0.6, 0.05],
+        "scale": 0.65
+      }
+    ],
+    "backing": [
+      {
+        "id": "t0-e5",
+        "sourceIds": ["t0-e5"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 55,
+        "beat": 0,
+        "beats": 2.7666666666666666
+      },
+      {
+        "id": "t0-e6",
+        "sourceIds": ["t0-e6"],
+        "role": "backing-71",
+        "midi": 71,
+        "velocity": 70,
+        "beat": 0.003125,
+        "beats": 0.3875
+      },
+      {
+        "id": "t0-e9",
+        "sourceIds": ["t0-e9"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 63,
+        "beat": 0.3802083333333333,
+        "beats": 2.490625
+      },
+      {
+        "id": "t0-e11",
+        "sourceIds": ["t0-e11"],
+        "role": "backing-73",
+        "midi": 73,
+        "velocity": 70,
+        "beat": 0.809375,
+        "beats": 0.3
+      },
+      {
+        "id": "t0-e12",
+        "sourceIds": ["t0-e12"],
+        "role": "backing-71",
+        "midi": 71,
+        "velocity": 52,
+        "beat": 0.8104166666666667,
+        "beats": 1.7833333333333334
+      },
+      {
+        "id": "t0-e14",
+        "sourceIds": ["t0-e14"],
+        "role": "backing-75",
+        "midi": 75,
+        "velocity": 83,
+        "beat": 1.2083333333333333,
+        "beats": 0.596875
+      },
+      {
+        "id": "t0-e16",
+        "sourceIds": ["t0-e16"],
+        "role": "backing-75",
+        "midi": 75,
+        "velocity": 83,
+        "beat": 1.9760416666666667,
+        "beats": 0.8447916666666667
+      },
+      {
+        "id": "t0-e19",
+        "sourceIds": ["t0-e19"],
+        "role": "backing-73",
+        "midi": 73,
+        "velocity": 70,
+        "beat": 2.7760416666666665,
+        "beats": 0.43645833333333334
+      },
+      {
+        "id": "t0-e22",
+        "sourceIds": ["t0-e22"],
+        "role": "backing-71",
+        "midi": 71,
+        "velocity": 73,
+        "beat": 3.2125,
+        "beats": 1.2239583333333333
+      },
+      {
+        "id": "t0-e29",
+        "sourceIds": ["t0-e29"],
+        "role": "backing-51",
+        "midi": 51,
+        "velocity": 64,
+        "beat": 6.363541666666666,
+        "beats": 0.5677083333333334
+      },
+      {
+        "id": "t0-e35",
+        "sourceIds": ["t0-e35"],
+        "role": "backing-58",
+        "midi": 58,
+        "velocity": 42,
+        "beat": 6.795833333333333,
+        "beats": 0.3145833333333333
+      },
+      {
+        "id": "t0-e39",
+        "sourceIds": ["t0-e39"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 65,
+        "beat": 7.125,
+        "beats": 0.246875
+      },
+      {
+        "id": "t0-e43",
+        "sourceIds": ["t0-e43"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 43,
+        "beat": 7.576041666666667,
+        "beats": 0.7927083333333333
+      },
+      {
+        "id": "t0-e54",
+        "sourceIds": ["t0-e54"],
+        "role": "backing-52",
+        "midi": 52,
+        "velocity": 67,
+        "beat": 12.908333333333333,
+        "beats": 0.4947916666666667
+      },
+      {
+        "id": "t0-e59",
+        "sourceIds": ["t0-e59"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 60,
+        "beat": 13.280208333333333,
+        "beats": 0.29583333333333334
+      },
+      {
+        "id": "t0-e63",
+        "sourceIds": ["t0-e63"],
+        "role": "backing-64",
+        "midi": 64,
+        "velocity": 57,
+        "beat": 13.688541666666667,
+        "beats": 0.28020833333333334
+      },
+      {
+        "id": "t0-e66",
+        "sourceIds": ["t0-e66"],
+        "role": "backing-68",
+        "midi": 68,
+        "velocity": 58,
+        "beat": 14.103125,
+        "beats": 0.55
+      },
+      {
+        "id": "t0-e84",
+        "sourceIds": ["t0-e84"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 60,
+        "beat": 19.216666666666665,
+        "beats": 0.546875
+      },
+      {
+        "id": "t0-e85",
+        "sourceIds": ["t0-e85"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 64,
+        "beat": 19.576041666666665,
+        "beats": 0.3697916666666667
+      },
+      {
+        "id": "t0-e90",
+        "sourceIds": ["t0-e90"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 55,
+        "beat": 19.985416666666666,
+        "beats": 0.17604166666666668
+      },
+      {
+        "id": "t0-e92",
+        "sourceIds": ["t0-e92"],
+        "role": "backing-70",
+        "midi": 70,
+        "velocity": 47,
+        "beat": 20.40625,
+        "beats": 0.3416666666666667
+      },
+      {
+        "id": "t0-e101",
+        "sourceIds": ["t0-e101"],
+        "role": "backing-83",
+        "midi": 83,
+        "velocity": 81,
+        "beat": 22.7125,
+        "beats": 0.484375
+      },
+      {
+        "id": "t0-e102",
+        "sourceIds": ["t0-e102"],
+        "role": "backing-82",
+        "midi": 82,
+        "velocity": 73,
+        "beat": 23.096875,
+        "beats": 0.4864583333333333
+      },
+      {
+        "id": "t0-e104",
+        "sourceIds": ["t0-e104"],
+        "role": "backing-80",
+        "midi": 80,
+        "velocity": 65,
+        "beat": 23.51875,
+        "beats": 0.4010416666666667
+      },
+      {
+        "id": "t0-e106",
+        "sourceIds": ["t0-e106"],
+        "role": "backing-78",
+        "midi": 78,
+        "velocity": 74,
+        "beat": 23.872916666666665,
+        "beats": 0.24583333333333332
+      },
+      {
+        "id": "t0-e109",
+        "sourceIds": ["t0-e109"],
+        "role": "backing-76",
+        "midi": 76,
+        "velocity": 67,
+        "beat": 24.319791666666667,
+        "beats": 0.3145833333333333
+      },
+      {
+        "id": "t0-e111",
+        "sourceIds": ["t0-e111"],
+        "role": "backing-75",
+        "midi": 75,
+        "velocity": 53,
+        "beat": 24.679166666666667,
+        "beats": 0.49375
+      },
+      {
+        "id": "t0-e112",
+        "sourceIds": ["t0-e112"],
+        "role": "backing-73",
+        "midi": 73,
+        "velocity": 73,
+        "beat": 25.096875,
+        "beats": 0.3614583333333333
+      },
+      {
+        "id": "t0-e116",
+        "sourceIds": ["t0-e116"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 61,
+        "beat": 25.509375,
+        "beats": 1.88125
+      },
+      {
+        "id": "t0-e122",
+        "sourceIds": ["t0-e122"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 64,
+        "beat": 25.886458333333334,
+        "beats": 1.5802083333333334
+      },
+      {
+        "id": "t0-e141",
+        "sourceIds": ["t0-e141"],
+        "role": "backing-51",
+        "midi": 51,
+        "velocity": 67,
+        "beat": 31.955208333333335,
+        "beats": 0.5510416666666667
+      },
+      {
+        "id": "t0-e147",
+        "sourceIds": ["t0-e147"],
+        "role": "backing-58",
+        "midi": 58,
+        "velocity": 44,
+        "beat": 32.373958333333334,
+        "beats": 0.34479166666666666
+      },
+      {
+        "id": "t0-e151",
+        "sourceIds": ["t0-e151"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 63,
+        "beat": 32.76145833333333,
+        "beats": 0.2
+      },
+      {
+        "id": "t0-e155",
+        "sourceIds": ["t0-e155"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 67,
+        "beat": 33.196875,
+        "beats": 0.7666666666666667
+      },
+      {
+        "id": "t0-e166",
+        "sourceIds": ["t0-e166"],
+        "role": "backing-52",
+        "midi": 52,
+        "velocity": 65,
+        "beat": 38.28958333333333,
+        "beats": 0.48854166666666665
+      },
+      {
+        "id": "t0-e169",
+        "sourceIds": ["t0-e169"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 54,
+        "beat": 38.665625,
+        "beats": 0.28541666666666665
+      },
+      {
+        "id": "t0-e175",
+        "sourceIds": ["t0-e175"],
+        "role": "backing-64",
+        "midi": 64,
+        "velocity": 66,
+        "beat": 39.05625,
+        "beats": 0.2552083333333333
+      },
+      {
+        "id": "t0-e178",
+        "sourceIds": ["t0-e178"],
+        "role": "backing-68",
+        "midi": 68,
+        "velocity": 65,
+        "beat": 39.44166666666667,
+        "beats": 0.5708333333333333
+      },
+      {
+        "id": "t0-e195",
+        "sourceIds": ["t0-e195"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 66,
+        "beat": 44.56979166666667,
+        "beats": 0.5635416666666667
+      },
+      {
+        "id": "t0-e201",
+        "sourceIds": ["t0-e201"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 67,
+        "beat": 44.92604166666667,
+        "beats": 0.3729166666666667
+      },
+      {
+        "id": "t0-e205",
+        "sourceIds": ["t0-e205"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 63,
+        "beat": 45.353125,
+        "beats": 0.146875
+      },
+      {
+        "id": "t0-e208",
+        "sourceIds": ["t0-e208"],
+        "role": "backing-70",
+        "midi": 70,
+        "velocity": 51,
+        "beat": 45.75833333333333,
+        "beats": 0.403125
+      },
+      {
+        "id": "t0-e228",
+        "sourceIds": ["t0-e228"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 60,
+        "beat": 50.77395833333333,
+        "beats": 2.011458333333333
+      },
+      {
+        "id": "t0-e234",
+        "sourceIds": ["t0-e234"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 68,
+        "beat": 51.13125,
+        "beats": 1.5958333333333334
+      },
+      {
+        "id": "t0-e251",
+        "sourceIds": ["t0-e251"],
+        "role": "backing-51",
+        "midi": 51,
+        "velocity": 68,
+        "beat": 57.10520833333333,
+        "beats": 0.5354166666666667
+      },
+      {
+        "id": "t0-e257",
+        "sourceIds": ["t0-e257"],
+        "role": "backing-58",
+        "midi": 58,
+        "velocity": 47,
+        "beat": 57.514583333333334,
+        "beats": 0.353125
+      },
+      {
+        "id": "t0-e261",
+        "sourceIds": ["t0-e261"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 63,
+        "beat": 57.93020833333333,
+        "beats": 0.19270833333333334
+      },
+      {
+        "id": "t0-e264",
+        "sourceIds": ["t0-e264"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 49,
+        "beat": 58.34791666666667,
+        "beats": 0.4625
+      },
+      {
+        "id": "t0-e277",
+        "sourceIds": ["t0-e277"],
+        "role": "backing-56",
+        "midi": 56,
+        "velocity": 67,
+        "beat": 63.64479166666667,
+        "beats": 5.185416666666667
+      },
+      {
+        "id": "t0-e283",
+        "sourceIds": ["t0-e283"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 72,
+        "beat": 64.05416666666666,
+        "beats": 4.807291666666667
+      },
+      {
+        "id": "t0-e285",
+        "sourceIds": ["t0-e285"],
+        "role": "backing-68",
+        "midi": 68,
+        "velocity": 76,
+        "beat": 64.45625,
+        "beats": 4.3
+      },
+      {
+        "id": "t0-e311",
+        "sourceIds": ["t0-e311"],
+        "role": "backing-49",
+        "midi": 49,
+        "velocity": 73,
+        "beat": 69.88020833333333,
+        "beats": 0.515625
+      },
+      {
+        "id": "t0-e317",
+        "sourceIds": ["t0-e317"],
+        "role": "backing-56",
+        "midi": 56,
+        "velocity": 55,
+        "beat": 70.27291666666666,
+        "beats": 0.34270833333333334
+      },
+      {
+        "id": "t0-e321",
+        "sourceIds": ["t0-e321"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 60,
+        "beat": 70.68541666666667,
+        "beats": 0.13541666666666666
+      },
+      {
+        "id": "t0-e324",
+        "sourceIds": ["t0-e324"],
+        "role": "backing-64",
+        "midi": 64,
+        "velocity": 60,
+        "beat": 71.10520833333334,
+        "beats": 0.6979166666666666
+      },
+      {
+        "id": "t0-e341",
+        "sourceIds": ["t0-e341"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 66,
+        "beat": 76.4125,
+        "beats": 0.528125
+      },
+      {
+        "id": "t0-e345",
+        "sourceIds": ["t0-e345"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 67,
+        "beat": 76.765625,
+        "beats": 0.34791666666666665
+      },
+      {
+        "id": "t0-e349",
+        "sourceIds": ["t0-e349"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 56,
+        "beat": 77.16354166666666,
+        "beats": 0.196875
+      },
+      {
+        "id": "t0-e352",
+        "sourceIds": ["t0-e352"],
+        "role": "backing-70",
+        "midi": 70,
+        "velocity": 67,
+        "beat": 77.58333333333333,
+        "beats": 0.55
+      },
+      {
+        "id": "t0-e371",
+        "sourceIds": ["t0-e371"],
+        "role": "backing-52",
+        "midi": 52,
+        "velocity": 70,
+        "beat": 82.71458333333334,
+        "beats": 0.46041666666666664
+      },
+      {
+        "id": "t0-e375",
+        "sourceIds": ["t0-e375"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 57,
+        "beat": 83.11041666666667,
+        "beats": 0.29583333333333334
+      },
+      {
+        "id": "t0-e380",
+        "sourceIds": ["t0-e380"],
+        "role": "backing-64",
+        "midi": 64,
+        "velocity": 56,
+        "beat": 83.52291666666666,
+        "beats": 0.20208333333333334
+      },
+      {
+        "id": "t0-e382",
+        "sourceIds": ["t0-e382"],
+        "role": "backing-68",
+        "midi": 68,
+        "velocity": 69,
+        "beat": 83.89583333333333,
+        "beats": 0.675
+      },
+      {
+        "id": "t0-e403",
+        "sourceIds": ["t0-e403"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 45,
+        "beat": 88.85520833333334,
+        "beats": 0.753125
+      },
+      {
+        "id": "t0-e405",
+        "sourceIds": ["t0-e405"],
+        "role": "backing-47",
+        "midi": 47,
+        "velocity": 62,
+        "beat": 88.87604166666667,
+        "beats": 0.5541666666666667
+      },
+      {
+        "id": "t0-e412",
+        "sourceIds": ["t0-e412"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 61,
+        "beat": 89.65104166666667,
+        "beats": 0.2552083333333333
+      },
+      {
+        "id": "t0-e414",
+        "sourceIds": ["t0-e414"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 65,
+        "beat": 90.0125,
+        "beats": 0.9635416666666666
+      },
+      {
+        "id": "t0-e416",
+        "sourceIds": ["t0-e416"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 72,
+        "beat": 90.48229166666667,
+        "beats": 0.39166666666666666
+      },
+      {
+        "id": "t0-e428",
+        "sourceIds": ["t0-e428"],
+        "role": "backing-42",
+        "midi": 42,
+        "velocity": 69,
+        "beat": 92.09895833333333,
+        "beats": 0.43854166666666666
+      },
+      {
+        "id": "t0-e429",
+        "sourceIds": ["t0-e429"],
+        "role": "backing-49",
+        "midi": 49,
+        "velocity": 73,
+        "beat": 92.10104166666666,
+        "beats": 0.625
+      },
+      {
+        "id": "t0-e435",
+        "sourceIds": ["t0-e435"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 42,
+        "beat": 92.890625,
+        "beats": 0.12604166666666666
+      },
+      {
+        "id": "t0-e438",
+        "sourceIds": ["t0-e438"],
+        "role": "backing-58",
+        "midi": 58,
+        "velocity": 66,
+        "beat": 93.27604166666667,
+        "beats": 0.696875
+      },
+      {
+        "id": "t0-e439",
+        "sourceIds": ["t0-e439"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 64,
+        "beat": 93.68541666666667,
+        "beats": 0.26666666666666666
+      },
+      {
+        "id": "t0-e450",
+        "sourceIds": ["t0-e450"],
+        "role": "backing-44",
+        "midi": 44,
+        "velocity": 65,
+        "beat": 95.23333333333333,
+        "beats": 0.403125
+      },
+      {
+        "id": "t0-e451",
+        "sourceIds": ["t0-e451"],
+        "role": "backing-51",
+        "midi": 51,
+        "velocity": 67,
+        "beat": 95.23541666666667,
+        "beats": 0.66875
+      },
+      {
+        "id": "t0-e456",
+        "sourceIds": ["t0-e456"],
+        "role": "backing-56",
+        "midi": 56,
+        "velocity": 31,
+        "beat": 96.06979166666666,
+        "beats": 0.058333333333333334
+      },
+      {
+        "id": "t0-e458",
+        "sourceIds": ["t0-e458"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 66,
+        "beat": 96.42291666666667,
+        "beats": 0.28229166666666666
+      },
+      {
+        "id": "t0-e460",
+        "sourceIds": ["t0-e460"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 47,
+        "beat": 96.85208333333334,
+        "beats": 0.878125
+      },
+      {
+        "id": "t0-e475",
+        "sourceIds": ["t0-e475"],
+        "role": "backing-40",
+        "midi": 40,
+        "velocity": 73,
+        "beat": 101.8375,
+        "beats": 0.5177083333333333
+      },
+      {
+        "id": "t0-e477",
+        "sourceIds": ["t0-e477"],
+        "role": "backing-47",
+        "midi": 47,
+        "velocity": 60,
+        "beat": 101.85729166666667,
+        "beats": 0.6333333333333333
+      },
+      {
+        "id": "t0-e483",
+        "sourceIds": ["t0-e483"],
+        "role": "backing-52",
+        "midi": 52,
+        "velocity": 57,
+        "beat": 102.634375,
+        "beats": 0.20104166666666667
+      },
+      {
+        "id": "t0-e486",
+        "sourceIds": ["t0-e486"],
+        "role": "backing-56",
+        "midi": 56,
+        "velocity": 60,
+        "beat": 103.02708333333334,
+        "beats": 0.9208333333333333
+      },
+      {
+        "id": "t0-e488",
+        "sourceIds": ["t0-e488"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 59,
+        "beat": 103.46458333333334,
+        "beats": 0.4197916666666667
+      },
+      {
+        "id": "t0-e501",
+        "sourceIds": ["t0-e501"],
+        "role": "backing-49",
+        "midi": 49,
+        "velocity": 70,
+        "beat": 105.025,
+        "beats": 0.696875
+      },
+      {
+        "id": "t0-e503",
+        "sourceIds": ["t0-e503"],
+        "role": "backing-42",
+        "midi": 42,
+        "velocity": 67,
+        "beat": 105.03958333333334,
+        "beats": 0.4666666666666667
+      },
+      {
+        "id": "t0-e509",
+        "sourceIds": ["t0-e509"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 52,
+        "beat": 105.815625,
+        "beats": 0.16979166666666667
+      },
+      {
+        "id": "t0-e512",
+        "sourceIds": ["t0-e512"],
+        "role": "backing-58",
+        "midi": 58,
+        "velocity": 77,
+        "beat": 106.221875,
+        "beats": 0.8
+      },
+      {
+        "id": "t0-e513",
+        "sourceIds": ["t0-e513"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 64,
+        "beat": 106.63541666666667,
+        "beats": 0.28958333333333336
+      },
+      {
+        "id": "t0-e523",
+        "sourceIds": ["t0-e523"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 59,
+        "beat": 108.171875,
+        "beats": 0.7072916666666667
+      },
+      {
+        "id": "t0-e525",
+        "sourceIds": ["t0-e525"],
+        "role": "backing-47",
+        "midi": 47,
+        "velocity": 69,
+        "beat": 108.18333333333334,
+        "beats": 0.5354166666666667
+      },
+      {
+        "id": "t0-e531",
+        "sourceIds": ["t0-e531"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 60,
+        "beat": 108.94791666666667,
+        "beats": 0.25625
+      },
+      {
+        "id": "t0-e533",
+        "sourceIds": ["t0-e533"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 62,
+        "beat": 109.33229166666666,
+        "beats": 0.6052083333333333
+      },
+      {
+        "id": "t0-e534",
+        "sourceIds": ["t0-e534"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 73,
+        "beat": 109.75729166666666,
+        "beats": 0.23541666666666666
+      },
+      {
+        "id": "t0-e553",
+        "sourceIds": ["t0-e553"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 57,
+        "beat": 114.50729166666666,
+        "beats": 0.6760416666666667
+      },
+      {
+        "id": "t0-e555",
+        "sourceIds": ["t0-e555"],
+        "role": "backing-47",
+        "midi": 47,
+        "velocity": 66,
+        "beat": 114.52708333333334,
+        "beats": 0.478125
+      },
+      {
+        "id": "t0-e561",
+        "sourceIds": ["t0-e561"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 66,
+        "beat": 115.23854166666666,
+        "beats": 0.284375
+      },
+      {
+        "id": "t0-e564",
+        "sourceIds": ["t0-e564"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 74,
+        "beat": 115.66145833333333,
+        "beats": 0.9625
+      },
+      {
+        "id": "t0-e566",
+        "sourceIds": ["t0-e566"],
+        "role": "backing-66",
+        "midi": 66,
+        "velocity": 69,
+        "beat": 116.05104166666666,
+        "beats": 0.503125
+      },
+      {
+        "id": "t0-e577",
+        "sourceIds": ["t0-e577"],
+        "role": "backing-49",
+        "midi": 49,
+        "velocity": 72,
+        "beat": 117.7,
+        "beats": 0.6479166666666667
+      },
+      {
+        "id": "t0-e579",
+        "sourceIds": ["t0-e579"],
+        "role": "backing-42",
+        "midi": 42,
+        "velocity": 57,
+        "beat": 117.73229166666667,
+        "beats": 0.41354166666666664
+      },
+      {
+        "id": "t0-e585",
+        "sourceIds": ["t0-e585"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 48,
+        "beat": 118.48125,
+        "beats": 0.16458333333333333
+      },
+      {
+        "id": "t0-e588",
+        "sourceIds": ["t0-e588"],
+        "role": "backing-58",
+        "midi": 58,
+        "velocity": 67,
+        "beat": 118.884375,
+        "beats": 0.784375
+      },
+      {
+        "id": "t0-e589",
+        "sourceIds": ["t0-e589"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 73,
+        "beat": 119.27604166666667,
+        "beats": 0.31354166666666666
+      },
+      {
+        "id": "t0-e599",
+        "sourceIds": ["t0-e599"],
+        "role": "backing-51",
+        "midi": 51,
+        "velocity": 73,
+        "beat": 120.87708333333333,
+        "beats": 0.7364583333333333
+      },
+      {
+        "id": "t0-e600",
+        "sourceIds": ["t0-e600"],
+        "role": "backing-44",
+        "midi": 44,
+        "velocity": 66,
+        "beat": 120.89895833333334,
+        "beats": 0.43020833333333336
+      },
+      {
+        "id": "t0-e606",
+        "sourceIds": ["t0-e606"],
+        "role": "backing-56",
+        "midi": 56,
+        "velocity": 61,
+        "beat": 121.653125,
+        "beats": 0.15208333333333332
+      },
+      {
+        "id": "t0-e608",
+        "sourceIds": ["t0-e608"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 67,
+        "beat": 122.115625,
+        "beats": 0.28125
+      },
+      {
+        "id": "t0-e610",
+        "sourceIds": ["t0-e610"],
+        "role": "backing-63",
+        "midi": 63,
+        "velocity": 69,
+        "beat": 122.50625,
+        "beats": 1.2979166666666666
+      },
+      {
+        "id": "t0-e625",
+        "sourceIds": ["t0-e625"],
+        "role": "backing-40",
+        "midi": 40,
+        "velocity": 67,
+        "beat": 127.4,
+        "beats": 0.53125
+      },
+      {
+        "id": "t0-e626",
+        "sourceIds": ["t0-e626"],
+        "role": "backing-47",
+        "midi": 47,
+        "velocity": 61,
+        "beat": 127.40208333333334,
+        "beats": 0.6541666666666667
+      },
+      {
+        "id": "t0-e633",
+        "sourceIds": ["t0-e633"],
+        "role": "backing-52",
+        "midi": 52,
+        "velocity": 67,
+        "beat": 128.178125,
+        "beats": 0.19895833333333332
+      },
+      {
+        "id": "t0-e636",
+        "sourceIds": ["t0-e636"],
+        "role": "backing-56",
+        "midi": 56,
+        "velocity": 73,
+        "beat": 128.54375,
+        "beats": 0.9614583333333333
+      },
+      {
+        "id": "t0-e638",
+        "sourceIds": ["t0-e638"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 66,
+        "beat": 129,
+        "beats": 0.4322916666666667
+      },
+      {
+        "id": "t0-e651",
+        "sourceIds": ["t0-e651"],
+        "role": "backing-49",
+        "midi": 49,
+        "velocity": 72,
+        "beat": 130.540625,
+        "beats": 0.7375
+      },
+      {
+        "id": "t0-e652",
+        "sourceIds": ["t0-e652"],
+        "role": "backing-42",
+        "midi": 42,
+        "velocity": 69,
+        "beat": 130.54791666666668,
+        "beats": 0.5114583333333333
+      },
+      {
+        "id": "t0-e659",
+        "sourceIds": ["t0-e659"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 62,
+        "beat": 131.3375,
+        "beats": 0.20833333333333334
+      },
+      {
+        "id": "t0-e662",
+        "sourceIds": ["t0-e662"],
+        "role": "backing-58",
+        "midi": 58,
+        "velocity": 50,
+        "beat": 131.74791666666667,
+        "beats": 0.890625
+      },
+      {
+        "id": "t0-e663",
+        "sourceIds": ["t0-e663"],
+        "role": "backing-61",
+        "midi": 61,
+        "velocity": 74,
+        "beat": 132.12291666666667,
+        "beats": 0.4666666666666667
+      },
+      {
+        "id": "t0-e675",
+        "sourceIds": ["t0-e675"],
+        "role": "backing-54",
+        "midi": 54,
+        "velocity": 56,
+        "beat": 133.70520833333333,
+        "beats": 0.6885416666666667
+      },
+      {
+        "id": "t0-e677",
+        "sourceIds": ["t0-e677"],
+        "role": "backing-47",
+        "midi": 47,
+        "velocity": 67,
+        "beat": 133.73125,
+        "beats": 0.5041666666666667
+      },
+      {
+        "id": "t0-e681",
+        "sourceIds": ["t0-e681"],
+        "role": "backing-59",
+        "midi": 59,
+        "velocity": 42,
+        "beat": 134.52291666666667,
+        "beats": 0.21354166666666666
+      }
+    ],
+    "provenance": "b5f63cb589b93c0bdab89edbcdaf44a1b0ce6ad4e3e72b6575cf0b96d70eea35; 175 explicit screenshot-matched learner notes; every other source note is backing",
+    "fixedBacking": {
+      "outputGroups": ["foundation", "figures"],
+      "volume": -0.35,
+      "placement": [-1.6, 0.55, -1.7],
+      "terminalGapBeats": 1
+    }
+  },
+  "lessons": [
+    {
+      "id": "phrase-1",
+      "title": "Phrase 1",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 4.809375,
+      "endBeat": 12.133333333333333,
+      "eventIds": ["t0-e25", "t0-e27", "t0-e32", "t0-e40", "t0-e44", "t0-e47", "t0-e49", "t0-e51"],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-2",
+      "title": "Phrase 2",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 12.133333333333333,
+      "endBeat": 19.98125,
+      "eventIds": [
+        "t0-e53",
+        "t0-e64",
+        "t0-e68",
+        "t0-e71",
+        "t0-e73",
+        "t0-e75",
+        "t0-e77",
+        "t0-e79",
+        "t0-e81",
+        "t0-e83"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-3",
+      "title": "Phrase 3",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 19.98125,
+      "endBeat": 27.534375,
+      "eventIds": [
+        "t0-e89",
+        "t0-e95",
+        "t0-e96",
+        "t0-e99",
+        "t0-e115",
+        "t0-e123",
+        "t0-e124",
+        "t0-e126"
+      ],
+      "recommendedBpm": 50,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-4",
+      "title": "Phrase 4",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 27.534375,
+      "endBeat": 35.170833333333334,
+      "eventIds": [
+        "t0-e131",
+        "t0-e132",
+        "t0-e135",
+        "t0-e137",
+        "t0-e139",
+        "t0-e142",
+        "t0-e152",
+        "t0-e156",
+        "t0-e159",
+        "t0-e161"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-5",
+      "title": "Phrase 5",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 35.170833333333334,
+      "endBeat": 43.021875,
+      "eventIds": [
+        "t0-e163",
+        "t0-e165",
+        "t0-e176",
+        "t0-e180",
+        "t0-e183",
+        "t0-e185",
+        "t0-e187",
+        "t0-e189"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-6",
+      "title": "Phrase 6",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 43.021875,
+      "endBeat": 50.7625,
+      "eventIds": [
+        "t0-e191",
+        "t0-e193",
+        "t0-e196",
+        "t0-e206",
+        "t0-e211",
+        "t0-e212",
+        "t0-e214",
+        "t0-e217",
+        "t0-e218",
+        "t0-e220",
+        "t0-e223",
+        "t0-e224"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-7",
+      "title": "Phrase 7",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 50.7625,
+      "endBeat": 59.19479166666667,
+      "eventIds": [
+        "t0-e227",
+        "t0-e235",
+        "t0-e237",
+        "t0-e241",
+        "t0-e243",
+        "t0-e245",
+        "t0-e247",
+        "t0-e249",
+        "t0-e252",
+        "t0-e262"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-8",
+      "title": "Phrase 8",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 59.19479166666667,
+      "endBeat": 67.571875,
+      "eventIds": [
+        "t0-e267",
+        "t0-e268",
+        "t0-e271",
+        "t0-e273",
+        "t0-e274",
+        "t0-e278",
+        "t0-e286",
+        "t0-e288",
+        "t0-e290",
+        "t0-e291"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-9",
+      "title": "Phrase 9",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 67.571875,
+      "endBeat": 75.646875,
+      "eventIds": [
+        "t0-e294",
+        "t0-e295",
+        "t0-e298",
+        "t0-e299",
+        "t0-e305",
+        "t0-e306",
+        "t0-e308",
+        "t0-e312",
+        "t0-e322",
+        "t0-e327",
+        "t0-e329",
+        "t0-e331",
+        "t0-e333"
+      ],
+      "recommendedBpm": 40,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-10",
+      "title": "Phrase 10",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 75.646875,
+      "endBeat": 83.50833333333334,
+      "eventIds": [
+        "t0-e335",
+        "t0-e336",
+        "t0-e342",
+        "t0-e350",
+        "t0-e354",
+        "t0-e357",
+        "t0-e358",
+        "t0-e361",
+        "t0-e363",
+        "t0-e365",
+        "t0-e367",
+        "t0-e372"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-11",
+      "title": "Phrase 11",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 83.50833333333334,
+      "endBeat": 91.30833333333334,
+      "eventIds": [
+        "t0-e379",
+        "t0-e385",
+        "t0-e387",
+        "t0-e389",
+        "t0-e391",
+        "t0-e392",
+        "t0-e395",
+        "t0-e397",
+        "t0-e399",
+        "t0-e404",
+        "t0-e411",
+        "t0-e417"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-12",
+      "title": "Phrase 12",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 91.30833333333334,
+      "endBeat": 98.46979166666667,
+      "eventIds": [
+        "t0-e421",
+        "t0-e422",
+        "t0-e427",
+        "t0-e436",
+        "t0-e443",
+        "t0-e445",
+        "t0-e449",
+        "t0-e461",
+        "t0-e463"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-13",
+      "title": "Phrase 13",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 98.46979166666667,
+      "endBeat": 107.028125,
+      "eventIds": [
+        "t0-e467",
+        "t0-e469",
+        "t0-e470",
+        "t0-e476",
+        "t0-e484",
+        "t0-e489",
+        "t0-e491",
+        "t0-e495",
+        "t0-e497",
+        "t0-e502",
+        "t0-e510"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-14",
+      "title": "Phrase 14",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 107.028125,
+      "endBeat": 115.31145833333333,
+      "eventIds": [
+        "t0-e517",
+        "t0-e519",
+        "t0-e524",
+        "t0-e537",
+        "t0-e539",
+        "t0-e541",
+        "t0-e543",
+        "t0-e545",
+        "t0-e547",
+        "t0-e549",
+        "t0-e554"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-15",
+      "title": "Phrase 15",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 115.31145833333333,
+      "endBeat": 124.09895833333333,
+      "eventIds": [
+        "t0-e562",
+        "t0-e567",
+        "t0-e571",
+        "t0-e572",
+        "t0-e578",
+        "t0-e586",
+        "t0-e593",
+        "t0-e595",
+        "t0-e601",
+        "t0-e611",
+        "t0-e613"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-16",
+      "title": "Phrase 16",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 124.09895833333333,
+      "endBeat": 132.54895833333333,
+      "eventIds": [
+        "t0-e617",
+        "t0-e619",
+        "t0-e620",
+        "t0-e627",
+        "t0-e634",
+        "t0-e639",
+        "t0-e640",
+        "t0-e644",
+        "t0-e647",
+        "t0-e653",
+        "t0-e660"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "phrase-17",
+      "title": "Phrase 17",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "startBeat": 132.54895833333333,
+      "endBeat": 138.30312500000002,
+      "eventIds": [
+        "t0-e665",
+        "t0-e669",
+        "t0-e676",
+        "t0-e683",
+        "t0-e684",
+        "t0-e687",
+        "t0-e688",
+        "t0-e690",
+        "t0-e693"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    },
+    {
+      "id": "performance",
+      "title": "Complete melody",
+      "goal": "Use both hands. R is the main melody hand; L assists. Either hand is accepted.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": true,
+      "startBeat": 0,
+      "endBeat": 141.921875,
+      "eventIds": [
+        "t0-e25",
+        "t0-e27",
+        "t0-e32",
+        "t0-e40",
+        "t0-e44",
+        "t0-e47",
+        "t0-e49",
+        "t0-e51",
+        "t0-e53",
+        "t0-e64",
+        "t0-e68",
+        "t0-e71",
+        "t0-e73",
+        "t0-e75",
+        "t0-e77",
+        "t0-e79",
+        "t0-e81",
+        "t0-e83",
+        "t0-e89",
+        "t0-e95",
+        "t0-e96",
+        "t0-e99",
+        "t0-e115",
+        "t0-e123",
+        "t0-e124",
+        "t0-e126",
+        "t0-e131",
+        "t0-e132",
+        "t0-e135",
+        "t0-e137",
+        "t0-e139",
+        "t0-e142",
+        "t0-e152",
+        "t0-e156",
+        "t0-e159",
+        "t0-e161",
+        "t0-e163",
+        "t0-e165",
+        "t0-e176",
+        "t0-e180",
+        "t0-e183",
+        "t0-e185",
+        "t0-e187",
+        "t0-e189",
+        "t0-e191",
+        "t0-e193",
+        "t0-e196",
+        "t0-e206",
+        "t0-e211",
+        "t0-e212",
+        "t0-e214",
+        "t0-e217",
+        "t0-e218",
+        "t0-e220",
+        "t0-e223",
+        "t0-e224",
+        "t0-e227",
+        "t0-e235",
+        "t0-e237",
+        "t0-e241",
+        "t0-e243",
+        "t0-e245",
+        "t0-e247",
+        "t0-e249",
+        "t0-e252",
+        "t0-e262",
+        "t0-e267",
+        "t0-e268",
+        "t0-e271",
+        "t0-e273",
+        "t0-e274",
+        "t0-e278",
+        "t0-e286",
+        "t0-e288",
+        "t0-e290",
+        "t0-e291",
+        "t0-e294",
+        "t0-e295",
+        "t0-e298",
+        "t0-e299",
+        "t0-e305",
+        "t0-e306",
+        "t0-e308",
+        "t0-e312",
+        "t0-e322",
+        "t0-e327",
+        "t0-e329",
+        "t0-e331",
+        "t0-e333",
+        "t0-e335",
+        "t0-e336",
+        "t0-e342",
+        "t0-e350",
+        "t0-e354",
+        "t0-e357",
+        "t0-e358",
+        "t0-e361",
+        "t0-e363",
+        "t0-e365",
+        "t0-e367",
+        "t0-e372",
+        "t0-e379",
+        "t0-e385",
+        "t0-e387",
+        "t0-e389",
+        "t0-e391",
+        "t0-e392",
+        "t0-e395",
+        "t0-e397",
+        "t0-e399",
+        "t0-e404",
+        "t0-e411",
+        "t0-e417",
+        "t0-e421",
+        "t0-e422",
+        "t0-e427",
+        "t0-e436",
+        "t0-e443",
+        "t0-e445",
+        "t0-e449",
+        "t0-e461",
+        "t0-e463",
+        "t0-e467",
+        "t0-e469",
+        "t0-e470",
+        "t0-e476",
+        "t0-e484",
+        "t0-e489",
+        "t0-e491",
+        "t0-e495",
+        "t0-e497",
+        "t0-e502",
+        "t0-e510",
+        "t0-e517",
+        "t0-e519",
+        "t0-e524",
+        "t0-e537",
+        "t0-e539",
+        "t0-e541",
+        "t0-e543",
+        "t0-e545",
+        "t0-e547",
+        "t0-e549",
+        "t0-e554",
+        "t0-e562",
+        "t0-e567",
+        "t0-e571",
+        "t0-e572",
+        "t0-e578",
+        "t0-e586",
+        "t0-e593",
+        "t0-e595",
+        "t0-e601",
+        "t0-e611",
+        "t0-e613",
+        "t0-e617",
+        "t0-e619",
+        "t0-e620",
+        "t0-e627",
+        "t0-e634",
+        "t0-e639",
+        "t0-e640",
+        "t0-e644",
+        "t0-e647",
+        "t0-e653",
+        "t0-e660",
+        "t0-e665",
+        "t0-e669",
+        "t0-e676",
+        "t0-e683",
+        "t0-e684",
+        "t0-e687",
+        "t0-e688",
+        "t0-e690",
+        "t0-e693"
+      ],
+      "recommendedBpm": 75,
+      "assessment": {
+        "pitchCents": 25,
+        "onsetBeats": 0.13,
+        "durationBeats": 0.2
+      }
+    }
+  ],
+  "recording": {
+    "countIn": 4,
+    "tailMs": 500,
+    "end": "manual",
+    "synchronization": "captured-noise-once"
+  },
+  "requirements": {
+    "maxHonks": 47,
+    "maxLoopers": 22,
+    "maxLiveVoices": 2
+  },
+  "maxBpm": 115,
+  "contentHash": "a94feb4fa726eb2d7a82978ae0f11dd86b502208f894d1ae26b934619b2d6c4a"
+}

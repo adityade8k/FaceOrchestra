@@ -1,13 +1,16 @@
+import { createCompositionSetup } from "../../src/compositions/setup.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 
 import { RADIAL_MENU_SETTINGS } from "../../src/config/spawning.js";
-import { SpawnCatalog } from "../../src/spawning/SpawnCatalog.js";
+
 import { SpawnMenuController } from "../../src/spawning/SpawnMenuController.js";
 import { RadialMenuPhase } from "../../src/spawning/radialMenuNavigation.js";
 
 test("entering layer 2 latches the selected parent and starts its child selection at zero", () => {
-  const { changes, menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childEntryThresholdM + 0.01);
+  const { changes, menu, state, view } = createHarness(
+    RADIAL_MENU_SETTINGS.childEntryThresholdM + 0.01,
+  );
   view.parentSelection = 2;
   menu.update({}, state);
   assert.equal(state.radialMenuPhase, RadialMenuPhase.child);
@@ -20,7 +23,9 @@ test("entering layer 2 latches the selected parent and starts its child selectio
 });
 
 test("A release in layer 1 returns no selection and closes without a preview command", () => {
-  const { changes, menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childEntryThresholdM - 0.01);
+  const { changes, menu, state, view } = createHarness(
+    RADIAL_MENU_SETTINGS.childEntryThresholdM - 0.01,
+  );
   view.parentSelection = 3;
   assert.equal(menu.confirm({}, state), null);
   assert.equal(state.radialMenuOpen, false);
@@ -38,14 +43,16 @@ test("A release in layer 2 returns only the highlighted leaf from the latched ca
   state.radialMenuChildSelectedIndex = 1;
   view.childSelection = 1;
   const selected = menu.confirm({}, state);
-  assert.equal(selected.id, "chord-emajor");
+  assert.equal(selected.id, "jog-group-2");
   assert.equal(selected.action, "formation");
   assert.equal(state.radialMenuOpen, false);
-  assert.deepEqual(changes, [{ type: "confirm", selectedId: "chord-emajor" }]);
+  assert.deepEqual(changes, [{ type: "confirm", selectedId: "jog-group-2" }]);
 });
 
 test("pushing below the exit threshold returns to layer 1 without confirming a category", () => {
-  const { changes, menu, state, view } = createHarness(RADIAL_MENU_SETTINGS.childExitThresholdM - 0.001);
+  const { changes, menu, state, view } = createHarness(
+    RADIAL_MENU_SETTINGS.childExitThresholdM - 0.001,
+  );
   state.radialMenuPhase = RadialMenuPhase.child;
   state.radialMenuLatchedParentIndex = 1;
   state.radialMenuChildSelectedIndex = 2;
@@ -83,7 +90,7 @@ test("open, cancel, and programmatic close each emit their actual state change",
 });
 
 function createHarness(pullDistance) {
-  const catalog = new SpawnCatalog();
+  const catalog = createCompositionSetup().catalog;
   const changes = [];
   const view = {
     pullDistance,
@@ -91,16 +98,27 @@ function createHarness(pullDistance) {
     childSelection: 0,
     closed: false,
     create: () => ({}),
-    open(_controller, state) { state.radialMenuOpen = true; },
-    cancel(_controller, state) { this.close(_controller, state); },
-    close(_controller, state) { state.radialMenuOpen = false; this.closed = true; },
+    open(_controller, state) {
+      state.radialMenuOpen = true;
+    },
+    cancel(_controller, state) {
+      this.close(_controller, state);
+    },
+    close(_controller, state) {
+      state.radialMenuOpen = false;
+      this.closed = true;
+    },
     updatePullDistance: () => view.pullDistance,
-    updateParentSelection(_controller, state) { state.radialMenuParentSelectedIndex = this.parentSelection; },
+    updateParentSelection(_controller, state) {
+      state.radialMenuParentSelectedIndex = this.parentSelection;
+    },
     beginChildLayer(_controller, state) {
       state.radialMenuLatchedParentIndex = state.radialMenuParentSelectedIndex;
       state.radialMenuChildSelectedIndex = 0;
     },
-    updateChildSelection(_controller, state) { state.radialMenuChildSelectedIndex = this.childSelection; },
+    updateChildSelection(_controller, state) {
+      state.radialMenuChildSelectedIndex = this.childSelection;
+    },
     returnToParentLayer(_controller, state) {
       this.returnedParentIndex = state.radialMenuLatchedParentIndex;
       state.radialMenuParentSelectedIndex = state.radialMenuLatchedParentIndex;

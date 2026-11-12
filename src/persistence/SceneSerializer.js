@@ -28,10 +28,7 @@ export class SceneSerializer {
   }
 
   serializeInstrument(instrument) {
-    const serialized = omitTransientLooperState(
-      instrument.serialize?.() || {},
-      instrument.kind,
-    );
+    const serialized = omitTransientLooperState(instrument.serialize?.() || {}, instrument.kind);
     const scaleOverride = Number.isFinite(instrument.baseScale) ? instrument.baseScale : null;
     return {
       ...serialized,
@@ -46,10 +43,17 @@ export class SceneSerializer {
     const connections = [];
     for (const looper of this.registry.getByKind("looper")) {
       if (!savedIds.has(looper.id)) continue;
-      for (const track of looper.getTracks?.() || looper.tracks || looper.looperData?.tracks || []) {
+      for (const track of looper.getTracks?.() ||
+        looper.tracks ||
+        looper.looperData?.tracks ||
+        []) {
         const honkId = track.connectedHonkId;
         if (honkId && savedIds.has(honkId)) {
-          connections.push({ looperId: looper.id, trackId: track.trackId, honkId });
+          connections.push({
+            looperId: looper.id,
+            trackId: track.trackId,
+            honkId,
+          });
         }
       }
     }
@@ -69,9 +73,8 @@ export function serializeTransform(root, scaleOverride = null) {
 }
 
 function assertPlainScene(scene) {
-  const serialized = JSON.stringify(scene);
-  if (!serialized) throw new TypeError("Scene did not serialize to JSON");
-  return JSON.parse(serialized);
+  // Entity serializers own plain-data output; clone once to detach timelines.
+  return structuredClone(scene);
 }
 
 const TRANSIENT_LOOPER_FIELDS = Object.freeze([

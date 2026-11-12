@@ -1,0 +1,624 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { SongRecordingSession } from "../../src/performance/SongRecordingSession.js";
+import { definition } from "../../src/compositions/songs/jog/definition.js";
+import { JogMelodyGuidance } from "../../src/performance/JogMelodyGuidance.js";
+
+const deferred = () => {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+};
+const tick = () => new Promise((resolve) => setImmediate(resolve));
+function fixture(options = {}) {
+  const log = [],
+    saved = [];
+  let time = 1000,
+    paired = true,
+    tracking = true,
+    readyGate = null,
+    saveGate = null;
+  const recorder = new EventTarget();
+  Object.assign(recorder, {
+    state: "idle",
+    connected: true,
+    active: false,
+    pendingFinalization: false,
+    audio: {
+      context: { currentTime: 1, state: "running" },
+      mapping: { sceneTime: 0, contextTime: 1 },
+      countIn(contextTime, beatSeconds) {
+        this.countInTiming = { contextTime, beatSeconds };
+        log.push("count-in");
+      },
+      cancelCues() {
+        log.push("cancel-cues");
+      },
+    },
+    claim(owner) {
+      this.owner = owner;
+    },
+    release() {
+      this.owner = null;
+    },
+    async readiness() {
+      log.push("receiver-check");
+      return { paired };
+    },
+    async startReady(options) {
+      this.startOptions = options;
+      log.push("capture-start");
+      this.state = "preparing";
+      this.pendingFinalization = true;
+      this.metadata = {
+        id: `take-${options.performance.attempt}`,
+        performance: structuredClone(options.performance),
+      };
+      if (readyGate) await readyGate.promise;
+      this.active = true;
+      this.state = "recording";
+      log.push("audio-ready");
+      return this.metadata;
+    },
+    markSync(owner) {
+      assert.equal(owner, this.owner);
+      log.push("sync");
+      return { contextTime: 1.03, endContextTime: 1.33, sceneTime: 0.03 };
+    },
+    updatePerformance(patch, kind) {
+      Object.assign(this.metadata?.performance || {}, patch);
+      log.push("event:" + kind);
+    },
+    async stop() {
+      this.state = "stopping";
+    },
+    async stopAndFinalize(options) {
+      log.push("stop");
+      this.state = "stopping";
+      this.active = false;
+      Object.assign(this.metadata.performance, {
+        completionAction: options.completionAction,
+      });
+      await this.waitForFinalization();
+    },
+    async waitForFinalization() {
+      if (saveGate) await saveGate.promise;
+      saved.push(structuredClone(this.metadata));
+      this.pendingFinalization = false;
+      this.state = "complete";
+      this.saved = { ...this.metadata, complete: true };
+      log.push("finalized");
+    },
+  });
+  const ensemble = {
+    prepared: false,
+    prepare(options) {
+      this.prepareOptions = options;
+      this.prepared = true;
+      log.push("prepared");
+    },
+    validate() {
+      assert.ok(this.prepared);
+    },
+    cancel() {
+      log.push("cancel-music");
+    },
+    schedule(anchor) {
+      log.push("backing-armed");
+      this.anchor = anchor;
+    },
+    play() {
+      log.push("play");
+    },
+    update() {},
+  };
+  const mode = new SongRecordingSession({
+    composition: definition,
+    createGuidance: (anchor) => new JogMelodyGuidance(anchor),
+    recorder,
+    ensemble,
+    ensureAudio: async () => log.push("ensure-audio"),
+    trackingReady: () => tracking,
+    onExit: async () => log.push("restore-scene"),
+    now: () => time,
+    uuid: () => "session-1",
+    ...options,
+  });
+  return {
+    mode,
+    recorder,
+    ensemble,
+    log,
+    saved,
+    setTime: (t) => {
+      time = t;
+    },
+    setPaired: (v) => {
+      paired = v;
+    },
+    setTracking: (v) => {
+      tracking = v;
+    },
+    blockReady: () => (readyGate = deferred()),
+    blockSave: () => (saveGate = deferred()),
+  };
+}
+
+function demoFixture() {
+  const demonstration = {
+    active: false,
+    frames: [],
+    start() {
+      this.active = true;
+    },
+    update(now, beat) {
+      this.frames.push({ now, beat });
+    },
+    stop() {
+      this.active = false;
+    },
+  };
+  return { ...fixture({ demonstration }), demonstration };
+}
+
+test("Demonstrate ends playback but keeps capturing until the player stops", async () => {
+  const f = demoFixture();
+  await f.mode.action("prepare");
+  assert.ok(f.mode.model().actions.some((action) => action.id === "jog-record-demonstrate"));
+  await f.mode.action("demonstrate");
+  assert.equal(f.recorder.startOptions.includeUI, false);
+  assert.equal(f.recorder.metadata.performance.playback, "demonstration");
+  assert.equal(f.demonstration.active, true);
+  assert.equal(f.mode.guidance(f.mode.anchor.countAt - 1), null);
+  assert.equal(f.mode.guidance(f.mode.anchor.countAt), f.mode.melodyGuide);
+  assert.equal(f.mode.guidance(f.mode.anchor.beatZero).mode, "demonstration");
+  const anchor = f.mode.anchor.beatZero;
+  f.mode.update(anchor);
+  assert.equal(f.mode.phase, "performing");
+  const end = anchor + 96 * f.mode.beatMs;
+  f.mode.update(end);
+  assert.equal(f.mode.phase, "performing");
+  assert.equal(f.mode.demonstrationFinished, true);
+  assert.equal(f.demonstration.active, false);
+  assert.equal(f.recorder.active, true);
+  assert.equal(f.saved.length, 0);
+  assert.equal(f.mode.transition, null);
+  assert.equal(f.recorder.metadata.performance.completionAction, null);
+  const frames = f.demonstration.frames.length,
+    cancels = f.log.filter((s) => s === "cancel-music").length;
+  for (let now = end + 1000; now <= end + 60000; now += 1000) f.mode.update(now);
+  assert.equal(
+    f.demonstration.frames.length,
+    frames,
+    "Finished music cannot restart while capturing the tail",
+  );
+  assert.equal(f.log.filter((s) => s === "cancel-music").length, cancels);
+  assert.equal(f.recorder.active, true);
+  assert.equal(f.saved.length, 0, "No automatic finalization, even a minute after the score");
+  const model = f.mode.model(end + 60000);
+  assert.match(model.transport, /Recording · Demonstration complete/);
+  assert.match(model.feedback, /Recording continues/);
+  assert.ok(model.actions.some((a) => a.id === "jog-record-stop" && !a.disabled));
+  await f.mode.action("stop");
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.saved[0].performance.completionAction, "stopped");
+  assert.match(f.mode.model().instruction, /Start your external phone video/);
+  assert.equal(f.mode.phase, "ready");
+  assert.equal(f.demonstration.active, false);
+  assert.equal(f.mode.guidance(anchor + 96 * f.mode.beatMs), null);
+  await f.mode.action("start");
+  assert.equal(f.mode.playback, "live");
+  assert.equal(f.mode.demonstrationFinished, false);
+  f.mode.update(f.mode.anchor.beatZero + 100 * f.mode.beatMs);
+  assert.equal(f.mode.phase, "performing", "Live takes keep manual completion");
+  assert.equal(f.mode.guidance(f.mode.anchor.beatZero).mode, "practice");
+  await f.mode.action("stop");
+});
+
+test("a finished demonstration can restart without losing its recording mode", async () => {
+  const f = demoFixture();
+  await f.mode.action("prepare");
+  await f.mode.action("demonstrate");
+  f.mode.update(f.mode.anchor.beatZero);
+  f.mode.update(f.mode.anchor.beatZero + 96 * f.mode.beatMs);
+  await f.mode.action("restart");
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.saved[0].performance.completionAction, "restarted");
+  assert.equal(f.mode.phase, "count-in");
+  assert.equal(f.mode.demonstrationFinished, false);
+  assert.equal(f.demonstration.active, true);
+  assert.equal(f.mode.guidance(f.mode.anchor.countAt).mode, "demonstration");
+  await f.mode.action("stop");
+});
+
+test("tracking loss still interrupts capture after the demonstration finishes", async () => {
+  const f = demoFixture();
+  await f.mode.action("prepare");
+  await f.mode.action("demonstrate");
+  f.mode.update(f.mode.anchor.beatZero);
+  const end = f.mode.anchor.beatZero + 96 * f.mode.beatMs;
+  f.mode.update(end);
+  f.setTracking(false);
+  f.mode.update(end + 1000);
+  await f.mode.transition;
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.saved[0].performance.completionAction, "interrupted");
+  assert.equal(f.recorder.active, false);
+});
+
+test("Demonstration restarts retain the mode and interruption releases playback before saving", async () => {
+  const f = demoFixture();
+  await f.mode.action("prepare");
+  await f.mode.action("demonstrate");
+  await f.mode.action("restart");
+  assert.equal(f.mode.attempt, 2);
+  assert.equal(f.saved[0].performance.completionAction, "restarted");
+  assert.equal(f.demonstration.active, true);
+  const saving = f.blockSave();
+  const interrupt = f.mode.interrupt("tracking-lost");
+  assert.equal(f.demonstration.active, false);
+  await tick();
+  assert.equal(f.mode.phase, "saving");
+  saving.resolve();
+  await interrupt;
+  assert.equal(f.saved[1].performance.completionAction, "interrupted");
+  assert.equal(f.saved[1].performance.playback, "demonstration");
+});
+
+test("Stopping a demonstration during capture readiness cannot launch music later", async () => {
+  const f = demoFixture();
+  await f.mode.action("prepare");
+  const gate = f.blockReady();
+  const starting = f.mode.action("demonstrate");
+  await tick();
+  assert.equal(f.demonstration.active, true);
+  const stopping = f.mode.action("stop");
+  assert.equal(f.demonstration.active, false);
+  gate.resolve();
+  await Promise.all([starting, stopping]);
+  assert.equal(f.mode.phase, "ready");
+  assert.equal(f.log.includes("backing-armed"), false);
+  assert.equal(f.saved.length, 1);
+});
+
+test("Kuch take metadata, count-in and restart retain the selected arrangement without changing old capture identity", async () => {
+  const { selectArrangement } =
+    await import("../../src/compositions/songs/kuch-to-hua-hai/index.js");
+  for (const id of ["honk-orchestra", "easier-bends"]) {
+    const module = await selectArrangement(id),
+      f = fixture({ composition: module.definition, createGuidance: module.createGuidance });
+    await f.mode.action("prepare");
+    await f.mode.action("start");
+    const before = f.recorder.metadata.performance,
+      guide = f.mode.guidance(f.mode.anchor.beatZero);
+    assert.equal(before.arrangementId, "honk-orchestra");
+    assert.equal(before.arrangementVersion, 6);
+    assert.equal(before.compositionVersion, 7);
+    assert.equal(before.compositionHash, module.definition.contentHash);
+    assert.equal(guide.step.events.length, 65);
+    assert.equal(guide.beatMs, 60000 / 92);
+    await selectArrangement(id === "original" ? "easier-bends" : "original");
+    await f.mode.action("restart");
+    assert.equal(f.recorder.metadata.performance.arrangementId, "honk-orchestra");
+    assert.equal(f.recorder.metadata.performance.compositionHash, before.compositionHash);
+    assert.equal(f.saved[0].performance.completionAction, "restarted");
+    assert.notEqual(f.recorder.metadata.id, f.saved[0].id);
+    await f.mode.action("stop");
+    await f.mode.action("exit");
+    assert.equal(f.recorder.owner, null);
+  }
+});
+
+test("Start waits for capture/audio readiness, then emits exactly one sync and shared count-in anchor", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  const ready = f.blockReady();
+  const starting = f.mode.action("start");
+  await tick();
+  await tick();
+  assert.equal(f.mode.phase, "starting");
+  assert.ok(!f.log.includes("sync"));
+  assert.ok(!f.log.includes("backing-armed"));
+  assert.equal(f.mode.guidance(), null);
+  ready.resolve();
+  await starting;
+  assert.equal(f.mode.phase, "count-in");
+  assert.deepEqual(
+    f.log.filter((s) =>
+      ["capture-start", "audio-ready", "sync", "count-in", "backing-armed"].includes(s),
+    ),
+    ["capture-start", "audio-ready", "sync", "count-in", "backing-armed"],
+  );
+  assert.equal(f.ensemble.anchor.beatZero - f.ensemble.anchor.countAt, 3000);
+  assert.equal(f.recorder.metadata.performance.groupId, "session-1");
+  // Advancing frames beyond the written melody must not stop recording.
+  for (let now = 1100; now < 80000; now += 100) {
+    f.setTime(now);
+    f.mode.update(now);
+  }
+  assert.equal(f.mode.phase, "performing");
+  assert.ok(f.recorder.active);
+  assert.match(f.mode.model().transport, /Recording · Melody complete/);
+});
+
+test("missing pairing, tracking and failed capture readiness never start music", async () => {
+  for (const failure of ["pair", "tracking", "audio"]) {
+    const f = fixture();
+    await f.mode.action("prepare");
+    if (failure === "pair") f.setPaired(false);
+    if (failure === "tracking") f.setTracking(false);
+    if (failure === "audio")
+      f.recorder.startReady = async () => {
+        throw new Error("PCM failed");
+      };
+    await f.mode.action("start");
+    assert.equal(f.mode.phase, "ready");
+    assert.ok(!f.log.includes("sync"));
+    assert.ok(!f.log.includes("backing-armed"));
+    assert.ok(!f.recorder.active);
+  }
+});
+
+for (const during of ["count-in", "performing"])
+  test(`restart during ${during} preserves old take and waits for finalization before creating the next`, async () => {
+    const f = fixture();
+    await f.mode.action("prepare");
+    await f.mode.action("start");
+    if (during === "performing")
+      for (let now = 1100; now < 4700; now += 100) {
+        f.setTime(now);
+        f.mode.update(now);
+      }
+    assert.equal(f.mode.phase, during);
+    const gate = f.blockSave();
+    const firstId = f.recorder.metadata.id;
+    const firstGuide = f.mode.guidance(f.mode.anchor.beatZero);
+    assert.equal(firstGuide.anchorMs, f.ensemble.anchor.beatZero);
+    const restart = f.mode.action("restart");
+    await tick();
+    const duplicate = f.mode.action("restart");
+    f.mode.action("start");
+    assert.equal(f.mode.phase, "saving");
+    assert.equal(f.recorder.metadata.id, firstId);
+    assert.equal(f.mode.attempt, 1);
+    assert.equal(f.mode.guidance(firstGuide.anchorMs), null);
+    f.setTime(10000);
+    gate.resolve();
+    await Promise.all([restart, duplicate]);
+    assert.equal(f.saved.length, 1);
+    assert.equal(f.saved[0].id, firstId);
+    assert.equal(f.saved[0].performance.completionAction, "restarted");
+    assert.equal(f.mode.attempt, 2);
+    assert.notEqual(f.recorder.metadata.id, firstId);
+    assert.equal(f.log.filter((s) => s === "sync").length, 2);
+    assert.ok(f.log.lastIndexOf("capture-start") > f.log.indexOf("finalized"));
+    const nextGuide = f.mode.guidance(f.mode.anchor.beatZero);
+    assert.notEqual(nextGuide, firstGuide);
+    assert.ok(nextGuide.anchorMs > firstGuide.anchorMs);
+    assert.equal(nextGuide.beatAt(f.mode.anchor.beatZero), 0);
+    assert.match(f.mode.model(f.mode.anchor.beatZero).transport, /S = C4/);
+  });
+
+test("Stop and Exit cancel pending cues and await saving before restoring the scene", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  await f.mode.action("start");
+  const gate = f.blockSave();
+  const exit = f.mode.action("exit");
+  await tick();
+  assert.equal(f.mode.phase, "saving");
+  assert.ok(!f.log.includes("restore-scene"));
+  assert.equal(f.mode.guidance(f.mode.anchor?.beatZero), null);
+  gate.resolve();
+  await exit;
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.saved[0].performance.completionAction, "stopped");
+  assert.ok(f.log.indexOf("restore-scene") > f.log.indexOf("finalized"));
+  assert.equal(f.recorder.owner, null);
+  const ready = fixture();
+  await ready.mode.action("prepare");
+  await ready.mode.action("exit");
+  assert.equal(ready.saved.length, 0);
+  assert.ok(!ready.log.includes("capture-start"));
+});
+
+test("melody cues wait through sync and invalidated anchors cannot guide a stopped or interrupted take", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  await f.mode.action("start");
+  const { countAt, beatZero } = f.mode.anchor;
+  assert.equal(f.mode.guidance(countAt - 1), null);
+  assert.equal(f.mode.guidance(countAt).anchorMs, beatZero);
+  assert.match(f.mode.model(countAt).transport, /4 · Prepare/);
+  const stopping = f.mode.action("stop");
+  await tick();
+  assert.equal(f.mode.guidance(beatZero), null);
+  await stopping;
+  await f.mode.action("start");
+  const interrupted = f.mode.interrupt("tracking-lost");
+  assert.equal(f.mode.guidance(f.mode.anchor?.beatZero), null);
+  await interrupted;
+});
+
+test("origin reset during readiness invalidates stale async completion and never resumes a count-in", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  const gate = f.blockReady();
+  const start = f.mode.action("start");
+  await tick();
+  f.mode.interrupt("reference-space-reset");
+  gate.resolve();
+  await start;
+  assert.ok(!f.log.includes("sync"));
+  assert.ok(!f.log.includes("backing-armed"));
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.saved[0].performance.completionAction, "interrupted");
+  assert.equal(f.mode.phase, "ready");
+});
+
+test("connection loss cancels music; failed finalization keeps ownership and recovery never auto-restarts", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  await f.mode.action("start");
+  const gate = f.blockSave();
+  f.recorder.connected = false;
+  f.recorder.dispatchEvent(new Event("change"));
+  await tick();
+  gate.reject(new Error("Receiver offline; saving pending"));
+  await f.mode.transition;
+  assert.equal(f.mode.phase, "save-pending");
+  assert.equal(f.mode.attempt, 1);
+  assert.equal(f.recorder.owner, f.mode);
+  assert.equal(f.recorder.pendingFinalization, true);
+  await f.mode.action("start");
+  assert.equal(f.mode.attempt, 1);
+  f.recorder.pendingFinalization = false;
+  f.recorder.saved = { complete: false };
+  f.recorder.dispatchEvent(new Event("change"));
+  assert.equal(f.mode.phase, "ready");
+  assert.equal(f.mode.attempt, 1);
+  assert.match(f.mode.feedback, /interruptions/);
+});
+
+test("desktop/radial controls use the owner and cannot duplicate sync", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  await f.mode.captureCommand("capture-toggle");
+  await f.mode.captureCommand("capture-sync");
+  assert.equal(f.log.filter((s) => s === "sync").length, 1);
+  await f.mode.captureCommand("capture-toggle");
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.mode.phase, "ready");
+});
+
+test("reference reset while a retry is saving prevents automatic continuation into a new origin", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  await f.mode.action("start");
+  const gate = f.blockSave();
+  const restart = f.mode.action("restart");
+  await tick();
+  f.mode.interrupt("reference-space-reset");
+  gate.resolve();
+  await restart;
+  assert.equal(f.mode.phase, "ready");
+  assert.equal(f.mode.attempt, 1);
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.log.filter((s) => s === "sync").length, 1);
+});
+
+test("20 serialized restarts retain one owner and unique attempts, with one sync per take", async () => {
+  const f = fixture();
+  await f.mode.action("prepare");
+  await f.mode.action("start");
+  for (let i = 0; i < 20; i++) {
+    await Promise.all([f.mode.action("restart"), f.mode.action("restart")]);
+    assert.equal(f.mode.attempt, i + 2);
+    assert.equal(f.recorder.owner, f.mode);
+  }
+  await f.mode.action("stop");
+  assert.equal(f.saved.length, 21);
+  assert.equal(new Set(f.saved.map((take) => take.id)).size, 21);
+  assert.equal(f.log.filter((e) => e === "sync").length, 21);
+  assert.ok(
+    f.saved.slice(0, -1).every((take) => take.performance.completionAction === "restarted"),
+  );
+});
+
+test("Tu Kisi Rail Si records a live-only take with the song identity and a four-beat count-in", async () => {
+  const { definition } = await import("../../src/compositions/songs/tu-kisi-rail-si/index.js");
+  const f = fixture({
+    composition: definition,
+    createGuidance: (anchor) => ({ anchorMs: anchor, model: () => ({}) }),
+  });
+  await f.mode.action("prepare");
+  assert.match(f.mode.model().feedback, /no Looper or backing track/);
+  assert.doesNotMatch(f.mode.model().feedback, /backing parts are automatic/);
+  await f.mode.action("start");
+  assert.ok(Math.abs(f.mode.anchor.beatZero - f.mode.anchor.countAt - 2000) < 1e-9);
+  assert.equal(f.recorder.metadata.performance.compositionId, definition.id);
+  assert.equal(f.recorder.metadata.performance.compositionHash, definition.contentHash);
+  f.setTime(f.mode.anchor.beatZero);
+  f.mode.update();
+  assert.equal(f.mode.phase, "performing");
+  await f.mode.action("stop");
+  assert.equal(f.saved.length, 1);
+  assert.equal(f.saved[0].performance.completionAction, "stopped");
+  await f.mode.action("exit");
+});
+
+test("a recording tempo override shares the count-in and backing clock", async () => {
+  const { definition: source } =
+    await import("../../src/compositions/songs/tu-kisi-rail-si/index.js");
+  const definition = { ...source, bpm: 80, recording: { ...source.recording, bpm: 115 } };
+  const f = fixture({
+    composition: definition,
+    createGuidance: (anchor) => ({ anchorMs: anchor, model: () => ({}) }),
+  });
+  assert.equal(definition.bpm, 80, "Tutorial default remains 80 BPM");
+  await f.mode.action("prepare");
+  assert.equal(f.ensemble.prepareOptions.bpm, 115);
+  assert.match(f.mode.model().progress, /115 BPM/);
+  await f.mode.action("start");
+  assert.equal(f.ensemble.anchor.bpm, 115);
+  assert.equal(f.recorder.audio.countInTiming.beatSeconds, 60 / 115);
+  assert.ok(Math.abs(f.mode.anchor.beatZero - f.mode.anchor.countAt - (4 * 60000) / 115) < 1e-9);
+  assert.equal(f.mode.guidance(f.mode.anchor.beatZero).anchorMs, f.ensemble.anchor.beatZero);
+  await f.mode.action("restart");
+  assert.equal(f.ensemble.anchor.bpm, 115);
+  assert.equal(f.saved[0].performance.bpm, 115);
+  assert.equal(f.recorder.metadata.performance.bpm, 115);
+  await f.mode.action("stop");
+  await f.mode.action("exit");
+});
+
+test("recording melody placement is prepared, enabled when idle and locked only during a take", async () => {
+  let frame;
+  const f = fixture({
+    prepareLayout: () => {
+      frame = {
+        enabled: true,
+        setEnabled(value) {
+          this.enabled = value;
+        },
+        update() {
+          this.updates = (this.updates || 0) + 1;
+        },
+      };
+      f.ensemble.layoutFrame = frame;
+    },
+  });
+  await f.mode.action("prepare");
+  assert.ok(frame.enabled);
+  assert.match(f.mode.model().feedback, /blue Melody frame/);
+  f.mode.update();
+  assert.equal(frame.updates, 1);
+  await f.mode.action("start");
+  assert.equal(frame.enabled, false);
+  await f.mode.action("stop");
+  assert.equal(frame.enabled, true);
+  await f.mode.action("start");
+  await f.mode.interrupt("audio suspended");
+  assert.equal(frame.enabled, true);
+  assert.match(f.mode.model().feedback, /audio suspended/);
+  await f.mode.action("start");
+  assert.equal(f.mode.interruption, null);
+  await f.mode.action("stop");
+});
+
+test("recording preparation reports progress while capture becomes ready", async () => {
+  const f = demoFixture();
+  await f.mode.action("prepare");
+  const gate = f.blockReady();
+  const pending = f.mode.action("demonstrate");
+  await tick();
+  f.recorder.message = "Preparing recording: 42%. The count-in starts when ready.";
+  assert.match(f.mode.model().feedback, /42%/);
+  gate.resolve();
+  await pending;
+  assert.equal(f.mode.phase, "count-in");
+  await f.mode.action("stop");
+});

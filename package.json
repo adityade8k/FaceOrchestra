@@ -3,11 +3,42 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  },
   "scripts": {
-    "dev": "python3 -m http.server 5173",
+    "postinstall": "node scripts/capture/setup.mjs",
+    "capture:setup": "node scripts/capture/setup.mjs",
+    "capture:serve": "node server/capture/server.mjs",
+    "capture:demo": "node scripts/capture/demo.mjs",
+    "test:capture:browser": "node tests/browser/run.mjs capture",
+    "test:jog:browser": "node tests/browser/run.mjs jog",
+    "test:capture:server": "node tests/browser/run.mjs capture-server",
+    "dev": "python3 scripts/serve-https.py --http",
     "dev:https": "python3 scripts/serve-https.py",
     "test": "node --test",
     "check": "node scripts/verify-imports.mjs",
-    "verify": "npm run check && npm test"
+    "verify": "npm run check && npm run lint && npm run format:check && npm test",
+    "test:tutorial:browser": "node tests/browser/run.mjs tutorial",
+    "test:basics:browser": "node tests/browser/run.mjs basics",
+    "test:kuch:browser": "node tests/browser/run.mjs compositions kuch-to-hua-hai",
+    "test:ports:browser": "TUTORIAL_TEST=ports node tests/browser/run.mjs tutorial",
+    "test:audit:browser": "node tests/browser/run.mjs audit",
+    "test:capture:long": "node tests/browser/run.mjs capture-long",
+    "test:guided:browser": "node tests/browser/run.mjs compositions",
+    "test:compositions:browser": "node tests/browser/run.mjs compositions",
+    "test:browser": "node tests/browser/run.mjs",
+    "lint": "eslint src capture server scripts tests eslint.config.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "three": "0.164.1",
+    "ws": "8.21.3"
+  },
+  "devDependencies": {
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
   }
 }

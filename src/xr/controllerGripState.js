@@ -1,8 +1,14 @@
-export function setControllerGripTarget(controllerState, transformTarget, source = transformTarget) {
+export function setControllerGripTarget(
+  controllerState,
+  transformTarget,
+  source = transformTarget,
+) {
   if (!controllerState) {
     return null;
   }
 
+  controllerState.shakeDetector?.reset();
+  controllerState.shakeDisconnectTargetState = null;
   controllerState.gripHeld = Boolean(transformTarget);
   controllerState.gripInstrumentState = transformTarget || null;
   controllerState.gripSourceInstrumentState = transformTarget

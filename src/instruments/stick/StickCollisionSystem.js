@@ -10,7 +10,11 @@ export class StickCollisionSystem {
     percussionResolver = getStickPercussionType,
     positionReader = readStickWorldPosition,
   } = {}) {
-    if (typeof getSticks !== "function" || typeof getTargets !== "function" || typeof collisionTester !== "function") {
+    if (
+      typeof getSticks !== "function" ||
+      typeof getTargets !== "function" ||
+      typeof collisionTester !== "function"
+    ) {
       throw new TypeError("StickCollisionSystem requires stick, target, and collision providers.");
     }
     this.getSticks = getSticks;
@@ -37,7 +41,9 @@ export class StickCollisionSystem {
       const velocity = this.updateStickVelocity(stick, timestamp);
       const touchingTargetIds = new Set();
       for (const target of targets) {
-        const result = normalizeCollisionResult(this.collisionTester({ stick, target, timestamp, ...context }));
+        const result = normalizeCollisionResult(
+          this.collisionTester({ stick, target, timestamp, ...context }),
+        );
         if (!result.touching) {
           continue;
         }
@@ -75,7 +81,8 @@ export class StickCollisionSystem {
     this.motionByStickId.set(stick.id, { position: [...position], timestamp });
     const elapsedSeconds = previous ? Math.max((timestamp - previous.timestamp) / 1000, 0.0001) : 0;
     return previous && elapsedSeconds > 0
-      ? Math.hypot(...position.map((value, index) => value - previous.position[index])) / elapsedSeconds
+      ? Math.hypot(...position.map((value, index) => value - previous.position[index])) /
+          elapsedSeconds
       : 0;
   }
 
@@ -132,20 +139,25 @@ export class ThreeStickCollisionAdapter {
     this.stickInverseMatrix.copy(collider.matrixWorld).invert();
     let touched = false;
     root.traverse((object) => {
-      if (touched || !isPercussionMesh(object)) return;
+      if (touched || !isStickPercussionMesh(object)) return;
       this.targetBounds.setFromObject(object);
       if (
         this.targetBounds.isEmpty() ||
         !this.stickBounds.intersectsBox(this.targetBounds) ||
         !this.isNearUser(this.targetBounds, userPosition)
-      ) return;
+      )
+        return;
       touched = this.intersectsMeshTriangles(object);
     });
     return touched;
   }
 
   isNearUser(bounds, userPosition) {
-    return !userPosition || !(this.maxUserDistance > 0) || bounds.distanceToPoint(userPosition) <= this.maxUserDistance;
+    return (
+      !userPosition ||
+      !(this.maxUserDistance > 0) ||
+      bounds.distanceToPoint(userPosition) <= this.maxUserDistance
+    );
   }
 
   intersectsMeshTriangles(mesh) {
@@ -155,9 +167,21 @@ export class ThreeStickCollisionAdapter {
     const index = mesh.geometry.index;
     const triangleCount = Math.floor((index?.count ?? position.count) / 3);
     for (let triangleIndex = 0; triangleIndex < triangleCount; triangleIndex += 1) {
-      this.setTriangleVertex(mesh, index ? index.getX(triangleIndex * 3) : triangleIndex * 3, this.triangle.a);
-      this.setTriangleVertex(mesh, index ? index.getX(triangleIndex * 3 + 1) : triangleIndex * 3 + 1, this.triangle.b);
-      this.setTriangleVertex(mesh, index ? index.getX(triangleIndex * 3 + 2) : triangleIndex * 3 + 2, this.triangle.c);
+      this.setTriangleVertex(
+        mesh,
+        index ? index.getX(triangleIndex * 3) : triangleIndex * 3,
+        this.triangle.a,
+      );
+      this.setTriangleVertex(
+        mesh,
+        index ? index.getX(triangleIndex * 3 + 1) : triangleIndex * 3 + 1,
+        this.triangle.b,
+      );
+      this.setTriangleVertex(
+        mesh,
+        index ? index.getX(triangleIndex * 3 + 2) : triangleIndex * 3 + 2,
+        this.triangle.c,
+      );
       if (this.stickLocalBounds.intersectsTriangle(this.triangle)) return true;
     }
     return false;
@@ -171,14 +195,17 @@ export class ThreeStickCollisionAdapter {
 }
 
 function normalizeCollisionResult(result) {
-  return typeof result === "boolean" ? { touching: result } : { touching: Boolean(result?.touching), ...result };
+  return typeof result === "boolean"
+    ? { touching: result }
+    : { touching: Boolean(result?.touching), ...result };
 }
 
 function readStickWorldPosition(stick) {
   const root = stick?.root;
   if (!root) return null;
   root.updateWorldMatrix?.(true, false);
-  if (root.position?.clone && root.getWorldPosition) return root.getWorldPosition(root.position.clone()).toArray();
+  if (root.position?.clone && root.getWorldPosition)
+    return root.getWorldPosition(root.position.clone()).toArray();
   if (typeof root.position?.toArray === "function") return root.position.toArray();
   return [root.position?.x, root.position?.y, root.position?.z].every(Number.isFinite)
     ? [root.position.x, root.position.y, root.position.z]
@@ -187,23 +214,41 @@ function readStickWorldPosition(stick) {
 
 function isStrikeTarget(target) {
   return Boolean(
-    target?.id && !target.disposed && target.visible !== false &&
-    (target.kind === INSTRUMENT_KINDS.honk || target.kind === INSTRUMENT_KINDS.looper),
+    target?.id &&
+    !target.disposed &&
+    target.visible !== false &&
+    (target.kind === INSTRUMENT_KINDS.honk ||
+      target.kind === INSTRUMENT_KINDS.looper ||
+      target.kind === INSTRUMENT_KINDS.metronome),
   );
 }
 
-function isPercussionMesh(object) {
+export function isStickPercussionMesh(object) {
   if (!object?.isMesh || object.visible === false) return false;
+  const isAuthoredBodyMesh = isAuthoredBodyGripMesh(object);
   if (
-    object.userData?.interactionTarget || object.userData?.isHitTarget || object.userData?.isNoteLabel ||
-    object.userData?.isStickStrikeCollider || object.name?.startsWith("HIT_") || object.name?.startsWith("DEBUG_")
-  ) return false;
+    (!isAuthoredBodyMesh && (object.userData?.interactionTarget || object.userData?.isHitTarget)) ||
+    object.userData?.isNoteLabel ||
+    object.userData?.isStickStrikeCollider ||
+    object.name?.startsWith("HIT_") ||
+    object.name?.startsWith("DEBUG_")
+  )
+    return false;
   let parent = object.parent;
   while (parent) {
-    if (parent.userData?.interactionTarget || parent.userData?.isHitTarget || parent.userData?.isNoteLabel) return false;
+    if (
+      (!isAuthoredBodyGripMesh(parent) &&
+        (parent.userData?.interactionTarget || parent.userData?.isHitTarget)) ||
+      parent.userData?.isNoteLabel
+    )
+      return false;
     parent = parent.parent;
   }
   return true;
+}
+
+function isAuthoredBodyGripMesh(object) {
+  return Boolean(object?.userData?.isBodyGripTarget && object.userData.usesVisibleMeshForGrip);
 }
 
 function performanceNow() {

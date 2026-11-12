@@ -1,0 +1,72 @@
+{
+  "virag-2-jog-study": {
+    "bpm": "48449a14a4ff7d79bb7a1b6f3d488eba397c36ef25634c111b49baf362511afc",
+    "sourceBpm": null,
+    "practiceBpm": "48449a14a4ff7d79bb7a1b6f3d488eba397c36ef25634c111b49baf362511afc",
+    "maxBpm": "6af1f692e9496c6d0b668316eccb93276ae6b6774fa728aac31ff40a38318760",
+    "pitchBendRange": null,
+    "score": "e796a359392a122ae61f49da195a810389a57685fd1090280e92cfa0890e40f1",
+    "backing": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "liveEvents": "0dc2aeb54c2b42cdf4b368c79eb6340665cae9d3d6bb1bea8349f2b51013047c",
+    "recipes": "f200ee1d301ec99138e4ff99fb9fd9109a9b13186bf826765d82618e6982ef1b",
+    "lessons": "0daf769e8319a59a8ecf95f29650a55d28a0dfc2de33414388b0353699c83298",
+    "recording": "3bf2d340410a2a728097fb0cc3348396dc69b4b31880432e5fcae0df52258ee4",
+    "requirements": null
+  },
+  "kuch-to-hua-hai": {
+    "bpm": "8241649609f88ccd2a0a5b233a07a538ec313ff6adf695aa44a969dbca39f67d",
+    "sourceBpm": "8241649609f88ccd2a0a5b233a07a538ec313ff6adf695aa44a969dbca39f67d",
+    "practiceBpm": "8241649609f88ccd2a0a5b233a07a538ec313ff6adf695aa44a969dbca39f67d",
+    "maxBpm": "8241649609f88ccd2a0a5b233a07a538ec313ff6adf695aa44a969dbca39f67d",
+    "pitchBendRange": "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d",
+    "score": "786e8d1a8c9b6fce0d100bac84eaa4bd0ad2bc0e0a07fc6e6c138e0201522ade",
+    "backing": "869d2b10df72203024fc083d38230aad7197d185a2a53fc48f11d8851341fe47",
+    "liveEvents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "recipes": "f63ebe494c1ff32a55dc8188c6775835f4756e8b361d1c6cb3e8f745d63266b3",
+    "lessons": "1d71c4abe43bb18388c1e7949bd89c08f57557aa69194a33156fdf2170b8ff8e",
+    "recording": "94034a8c5547b625d312514ba6a21f93bed35ee6c941333b55f756bc599b7de9",
+    "requirements": "2b701da2f9488f7961a3d99debd80b5059c90ad2ef595efeb978c0896ed540a7"
+  },
+  "rishte-naate": {
+    "bpm": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+    "sourceBpm": "28dae7c8bde2f3ca608f86d0e16a214dee74c74bee011cdfdd46bc04b655bc14",
+    "practiceBpm": "f369cb89fc627e668987007d121ed1eacdc01db9e28f8bb26f358b7d8c4f08ac",
+    "maxBpm": "28dae7c8bde2f3ca608f86d0e16a214dee74c74bee011cdfdd46bc04b655bc14",
+    "pitchBendRange": null,
+    "score": "3316a357f2eec78d749124edd0f8ccab6f88c8f4cac65245111445ccf4c1e737",
+    "backing": "e6229468684c7625a3b5110ec93687d5b5bbad62d2da300efd8d3c5446d7664b",
+    "liveEvents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "recipes": "e88acaf11dbd14dcf30d2e35d68582cd485c3be28d46eabc9788877e054549ed",
+    "lessons": "3db7a18258ece1dfb6b89e34eb259e53fa9f742647f5fffa15efbdf54e113f87",
+    "recording": "3bf2d340410a2a728097fb0cc3348396dc69b4b31880432e5fcae0df52258ee4",
+    "requirements": "c74d960b9f7b9636343ce57de50754fd237c3d7855185eb460022981c9e33f7e"
+  },
+  "tu-kisi-rail-si": {
+    "bpm": "2abaca4911e68fa9bfbf3482ee797fd5b9045b841fdff7253557c5fe15de6477",
+    "sourceBpm": "2abaca4911e68fa9bfbf3482ee797fd5b9045b841fdff7253557c5fe15de6477",
+    "practiceBpm": "39fa9ec190eee7b6f4dff1100d6343e10918d044c75eac8f9e9a2596173f80c9",
+    "maxBpm": null,
+    "pitchBendRange": null,
+    "score": "571e12f0f39e82be9d2f1187096772cbb4eb5ad6c2e2d101baca1e96152fdeeb",
+    "backing": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "liveEvents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "recipes": "6c845c4ab126b4e62b77dcf79fc1fc58042199a7fbf54062f4244cc453b6d7e4",
+    "lessons": "d96a6a5f5437b53ff51313fcc1e37077d7379574e66885f8fcd7cd53df025b52",
+    "recording": "2d69a19afa967930c9e82f3ba744894cfebe247a65289340fd28bce1fb0d2808",
+    "requirements": "e674ffa2e38b3609b7a416d33e539dfdb0f53c11bfcc2e2bbd67f350e2a7cd8d"
+  },
+  "nazariya-honk-bends": {
+    "bpm": "ff5a1ae012afa5d4c889c50ad427aaf545d31a4fac04ffc1c4d03d403ba4250a",
+    "sourceBpm": "ff5a1ae012afa5d4c889c50ad427aaf545d31a4fac04ffc1c4d03d403ba4250a",
+    "practiceBpm": "ff5a1ae012afa5d4c889c50ad427aaf545d31a4fac04ffc1c4d03d403ba4250a",
+    "maxBpm": "ff5a1ae012afa5d4c889c50ad427aaf545d31a4fac04ffc1c4d03d403ba4250a",
+    "pitchBendRange": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
+    "score": "0d1e30c5dcb113ec3999c2abd75f45b493dfeb5ee42be142937b86e8b8b551f9",
+    "backing": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "liveEvents": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "recipes": "dd42a27450e6f579f02f6312010b3272373677039424264522a25819d5615c3c",
+    "lessons": "6d3845a9020d5d34204eef51b34f25165c29dba0d958635d42280d0d82d2d89a",
+    "recording": "6cb74d3f4028c6a331d550ff0a439d516fad43fd1ea1589ce1fc8ffb689cf774",
+    "requirements": "4ced702bfc2a9cc275b2b9cb617a467293c6c74b5280afb9c80f1cd602069bca"
+  }
+}

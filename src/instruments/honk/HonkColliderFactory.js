@@ -1,11 +1,9 @@
-import { DEBUG_SHOW_COLLIDERS } from "../../config/debug.js";
+import { DEBUG_MODE } from "../../config/debug.js";
 import {
   BEND_ALIGNED_COLLIDER_GROUP_NAME,
   BEND_ALIGNED_INTERACTION_TYPES,
-  GRIP_TRANSFORM_COLLIDER_SETTINGS,
   HONK_CONNECTION_COLLIDER_SETTINGS,
   INTERACTION_COLLIDERS,
-  INTERACTION_TARGET_NAMES,
   INTERACTION_TYPES,
   MORPH_TARGET_COLLIDER_SETTINGS,
   MORPH_TARGET_NAMES,
@@ -15,10 +13,11 @@ import {
   HONK_CONNECTION_TARGET_NAME,
   LOOPER_DEBUG_COLORS,
 } from "../../config/looper.js";
+import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
 import { HONK_INTERACTION_ROLES } from "./HonkInstrument.js";
 
 export class HonkColliderFactory {
-  constructor({ THREE, showDebug = DEBUG_SHOW_COLLIDERS } = {}) {
+  constructor({ THREE, showDebug = DEBUG_MODE } = {}) {
     if (!THREE) {
       throw new TypeError("HonkColliderFactory requires the Three.js namespace.");
     }
@@ -40,19 +39,38 @@ export class HonkColliderFactory {
       const collider = this.createInteractionTarget(parent, bendAlignedGroup, config);
       targets[roleForInteraction(config)] = collider;
     }
+    targets[HONK_INTERACTION_ROLES.squeeze].raycastLockedBounds = this.createLockedBoundsRaycast(
+      root,
+      targets[HONK_INTERACTION_ROLES.squeeze],
+    );
     targets[HONK_INTERACTION_ROLES.looperConnector] = this.createLooperConnector(root);
     return { targets, bendAlignedGroup };
+  }
+
+  createLockedBoundsRaycast(root, target) {
+    // Measure before adding labels or controls. Keep the box in model space so
+    // placement, rotation and scale move the playable volume with the Honk.
+    const inverse = new this.THREE.Matrix4().copy(root.matrixWorld).invert();
+    const bounds = this.box.clone().applyMatrix4(inverse);
+    const ray = new this.THREE.Ray();
+    const point = new this.THREE.Vector3();
+    return (raycaster, intersections) => {
+      inverse.copy(root.matrixWorld).invert();
+      ray.copy(raycaster.ray).applyMatrix4(inverse);
+      if (!ray.intersectBox(bounds, point)) return;
+      point.applyMatrix4(root.matrixWorld);
+      const distance = raycaster.ray.origin.distanceTo(point);
+      if (distance < raycaster.near || distance > raycaster.far) return;
+      // Use the existing squeeze identity and voice owner, not the body mesh.
+      intersections.push({ distance, point: point.clone(), object: target });
+    };
   }
 
   measureModel(root) {
     this.box.makeEmpty();
     root.updateMatrixWorld?.(true);
     root.traverse((object) => {
-      if (
-        object.isMesh &&
-        !object.userData?.isHitTarget &&
-        !object.userData?.interactionTarget
-      ) {
+      if (object.isMesh && !object.userData?.isHitTarget && !object.userData?.interactionTarget) {
         this.box.expandByObject(object);
       }
     });
@@ -69,22 +87,10 @@ export class HonkColliderFactory {
   }
 
   createBodyTarget(root) {
-    const relativeScale = GRIP_TRANSFORM_COLLIDER_SETTINGS.relativeScale;
-    const target = new this.THREE.Mesh(
-      new this.THREE.BoxGeometry(
-        this.size.x * axisScale(relativeScale, "x"),
-        this.size.y * axisScale(relativeScale, "y"),
-        this.size.z * axisScale(relativeScale, "z"),
-      ),
-      this.createMaterial(0xffffff),
-    );
-    markOwnedGeometry(target.geometry);
-    target.name = INTERACTION_TARGET_NAMES.body;
-    target.position.copy(this.center);
-    target.renderOrder = GRIP_TRANSFORM_COLLIDER_SETTINGS.renderOrder;
-    markTarget(target, "honk.body", this.showDebug ? 0.24 : 0);
-    root.add(target);
-    return target;
+    const hitTargets = {};
+    return createBodyGripTarget(root, hitTargets, {
+      interactionRole: HONK_INTERACTION_ROLES.body,
+    });
   }
 
   createInteractionTarget(parent, bendAlignedGroup, config) {
@@ -132,7 +138,8 @@ export class HonkColliderFactory {
       target.getWorldScale(worldScale);
       return {
         center: worldCenter,
-        radius: radius * Math.max(Math.abs(worldScale.x), Math.abs(worldScale.y), Math.abs(worldScale.z)),
+        radius:
+          radius * Math.max(Math.abs(worldScale.x), Math.abs(worldScale.y), Math.abs(worldScale.z)),
       };
     };
     parent.add(target);
@@ -191,7 +198,9 @@ export class HonkColliderFactory {
 
 function roleForInteraction(config) {
   if (config.type === INTERACTION_TYPES.ear) {
-    return config.side === "left" ? HONK_INTERACTION_ROLES.leftEar : HONK_INTERACTION_ROLES.rightEar;
+    return config.side === "left"
+      ? HONK_INTERACTION_ROLES.leftEar
+      : HONK_INTERACTION_ROLES.rightEar;
   }
   if (config.type === INTERACTION_TYPES.nose) return HONK_INTERACTION_ROLES.nose;
   if (config.type === INTERACTION_TYPES.mouth) return HONK_INTERACTION_ROLES.mouth;
@@ -206,7 +215,9 @@ function getPositiveMorph(config) {
 
 function getNegativeMorph(config) {
   if (config.type !== INTERACTION_TYPES.ear) return null;
-  return config.side === "left" ? MORPH_TARGET_NAMES.ears.leftDown : MORPH_TARGET_NAMES.ears.rightDown;
+  return config.side === "left"
+    ? MORPH_TARGET_NAMES.ears.leftDown
+    : MORPH_TARGET_NAMES.ears.rightDown;
 }
 
 function markTarget(target, role, opacity) {
@@ -217,9 +228,4 @@ function markTarget(target, role, opacity) {
 
 function markOwnedGeometry(geometry) {
   geometry.userData.disposeWithOwner = true;
-}
-
-function axisScale(scale, axis) {
-  if (Number.isFinite(scale)) return scale;
-  return Number.isFinite(scale?.[axis]) ? scale[axis] : 1;
 }

@@ -1,5 +1,9 @@
 export class TransformTargetResolver {
-  constructor({ instrumentRegistry, formationTransformResolver = null, profileResolver = null } = {}) {
+  constructor({
+    instrumentRegistry,
+    formationTransformResolver = null,
+    profileResolver = null,
+  } = {}) {
     this.instrumentRegistry = instrumentRegistry;
     this.formationTransformResolver = formationTransformResolver;
     this.profileResolver = profileResolver;

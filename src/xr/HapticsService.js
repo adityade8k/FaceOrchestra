@@ -5,7 +5,8 @@ export class HapticsService {
     try {
       const pulses = [];
       for (const actuator of gamepad.hapticActuators || []) {
-        if (typeof actuator?.pulse === "function") pulses.push(actuator.pulse(magnitude, durationMs));
+        if (typeof actuator?.pulse === "function")
+          pulses.push(actuator.pulse(magnitude, durationMs));
       }
       if (pulses.length) return Promise.all(pulses);
       if (typeof gamepad.vibrationActuator?.playEffect === "function") {

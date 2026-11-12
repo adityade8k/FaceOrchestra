@@ -2,6 +2,8 @@ export class HonkContactGraph {
   constructor() {
     this.adjacency = new Map();
     this.listeners = new Set();
+    this.revision = 0;
+    this.componentCache = new Map();
   }
 
   addHonk(honkId) {
@@ -79,10 +81,12 @@ export class HonkContactGraph {
     if (!this.adjacency.has(startId)) {
       return new Set();
     }
+    const cached = this.componentCache.get(startId);
+    if (cached) return new Set(cached);
     const component = new Set();
     const queue = [startId];
-    while (queue.length > 0) {
-      const honkId = queue.shift();
+    for (let index = 0; index < queue.length; index += 1) {
+      const honkId = queue[index];
       if (component.has(honkId)) {
         continue;
       }
@@ -93,7 +97,8 @@ export class HonkContactGraph {
         }
       }
     }
-    return component;
+    for (const id of component) this.componentCache.set(id, component);
+    return new Set(component);
   }
 
   getConnectedComponents({ minimumSize = 1 } = {}) {
@@ -141,6 +146,8 @@ export class HonkContactGraph {
   }
 
   emit(event) {
+    this.revision += 1;
+    this.componentCache.clear();
     for (const listener of this.listeners) {
       listener(event);
     }

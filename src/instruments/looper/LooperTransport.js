@@ -93,12 +93,9 @@ export class LooperTransport {
   finishRecording() {
     const previousState = this.state;
     if (!this.recording) {
-      return createResult(
-        LooperTransportAction.FINISH_RECORDING,
-        previousState,
-        this.state,
-        { accepted: false },
-      );
+      return createResult(LooperTransportAction.FINISH_RECORDING, previousState, this.state, {
+        accepted: false,
+      });
     }
     this.state = LooperTransportState.STOPPED;
     return createResult(LooperTransportAction.FINISH_RECORDING, previousState, this.state);

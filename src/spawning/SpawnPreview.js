@@ -1,8 +1,15 @@
 import * as THREE from "three";
+import { applyMetronomeSpawnOrientation } from "../instruments/metronome/metronomeSpawnOrientation.js";
 import { stepSpawnPreviewDistance } from "./spawnPreviewControls.js";
 
 export class SpawnPreview {
-  constructor({ controller, instruments = [], catalogEntry = null, distance = 1.5, spacing = 0.32 } = {}) {
+  constructor({
+    controller,
+    instruments = [],
+    catalogEntry = null,
+    distance = 1.5,
+    spacing = 0.32,
+  } = {}) {
     this.controller = controller;
     this.instruments = instruments;
     this.group = new THREE.Group();
@@ -22,6 +29,7 @@ export class SpawnPreview {
       if (!hasRecipeLayout) {
         instrument.root.position.set(firstOffset + index * spacing, 0, 0);
         instrument.root.rotation.set(0, 0, 0);
+        if (instrument.kind === "metronome") applyMetronomeSpawnOrientation(instrument.root);
       }
       instrument.pendingPlacement = true;
       instrument.root.userData.pendingPlacement = true;

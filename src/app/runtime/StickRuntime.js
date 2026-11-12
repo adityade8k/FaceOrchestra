@@ -65,7 +65,7 @@ export const StickRuntimeMethods = {
     if (!controllerState) return;
     const interaction = controllerState.activeTriggerInteraction;
     if (interaction?.type === "looperWire") {
-      this.disposeWireMesh(interaction.wireMesh);
+      this.looperConnections.disposeWireMesh(interaction.wireMesh);
       interaction.wireMesh = null;
     }
     if (interaction?.type === "holdSqueeze") {
@@ -85,9 +85,9 @@ export const StickRuntimeMethods = {
 
     this.clearControllerHover(controllerState);
     this.clearControllerTriggerInteraction(controllerState);
-    this.resetShakeDisconnectTracking(controllerState);
+    this.looperConnections.resetShakeDisconnectTracking(controllerState);
     this.gripTransformSystem.release(controller);
-    this.closeRadialMenu(controller);
+    this.spawn.closeRadialMenu(controller);
     this.audioSystem.ensureAudio();
 
     this.stickEquipmentSystem.equip(stick, controller);
@@ -102,8 +102,9 @@ export const StickRuntimeMethods = {
     const controllerState = this.controllerStates.get(controller);
     if (!controllerState) return;
     const controllerId = controller.userData.controllerId;
-    const stick = this.stickEquipmentSystem.getEquippedStick(controllerId)
-      || this.instrumentRegistry.get(controllerState.equippedStickId);
+    const stick =
+      this.stickEquipmentSystem.getEquippedStick(controllerId) ||
+      this.instrumentRegistry.get(controllerState.equippedStickId);
     if (stick?.equipped) this.stickEquipmentSystem.unequip(stick);
     controllerState.stickActive = false;
     controllerState.equippedStickId = stick?.id || controllerState.equippedStickId;
@@ -112,7 +113,9 @@ export const StickRuntimeMethods = {
 
   isControllerStickActive(controller) {
     const state = this.controllerStates.get(controller);
-    const stick = state?.equippedStickId ? this.instrumentRegistry.get(state.equippedStickId) : null;
+    const stick = state?.equippedStickId
+      ? this.instrumentRegistry.get(state.equippedStickId)
+      : null;
     return Boolean(state?.stickActive && stick?.equipped);
   },
 
@@ -126,7 +129,8 @@ export const StickRuntimeMethods = {
     if (now < (controllerState.raycastHapticCooldownUntilMs || 0)) return;
     const pulse = this.hapticsService.pulse(this.getControllerGamepad(controller), RAYCAST_HAPTICS);
     if (!pulse) return;
-    controllerState.raycastHapticCooldownUntilMs = now + Math.max(RAYCAST_HAPTICS.cooldownMs || 0, 0);
+    controllerState.raycastHapticCooldownUntilMs =
+      now + Math.max(RAYCAST_HAPTICS.cooldownMs || 0, 0);
     pulse.catch?.((error) => console.warn("Could not pulse raycast haptics:", error));
   },
 
@@ -134,9 +138,16 @@ export const StickRuntimeMethods = {
     return this.hapticsService.pulse(gamepad, { intensity, durationMs });
   },
 
-  playStickPercussion(percussionType, { volume = 1 } = {}) {
+  playStickPercussion(
+    percussionType,
+    { volume = 1, scheduledTime = undefined, looperState = null } = {},
+  ) {
     if (!percussionType) return;
-    const playing = this.audioSystem.triggerStickPercussion?.(percussionType, { volume });
+    const playing = this.audioSystem.triggerStickPercussion?.(percussionType, {
+      volume,
+      scheduledTime,
+      ownerId: looperState?.id || null,
+    });
     playing?.catch?.((error) => console.warn("Could not play stick percussion:", error));
   },
 
@@ -148,7 +159,8 @@ export const StickRuntimeMethods = {
       target.userData.isProceduralMorphTarget ||
       target.userData.isHonkConnectionTarget ||
       this.isLooperColliderTarget(target)
-    ) return true;
+    )
+      return true;
     const config = HONK_INTERACTION_PROFILE[target.name];
     return Boolean(config && target.name !== INTERACTION_TARGET_NAMES.body);
   },

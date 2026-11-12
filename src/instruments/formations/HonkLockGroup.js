@@ -120,7 +120,8 @@ export class HonkLockGroup {
     for (const memberId of this.memberIds) {
       const member = this.resolveInstrument(memberId);
       if (!member || !Object.prototype.hasOwnProperty.call(member, "baseScale")) continue;
-      const memberScale = member.getScale?.() ?? averageScale(this.transformAdapter.captureWorld(member).scale);
+      const memberScale =
+        member.getScale?.() ?? averageScale(this.transformAdapter.captureWorld(member).scale);
       if (Number.isFinite(memberScale)) member.baseScale = memberScale;
     }
   }
@@ -131,13 +132,19 @@ export class HonkLockGroup {
       memberIds: this.getMemberIds(),
       anchorId: this.anchorId,
       memberLocalTransforms: Object.fromEntries(
-        [...this.memberLocalTransforms].map(([memberId, transform]) => [memberId, cloneTransform(transform)]),
+        [...this.memberLocalTransforms].map(([memberId, transform]) => [
+          memberId,
+          cloneTransform(transform),
+        ]),
       ),
     };
   }
 }
 
-export function createTransformAdapter({ captureWorld = readWorldTransform, applyWorld = writeWorldTransform } = {}) {
+export function createTransformAdapter({
+  captureWorld = readWorldTransform,
+  applyWorld = writeWorldTransform,
+} = {}) {
   return {
     captureWorld,
     applyWorld,
@@ -223,8 +230,10 @@ function readObjectWorldTransform(root) {
   const positionTarget = root.position?.clone?.();
   const quaternionTarget = root.quaternion?.clone?.();
   const scaleTarget = root.scale?.clone?.();
-  if (positionTarget && typeof root.getWorldPosition === "function") root.getWorldPosition(positionTarget);
-  if (quaternionTarget && typeof root.getWorldQuaternion === "function") root.getWorldQuaternion(quaternionTarget);
+  if (positionTarget && typeof root.getWorldPosition === "function")
+    root.getWorldPosition(positionTarget);
+  if (quaternionTarget && typeof root.getWorldQuaternion === "function")
+    root.getWorldQuaternion(quaternionTarget);
   if (scaleTarget && typeof root.getWorldScale === "function") root.getWorldScale(scaleTarget);
   return normalizeTransform({
     position: positionTarget || root.position,
@@ -238,7 +247,9 @@ function deserializeTransformMap(value) {
     return new Map([...value].map(([id, transform]) => [id, normalizeTransform(transform)]));
   }
   if (value && typeof value === "object") {
-    return new Map(Object.entries(value).map(([id, transform]) => [id, normalizeTransform(transform)]));
+    return new Map(
+      Object.entries(value).map(([id, transform]) => [id, normalizeTransform(transform)]),
+    );
   }
   return new Map();
 }
@@ -273,7 +284,10 @@ function writeTuple(target, values) {
   if (!target) return;
   if (typeof target.fromArray === "function") target.fromArray(values);
   else if (typeof target.set === "function") target.set(...values);
-  else ["x", "y", "z", "w"].slice(0, values.length).forEach((key, index) => { target[key] = values[index]; });
+  else
+    ["x", "y", "z", "w"].slice(0, values.length).forEach((key, index) => {
+      target[key] = values[index];
+    });
 }
 
 function quaternionInverse(quaternion) {

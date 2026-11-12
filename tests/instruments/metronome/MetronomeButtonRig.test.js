@@ -1,9 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  METRONOME_BUTTON_ACTIONS,
-  METRONOME_EYE_CONTROLS,
-} from "../../../src/config/metronome.js";
+import { METRONOME_BUTTON_ACTIONS, METRONOME_EYE_CONTROLS } from "../../../src/config/metronome.js";
 import { MetronomeButtonRig } from "../../../src/instruments/metronome/MetronomeButtonRig.js";
 
 test("left Play eye latches inward and returns exactly to its configured rest position", () => {

@@ -39,21 +39,13 @@ function createPlan(start, end, overrides = {}) {
 function assertFinitePoint(point, message = "point") {
   assert.equal(typeof point, "object", `${message} should be an object`);
   for (const axis of ["x", "y", "z"]) {
-    assert.equal(
-      Number.isFinite(point[axis]),
-      true,
-      `${message}.${axis} should be finite`,
-    );
+    assert.equal(Number.isFinite(point[axis]), true, `${message}.${axis} should be finite`);
   }
 }
 
 function assertPointApproximatelyEqual(actual, expected, message) {
   for (const axis of ["x", "y", "z"]) {
-    assert.equal(
-      Math.abs(actual[axis] - expected[axis]) < 1e-12,
-      true,
-      `${message}.${axis}`,
-    );
+    assert.equal(Math.abs(actual[axis] - expected[axis]) < 1e-12, true, `${message}.${axis}`);
   }
 }
 
@@ -202,12 +194,12 @@ test("wire path plans do not share mutable points with inputs or later plans", (
 });
 
 test("tube subdivisions are integer, bounded, and monotonic with path complexity", () => {
-  const byDistance = [0, 0.25, 1, 2, 20].map((distance) => (
-    selectWireTubularSegments(distance, 1, TEST_SETTINGS)
-  ));
-  const bySpanCount = [0, 1, 2, 4, 20].map((spanCount) => (
-    selectWireTubularSegments(1, spanCount, TEST_SETTINGS)
-  ));
+  const byDistance = [0, 0.25, 1, 2, 20].map((distance) =>
+    selectWireTubularSegments(distance, 1, TEST_SETTINGS),
+  );
+  const bySpanCount = [0, 1, 2, 4, 20].map((spanCount) =>
+    selectWireTubularSegments(1, spanCount, TEST_SETTINGS),
+  );
 
   for (const count of [...byDistance, ...bySpanCount]) {
     assert.equal(Number.isInteger(count), true);

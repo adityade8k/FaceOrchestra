@@ -14,7 +14,9 @@ export class MetronomePendulumRig {
     this.swingRadians = degreesToRadians(Math.abs(finite(settings.swingDegrees, 0)));
 
     if (!this.node) {
-      console.warn(`Metronome pendulum node "${settings.nodeName}" was not found; animation disabled.`);
+      console.warn(
+        `Metronome pendulum node "${settings.nodeName}" was not found; animation disabled.`,
+      );
       return;
     }
 
@@ -24,7 +26,9 @@ export class MetronomePendulumRig {
       settings.modelLocalAxis.z,
     );
     if (this.axis.lengthSq() < 1e-12) {
-      console.warn(`Metronome pendulum "${settings.nodeName}" has a zero-length model-local axis; animation disabled.`);
+      console.warn(
+        `Metronome pendulum "${settings.nodeName}" has a zero-length model-local axis; animation disabled.`,
+      );
       this.node = null;
       this.axis = null;
       return;
@@ -83,12 +87,7 @@ export class MetronomePendulumRig {
   }
 }
 
-export function getMetronomePendulumAngle({
-  nowMs,
-  beatOriginMs,
-  bpm,
-  swingRadians,
-} = {}) {
+export function getMetronomePendulumAngle({ nowMs, beatOriginMs, bpm, swingRadians } = {}) {
   if (
     !Number.isFinite(nowMs) ||
     !Number.isFinite(beatOriginMs) ||
@@ -106,7 +105,7 @@ export function getMetronomePendulumAngle({
 }
 
 function degreesToRadians(value) {
-  return value * Math.PI / 180;
+  return (value * Math.PI) / 180;
 }
 
 function finite(value, fallback) {

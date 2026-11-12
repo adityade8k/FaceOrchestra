@@ -2,28 +2,59 @@ import { FORMATION_SPAWN_SETTINGS } from "../../config/formations.js";
 
 export const HONK_TUNING_SETS = Object.freeze({
   cMajorScale: Object.freeze([
-    note("C", -5), note("D", -3), note("E", -1), note("F", 0),
-    note("G", 2), note("A", 4), note("B", 6), note("C", 7),
+    note("C", -5),
+    note("D", -3),
+    note("E", -1),
+    note("F", 0),
+    note("G", 2),
+    note("A", 4),
+    note("B", 6),
+    note("C", 7),
   ]),
   fNaturalMinorScale: Object.freeze([
-    note("F", 0), note("G", 2), note("Ab", 3), note("Bb", 5),
-    note("C", 7), note("Db", -4, 1), note("Eb", -2, 1), note("F", 0, 1),
+    note("F", 0),
+    note("G", 2),
+    note("Ab", 3),
+    note("Bb", 5),
+    note("C", 7),
+    note("Db", -4, 1),
+    note("Eb", -2, 1),
+    note("F", 0, 1),
   ]),
   fSharpNaturalMinorScale: Object.freeze([
-    note("F#", 1), note("G#", 3), note("A", 4), note("B", 6),
-    note("C#", -4, 1), note("D", -3, 1), note("E", -1, 1), note("F#", 1, 1),
+    note("F#", 1),
+    note("G#", 3),
+    note("A", 4),
+    note("B", 6),
+    note("C#", -4, 1),
+    note("D", -3, 1),
+    note("E", -1, 1),
+    note("F#", 1, 1),
   ]),
   aMinorChord: Object.freeze([note("A", 4), note("C", -5), note("E", -1, 1)]),
   eMajorChord: Object.freeze([note("E", -1, -1), note("B", 6), note("G#", 3)]),
   cMajorChord: Object.freeze([note("C", -5), note("E", -1), note("G", 2)]),
   dMinorChord: Object.freeze([note("F", 0), note("A", 4), note("D", -3, 1)]),
   quietPreset: Object.freeze([
-    note("G", 2, -1), note("C", -5), note("E", -1), note("D", -3, 1),
-    note("C", -5, 1), note("B", 6), note("A", 4), note("G#", 3),
+    note("G", 2, -1),
+    note("C", -5),
+    note("E", -1),
+    note("D", -3, 1),
+    note("C", -5, 1),
+    note("B", 6),
+    note("A", 4),
+    note("G#", 3),
   ]),
   melodyPreset: Object.freeze([
-    note("G#", 3), note("A", 4), note("B", 6), note("C", -5), note("D", -3),
-    note("E", -1), note("F", 0), note("E", -1, 2), note("E", -1),
+    note("G#", 3),
+    note("A", 4),
+    note("B", 6),
+    note("C", -5),
+    note("D", -3),
+    note("E", -1),
+    note("F", 0),
+    note("E", -1, 2),
+    note("E", -1),
   ]),
   bassPreset: Object.freeze([note("C", -5), note("E", -1), note("G", 2), note("A", 4)]),
   decorationPreset: Object.freeze([note("C", -5), note("D", -3), note("E", -1, 1)]),
@@ -47,7 +78,8 @@ const RECIPE_DEFINITIONS = [
 
 export const FORMATION_RECIPES = Object.freeze(
   RECIPE_DEFINITIONS.map(([id, label, tuningSetId, namePrefix]) =>
-    createFormationRecipe({ id, label, tuningSetId, namePrefix })),
+    createFormationRecipe({ id, label, tuningSetId, namePrefix }),
+  ),
 );
 
 export const FORMATION_RECIPE_BY_ID = new Map();
@@ -78,10 +110,14 @@ export function createFormationRecipe({
     label,
     tuningSetId,
     namePrefix,
-    members: Object.freeze(notes.map((tuning, index) => Object.freeze({
-      tuning,
-      position: Object.freeze([firstOffset + index * spacing, 0, 0]),
-    }))),
+    members: Object.freeze(
+      notes.map((tuning, index) =>
+        Object.freeze({
+          tuning,
+          position: Object.freeze([firstOffset + index * spacing, 0, 0]),
+        }),
+      ),
+    ),
   });
 }
 

@@ -20,7 +20,10 @@ export function choosePullAxisTowardViewer(openPosition, openQuaternion, viewerP
 export function projectPullDistance(openPosition, currentPosition, pullAxis) {
   const open = components(openPosition);
   const current = components(currentPosition);
-  return dot(current.map((value, index) => value - open[index]), components(pullAxis));
+  return dot(
+    current.map((value, index) => value - open[index]),
+    components(pullAxis),
+  );
 }
 
 export function projectControllerRelativePullDistance({
@@ -34,8 +37,10 @@ export function projectControllerRelativePullDistance({
   const currentController = components(currentControllerPosition);
   const openingViewer = components(openingViewerPosition);
   const currentViewer = components(currentViewerPosition);
-  const controllerOnlyDisplacement = currentController.map((value, index) =>
-    value - openingController[index] - (currentViewer[index] - openingViewer[index]));
+  const controllerOnlyDisplacement = currentController.map(
+    (value, index) =>
+      value - openingController[index] - (currentViewer[index] - openingViewer[index]),
+  );
   return dot(controllerOnlyDisplacement, components(pullAxis));
 }
 
@@ -50,10 +55,11 @@ export function lockPositionToOpeningPlane(openingPosition, currentPosition, pla
   return current.map((value, index) => value - normal[index] * depthDisplacement);
 }
 
-export function resolvePullPhase(phase, pullDistance, {
-  childEntryThresholdM,
-  childExitThresholdM,
-}) {
+export function resolvePullPhase(
+  phase,
+  pullDistance,
+  { childEntryThresholdM, childExitThresholdM },
+) {
   if (phase === RadialMenuPhase.parent && pullDistance >= childEntryThresholdM) {
     return RadialMenuPhase.child;
   }
@@ -66,10 +72,10 @@ export function resolvePullPhase(phase, pullDistance, {
 export function relativeZRoll(startQuaternion, currentQuaternion) {
   const start = components(startQuaternion, [0, 0, 0, 1]);
   const current = components(currentQuaternion, [0, 0, 0, 1]);
-  const relativeZ = start[3] * current[2] - start[0] * current[1] +
-    start[1] * current[0] - start[2] * current[3];
-  const relativeW = start[3] * current[3] + start[0] * current[0] +
-    start[1] * current[1] + start[2] * current[2];
+  const relativeZ =
+    start[3] * current[2] - start[0] * current[1] + start[1] * current[0] - start[2] * current[3];
+  const relativeW =
+    start[3] * current[3] + start[0] * current[0] + start[1] * current[1] + start[2] * current[2];
   return normalizeAngle(2 * Math.atan2(relativeZ, relativeW));
 }
 
@@ -81,15 +87,17 @@ export function getRadialLayerPresentation({
   settings,
 }) {
   const directedRoll = controllerRoll * settings.rollDirection;
-  const rollPastDeadzone = Math.abs(directedRoll) < settings.rollDeadzoneRadians
-    ? 0
-    : directedRoll - Math.sign(directedRoll) * settings.rollDeadzoneRadians;
+  const rollPastDeadzone =
+    Math.abs(directedRoll) < settings.rollDeadzoneRadians
+      ? 0
+      : directedRoll - Math.sign(directedRoll) * settings.rollDeadzoneRadians;
   const dialRotation = dialBaseRotation - rollPastDeadzone * settings.dialSpeed;
   const arc = optionCount > 0 ? (Math.PI * 2) / optionCount : Math.PI * 2;
   return {
     ringRotation: ringBaseRotation - controllerRoll,
     dialRotation,
-    selectedIndex: optionCount > 1 ? euclideanModulo(Math.round(dialRotation / arc), optionCount) : 0,
+    selectedIndex:
+      optionCount > 1 ? euclideanModulo(Math.round(dialRotation / arc), optionCount) : 0,
   };
 }
 

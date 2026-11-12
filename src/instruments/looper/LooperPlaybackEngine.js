@@ -86,7 +86,10 @@ export class LooperPlaybackEngine {
 
   updateFromClock(totalElapsedMs, timeline, handlers = {}) {
     if (!this.playing || this.paused || !timeline?.hasRecording()) return false;
-    const authoritativeElapsedMs = Math.max(Number.isFinite(totalElapsedMs) ? totalElapsedMs : 0, 0);
+    const authoritativeElapsedMs = Math.max(
+      Number.isFinite(totalElapsedMs) ? totalElapsedMs : 0,
+      0,
+    );
     if (!this.started) {
       this.elapsedMs = 0;
       this.emitSnapshots(timeline, handlers);
@@ -107,6 +110,19 @@ export class LooperPlaybackEngine {
 
   advanceBy(deltaMs, timeline, handlers = {}) {
     const durationMs = Math.max(timeline.durationMs, 1);
+    // Suspension is a phase jump, not a backlog of percussion attacks. Keep
+    // normal frame/loop-boundary semantics, but bound catch-up after a hiatus.
+    if (deltaMs > (handlers.maxCatchupMs ?? Infinity)) {
+      const wrapped = this.elapsedMs + deltaMs >= durationMs;
+      this.resetTracksAtLoop(handlers);
+      this.elapsedMs = (this.elapsedMs + deltaMs) % durationMs;
+      if (wrapped) handlers.onLoopBoundary?.();
+      handlers.onInterruption?.({
+        skippedMs: deltaMs,
+        phaseMs: this.elapsedMs,
+      });
+      return wrapped;
+    }
     let remainingMs = deltaMs;
     let nextElapsedMs = this.elapsedMs;
     let wrapped = false;
@@ -116,7 +132,7 @@ export class LooperPlaybackEngine {
       if (segmentMs <= 0) {
         nextElapsedMs = 0;
         wrapped = true;
-        this.releaseTracks(handlers);
+        this.resetTracksAtLoop(handlers);
         handlers.onLoopBoundary?.();
         this.emitDrumHitEventsAt(timeline, 0, handlers);
         continue;
@@ -128,7 +144,7 @@ export class LooperPlaybackEngine {
       if (segmentEndMs >= durationMs) {
         nextElapsedMs = 0;
         wrapped = true;
-        this.releaseTracks(handlers);
+        this.resetTracksAtLoop(handlers);
         handlers.onLoopBoundary?.();
         this.emitDrumHitEventsAt(timeline, 0, handlers);
       } else {
@@ -141,12 +157,14 @@ export class LooperPlaybackEngine {
   }
 
   emitDrumHitEventsAt(timeline, timeMs, handlers = {}) {
+    if (!handlers.onDrumHit) return;
     for (const { track, event } of timeline.getDrumHitEventsAt?.(timeMs) || []) {
       handlers.onDrumHit?.(track, event, timeMs);
     }
   }
 
   emitDrumHitEventsBetween(timeline, startMs, endMs, handlers = {}) {
+    if (!handlers.onDrumHit) return;
     for (const { track, event } of timeline.getDrumHitEventsBetween?.(startMs, endMs) || []) {
       handlers.onDrumHit?.(track, event, event.timeMs);
     }
@@ -185,6 +203,14 @@ export class LooperPlaybackEngine {
   releaseTracks(handlers = {}) {
     for (const trackId of this.trackSnapshots.keys()) {
       handlers.onReleaseTrack?.(trackId);
+    }
+    this.trackSnapshots.clear();
+  }
+
+  resetTracksAtLoop(handlers = {}) {
+    for (const trackId of this.trackSnapshots.keys()) {
+      if (handlers.onLoopTrackReset) handlers.onLoopTrackReset(trackId);
+      else handlers.onReleaseTrack?.(trackId);
     }
     this.trackSnapshots.clear();
   }

@@ -7,7 +7,8 @@ import { createScene } from "./createScene.js";
 export class SceneRuntime {
   constructor({ container, scene = createScene(), camera = null, renderer = null } = {}) {
     this.scene = scene;
-    this.camera = camera || new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 30);
+    this.camera =
+      camera || new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 30);
     this.camera.position.set(0, 1.55, 2.2);
     this.renderer = renderer || createRenderer({ container });
     this.fallbackEnvironment = createFallbackEnvironment();

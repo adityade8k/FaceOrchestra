@@ -1,3 +1,4 @@
+import { runtimeOwners } from "../../helpers/runtimeOwners.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -7,11 +8,7 @@ import {
 } from "../../../src/instruments/metronome/MetronomeConnectionManager.js";
 
 test("Metronome connections accept Looper nodes and Honk connectors by stable ID", () => {
-  const registry = createRegistry([
-    metronome("metro-a"),
-    looper("looper-a"),
-    honk("honk-a"),
-  ]);
+  const registry = createRegistry([metronome("metro-a"), looper("looper-a"), honk("honk-a")]);
   const manager = new MetronomeConnectionManager({ registry });
 
   const looperConnection = manager.connect({
@@ -60,8 +57,18 @@ test("Metronome connections reject missing, disposed, hidden, pending, unsupport
   for (const candidate of [
     { ...base, targetKind: "looper", targetId: "missing" },
     { ...base, targetKind: "looper", targetId: "hidden" },
-    { ...base, targetKind: "honk", targetId: "pending", targetPortId: HONK_METRONOME_TARGET_PORT_ID },
-    { ...base, targetKind: "honk", targetId: "disposed", targetPortId: HONK_METRONOME_TARGET_PORT_ID },
+    {
+      ...base,
+      targetKind: "honk",
+      targetId: "pending",
+      targetPortId: HONK_METRONOME_TARGET_PORT_ID,
+    },
+    {
+      ...base,
+      targetKind: "honk",
+      targetId: "disposed",
+      targetPortId: HONK_METRONOME_TARGET_PORT_ID,
+    },
     { ...base, targetKind: "stick", targetId: "stick-a" },
     { ...base, portId: "port-9", targetKind: "looper", targetId: "hidden" },
   ]) {
@@ -83,23 +90,32 @@ test("port replacement, incoming replacement, and identical reconnect are determ
     onConnectionRemoved: (connection, reason) => removed.push([connection, reason]),
   });
   const first = manager.connect({
-    metronomeId: "metro-a", portId: "port-0", targetKind: "looper",
-    targetId: "looper-a", targetPortId: "track-0",
+    metronomeId: "metro-a",
+    portId: "port-0",
+    targetKind: "looper",
+    targetId: "looper-a",
+    targetPortId: "track-0",
   });
 
   assert.strictEqual(manager.connect({ ...first }), first);
   assert.equal(removed.length, 0);
 
   manager.connect({
-    metronomeId: "metro-a", portId: "port-0", targetKind: "honk",
-    targetId: "honk-a", targetPortId: HONK_METRONOME_TARGET_PORT_ID,
+    metronomeId: "metro-a",
+    portId: "port-0",
+    targetKind: "honk",
+    targetId: "honk-a",
+    targetPortId: HONK_METRONOME_TARGET_PORT_ID,
   });
   assert.equal(removed[0][1], "port-replaced");
   assert.equal(manager.getConnectionForTarget("looper", "looper-a"), null);
 
   manager.connect({
-    metronomeId: "metro-b", portId: "port-2", targetKind: "honk",
-    targetId: "honk-a", targetPortId: HONK_METRONOME_TARGET_PORT_ID,
+    metronomeId: "metro-b",
+    portId: "port-2",
+    targetKind: "honk",
+    targetId: "honk-a",
+    targetPortId: HONK_METRONOME_TARGET_PORT_ID,
   });
   assert.equal(removed[1][1], "incoming-replaced");
   assert.equal(manager.getConnectionForPort("metro-a", "port-0"), null);
@@ -128,12 +144,18 @@ test("Looper timing resolves only through its connected Metronome with no global
   });
 
   manager.connect({
-    metronomeId: "metro-a", portId: "port-0", targetKind: "looper",
-    targetId: "looper-a", targetPortId: "track-0",
+    metronomeId: "metro-a",
+    portId: "port-0",
+    targetKind: "looper",
+    targetId: "looper-a",
+    targetPortId: "track-0",
   });
   manager.connect({
-    metronomeId: "metro-b", portId: "port-0", targetKind: "looper",
-    targetId: "looper-b", targetPortId: "track-0",
+    metronomeId: "metro-b",
+    portId: "port-0",
+    targetKind: "looper",
+    targetId: "looper-b",
+    targetPortId: "track-0",
   });
 
   assert.equal(manager.getTimingForLooper("looper-a", 2500).metronomeId, "metro-a");
@@ -154,7 +176,11 @@ test("wire presentation is recreated from restored relationships and disposed ex
     registry,
     onConnectionAdded(connection) {
       const key = `${connection.metronomeId}:${connection.portId}`;
-      wires.set(key, { dispose() { disposed += 1; } });
+      wires.set(key, {
+        dispose() {
+          disposed += 1;
+        },
+      });
       created += 1;
     },
     onConnectionRemoved(connection) {
@@ -163,13 +189,15 @@ test("wire presentation is recreated from restored relationships and disposed ex
       wires.delete(key);
     },
   });
-  const serialized = [{
-    metronomeId: "metro-a",
-    portId: "port-0",
-    targetKind: "looper",
-    targetId: "looper-a",
-    targetPortId: "track-0",
-  }];
+  const serialized = [
+    {
+      metronomeId: "metro-a",
+      portId: "port-0",
+      targetKind: "looper",
+      targetId: "looper-a",
+      targetPortId: "track-0",
+    },
+  ];
 
   manager.restore(serialized);
   assert.equal(created, 1);
@@ -224,15 +252,15 @@ function metronome(id, { bpm = 120, beatOriginMs = 1000 } = {}) {
       const beatIntervalMs = 60000 / bpm;
       return this.playing
         ? {
-          active: true,
-          bpm,
-          beatIntervalMs,
-          beatOriginMs,
-          beatPosition: (now - beatOriginMs) / beatIntervalMs,
-          nearestBeatMs: now,
-          lastBeatMs: beatOriginMs,
-          lastEmittedBeatOrdinal: 0,
-        }
+            active: true,
+            bpm,
+            beatIntervalMs,
+            beatOriginMs,
+            beatPosition: (now - beatOriginMs) / beatIntervalMs,
+            nearestBeatMs: now,
+            lastBeatMs: beatOriginMs,
+            lastEmittedBeatOrdinal: 0,
+          }
         : { active: false, bpm, beatIntervalMs, beatOriginMs: null };
     },
   };
@@ -260,7 +288,7 @@ function honk(id) {
     disposed: false,
     pendingPlacement: false,
     root: { visible: true },
-    getTarget: (role) => role === HONK_METRONOME_TARGET_PORT_ID ? connector : null,
+    getTarget: (role) => (role === HONK_METRONOME_TARGET_PORT_ID ? connector : null),
   };
 }
 
@@ -275,3 +303,77 @@ function createRegistry(instruments) {
     },
   };
 }
+
+test("shared Looper output supports individual removal, incoming moves, round-trip save/load and endpoint cleanup", () => {
+  const registry = createRegistry([
+    metronome("m"),
+    metronome("n"),
+    looper("a"),
+    looper("b"),
+    looper("c"),
+  ]);
+  const added = [],
+    removed = [];
+  const manager = new MetronomeConnectionManager({
+    registry,
+    onConnectionAdded: (c) => added.push(c),
+    onConnectionRemoved: (c) => removed.push(c),
+  });
+  const connect = (id) =>
+    manager.connect({
+      metronomeId: "m",
+      portId: "port-0",
+      targetKind: "looper",
+      targetId: id,
+      targetPortId: "track-0",
+    });
+  const a = connect("a"),
+    b = connect("b"),
+    c = connect("c");
+  assert.deepEqual(manager.getConnectionsForPort("m", "port-0"), [a, b, c]);
+  assert.strictEqual(connect("b"), b);
+  assert.equal(added.length, 3);
+  const serialized = manager.serialize();
+  manager.clear();
+  manager.restore(serialized);
+  assert.deepEqual(manager.serialize(), serialized);
+  assert.equal(manager.getConnectionsForPort("m", "port-0").length, 3);
+  const restoredB = manager.getConnectionForTarget("looper", "b");
+  manager.disconnectConnection(restoredB);
+  assert.deepEqual(
+    manager.getConnectionsForPort("m", "port-0").map((c) => c.targetId),
+    ["a", "c"],
+  );
+  assert.equal(manager.disconnectConnection(restoredB), null);
+  manager.connect({ ...a, metronomeId: "n", portId: "port-1" });
+  assert.equal(manager.getConnectionsForPort("m", "port-0").length, 1);
+  assert.equal(manager.getConnectionForTarget("looper", "a").metronomeId, "n");
+  manager.disconnectInstrument("m");
+  assert.equal(manager.serialize().length, 1);
+  manager.dispose();
+  assert.equal(manager.serialize().length, 0);
+  assert.equal(added.length, removed.length);
+  assert.equal(manager.endpointDisposalSubscriptions.size, 0);
+});
+
+test("each fan-out cable has a distinct runtime key while identical reconnects have the same key", async () => {
+  const { MetronomePulseRuntime } =
+    await import("../../../src/app/runtime/MetronomePulseRuntime.js");
+  const runtime = runtimeOwners({ metronomePulses: new MetronomePulseRuntime({}) });
+  const a = {
+    metronomeId: "m",
+    portId: "port-0",
+    targetKind: "looper",
+    targetId: "a",
+    targetPortId: "track-0",
+  };
+  const b = { ...a, targetId: "b" };
+  assert.notEqual(
+    runtime.metronomePulses.getMetronomeConnectionRuntimeKey(a),
+    runtime.metronomePulses.getMetronomeConnectionRuntimeKey(b),
+  );
+  assert.equal(
+    runtime.metronomePulses.getMetronomeConnectionRuntimeKey(a),
+    runtime.metronomePulses.getMetronomeConnectionRuntimeKey({ ...a }),
+  );
+});

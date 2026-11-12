@@ -31,9 +31,7 @@ test("nose uses a legacy-safe note-gain mapping without changing the filter grap
   });
 
   const gainEvent = lastEventOfType(voice.master.gain, "setTargetAtTime");
-  assert.ok(Math.abs(
-    gainEvent.value - VOICE_GAIN_SETTINGS.baseGain * 0.5 * 0.25 * 0.5,
-  ) < 1e-12);
+  assert.ok(Math.abs(gainEvent.value - VOICE_GAIN_SETTINGS.baseGain * 0.5 * 0.25 * 0.5) < 1e-12);
   assert.equal(gainEvent.timeConstant, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
   assert.equal(context.filters.length, 4);
 });
@@ -87,11 +85,9 @@ test("controller release within one XR frame uses the legacy target tail while a
   voice.update({ hornAmount: 1, masterGain: 1, noteGain: 1 });
   context.currentTime = 0.011;
 
-  const releaseState = voice.release(
-    HONK_RELEASE_SETTINGS.liveFadeSeconds,
-    undefined,
-    { origin: HONK_RELEASE_ORIGINS.controller },
-  );
+  const releaseState = voice.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, undefined, {
+    origin: HONK_RELEASE_ORIGINS.controller,
+  });
   const releaseEvents = voice.master.gain.events.slice(-2);
   const outputHold = voice.output.gain.events.at(-2);
   const outputRamp = voice.output.gain.events.at(-1);
@@ -139,6 +135,88 @@ test("duplicate controller release remains idempotent", () => {
   assert.equal(eventCount(voice.output.gain, "linearRampToValueAtTime"), 1);
   assert.equal(voice.source.stopCalls.length, 1);
   assert.equal(voice.vibrato.stopCalls.length, 1);
+});
+
+test("contact cancellation clears queued automation before a short anti-click stop", () => {
+  const context = createAudioContext({ currentTime: 2 });
+  const voice = new HonkVoice({ context });
+  voice.start(2);
+  voice.update({ hornAmount: 1 }, { scheduledTime: 5 });
+  voice.release(0.12, undefined, { scheduledTime: 6 });
+
+  voice.cancel({ fadeSeconds: 0.035 });
+
+  for (const parameter of [
+    voice.source.frequency,
+    voice.source.detune,
+    voice.vibrato.frequency,
+    voice.master.gain,
+    voice.output.gain,
+  ]) {
+    assert.deepEqual(lastEventOfType(parameter, "cancelAndHoldAtTime"), {
+      type: "cancelAndHoldAtTime",
+      time: 2,
+    });
+  }
+  assert.equal(lastEventOfType(voice.master.gain, "linearRampToValueAtTime").time, 2.035);
+  assert.equal(lastEventOfType(voice.output.gain, "linearRampToValueAtTime").time, 2.035);
+  assert.equal(voice.source.stopCalls.at(-1), 2.043);
+  assert.equal(voice.disconnected, false);
+  voice.source.onended();
+  assert.equal(voice.disconnected, true);
+});
+
+test("scheduled looper note parameters and controller release use audio-context time", () => {
+  const context = createAudioContext({ currentTime: 1 });
+  const voice = new HonkVoice({ context });
+  voice.start(5);
+  voice.update({ hornAmount: 0.8 }, { scheduledTime: 5 });
+  const release = voice.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, undefined, {
+    scheduledTime: 5.02,
+    origin: HONK_RELEASE_ORIGINS.controller,
+  });
+
+  assert.deepEqual(voice.source.startCalls, [5]);
+  assert.equal(lastEventOfType(voice.master.gain, "setTargetAtTime").time, 5.02);
+  assert.equal(release.releaseStart, 5.02);
+  assert.equal(release.silentAt, 5.02 + HONK_RELEASE_SETTINGS.liveFadeSeconds);
+});
+
+test("scheduling a Honk preserves the live attack, pitch settling and expression smoothing", () => {
+  const liveContext = createAudioContext({ currentTime: 5 });
+  const scheduledContext = createAudioContext({ currentTime: 1 });
+  const live = new HonkVoice({ context: liveContext });
+  const scheduled = new HonkVoice({ context: scheduledContext });
+  for (const [time, amount] of [
+    [5, 0.18],
+    [5.017, 0.33],
+    [5.033, 0.45],
+    [5.4, 1],
+  ]) {
+    const performance = {
+      hornAmount: amount,
+      masterGain: 0.78,
+      leftEar: -0.6,
+      rightEar: -0.5,
+      noteGain: 1,
+      pitchBendSemitones: 0.25,
+    };
+    liveContext.currentTime = time;
+    live.update(performance);
+    scheduled.update(performance, { scheduledTime: time });
+  }
+  for (const [liveParameter, scheduledParameter] of [
+    [live.source.frequency, scheduled.source.frequency],
+    [live.source.detune, scheduled.source.detune],
+    [live.vibrato.frequency, scheduled.vibrato.frequency],
+    [live.master.gain, scheduled.master.gain],
+  ]) {
+    assert.deepEqual(
+      scheduledParameter.events.filter((e) => e.type === "setTargetAtTime"),
+      liveParameter.events.filter((e) => e.type === "setTargetAtTime"),
+    );
+    assert.equal(eventCount(scheduledParameter, "linearRampToValueAtTime"), 0);
+  }
 });
 
 test("release ramps the held master gain to exact zero before stopping oscillators", () => {
@@ -229,10 +307,7 @@ test("a source-stop error waits through the silent point before fallback cleanup
     completionCount += 1;
   });
 
-  assert.equal(
-    releaseState.silentAt,
-    HONK_RELEASE_SETTINGS.minimumFadeSeconds,
-  );
+  assert.equal(releaseState.silentAt, HONK_RELEASE_SETTINGS.minimumFadeSeconds);
   assert.equal(voice.disconnected, false);
   assert.equal(completionCount, 0);
 

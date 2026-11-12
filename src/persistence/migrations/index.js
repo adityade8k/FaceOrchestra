@@ -12,5 +12,5 @@ export function migrateSceneData(data) {
 }
 
 function clonePlain(value) {
-  return JSON.parse(JSON.stringify(value));
+  return structuredClone(value);
 }

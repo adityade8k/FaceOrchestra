@@ -5,10 +5,7 @@ import {
 } from "../../config/audio.js";
 import { clamp } from "../audioMath.js";
 import { FORMANTS, VOWEL_ROUNDNESS } from "./formantData.js";
-import {
-  CONTROLLER_HONK_RELEASE_SETTINGS,
-  HONK_RELEASE_ORIGINS,
-} from "./HonkReleaseProfile.js";
+import { CONTROLLER_HONK_RELEASE_SETTINGS, HONK_RELEASE_ORIGINS } from "./HonkReleaseProfile.js";
 import { F4_FREQUENCY, getHonkFrequency } from "./pitch.js";
 
 export class HonkVoice {
@@ -55,8 +52,8 @@ export class HonkVoice {
     this.output.connect(this.destination);
   }
 
-  start() {
-    const now = this.context.currentTime;
+  start(scheduledTime = this.context.currentTime) {
+    const now = Math.max(scheduledTime, this.context.currentTime);
     this.source.start(now);
     this.vibrato.start(now);
   }
@@ -106,6 +103,7 @@ export class HonkVoice {
   }
 
   setVowel(vowel) {
+    if (this.disconnected) return;
     if (this.vowel !== vowel) {
       this.rebuildFormants(vowel);
     }
@@ -115,17 +113,23 @@ export class HonkVoice {
     this.pitchBendSemitones = semitones;
   }
 
-  update({
-    hornAmount,
-    masterGain = 1,
-    leftEar,
-    rightEar,
-    noteGain = 1,
-    pitchBendSemitones = null,
-    pitchSnap = null,
-    activeVoiceCount = 1,
-  }) {
-    const now = this.context.currentTime;
+  update(
+    {
+      hornAmount,
+      masterGain = 1,
+      leftEar,
+      rightEar,
+      noteGain = 1,
+      pitchBendSemitones = null,
+      pitchSnap = null,
+      activeVoiceCount = 1,
+    },
+    { scheduledTime = undefined, bendSnapped = false } = {},
+  ) {
+    const isScheduled = Number.isFinite(scheduledTime);
+    const now = isScheduled
+      ? Math.max(scheduledTime, this.context.currentTime)
+      : this.context.currentTime;
     const frequency = getHonkFrequency({ leftEar, rightEar, pitchSnap });
     if (pitchBendSemitones !== null) {
       this.pitchBendSemitones = pitchBendSemitones;
@@ -141,8 +145,14 @@ export class HonkVoice {
         polyphonyScale,
     );
 
+    // Loopers change when a performance happens, not how a Honk sounds.
+    // Recorded squeeze curves are sampled before this audio smoothing, so
+    // scheduled notes need the same pitch settling and gain envelope as live
+    // notes. A separate 4 ms attack made imported backing sound percussive.
     this.source.frequency.setTargetAtTime(frequency, now, 0.035);
-    this.source.detune.setTargetAtTime(detune, now, 0.045);
+    // A guided note capture settles in about 24 ms; ordinary glides retain
+    // their usual smoothing. Keep gain and articulation independent of this.
+    this.source.detune.setTargetAtTime(detune, now, bendSnapped ? 0.008 : 0.045);
     this.vibrato.frequency.setTargetAtTime(5.2, now, 0.06);
     this.master.gain.setTargetAtTime(gain, now, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
   }
@@ -152,14 +162,14 @@ export class HonkVoice {
       return this.releaseState;
     }
 
-    const now = this.context.currentTime;
+    const now = Math.max(
+      options?.scheduledTime ?? this.context.currentTime,
+      this.context.currentTime,
+    );
     const requestedFade = Number.isFinite(fadeSeconds)
       ? fadeSeconds
       : HONK_RELEASE_SETTINGS.liveFadeSeconds;
-    const safeFadeSeconds = Math.max(
-      requestedFade,
-      HONK_RELEASE_SETTINGS.minimumFadeSeconds,
-    );
+    const safeFadeSeconds = Math.max(requestedFade, HONK_RELEASE_SETTINGS.minimumFadeSeconds);
     const silentAt = now + safeFadeSeconds;
     const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
     let completed = false;
@@ -196,10 +206,7 @@ export class HonkVoice {
     try {
       this.source.stop(stopAt);
     } catch {
-      const delayMilliseconds = Math.max(
-        0,
-        Math.ceil((stopAt - this.context.currentTime) * 1000),
-      );
+      const delayMilliseconds = Math.max(0, Math.ceil((stopAt - this.context.currentTime) * 1000));
       fallbackTimer = globalThis.setTimeout?.(handleSourceEnded, delayMilliseconds) ?? null;
       fallbackTimer?.unref?.();
     }
@@ -210,6 +217,66 @@ export class HonkVoice {
     }
 
     return this.releaseState;
+  }
+
+  cancel(options = {}) {
+    if (this.disconnected) return;
+    const now = Math.max(
+      options?.scheduledTime ?? this.context.currentTime,
+      this.context.currentTime,
+    );
+    const requestedFade = typeof options === "number" ? options : options?.fadeSeconds;
+    const fadeSeconds = Number.isFinite(requestedFade) ? Math.max(requestedFade, 0) : 0;
+    if (fadeSeconds <= 0) {
+      try {
+        this.source.stop(now);
+      } catch {
+        /* Already stopped. */
+      }
+      try {
+        this.vibrato.stop(now);
+      } catch {
+        /* Already stopped. */
+      }
+      this.disconnect();
+      return;
+    }
+
+    for (const parameter of [
+      this.source.frequency,
+      this.source.detune,
+      this.vibrato.frequency,
+      this.master.gain,
+      this.output.gain,
+    ]) {
+      if (typeof parameter?.cancelAndHoldAtTime === "function") {
+        parameter.cancelAndHoldAtTime(now);
+      } else {
+        const currentValue = Number.isFinite(parameter?.value) ? parameter.value : 0;
+        parameter?.cancelScheduledValues?.(now);
+        parameter?.setValueAtTime?.(currentValue, now);
+      }
+    }
+    const silentAt = now + fadeSeconds;
+    this.master.gain.linearRampToValueAtTime(0, silentAt);
+    this.output.gain.linearRampToValueAtTime(0, silentAt);
+    const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
+    this.source.onended = () => this.disconnect();
+    try {
+      this.source.stop(stopAt);
+    } catch {
+      /* Already stopped. */
+    }
+    try {
+      this.vibrato.stop(stopAt);
+    } catch {
+      /* Already stopped. */
+    }
+    const timer = globalThis.setTimeout?.(
+      () => this.disconnect(),
+      Math.max(0, Math.ceil((stopAt - this.context.currentTime) * 1000)),
+    );
+    timer?.unref?.();
   }
 
   scheduleControllerRelease(now, silentAt) {

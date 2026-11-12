@@ -34,7 +34,9 @@ export function createPendingSpawnGlassMaterial(sourceMaterial = null) {
 }
 
 export function disposePendingSpawnMaterials(materialOrMaterials) {
-  const materials = Array.isArray(materialOrMaterials) ? materialOrMaterials : [materialOrMaterials];
+  const materials = Array.isArray(materialOrMaterials)
+    ? materialOrMaterials
+    : [materialOrMaterials];
   for (const material of materials) {
     if (material?.userData.disposeOnPendingSpawnRestore) material.dispose();
   }

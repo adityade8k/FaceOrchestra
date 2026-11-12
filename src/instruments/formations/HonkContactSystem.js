@@ -1,3 +1,4 @@
+import { contactCandidates } from "./contactCandidates.js";
 import { HONK_CONTACT_SETTINGS } from "../../config/formations.js";
 import { INSTRUMENT_KINDS } from "../core/capabilities.js";
 import { canonicalPairKey, HonkContactGraph } from "./HonkContactGraph.js";
@@ -10,7 +11,9 @@ export class HonkContactSystem {
     getColliderSphere = defaultColliderSphereResolver,
     measurePair = measureSphereOverlap,
     settings = {},
+    broadPhase = measurePair === measureSphereOverlap,
   } = {}) {
+    this.broadPhase = broadPhase;
     this.graph = graph;
     this.instrumentRegistry = instrumentRegistry;
     this.getHonks = getHonks;
@@ -21,8 +24,12 @@ export class HonkContactSystem {
   }
 
   update(honks = null) {
-    const candidates = [...(honks || this.getHonks?.() || this.instrumentRegistry?.getByKind?.(INSTRUMENT_KINDS.honk) || [])]
-      .filter(isContactCandidate);
+    const candidates = [
+      ...(honks ||
+        this.getHonks?.() ||
+        this.instrumentRegistry?.getByKind?.(INSTRUMENT_KINDS.honk) ||
+        []),
+    ].filter(isContactCandidate);
     const activeIds = new Set(candidates.map((honk) => honk.id));
 
     for (const honk of candidates) {
@@ -34,30 +41,45 @@ export class HonkContactSystem {
       }
     }
 
+    // Resolvers may reuse a mutable sphere and center between calls.
+    const spheres = candidates.map((honk) => {
+      const sphere = this.getColliderSphere(honk);
+      return sphere ? { radius: sphere.radius, center: readPoint(sphere.center) } : null;
+    });
+    const indices = new Map(candidates.map((h, i) => [h.id, i]));
     const observedPairs = new Set();
-    for (let firstIndex = 0; firstIndex < candidates.length; firstIndex += 1) {
-      for (let secondIndex = firstIndex + 1; secondIndex < candidates.length; secondIndex += 1) {
-        const first = candidates[firstIndex];
-        const second = candidates[secondIndex];
-        const pairKey = canonicalPairKey(first.id, second.id);
-        observedPairs.add(pairKey);
-        this.updatePair(pairKey, first, second);
-      }
-    }
-
-    for (const [pairKey, state] of this.pairStates) {
-      if (!observedPairs.has(pairKey)) {
-        this.graph.setContact(state.firstId, state.secondId, false);
-        this.pairStates.delete(pairKey);
-      }
+    const pairs = this.broadPhase ? contactCandidates(spheres) : allPairs(candidates.length);
+    this.measurements = 0;
+    const observe = (i, j) => {
+      const first = candidates[i],
+        second = candidates[j];
+      const key = canonicalPairKey(first.id, second.id);
+      if (observedPairs.has(key)) return;
+      observedPairs.add(key);
+      this.measurements++;
+      this.updatePair(key, first, second, spheres[i], spheres[j]);
+    };
+    for (const [i, j] of pairs) observe(i, j);
+    // Pending admissions and existing contacts must see separation frames even
+    // after leaving the sweep. Otherwise teleporting could strand an edge.
+    for (const state of [...this.pairStates.values()]) {
+      const i = indices.get(state.firstId),
+        j = indices.get(state.secondId);
+      if (i !== undefined && j !== undefined) observe(i, j);
     }
     return this.graph;
   }
 
-  updatePair(pairKey, first, second) {
-    const firstSphere = this.getColliderSphere(first);
-    const secondSphere = this.getColliderSphere(second);
-    const measurement = normalizeMeasurement(this.measurePair(first, second, firstSphere, secondSphere));
+  updatePair(
+    pairKey,
+    first,
+    second,
+    firstSphere = this.getColliderSphere(first),
+    secondSphere = this.getColliderSphere(second),
+  ) {
+    const measurement = normalizeMeasurement(
+      this.measurePair(first, second, firstSphere, secondSphere),
+    );
     const state = this.pairStates.get(pairKey) || {
       firstId: first.id,
       secondId: second.id,
@@ -69,7 +91,8 @@ export class HonkContactSystem {
     state.overlapRatio = measurement.overlapRatio;
 
     if (!state.touching) {
-      const qualifies = measurement.touching && measurement.overlapRatio >= this.settings.entryOverlapRatio;
+      const qualifies =
+        measurement.touching && measurement.overlapRatio >= this.settings.entryOverlapRatio;
       state.contactFrames = qualifies ? state.contactFrames + 1 : 0;
       state.separationFrames = 0;
       if (state.contactFrames >= Math.max(this.settings.consecutiveEntryFrames, 1)) {
@@ -78,7 +101,8 @@ export class HonkContactSystem {
         this.graph.setContact(first.id, second.id, true);
       }
     } else {
-      const remainsInContact = measurement.touching && measurement.overlapRatio >= this.settings.exitOverlapRatio;
+      const remainsInContact =
+        measurement.touching && measurement.overlapRatio >= this.settings.exitOverlapRatio;
       state.separationFrames = remainsInContact ? 0 : state.separationFrames + 1;
       state.contactFrames = 0;
       if (state.separationFrames >= Math.max(this.settings.consecutiveExitFrames, 1)) {
@@ -87,7 +111,8 @@ export class HonkContactSystem {
         this.graph.setContact(first.id, second.id, false);
       }
     }
-    this.pairStates.set(pairKey, state);
+    if (state.touching || state.contactFrames) this.pairStates.set(pairKey, state);
+    else this.pairStates.delete(pairKey);
     return state;
   }
 
@@ -144,7 +169,10 @@ function normalizeMeasurement(measurement) {
     return { touching: measurement, overlapRatio: measurement ? 1 : 0 };
   }
   if (typeof measurement === "number") {
-    return { touching: measurement > 0, overlapRatio: Math.max(measurement, 0) };
+    return {
+      touching: measurement > 0,
+      overlapRatio: Math.max(measurement, 0),
+    };
   }
   return {
     touching: Boolean(measurement?.touching),
@@ -159,11 +187,15 @@ function readPoint(point) {
   if (typeof point?.toArray === "function") {
     return point.toArray();
   }
-  return [point?.x, point?.y, point?.z].every(Number.isFinite)
-    ? [point.x, point.y, point.z]
-    : null;
+  return [point?.x, point?.y, point?.z].every(Number.isFinite) ? [point.x, point.y, point.z] : null;
 }
 
 function isContactCandidate(honk) {
-  return Boolean(honk?.id && honk.kind === INSTRUMENT_KINDS.honk && !honk.disposed && honk.visible !== false);
+  return Boolean(
+    honk?.id && honk.kind === INSTRUMENT_KINDS.honk && !honk.disposed && honk.visible !== false,
+  );
+}
+
+function* allPairs(count) {
+  for (let i = 0; i < count; i++) for (let j = i + 1; j < count; j++) yield [i, j];
 }

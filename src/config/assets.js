@@ -2,13 +2,15 @@ export const ASSET_PATHS = Object.freeze({
   models: Object.freeze({
     honk: "./model/honk/horn_gltf.glb",
     looper: "./model/looper/recorder.glb",
-    metronome: "./model/metronome/metronome_02.glb",
+    metronome: "./model/metronome/metronome_eye_fix_rigged.glb",
+    metronomeControls: "./model/metronome/metronome_02.glb",
     stick: "./model/branch/scene.glb",
   }),
   textures: Object.freeze({
     honk: Object.freeze({
       baseMap: "./model/honk/clown_horn_diffuse_map.png",
       lockedBaseMap: "./model/honk/clown_horn_diffuse_map_locked.png",
+      pitchMask: "./model/honk/honk_squeez_alpha.png",
       normalMap: "./model/honk/Clay001_2K-JPG_NormalGL.jpg",
       roughnessMap: "./model/honk/Clay001_2K-JPG_Roughness_curves.png",
     }),
@@ -33,6 +35,6 @@ export const ASSET_PATHS = Object.freeze({
     }),
   }),
   fonts: Object.freeze({
-    noteLabel: "https://unpkg.com/three@0.164.1/examples/fonts/helvetiker_regular.typeface.json",
+    noteLabel: "/vendor/three/examples/fonts/helvetiker_regular.typeface.json",
   }),
 });

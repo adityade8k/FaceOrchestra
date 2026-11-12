@@ -17,20 +17,32 @@ export function applyStandardInstrumentMaterials(root, textures = {}, options = 
 export function makeStandardInstrumentMaterial(
   sourceMaterial,
   textures = {},
-  {
-    useSourceMaterialMaps = true,
-    textureTransforms = {},
-    bumpScale = 0.035,
-  } = {},
+  { useSourceMaterialMaps = true, textureTransforms = {}, bumpScale = 0.035 } = {},
 ) {
   const map = applyTextureTransform(
     getMaterialTexture(textures.baseMap, sourceMaterial?.map, useSourceMaterialMaps),
     textureTransforms.baseMap,
   );
-  const normalMap = getMaterialTexture(textures.normalMap, sourceMaterial?.normalMap, useSourceMaterialMaps);
-  const roughnessMap = getMaterialTexture(textures.roughnessMap, sourceMaterial?.roughnessMap, useSourceMaterialMaps);
-  const metalnessMap = getMaterialTexture(textures.metalnessMap, sourceMaterial?.metalnessMap, useSourceMaterialMaps);
-  const bumpMap = getMaterialTexture(textures.heightMap, sourceMaterial?.bumpMap, useSourceMaterialMaps);
+  const normalMap = getMaterialTexture(
+    textures.normalMap,
+    sourceMaterial?.normalMap,
+    useSourceMaterialMaps,
+  );
+  const roughnessMap = getMaterialTexture(
+    textures.roughnessMap,
+    sourceMaterial?.roughnessMap,
+    useSourceMaterialMaps,
+  );
+  const metalnessMap = getMaterialTexture(
+    textures.metalnessMap,
+    sourceMaterial?.metalnessMap,
+    useSourceMaterialMaps,
+  );
+  const bumpMap = getMaterialTexture(
+    textures.heightMap,
+    sourceMaterial?.bumpMap,
+    useSourceMaterialMaps,
+  );
 
   return new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -40,8 +52,16 @@ export function makeStandardInstrumentMaterial(
     metalnessMap,
     bumpMap,
     bumpScale: bumpMap ? bumpScale : 1,
-    roughness: textures.roughnessMap ? 1 : useSourceMaterialMaps ? sourceMaterial?.roughness ?? 0.48 : 0.48,
-    metalness: textures.metalnessMap ? 1 : useSourceMaterialMaps ? sourceMaterial?.metalness ?? 0.02 : 0.02,
+    roughness: textures.roughnessMap
+      ? 1
+      : useSourceMaterialMaps
+        ? (sourceMaterial?.roughness ?? 0.48)
+        : 0.48,
+    metalness: textures.metalnessMap
+      ? 1
+      : useSourceMaterialMaps
+        ? (sourceMaterial?.metalness ?? 0.02)
+        : 0.02,
     side: THREE.DoubleSide,
   });
 }
@@ -67,7 +87,7 @@ function applyTextureTransform(texture, transform) {
 
 function getMaterialTexture(replacementTexture, sourceTexture, useSourceMaterialMaps) {
   if (!replacementTexture) {
-    return useSourceMaterialMaps ? sourceTexture ?? null : null;
+    return useSourceMaterialMaps ? (sourceTexture ?? null) : null;
   }
 
   return sourceTexture ? copyTextureMapping(replacementTexture, sourceTexture) : replacementTexture;
@@ -93,7 +113,19 @@ function copyTextureMapping(texture, sourceTexture) {
 
 export async function loadMaterialTextureSet(textureLoader, texturePaths) {
   const entries = Object.entries(texturePaths);
-  const loaded = await Promise.all(entries.map(([, path]) => textureLoader.loadAsync(path)));
+  const results = await Promise.allSettled(
+    entries.map(([, path]) => textureLoader.loadAsync(path)),
+  );
+  const failure = results.find((r) => r.status === "rejected");
+  if (failure) {
+    for (const r of results)
+      if (r.status === "fulfilled") {
+        r.value.dispose();
+        r.value.source?.data?.close?.();
+      }
+    throw failure.reason;
+  }
+  const loaded = results.map((r) => r.value);
   const textures = {};
 
   entries.forEach(([key], index) => {

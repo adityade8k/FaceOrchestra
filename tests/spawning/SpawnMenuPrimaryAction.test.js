@@ -67,10 +67,10 @@ test("an active Grip always suppresses the radial menu without a valid duplicate
   ];
 
   for (const controllerState of states) {
-    assert.deepEqual(
-      resolveSpawnMenuPrimaryAction({ controllerState }),
-      { type: SpawnMenuPrimaryAction.suppress, source: null },
-    );
+    assert.deepEqual(resolveSpawnMenuPrimaryAction({ controllerState }), {
+      type: SpawnMenuPrimaryAction.suppress,
+      source: null,
+    });
   }
 });
 
@@ -97,10 +97,10 @@ test("gripping a locked formation does not duplicate only one member", () => {
 });
 
 test("the current Grip transition suppresses a menu even before semantic grip state catches up", () => {
-  assert.deepEqual(
-    resolveSpawnMenuPrimaryAction({ gripPressed: true, controllerState: {} }),
-    { type: SpawnMenuPrimaryAction.suppress, source: null },
-  );
+  assert.deepEqual(resolveSpawnMenuPrimaryAction({ gripPressed: true, controllerState: {} }), {
+    type: SpawnMenuPrimaryAction.suppress,
+    source: null,
+  });
 });
 
 test("A without Grip opens the radial menu", () => {

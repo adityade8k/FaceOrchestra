@@ -1,4 +1,5 @@
 import { INTERACTION_TARGET_NAMES, MORPH_TARGET_NAMES } from "../../config/honk.js";
+import { HONK_INTERACTION_ROLES } from "./HonkInstrument.js";
 
 export const HONK_INTERACTION_PROFILE = Object.freeze({
   [INTERACTION_TARGET_NAMES.mouth]: Object.freeze({
@@ -29,6 +30,41 @@ export const HONK_INTERACTION_PROFILE = Object.freeze({
 
 export const VOWEL_MORPHS = HONK_INTERACTION_PROFILE[INTERACTION_TARGET_NAMES.mouth].morphs;
 
+// Acquisition and captured-gesture validation share one registered squeeze
+// identity. Its raycast uses a sphere when editable and model bounds when
+// locked; arbitrary body/grip geometry never grants voice ownership.
+export function isHonkSqueezeTarget(honk, target) {
+  if (
+    honk?.kind !== "honk" ||
+    honk.disposed ||
+    honk.pendingPlacement ||
+    !honk.root?.parent ||
+    !target ||
+    target.name !== INTERACTION_TARGET_NAMES.horn ||
+    HONK_INTERACTION_PROFILE[target.name]?.type !== "holdSqueeze" ||
+    honk.getTarget?.(HONK_INTERACTION_ROLES.squeeze) !== target
+  )
+    return false;
+  const record = honk.interactionTargetRegistry?.resolveFromObject3D(target, {
+    walkParents: false,
+  });
+  if (
+    !record ||
+    record.object3D !== target ||
+    record.ownerId !== honk.id ||
+    record.role !== HONK_INTERACTION_ROLES.squeeze
+  )
+    return false;
+  let attachedToHonk = false;
+  for (let object = target; object; object = object.parent) {
+    if (object.visible === false) return false;
+    if (object === honk.root) attachedToHonk = true;
+  }
+  return attachedToHonk;
+}
+
 export const VOWEL_LETTERS_BY_MORPH = Object.freeze(
-  Object.fromEntries(Object.entries(MORPH_TARGET_NAMES.vowels).map(([letter, morph]) => [morph, letter])),
+  Object.fromEntries(
+    Object.entries(MORPH_TARGET_NAMES.vowels).map(([letter, morph]) => [morph, letter]),
+  ),
 );

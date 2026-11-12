@@ -19,10 +19,7 @@ export function createConnectionWireMesh({
   textures = {},
   renderOrder = 14,
 } = {}) {
-  const mesh = new THREE.Mesh(
-    new THREE.BufferGeometry(),
-    createWireMaterial(color, textures),
-  );
+  const mesh = new THREE.Mesh(new THREE.BufferGeometry(), createWireMaterial(color, textures));
   mesh.name = name || "CONNECTION_wire";
   mesh.renderOrder = renderOrder;
   scene?.add?.(mesh);
