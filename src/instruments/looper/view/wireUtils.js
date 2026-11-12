@@ -18,11 +18,7 @@ export function updateWireMeshGeometry(
   wireMesh,
   start,
   end,
-  {
-    startTangent = null,
-    endTangent = null,
-    settings = LOOPER_WIRE_SETTINGS,
-  } = {},
+  { startTangent = null, endTangent = null, settings = LOOPER_WIRE_SETTINGS } = {},
 ) {
   if (!wireMesh) {
     return false;
@@ -80,12 +76,14 @@ export function createWireCurve(start, end, options = {}) {
 function createWireCurveFromPlan(plan) {
   const curve = new THREE.CurvePath();
   for (const segment of plan.segments) {
-    curve.add(new THREE.CubicBezierCurve3(
-      toVector3(segment.start),
-      toVector3(segment.control1),
-      toVector3(segment.control2),
-      toVector3(segment.end),
-    ));
+    curve.add(
+      new THREE.CubicBezierCurve3(
+        toVector3(segment.start),
+        toVector3(segment.control1),
+        toVector3(segment.control2),
+        toVector3(segment.end),
+      ),
+    );
   }
   curve.userData = { wirePathPlan: plan };
   return curve;
@@ -109,7 +107,7 @@ function hasMatchingWireCache(
     data.lastWireStart.distanceToSquared(start) <= positionEpsilonSquared &&
     data.lastWireEnd.distanceToSquared(end) <= positionEpsilonSquared &&
     data.lastWireStartTangent.distanceToSquared(startTangent) <= directionEpsilonSquared &&
-    data.lastWireEndTangent.distanceToSquared(endTangent) <= directionEpsilonSquared
+    data.lastWireEndTangent.distanceToSquared(endTangent) <= directionEpsilonSquared,
   );
 }
 
@@ -117,10 +115,7 @@ function cacheWireState(wireMesh, start, end, plan) {
   const data = wireMesh.userData;
   data.lastWireStart = copyCachedVector(data.lastWireStart, start);
   data.lastWireEnd = copyCachedVector(data.lastWireEnd, end);
-  data.lastWireStartTangent = copyCachedVector(
-    data.lastWireStartTangent,
-    plan.startTangent,
-  );
+  data.lastWireStartTangent = copyCachedVector(data.lastWireStartTangent, plan.startTangent);
   data.lastWireEndTangent = copyCachedVector(data.lastWireEndTangent, plan.endTangent);
   data.wirePathPlan = plan;
 }

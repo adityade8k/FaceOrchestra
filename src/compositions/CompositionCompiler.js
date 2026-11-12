@@ -4,13 +4,7 @@ import { getHonkPitchBendRange } from "../config/honk.js";
 
 // Pure score -> existing transport events. Routes bind logical roles only at
 // preparation. No score data, scene objects or timers are mutated here.
-export function compilePattern({
-  events,
-  beats,
-  beatMs,
-  routes,
-  defaults = {},
-}) {
+export function compilePattern({ events, beats, beatMs, routes, defaults = {} }) {
   if (![2, 4, 8, 16].includes(beats))
     throw new Error("Split backing patterns at supported loop boundaries");
   const timeline = new LooperTimeline();
@@ -24,10 +18,16 @@ export function compilePattern({
     if (!Number.isFinite(start) || start < 0 || start >= beats * beatMs)
       throw new Error("Event outside pattern");
     if (event.type || event.sound) {
+      if (
+        event.gain !== undefined &&
+        (!Number.isFinite(event.gain) || event.gain < 0 || event.gain > 1)
+      )
+        throw new Error("Invalid percussion hit gain");
       timeline.addDrumHitEvent(route.trackId, {
         trackIndex: route.trackIndex,
         timeMs: start,
         drumType: event.type || event.sound,
+        gain: event.gain,
       });
       continue;
     }

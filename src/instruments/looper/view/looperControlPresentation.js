@@ -11,9 +11,7 @@ export function getClosestLooperControlValue(path, position) {
   if (!isPath(path) || !isPoint(position)) return null;
   const negative = closestPointOnSegment(position, path.downAnchor, path.neutralAnchor);
   const positive = closestPointOnSegment(position, path.neutralAnchor, path.upAnchor);
-  return negative.distanceSquared <= positive.distanceSquared
-    ? negative.t - 1
-    : positive.t;
+  return negative.distanceSquared <= positive.distanceSquared ? negative.t - 1 : positive.t;
 }
 
 export function getLooperControlValueFromDrag(
@@ -22,7 +20,11 @@ export function getLooperControlValueFromDrag(
   startingColliderPosition,
   currentControllerPosition,
 ) {
-  if (![startingControllerPosition, startingColliderPosition, currentControllerPosition].every(isPoint)) {
+  if (
+    ![startingControllerPosition, startingColliderPosition, currentControllerPosition].every(
+      isPoint,
+    )
+  ) {
     return null;
   }
   const candidatePosition = {
@@ -44,9 +46,8 @@ export function getLooperControlMorphWeights(value = 0) {
 function closestPointOnSegment(point, start, end) {
   const delta = subtract(end, start);
   const lengthSquared = dot(delta, delta);
-  const t = lengthSquared > 1e-12
-    ? clamp(dot(subtract(point, start), delta) / lengthSquared, 0, 1)
-    : 0;
+  const t =
+    lengthSquared > 1e-12 ? clamp(dot(subtract(point, start), delta) / lengthSquared, 0, 1) : 0;
   const closest = lerpPoint(start, end, t);
   const difference = subtract(point, closest);
   return { t, distanceSquared: dot(difference, difference) };

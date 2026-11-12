@@ -2,11 +2,7 @@ import { INTERACTION_TARGET_NAMES } from "../../config/honk.js";
 
 // Grip detection uses imported visible mesh geometry. No procedural box is
 // created, and authored geometry/materials are not modified.
-export function createBodyGripTarget(
-  root,
-  hitTargets,
-  { interactionRole = null } = {},
-) {
+export function createBodyGripTarget(root, hitTargets, { interactionRole = null } = {}) {
   const meshes = [];
   root?.traverse?.((object) => {
     if (
@@ -16,7 +12,8 @@ export function createBodyGripTarget(
       !object.userData?.isBodyGripTarget &&
       !object.name?.startsWith("DEBUG_") &&
       !object.name?.startsWith("EDITOR_")
-    ) meshes.push(object);
+    )
+      meshes.push(object);
   });
   if (!meshes.length) return null;
 

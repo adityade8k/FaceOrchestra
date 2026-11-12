@@ -20,7 +20,8 @@ export function bendHapticStops(events, range = 4) {
       if (i === 0 || i === curve.length - 1 || before * after <= 0) stops.add(value);
     }
   }
-  return [...stops].sort((a, b) => a - b)
+  return [...stops]
+    .sort((a, b) => a - b)
     .filter((value, i, values) => i === 0 || value - values[i - 1] > EPSILON);
 }
 
@@ -49,17 +50,30 @@ export class BendHaptics {
     const observations = [];
     for (const [controller, gesture] of this.adapter.gestures) {
       const targets = this.roles.get(gesture.role);
-      if (!targets || controller.userData?.virtualTutorial || gesture.origin !== "learner" ||
-          controller.visible === false || controller.userData?.inputConnected === false) continue;
+      if (
+        !targets ||
+        controller.userData?.virtualTutorial ||
+        gesture.origin !== "learner" ||
+        controller.visible === false ||
+        controller.userData?.inputConnected === false
+      )
+        continue;
       const observation = observeBendGesture(this.adapter, gesture.role, "practice");
       if (!observation || observation.controller !== controller) continue;
-      observations.push({ ...observation, gestureId: gesture.id, events: targets,
-        semitones: observation.target.getLivePerformanceState().bend * getHonkPitchBendRange(observation.target) });
+      observations.push({
+        ...observation,
+        gestureId: gesture.id,
+        events: targets,
+        semitones:
+          observation.target.getLivePerformanceState().bend *
+          getHonkPitchBendRange(observation.target),
+      });
     }
     this.updateObservations(observations);
   }
   updateObservations(observations) {
-    const runtime = this.adapter.r, seen = new Set();
+    const runtime = this.adapter.r,
+      seen = new Set();
     for (const observation of observations) {
       const { controller, gestureId, events = [], semitones: value } = observation;
       const gamepad = runtime.getControllerGamepad?.(controller);
@@ -67,11 +81,23 @@ export class BendHaptics {
       const range = getHonkPitchBendRange(observation.target);
       seen.add(controller);
       let hold = this.holds.get(controller);
-      if (!hold || hold.gestureId !== gestureId || hold.target !== observation.target || hold.range !== range) {
+      if (
+        !hold ||
+        hold.gestureId !== gestureId ||
+        hold.target !== observation.target ||
+        hold.range !== range
+      ) {
         const stops = bendHapticStops(events, range);
         const gap = Math.min(...stops.slice(1).map((stop, i) => stop - stops[i]));
-        hold = { gestureId, target: observation.target, range, previous: value,
-          stops, rearm: Math.min(REARM_SEMITONES, gap / 4), disarmed: new Set() };
+        hold = {
+          gestureId,
+          target: observation.target,
+          range,
+          previous: value,
+          stops,
+          rearm: Math.min(REARM_SEMITONES, gap / 4),
+          disarmed: new Set(),
+        };
         for (const stop of stops) if (Math.abs(value - stop) <= EPSILON) hold.disarmed.add(stop);
         this.holds.set(controller, hold);
       }
@@ -81,8 +107,10 @@ export class BendHaptics {
           if (Math.abs(value - stop) > hold.rearm) hold.disarmed.delete(stop);
           continue;
         }
-        if ((hold.previous < stop - EPSILON && value >= stop - EPSILON) ||
-            (hold.previous > stop + EPSILON && value <= stop + EPSILON)) {
+        if (
+          (hold.previous < stop - EPSILON && value >= stop - EPSILON) ||
+          (hold.previous > stop + EPSILON && value <= stop + EPSILON)
+        ) {
           crossed = true;
           if (Math.abs(value - stop) <= hold.rearm) hold.disarmed.add(stop);
         }
@@ -90,10 +118,9 @@ export class BendHaptics {
       hold.previous = value;
       // Coalesce crossings within one frame into one thud; never queue late
       // pulses that would point to a wrist angle the learner has already left.
-      if (crossed) runtime.hapticsService?.pulse(
-        gamepad, BEND_HAPTIC_PULSE,
-      )?.catch?.(() => {});
+      if (crossed) runtime.hapticsService?.pulse(gamepad, BEND_HAPTIC_PULSE)?.catch?.(() => {});
     }
-    for (const controller of this.holds.keys()) if (!seen.has(controller)) this.holds.delete(controller);
+    for (const controller of this.holds.keys())
+      if (!seen.has(controller)) this.holds.delete(controller);
   }
 }

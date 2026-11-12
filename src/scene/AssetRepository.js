@@ -39,10 +39,7 @@ export class AssetRepository {
             // Stable authored node paths let capture reference the installed asset once.
             const visit = (node, nodePath = []) => {
               const ref = {
-                path: new URL(
-                  path,
-                  globalThis.location?.href || "http://localhost/",
-                ).pathname,
+                path: new URL(path, globalThis.location?.href || "http://localhost/").pathname,
                 nodePath,
               };
               if (node.geometry) node.geometry.userData.captureAsset = ref;
@@ -69,9 +66,7 @@ export class AssetRepository {
                     };
                 }
               }
-              node.children.forEach((child, index) =>
-                visit(child, [...nodePath, index]),
-              );
+              node.children.forEach((child, index) => visit(child, [...nodePath, index]));
             };
             visit(gltf.scene);
             return gltf.scene;
@@ -93,8 +88,7 @@ export class AssetRepository {
         key,
         loadMaterialTextureSet(this.textureLoader, paths)
           .then((textures) => {
-            for (const texture of Object.values(textures))
-              this.owned.add(texture);
+            for (const texture of Object.values(textures)) this.owned.add(texture);
             if (this.disposed) {
               releaseResources(this.owned);
               throw new Error("Texture load completed after disposal");
@@ -132,8 +126,7 @@ export class AssetRepository {
       ...this.textureSets.values(),
     ]);
     for (const result of models)
-      if (result.status === "fulfilled")
-        collectResources(result.value, this.owned);
+      if (result.status === "fulfilled") collectResources(result.value, this.owned);
     releaseResources(this.owned);
     this.models.clear();
     this.textureSets.clear();

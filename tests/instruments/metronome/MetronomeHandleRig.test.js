@@ -1,10 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  METRONOME_HANDLE_CONTROLS,
-  METRONOME_SETTINGS,
-} from "../../../src/config/metronome.js";
+import { METRONOME_HANDLE_CONTROLS, METRONOME_SETTINGS } from "../../../src/config/metronome.js";
 import {
   MetronomeHandleRig,
   resolveHandleAxisInRootSpace,
@@ -13,7 +10,7 @@ import {
   mapAngleToValue,
   mapValueToAngle,
   signedAngleOnPlane,
-} from "../../../src/instruments/metronome/metronomeArcMath.js";
+} from "../../../src/instruments/core/arcMotionMath.js";
 
 test("metronome values and angles map bidirectionally with endpoint clamping", () => {
   assert.equal(mapValueToAngle(30, 30, 240, -1, 1), -1);
@@ -57,15 +54,22 @@ test("default values place both visible handles and colliders at their arc midpo
   const bpm = rig.controls.get("bpm");
   const volume = rig.controls.get("volume");
   const controls = [bpm, volume];
-  const rest = new Map(controls.map((control) => {
-    const hinge = control.pivotGroup.localToWorld(new Vector3());
-    return [control, {
-      hinge,
-      axis: control.axis.clone().transformDirection(control.restFrame.matrixWorld),
-      visible: control.handle.localToWorld(control.handle.geometry.vertices[0].clone()).sub(hinge.clone()),
-      collider: control.collider.localToWorld(new Vector3()).sub(hinge.clone()),
-    }];
-  }));
+  const rest = new Map(
+    controls.map((control) => {
+      const hinge = control.pivotGroup.localToWorld(new Vector3());
+      return [
+        control,
+        {
+          hinge,
+          axis: control.axis.clone().transformDirection(control.restFrame.matrixWorld),
+          visible: control.handle
+            .localToWorld(control.handle.geometry.vertices[0].clone())
+            .sub(hinge.clone()),
+          collider: control.collider.localToWorld(new Vector3()).sub(hinge.clone()),
+        },
+      ];
+    }),
+  );
 
   rig.setValue("bpm", METRONOME_SETTINGS.defaultBpm);
   rig.setValue("volume", METRONOME_SETTINGS.defaultVolume);
@@ -76,7 +80,9 @@ test("default values place both visible handles and colliders at their arc midpo
     const expectedAngle = (control.minAngle + control.maxAngle) / 2;
     const initial = rest.get(control);
     const hinge = control.pivotGroup.localToWorld(new Vector3());
-    const visible = control.handle.localToWorld(control.handle.geometry.vertices[0].clone()).sub(hinge.clone());
+    const visible = control.handle
+      .localToWorld(control.handle.geometry.vertices[0].clone())
+      .sub(hinge.clone());
     const collider = control.collider.localToWorld(new Vector3()).sub(hinge.clone());
     assertNear(control.angle, expectedAngle);
     assertNear(signedRotation(initial.visible, visible, initial.axis), expectedAngle, 1e-7);
@@ -104,13 +110,17 @@ test("zero-origin baked handles get distinct hinges without jumping and local Y 
 
   assertVector(bpm.rootAxis, new Vector3(0, 0, 1), 1e-7);
   assertVector(volume.rootAxis, new Vector3(0, 0, 1), 1e-7);
-  assertVector(resolveHandleAxisInRootSpace({
-    THREE,
-    root,
-    handle: bpm.pivotGroup,
-    localAxis: new Vector3(0, 1, 0),
-    restQuaternion: bpm.restPivotQuaternion,
-  }), new Vector3(0, 0, 1), 1e-7);
+  assertVector(
+    resolveHandleAxisInRootSpace({
+      THREE,
+      root,
+      handle: bpm.pivotGroup,
+      localAxis: new Vector3(0, 1, 0),
+      restQuaternion: bpm.restPivotQuaternion,
+    }),
+    new Vector3(0, 0, 1),
+    1e-7,
+  );
 });
 
 test("visible handles and colliders share one pivot transform through both control ranges", () => {
@@ -124,13 +134,15 @@ test("visible handles and colliders share one pivot transform through both contr
     rig.applyAngle(control, 0);
     const hinge = control.pivotGroup.localToWorld(new Vector3());
     const worldAxis = control.axis.clone().transformDirection(control.restFrame.matrixWorld);
-    const visibleRest = control.handle.localToWorld(control.handle.geometry.vertices[0].clone()).sub(hinge.clone());
+    const visibleRest = control.handle
+      .localToWorld(control.handle.geometry.vertices[0].clone())
+      .sub(hinge.clone());
     const colliderRest = control.collider.localToWorld(new Vector3()).sub(hinge.clone());
     const visibleRadius = visibleRest.length();
     const colliderRadius = colliderRest.length();
-    const visibleRootZ = root.worldToLocal(control.handle.localToWorld(
-      control.handle.geometry.vertices[0].clone(),
-    )).z;
+    const visibleRootZ = root.worldToLocal(
+      control.handle.localToWorld(control.handle.geometry.vertices[0].clone()),
+    ).z;
     const colliderRootZ = root.worldToLocal(control.collider.localToWorld(new Vector3())).z;
 
     for (const value of values) {
@@ -138,7 +150,9 @@ test("visible handles and colliders share one pivot transform through both contr
       const currentHinge = control.pivotGroup.localToWorld(new Vector3());
       const visiblePoint = control.handle.localToWorld(control.handle.geometry.vertices[0].clone());
       const colliderPoint = control.collider.localToWorld(new Vector3());
-      const configuredColliderPoint = control.pivotGroup.localToWorld(vector(control.config.colliderOffset));
+      const configuredColliderPoint = control.pivotGroup.localToWorld(
+        vector(control.config.colliderOffset),
+      );
       const visibleVector = visiblePoint.clone().sub(currentHinge);
       const colliderVector = colliderPoint.clone().sub(currentHinge);
 
@@ -182,11 +196,7 @@ test("angular dragging uses the static hinge-centered rest frame", () => {
     control.colliderOffset.clone().applyAxisAngle(control.axis, targetAngle),
   );
   const rayDirection = normal.clone().multiplyScalar(-1);
-  const drag = rig.beginDrag(
-    "bpm",
-    startPoint.clone().addScaledVector(normal, 10),
-    rayDirection,
-  );
+  const drag = rig.beginDrag("bpm", startPoint.clone().addScaledVector(normal, 10), rayDirection);
   const result = rig.updateDrag(
     drag,
     targetPoint.clone().addScaledVector(normal, 10),
@@ -301,15 +311,21 @@ function createOutletsFixture() {
   group1.scale.setScalar(0.01);
   root.add(group1);
 
-  const left = new Mesh(new Geometry([
-    new Vector3(16.025203704833984, 14.4, 10.2),
-    new Vector3(9.554720878601074, 15.2, 3.682633876800537),
-  ]), null);
+  const left = new Mesh(
+    new Geometry([
+      new Vector3(16.025203704833984, 14.4, 10.2),
+      new Vector3(9.554720878601074, 15.2, 3.682633876800537),
+    ]),
+    null,
+  );
   left.name = "L_handle_geo";
-  const right = new Mesh(new Geometry([
-    new Vector3(-16.125577926635742, 14.2, 9.8),
-    new Vector3(-9.758662223815918, 15.4, 3.2848024368286133),
-  ]), null);
+  const right = new Mesh(
+    new Geometry([
+      new Vector3(-16.125577926635742, 14.2, 9.8),
+      new Vector3(-9.758662223815918, 15.4, 3.2848024368286133),
+    ]),
+    null,
+  );
   right.name = "R_handle_geo";
   const body = new Mesh(new Geometry([new Vector3(0, 0, 0)]), null);
   body.name = "body_geo";
@@ -352,27 +368,78 @@ function vector(value) {
 }
 
 class Vector3 {
-  constructor(x = 0, y = 0, z = 0) { this.set(x, y, z); }
-  set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
-  setScalar(value) { return this.set(value, value, value); }
-  clone() { return new Vector3(this.x, this.y, this.z); }
-  copy(value) { return this.set(value.x, value.y, value.z); }
-  add(value) { this.x += value.x; this.y += value.y; this.z += value.z; return this; }
-  sub(value) { this.x -= value.x; this.y -= value.y; this.z -= value.z; return this; }
-  addScaledVector(value, scale) { this.x += value.x * scale; this.y += value.y * scale; this.z += value.z * scale; return this; }
-  multiplyScalar(scale) { this.x *= scale; this.y *= scale; this.z *= scale; return this; }
-  multiply(value) { this.x *= value.x; this.y *= value.y; this.z *= value.z; return this; }
-  divide(value) { this.x /= value.x; this.y /= value.y; this.z /= value.z; return this; }
-  dot(value) { return this.x * value.x + this.y * value.y + this.z * value.z; }
+  constructor(x = 0, y = 0, z = 0) {
+    this.set(x, y, z);
+  }
+  set(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    return this;
+  }
+  setScalar(value) {
+    return this.set(value, value, value);
+  }
+  clone() {
+    return new Vector3(this.x, this.y, this.z);
+  }
+  copy(value) {
+    return this.set(value.x, value.y, value.z);
+  }
+  add(value) {
+    this.x += value.x;
+    this.y += value.y;
+    this.z += value.z;
+    return this;
+  }
+  sub(value) {
+    this.x -= value.x;
+    this.y -= value.y;
+    this.z -= value.z;
+    return this;
+  }
+  addScaledVector(value, scale) {
+    this.x += value.x * scale;
+    this.y += value.y * scale;
+    this.z += value.z * scale;
+    return this;
+  }
+  multiplyScalar(scale) {
+    this.x *= scale;
+    this.y *= scale;
+    this.z *= scale;
+    return this;
+  }
+  multiply(value) {
+    this.x *= value.x;
+    this.y *= value.y;
+    this.z *= value.z;
+    return this;
+  }
+  divide(value) {
+    this.x /= value.x;
+    this.y /= value.y;
+    this.z /= value.z;
+    return this;
+  }
+  dot(value) {
+    return this.x * value.x + this.y * value.y + this.z * value.z;
+  }
   crossVectors(a, b) {
     this.x = a.y * b.z - a.z * b.y;
     this.y = a.z * b.x - a.x * b.z;
     this.z = a.x * b.y - a.y * b.x;
     return this;
   }
-  lengthSq() { return this.dot(this); }
-  length() { return Math.sqrt(this.lengthSq()); }
-  normalize() { return this.multiplyScalar(1 / this.length()); }
+  lengthSq() {
+    return this.dot(this);
+  }
+  length() {
+    return Math.sqrt(this.lengthSq());
+  }
+  normalize() {
+    return this.multiplyScalar(1 / this.length());
+  }
   applyQuaternion(q) {
     const { x, y, z } = this;
     const ix = q.w * x + q.y * z - q.z * y;
@@ -384,24 +451,48 @@ class Vector3 {
     this.z = iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x;
     return this;
   }
-  applyAxisAngle(axis, angle) { return this.applyQuaternion(new Quaternion().setFromAxisAngle(axis, angle)); }
-  transformDirection(object) { return this.applyQuaternion(object.getWorldQuaternion(new Quaternion())).normalize(); }
+  applyAxisAngle(axis, angle) {
+    return this.applyQuaternion(new Quaternion().setFromAxisAngle(axis, angle));
+  }
+  transformDirection(object) {
+    return this.applyQuaternion(object.getWorldQuaternion(new Quaternion())).normalize();
+  }
 }
 
 class Quaternion {
-  constructor(x = 0, y = 0, z = 0, w = 1) { Object.assign(this, { x, y, z, w }); }
-  clone() { return new Quaternion(this.x, this.y, this.z, this.w); }
-  copy(value) { Object.assign(this, value); return this; }
-  identity() { return this.copy(new Quaternion()); }
-  normalize() {
-    const length = Math.hypot(this.x, this.y, this.z, this.w);
-    this.x /= length; this.y /= length; this.z /= length; this.w /= length;
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    Object.assign(this, { x, y, z, w });
+  }
+  clone() {
+    return new Quaternion(this.x, this.y, this.z, this.w);
+  }
+  copy(value) {
+    Object.assign(this, value);
     return this;
   }
-  invert() { this.x *= -1; this.y *= -1; this.z *= -1; return this.normalize(); }
+  identity() {
+    return this.copy(new Quaternion());
+  }
+  normalize() {
+    const length = Math.hypot(this.x, this.y, this.z, this.w);
+    this.x /= length;
+    this.y /= length;
+    this.z /= length;
+    this.w /= length;
+    return this;
+  }
+  invert() {
+    this.x *= -1;
+    this.y *= -1;
+    this.z *= -1;
+    return this.normalize();
+  }
   setFromAxisAngle(axis, angle) {
     const sine = Math.sin(angle / 2);
-    this.x = axis.x * sine; this.y = axis.y * sine; this.z = axis.z * sine; this.w = Math.cos(angle / 2);
+    this.x = axis.x * sine;
+    this.y = axis.y * sine;
+    this.z = axis.z * sine;
+    this.w = Math.cos(angle / 2);
     return this;
   }
   multiply(other) {
@@ -470,7 +561,10 @@ class Object3D {
     const chain = [];
     for (let object = this; object; object = object.parent) chain.push(object);
     for (const object of chain.reverse()) {
-      value.sub(object.position).applyQuaternion(object.quaternion.clone().invert()).divide(object.scale);
+      value
+        .sub(object.position)
+        .applyQuaternion(object.quaternion.clone().invert())
+        .divide(object.scale);
     }
     return value;
   }
@@ -478,21 +572,35 @@ class Object3D {
 
 class Group extends Object3D {}
 class Mesh extends Object3D {
-  constructor(geometry, material) { super(); this.geometry = geometry; this.material = material; }
+  constructor(geometry, material) {
+    super();
+    this.geometry = geometry;
+    this.material = material;
+  }
   raycast() {}
 }
 class Geometry {
-  constructor(vertices) { this.vertices = vertices; this.userData = {}; }
+  constructor(vertices) {
+    this.vertices = vertices;
+    this.userData = {};
+  }
 }
 class SphereGeometry {
   constructor(radius, widthSegments, heightSegments) {
     Object.assign(this, { radius, widthSegments, heightSegments, userData: {} });
   }
-  dispose() { this.disposed = true; }
+  dispose() {
+    this.disposed = true;
+  }
 }
 class MeshBasicMaterial {
-  constructor(options) { Object.assign(this, options); this.userData = {}; }
-  dispose() { this.disposed = true; }
+  constructor(options) {
+    Object.assign(this, options);
+    this.userData = {};
+  }
+  dispose() {
+    this.disposed = true;
+  }
 }
 
 const THREE = {
@@ -503,8 +611,8 @@ const THREE = {
   Vector3,
   Quaternion,
   MathUtils: {
-    degToRad: (value) => value * Math.PI / 180,
-    radToDeg: (value) => value * 180 / Math.PI,
+    degToRad: (value) => (value * Math.PI) / 180,
+    radToDeg: (value) => (value * 180) / Math.PI,
   },
 };
 

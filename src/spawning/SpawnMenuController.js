@@ -31,12 +31,18 @@ export class SpawnMenuController {
           selectedIndex: state.radialMenuParentSelectedIndex,
         });
       }
-      if (resolvePullPhase(state.radialMenuPhase, pullDistance, this.settings) === RadialMenuPhase.child) {
+      if (
+        resolvePullPhase(state.radialMenuPhase, pullDistance, this.settings) ===
+        RadialMenuPhase.child
+      ) {
         this.view.beginChildLayer(controller, state);
         state.radialMenuPhase = RadialMenuPhase.child;
         this.emitStateChange(controller, state, "layer", { phase: RadialMenuPhase.child });
       }
-    } else if (resolvePullPhase(state.radialMenuPhase, pullDistance, this.settings) === RadialMenuPhase.parent) {
+    } else if (
+      resolvePullPhase(state.radialMenuPhase, pullDistance, this.settings) ===
+      RadialMenuPhase.parent
+    ) {
       this.view.returnToParentLayer(controller, state);
       state.radialMenuPhase = RadialMenuPhase.parent;
       this.emitStateChange(controller, state, "layer", { phase: RadialMenuPhase.parent });

@@ -12,474 +12,493 @@ import {
   getLooperControlMorphWeights,
   getLooperControlValueFromDrag,
 } from "../../instruments/looper/view/looperControlPresentation.js";
-import {
-  getLooperButtonName,
-  getLooperControlName,
-} from "../../instruments/looper/looperNames.js";
+import { getLooperButtonName, getLooperControlName } from "../../instruments/looper/looperNames.js";
 
 const tempControlDragPosition = new THREE.Vector3();
 
-
 export const LooperTransportRuntimeMethods = {
-    handleLooperTriggerPress(controller, hit) {
-      const target = hit?.object;
-      if (!target?.userData?.isLooperCollider) {
-        return false;
-      }
-  
-      const controllerState = this.controllerStates.get(controller);
-      const looperState = this.instrumentRegistry?.getFromObject3D?.(target) || null;
-      if (!controllerState || !this.isLooperRuntimeState(looperState) || !looperState.root?.visible) {
-        return false;
-      }
-  
-      this.activeInstrumentState = looperState;
-  
-      if (target.userData.isLooperButton) {
-        this.pressLooperButton(looperState, target.userData.looperButtonAction, target.userData.looperMorphName);
-        controllerState.activeTriggerInteraction = null;
-        return true;
-      }
-  
-      if (target.userData.isLooperNode) {
-        const track = this.getLooperTrack(looperState, target.userData.looperTrackIndex);
-        if (track) {
-          controllerState.activeTriggerInteraction = this.startLooperWireInteraction(controller, looperState, track);
-        }
-        return true;
-      }
-  
-      if (target.userData.isLooperControl) {
-        const startValue = this.getLooperControlValue(looperState, target.userData.looperControl);
-        controllerState.activeTriggerInteraction = {
-          type: "looperControlDrag",
-          looperState,
-          control: target.userData.looperControl,
-          morphTargets: target.userData.looperMorphTargets || null,
-          sphere: target,
-          dragStartValue: startValue,
-          dragStartControllerPosition: this.getControllerLocalPosition(controller, looperState).clone(),
-          dragStartColliderPosition: target.position.clone(),
-        };
-        return true;
-      }
-  
+  handleLooperTriggerPress(controller, hit) {
+    const target = hit?.object;
+    if (!target?.userData?.isLooperCollider) {
       return false;
-    },
-    toggleLockedLooperPlayback(looperState) {
-      const data = looperState?.looperData;
-      if (!data) {
-        return;
-      }
-  
-      if (data.playing && !data.paused) {
-        this.pressLooperButton(
-          looperState,
-          "pause",
-          looperState.hitTargets[getLooperButtonName("pause")]?.userData.looperMorphName,
-        );
-        return;
-      }
-  
+    }
+
+    const controllerState = this.controllerStates.get(controller);
+    const looperState = this.instrumentRegistry?.getFromObject3D?.(target) || null;
+    if (!controllerState || !this.isLooperRuntimeState(looperState) || !looperState.root?.visible) {
+      return false;
+    }
+
+    this.activeInstrumentState = looperState;
+
+    if (target.userData.isLooperButton) {
       this.pressLooperButton(
         looperState,
-        data.queued || data.playArmed ? "pause" : "play",
-        looperState.hitTargets[getLooperButtonName("play")]?.userData.looperMorphName,
+        target.userData.looperButtonAction,
+        target.userData.looperMorphName,
       );
-    },
-    pressLooperButton(looperState, action, morphName = null, now = performance.now(), origin = "learner") {
-      if (!this.isLooperRuntimeState(looperState)) {
-        return;
-      }
-  
-      looperState.looperData.activityRevision++;
-      if (action === "record") {
-        this.setLooperButtonMorph(looperState, "record", 1, morphName);
-        this.setLooperButtonMorph(looperState, "play", 0);
-        this.startRecording(looperState, now);
-        this.updateLooperVisuals(looperState);
-        return;
-      }
-  
-      if (action === "stop") {
-        const wasIdle =
-          !looperState.looperData.recording &&
-          !looperState.looperData.playing &&
-          !looperState.looperData.paused &&
-          !looperState.looperData.armed;
-        this.triggerLooperButtonMorph(looperState, "stop", performance.now(), morphName);
-        this.setLooperButtonMorph(looperState, "record", 0);
-        this.setLooperButtonMorph(looperState, "play", 0);
-        const justCompleted = looperState.looperData.recordingCompletion?.automatic &&
-          now - looperState.looperData.recordingCompletion.observedAtMs <= LOOPER_MORPH_SETTINGS.buttonPressDurationMs;
-        if (wasIdle && !justCompleted) {
-          this.clearRecording(looperState);
-        } else {
-          this.stopRecording(looperState, now);
-          this.stopPlayback(looperState);
-        }
-        this.updateLooperVisuals(looperState);
-        return;
-      }
-  
-      if (action === "play") {
-        this.setLooperButtonMorph(looperState, "record", 0);
-        const accepted = this.startPlayback(looperState, now, {origin});
-        this.updateLooperVisuals(looperState);
-        // A rejected Play (for example, before anything is recorded) still
-        // needs to show the physical button press instead of being reset in
-        // the same frame by updateLooperVisuals().
-        if (!accepted) {
-          this.triggerLooperButtonMorph(looperState, "play", performance.now(), morphName);
-          this.updateLooperVisuals(looperState);
-        }
-        return;
-      }
-  
-      if (action === "pause") {
-        this.triggerLooperButtonMorph(looperState, "pause", performance.now(), morphName);
-        this.setLooperButtonMorph(looperState, "play", 0);
-        this.pausePlayback(looperState, now);
-        this.updateLooperVisuals(looperState);
-      }
-    },
-    updateLooperControlDrag(controller, interaction) {
-      const sphere = interaction.sphere;
-      const looperState = interaction.looperState;
-      if (!sphere || !this.isLooperRuntimeState(looperState)) {
-        return;
-      }
-  
-      const currentControllerPosition = this.getControllerLocalPosition(controller, looperState);
-      const nextValue = getLooperControlValueFromDrag(
-        sphere.userData.looperControlPath,
-        interaction.dragStartControllerPosition,
-        interaction.dragStartColliderPosition,
-        currentControllerPosition,
-      );
-      if (nextValue === null) return;
-      const previous = this.getLooperControlValue(looperState, interaction.control);
-      const applied = this.setLooperControlValue(looperState, interaction.control, nextValue, true, interaction.morphTargets);
-      if (interaction.control === 'recordLength' && applied !== previous) {
-        this.hapticsService?.pulse(this.getControllerGamepad(controller), {intensity:0.35, durationMs:18})?.catch?.(() => {});
-      }
-    },
-    getControllerLocalPosition(controller, instrumentState) {
-      controller.updateMatrixWorld(true);
-      instrumentState.root.updateMatrixWorld(true);
-      controller.getWorldPosition(tempControlDragPosition);
-      instrumentState.root.worldToLocal(tempControlDragPosition);
-      return tempControlDragPosition;
-    },
-    positionControlColliderFromValue(sphere, value) {
-      if (!sphere) {
-        return;
-      }
-      const position = getLooperControlColliderPosition(sphere.userData, value);
-      if (!position) return;
-      sphere.position.set(position.x, position.y, position.z);
-    },
-    isLooperRuntimeState(instrumentState) {
-      return Boolean(
-        instrumentState &&
-        instrumentState.kind === "looper" &&
-        instrumentState.looperData,
-      );
-    },
-    getLooperRuntimeState(looperState) {
-      if (!looperState) {
-        return null;
-      }
+      controllerState.activeTriggerInteraction = null;
+      return true;
+    }
 
-      return this.instrumentRegistry?.get?.(looperState.id) || looperState;
-    },
-    getLooperControllerForState(looperState) {
-      return this.getLooperRuntimeState(looperState)?.looperController || null;
-    },
-    getLooperData(looperState) {
-      return this.getLooperRuntimeState(looperState)?.looperData || null;
-    },
-    getStableInstrumentId(instrumentOrId) {
-      if (typeof instrumentOrId === "string" || typeof instrumentOrId === "number") {
-        return instrumentOrId;
+    if (target.userData.isLooperNode) {
+      const track = this.getLooperTrack(looperState, target.userData.looperTrackIndex);
+      if (track) {
+        controllerState.activeTriggerInteraction =
+          this.looperConnections.startLooperWireInteraction(controller, looperState, track);
       }
-      return instrumentOrId?.id ?? null;
-    },
-    resolveHonkStateById(honkId) {
-      if (honkId === null || honkId === undefined) {
-        return null;
-      }
+      return true;
+    }
 
-      return (
-        this.instrumentRegistry?.get?.(honkId) ||
-        this.instrumentStates?.find?.((instrumentState) => instrumentState.id === honkId) ||
-        null
-      );
-    },
-    getLooperRuntimeEntries() {
-      const candidates = [
-        ...(this.instrumentStates || []),
-        ...(this.instrumentRegistry?.getByKind?.("looper") || []),
-      ];
-      const seen = new Set();
-      const entries = [];
-      for (const candidate of candidates) {
-        const looperState = this.getLooperRuntimeState(candidate);
-        if (!this.isLooperRuntimeState(looperState) || seen.has(looperState)) {
-          continue;
-        }
-        const controller = looperState.looperController;
-        if (!controller) {
-          continue;
-        }
-        seen.add(looperState);
-        entries.push({ looperState, controller });
-      }
-      return entries;
-    },
-    getLooperTrack(looperState, trackIndexOrId) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      const controller = runtimeState?.looperController;
-      if (!runtimeState?.looperData) {
-        return null;
-      }
+    if (target.userData.isLooperControl) {
+      const startValue = this.getLooperControlValue(looperState, target.userData.looperControl);
+      controllerState.activeTriggerInteraction = {
+        type: "looperControlDrag",
+        looperState,
+        control: target.userData.looperControl,
+        morphTargets: target.userData.looperMorphTargets || null,
+        sphere: target,
+        dragStartValue: startValue,
+        dragStartControllerPosition: this.getControllerLocalPosition(
+          controller,
+          looperState,
+        ).clone(),
+        dragStartColliderPosition: target.position.clone(),
+      };
+      return true;
+    }
 
-      return controller?.getTrack?.(runtimeState, trackIndexOrId) ||
-        runtimeState.looperData.tracks[trackIndexOrId] ||
-        null;
-    },
-    getLooperWireColor(padIndex) {
-      return LOOPER_WIRE_COLORS[Math.abs(padIndex) % LOOPER_WIRE_COLORS.length];
-    },
-    getLooperControlValue(looperState, control) {
-      const data = this.getLooperData(looperState);
-      if (!data) {
-        return 0;
-      }
-  
-      if (control === "gap") {
-        return data.gapControlValue;
-      }
-      if (control === 'recordLength') return data.recordLengthControlValue;
-      return data.volumeControlValue;
-    },
-    setLooperControlValue(looperState, control, value, updateSphere = true, morphTargetsOverride = null) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      const controller = runtimeState?.looperController;
-      if (!runtimeState?.looperData || !controller) {
-        return;
-      }
-  
-      const clamped = THREE.MathUtils.clamp(value, -1, 1);
-      const appliedValue = controller.setControlValue(runtimeState, control, clamped);
-      if (appliedValue === null) {
-        return;
-      }
-  
-      this.applyLooperControlMorphValue(looperState, control, appliedValue, morphTargetsOverride);
-  
-      if (updateSphere) {
-        const sphere = looperState.hitTargets[getLooperControlName(control)];
-        if (sphere?.userData.isLooperControl) {
-          this.positionControlColliderFromValue(sphere, appliedValue);
-        }
-      }
-      return appliedValue;
-    },
-    getLooperVolumeFromControl(value) {
-      return LooperControlMapping.getVolumeFromControl(value);
-    },
-    getLooperGapBeatsFromControl(value) {
-      return LooperControlMapping.getGapBeatsFromControl(value);
-    },
-    applyLooperControlMorphValue(looperState, control, value, morphTargetsOverride = null) {
-      const morphTargets = morphTargetsOverride || looperState?.hitTargets?.[getLooperControlName(control)]?.userData.looperMorphTargets || LOOPER_CONTROL_MORPH_TARGETS[control];
-      if (!this.isLooperRuntimeState(looperState) || !morphTargets) {
-        return;
-      }
-  
-      const weights = getLooperControlMorphWeights(value);
-      this.setMorph(morphTargets.up, weights.up, looperState);
-      this.setMorph(morphTargets.down, weights.down, looperState);
-    },
-    setLooperButtonMorph(looperState, action, value, morphNameOverride = null) {
-      const data = this.getLooperData(looperState);
-      const morphName = this.getLooperButtonMorphName(looperState, action, morphNameOverride);
-      if (!data || !morphName) {
-        return;
-      }
-  
-      this.setMorph(morphName, value, looperState);
-      if (value <= 0) {
-        data.buttonMorphReleaseTimes?.delete(action);
-      }
-    },
-    getLooperButtonMorphName(looperState, action, morphNameOverride = null) {
-      return (
-        morphNameOverride ||
-        looperState?.hitTargets?.[getLooperButtonName(action)]?.userData.looperMorphName ||
-        LOOPER_BUTTON_MORPH_TARGETS[action]
+    return false;
+  },
+  toggleLockedLooperPlayback(looperState) {
+    const data = looperState?.looperData;
+    if (!data) {
+      return;
+    }
+
+    if (data.playing && !data.paused) {
+      this.pressLooperButton(
+        looperState,
+        "pause",
+        looperState.hitTargets[getLooperButtonName("pause")]?.userData.looperMorphName,
       );
-    },
-    triggerLooperButtonMorph(looperState, action, now = performance.now(), morphNameOverride = null) {
-      const data = this.getLooperData(looperState);
-      const morphName = this.getLooperButtonMorphName(looperState, action, morphNameOverride);
-      if (!data || !morphName) {
-        return;
-      }
-  
-      this.setMorph(morphName, 1, looperState);
-      data.buttonMorphReleaseTimes.set(action, {
-        releaseTimeMs: now + LOOPER_MORPH_SETTINGS.buttonPressDurationMs,
-        morphName,
-      });
-    },
-    updateLooperMorphAnimations(now = performance.now()) {
-      for (const looperState of this.instrumentStates) {
-        const data = this.getLooperData(looperState);
-        if (!data || !looperState.root?.visible) {
-          continue;
-        }
-  
-        this.updateLooperButtonMorphs(looperState, now);
-        this.updateLooperPlayingMorph(looperState, now);
-      }
-    },
-    updateLooperButtonMorphs(looperState, now) {
-      const data = this.getLooperData(looperState);
-      if (!data?.buttonMorphReleaseTimes) {
-        return;
-      }
-  
-      for (const [action, releaseEntry] of data.buttonMorphReleaseTimes) {
-        if (now < releaseEntry.releaseTimeMs) {
-          continue;
-        }
-        if (releaseEntry.morphName) {
-          this.setMorph(releaseEntry.morphName, 0, looperState);
-        }
-        data.buttonMorphReleaseTimes.delete(action);
-      }
-    },
-    updateLooperPlayingMorph(looperState, now) {
-      const data = this.getLooperData(looperState);
-      if (!data) {
-        return;
-      }
-  
-      if (data.queued) this.setLooperButtonMorph(looperState, "play", 0.35 + 0.3 * (1 + Math.sin(now / 180)));
-      const settings = LOOPER_MORPH_SETTINGS.playingHead;
-      const min = settings.min ?? 0;
-      const max = settings.max ?? 1;
-      if (data.playing && !data.paused) {
-        const previousUpdateMs = data.lastPlayingHeadMorphUpdateMs || now;
-        const deltaMs = Math.max(now - previousUpdateMs, 0);
-        const averageIncrement = Math.max(
-          ((settings.minIncrement ?? 0.06) + (settings.maxIncrement ?? 0.18)) * 0.5,
-          0.0001,
-        );
-        const cycleMs = Math.max((settings.changeIntervalMs ?? 90) / averageIncrement, 1);
-        data.playingHeadMorphPhase =
-          (data.playingHeadMorphPhase || 0) + (deltaMs / cycleMs) * Math.PI * 2;
-        data.playingHeadMorphTarget = THREE.MathUtils.lerp(
-          min,
-          max,
-          0.5 - Math.cos(data.playingHeadMorphPhase) * 0.5,
-        );
-        data.playingHeadMorphValue = THREE.MathUtils.lerp(
-          data.playingHeadMorphValue ?? min,
-          data.playingHeadMorphTarget,
-          0.24,
-        );
-        data.lastPlayingHeadMorphUpdateMs = now;
+      return;
+    }
+
+    this.pressLooperButton(
+      looperState,
+      data.queued || data.playArmed ? "pause" : "play",
+      looperState.hitTargets[getLooperButtonName("play")]?.userData.looperMorphName,
+    );
+  },
+  pressLooperButton(
+    looperState,
+    action,
+    morphName = null,
+    now = performance.now(),
+    origin = "learner",
+  ) {
+    if (!this.isLooperRuntimeState(looperState)) {
+      return;
+    }
+
+    looperState.looperData.activityRevision++;
+    if (action === "record") {
+      this.setLooperButtonMorph(looperState, "record", 1, morphName);
+      this.setLooperButtonMorph(looperState, "play", 0);
+      this.startRecording(looperState, now);
+      this.looperConnections.updateLooperVisuals(looperState);
+      return;
+    }
+
+    if (action === "stop") {
+      const finishingRecording =
+        looperState.looperData.recording || looperState.looperData.recordArmed;
+      this.triggerLooperButtonMorph(looperState, "stop", performance.now(), morphName);
+      this.setLooperButtonMorph(looperState, "record", 0);
+      this.setLooperButtonMorph(looperState, "play", 0);
+      const justCompleted =
+        looperState.looperData.recordingCompletion?.automatic &&
+        now - looperState.looperData.recordingCompletion.observedAtMs <=
+          LOOPER_MORPH_SETTINGS.buttonPressDurationMs;
+      if (!finishingRecording && !justCompleted) {
+        this.clearRecording(looperState);
       } else {
-        data.playingHeadMorphValue = THREE.MathUtils.lerp(data.playingHeadMorphValue ?? min, min, 0.24);
-        data.lastPlayingHeadMorphUpdateMs = now;
+        this.stopRecording(looperState, now);
+        this.stopPlayback(looperState);
       }
-  
-      this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, data.playingHeadMorphValue, looperState);
-    },
-    clearLooperRuntimeState(looperState) {
+      this.looperConnections.updateLooperVisuals(looperState);
+      return;
+    }
+
+    if (action === "play") {
+      this.setLooperButtonMorph(looperState, "record", 0);
+      const accepted = this.startPlayback(looperState, now, { origin });
+      this.looperConnections.updateLooperVisuals(looperState);
+      // A rejected Play (for example, before anything is recorded) still
+      // needs to show the physical button press instead of being reset in
+      // the same frame by updateLooperVisuals().
+      if (!accepted) {
+        this.triggerLooperButtonMorph(looperState, "play", performance.now(), morphName);
+        this.looperConnections.updateLooperVisuals(looperState);
+      }
+      return;
+    }
+
+    if (action === "pause") {
+      this.triggerLooperButtonMorph(looperState, "pause", performance.now(), morphName);
+      this.setLooperButtonMorph(looperState, "play", 0);
+      this.pausePlayback(looperState, now);
+      this.looperConnections.updateLooperVisuals(looperState);
+    }
+  },
+  updateLooperControlDrag(controller, interaction) {
+    const sphere = interaction.sphere;
+    const looperState = interaction.looperState;
+    if (!sphere || !this.isLooperRuntimeState(looperState)) {
+      return;
+    }
+
+    const currentControllerPosition = this.getControllerLocalPosition(controller, looperState);
+    const nextValue = getLooperControlValueFromDrag(
+      sphere.userData.looperControlPath,
+      interaction.dragStartControllerPosition,
+      interaction.dragStartColliderPosition,
+      currentControllerPosition,
+    );
+    if (nextValue === null) return;
+    const previous = this.getLooperControlValue(looperState, interaction.control);
+    const applied = this.setLooperControlValue(
+      looperState,
+      interaction.control,
+      nextValue,
+      true,
+      interaction.morphTargets,
+    );
+    if (interaction.control === "recordLength" && applied !== previous) {
+      this.hapticsService
+        ?.pulse(this.getControllerGamepad(controller), {
+          intensity: 0.35,
+          durationMs: 18,
+        })
+        ?.catch?.(() => {});
+    }
+  },
+  getControllerLocalPosition(controller, instrumentState) {
+    controller.updateMatrixWorld(true);
+    instrumentState.root.updateMatrixWorld(true);
+    controller.getWorldPosition(tempControlDragPosition);
+    instrumentState.root.worldToLocal(tempControlDragPosition);
+    return tempControlDragPosition;
+  },
+  positionControlColliderFromValue(sphere, value) {
+    if (!sphere) {
+      return;
+    }
+    const position = getLooperControlColliderPosition(sphere.userData, value);
+    if (!position) return;
+    sphere.position.set(position.x, position.y, position.z);
+  },
+  isLooperRuntimeState(instrumentState) {
+    return Boolean(
+      instrumentState && instrumentState.kind === "looper" && instrumentState.looperData,
+    );
+  },
+  getLooperRuntimeState(looperState) {
+    if (!looperState) {
+      return null;
+    }
+
+    return this.instrumentRegistry?.get?.(looperState.id) || looperState;
+  },
+  getLooperControllerForState(looperState) {
+    return this.getLooperRuntimeState(looperState)?.looperController || null;
+  },
+  getLooperData(looperState) {
+    return this.getLooperRuntimeState(looperState)?.looperData || null;
+  },
+  getStableInstrumentId(instrumentOrId) {
+    if (typeof instrumentOrId === "string" || typeof instrumentOrId === "number") {
+      return instrumentOrId;
+    }
+    return instrumentOrId?.id ?? null;
+  },
+  resolveHonkStateById(honkId) {
+    if (honkId === null || honkId === undefined) {
+      return null;
+    }
+
+    return this.instrumentRegistry.get(honkId) || null;
+  },
+  getLooperTrack(looperState, trackIndexOrId) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    const controller = runtimeState?.looperController;
+    if (!runtimeState?.looperData) {
+      return null;
+    }
+
+    return (
+      controller?.getTrack?.(runtimeState, trackIndexOrId) ||
+      runtimeState.looperData.tracks[trackIndexOrId] ||
+      null
+    );
+  },
+  getLooperWireColor(padIndex) {
+    return LOOPER_WIRE_COLORS[Math.abs(padIndex) % LOOPER_WIRE_COLORS.length];
+  },
+  getLooperControlValue(looperState, control) {
+    const data = this.getLooperData(looperState);
+    if (!data) {
+      return 0;
+    }
+
+    if (control === "gap") {
+      return data.gapControlValue;
+    }
+    if (control === "recordLength") return data.recordLengthControlValue;
+    return data.volumeControlValue;
+  },
+  setLooperControlValue(
+    looperState,
+    control,
+    value,
+    updateSphere = true,
+    morphTargetsOverride = null,
+  ) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    const controller = runtimeState?.looperController;
+    if (!runtimeState?.looperData || !controller) {
+      return;
+    }
+
+    const clamped = THREE.MathUtils.clamp(value, -1, 1);
+    const appliedValue = controller.setControlValue(runtimeState, control, clamped);
+    if (appliedValue === null) {
+      return;
+    }
+
+    this.applyLooperControlMorphValue(looperState, control, appliedValue, morphTargetsOverride);
+
+    if (updateSphere) {
+      const sphere = looperState.hitTargets[getLooperControlName(control)];
+      if (sphere?.userData.isLooperControl) {
+        this.positionControlColliderFromValue(sphere, appliedValue);
+      }
+    }
+    return appliedValue;
+  },
+  getLooperVolumeFromControl(value) {
+    return LooperControlMapping.getVolumeFromControl(value);
+  },
+  getLooperGapBeatsFromControl(value) {
+    return LooperControlMapping.getGapBeatsFromControl(value);
+  },
+  applyLooperControlMorphValue(looperState, control, value, morphTargetsOverride = null) {
+    const morphTargets =
+      morphTargetsOverride ||
+      looperState?.hitTargets?.[getLooperControlName(control)]?.userData.looperMorphTargets ||
+      LOOPER_CONTROL_MORPH_TARGETS[control];
+    if (!this.isLooperRuntimeState(looperState) || !morphTargets) {
+      return;
+    }
+
+    const weights = getLooperControlMorphWeights(value);
+    this.presentation.setMorph(morphTargets.up, weights.up, looperState);
+    this.presentation.setMorph(morphTargets.down, weights.down, looperState);
+  },
+  setLooperButtonMorph(looperState, action, value, morphNameOverride = null) {
+    const data = this.getLooperData(looperState);
+    const morphName = this.getLooperButtonMorphName(looperState, action, morphNameOverride);
+    if (!data || !morphName) {
+      return;
+    }
+
+    this.presentation.setMorph(morphName, value, looperState);
+    if (value <= 0) {
+      data.buttonMorphReleaseTimes?.delete(action);
+    }
+  },
+  getLooperButtonMorphName(looperState, action, morphNameOverride = null) {
+    return (
+      morphNameOverride ||
+      looperState?.hitTargets?.[getLooperButtonName(action)]?.userData.looperMorphName ||
+      LOOPER_BUTTON_MORPH_TARGETS[action]
+    );
+  },
+  triggerLooperButtonMorph(looperState, action, now = performance.now(), morphNameOverride = null) {
+    const data = this.getLooperData(looperState);
+    const morphName = this.getLooperButtonMorphName(looperState, action, morphNameOverride);
+    if (!data || !morphName) {
+      return;
+    }
+
+    this.presentation.setMorph(morphName, 1, looperState);
+    data.buttonMorphReleaseTimes.set(action, {
+      releaseTimeMs: now + LOOPER_MORPH_SETTINGS.buttonPressDurationMs,
+      morphName,
+    });
+  },
+  updateLooperMorphAnimations(now = performance.now()) {
+    for (const looperState of this.instrumentRegistry.getByKind("looper")) {
       const data = this.getLooperData(looperState);
-      if (!data) {
-        return;
+      if (!data || !looperState.root?.visible) {
+        continue;
       }
-  
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      runtimeState?.looperController?.clearRuntimeState(runtimeState);
-      data.buttonMorphReleaseTimes.clear();
-      for (const morphName of Object.values(LOOPER_BUTTON_MORPH_TARGETS)) {
-        this.setMorph(morphName, 0, looperState);
+
+      this.updateLooperButtonMorphs(looperState, now);
+      this.updateLooperPlayingMorph(looperState, now);
+    }
+  },
+  updateLooperButtonMorphs(looperState, now) {
+    const data = this.getLooperData(looperState);
+    if (!data?.buttonMorphReleaseTimes) {
+      return;
+    }
+
+    for (const [action, releaseEntry] of data.buttonMorphReleaseTimes) {
+      if (now < releaseEntry.releaseTimeMs) {
+        continue;
       }
-      data.playingHeadMorphValue = 0;
-      data.playingHeadMorphTarget = 0;
-      data.playingHeadMorphPhase = 0;
-      data.lastPlayingHeadMorphUpdateMs = 0;
-      this.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, 0, looperState);
-    },
-    startRecording(looperState, now = performance.now()) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.startRecording(runtimeState, now) ?? false;
-    },
-    stopRecording(looperState, now = performance.now()) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.stopRecording(runtimeState, now) ?? false;
-    },
-    clearRecording(looperState) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.clearRecording(runtimeState);
-    },
-    startPlayback(looperState, now = performance.now(), options = {}) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.startPlayback(runtimeState, now, options) ?? false;
-    },
-    pausePlayback(looperState, now = performance.now()) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.pausePlayback(runtimeState, now) ?? false;
-    },
-    stopPlayback(looperState) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.stopPlayback(runtimeState) ?? false;
-    },
-    updatePlayback(delta = 0, time = performance.now()) {
-      this.updateLooperPlayback(time);
-      this.updateLooperPlaybackAudio();
-    },
-    updateLooperRecordings(now = performance.now()) {
-      for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
-        controller.updateRecordings([looperState], now);
+      if (releaseEntry.morphName) {
+        this.presentation.setMorph(releaseEntry.morphName, 0, looperState);
       }
-    },
-    updateClockedLooperTransports(now = performance.now()) {
-      for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
-        controller.updateClockedTransports([looperState], now);
-        this.updateLooperTempoLabel?.(looperState, now);
+      data.buttonMorphReleaseTimes.delete(action);
+    }
+  },
+  updateLooperPlayingMorph(looperState, now) {
+    const data = this.getLooperData(looperState);
+    if (!data) {
+      return;
+    }
+
+    if (data.queued)
+      this.setLooperButtonMorph(looperState, "play", 0.35 + 0.3 * (1 + Math.sin(now / 180)));
+    const settings = LOOPER_MORPH_SETTINGS.playingHead;
+    const min = settings.min ?? 0;
+    const max = settings.max ?? 1;
+    if (data.playing && !data.paused) {
+      const previousUpdateMs = data.lastPlayingHeadMorphUpdateMs || now;
+      const deltaMs = Math.max(now - previousUpdateMs, 0);
+      const averageIncrement = Math.max(
+        ((settings.minIncrement ?? 0.06) + (settings.maxIncrement ?? 0.18)) * 0.5,
+        0.0001,
+      );
+      const cycleMs = Math.max((settings.changeIntervalMs ?? 90) / averageIncrement, 1);
+      data.playingHeadMorphPhase =
+        (data.playingHeadMorphPhase || 0) + (deltaMs / cycleMs) * Math.PI * 2;
+      data.playingHeadMorphTarget = THREE.MathUtils.lerp(
+        min,
+        max,
+        0.5 - Math.cos(data.playingHeadMorphPhase) * 0.5,
+      );
+      data.playingHeadMorphValue = THREE.MathUtils.lerp(
+        data.playingHeadMorphValue ?? min,
+        data.playingHeadMorphTarget,
+        0.24,
+      );
+      data.lastPlayingHeadMorphUpdateMs = now;
+    } else {
+      data.playingHeadMorphValue = THREE.MathUtils.lerp(
+        data.playingHeadMorphValue ?? min,
+        min,
+        0.24,
+      );
+      data.lastPlayingHeadMorphUpdateMs = now;
+    }
+
+    this.presentation.setMorph(
+      LOOPER_MORPH_TARGET_NAMES.playingHead,
+      data.playingHeadMorphValue,
+      looperState,
+    );
+  },
+  clearLooperRuntimeState(looperState) {
+    const data = this.getLooperData(looperState);
+    if (!data) {
+      return;
+    }
+
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    runtimeState?.looperController?.clearRuntimeState(runtimeState);
+    data.buttonMorphReleaseTimes.clear();
+    for (const morphName of Object.values(LOOPER_BUTTON_MORPH_TARGETS)) {
+      this.presentation.setMorph(morphName, 0, looperState);
+    }
+    data.playingHeadMorphValue = 0;
+    data.playingHeadMorphTarget = 0;
+    data.playingHeadMorphPhase = 0;
+    data.lastPlayingHeadMorphUpdateMs = 0;
+    this.presentation.setMorph(LOOPER_MORPH_TARGET_NAMES.playingHead, 0, looperState);
+  },
+  startRecording(looperState, now = performance.now()) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    return runtimeState?.looperController?.recording.startRecording(runtimeState, now) ?? false;
+  },
+  stopRecording(looperState, now = performance.now()) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    return runtimeState?.looperController?.recording.stopRecording(runtimeState, now) ?? false;
+  },
+  clearRecording(looperState) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    return runtimeState?.looperController?.recording.clearRecording(runtimeState);
+  },
+  startPlayback(looperState, now = performance.now(), options = {}) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    return runtimeState?.looperController?.startPlayback(runtimeState, now, options) ?? false;
+  },
+  pausePlayback(looperState, now = performance.now()) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    return runtimeState?.looperController?.pausePlayback(runtimeState, now) ?? false;
+  },
+  stopPlayback(looperState) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    return runtimeState?.looperController?.stopPlayback(runtimeState) ?? false;
+  },
+  updatePlayback(delta = 0, time = performance.now()) {
+    this.updateLooperPlayback(time);
+    this.updateLooperPlaybackAudio();
+  },
+  updateLooperRecordings(now = performance.now()) {
+    for (const looperState of this.instrumentRegistry.getByKind("looper")) {
+      const controller = looperState.looperController;
+      controller.recording.updateRecordings([looperState], now);
+    }
+  },
+  updateClockedLooperTransports(now = performance.now()) {
+    for (const looperState of this.instrumentRegistry.getByKind("looper")) {
+      const controller = looperState.looperController;
+      controller.updateClockedTransports([looperState], now);
+      this.presentation.updateLooperTempoLabel?.(looperState, now);
+    }
+  },
+  updateLooperPlayback(now = performance.now()) {
+    for (const looperState of this.instrumentRegistry.getByKind("looper")) {
+      const controller = looperState.looperController;
+      controller.updatePlayback([looperState], now);
+    }
+  },
+  updateLooperPlaybackAudio() {
+    const updatedControllers = new Set();
+    for (const looperState of this.instrumentRegistry.getByKind("looper")) {
+      const controller = looperState.looperController;
+      if (!updatedControllers.has(controller)) {
+        controller.updateAutomationAudio();
+        updatedControllers.add(controller);
       }
-    },
-    updateLooperPlayback(now = performance.now()) {
-      for (const { looperState, controller } of this.getLooperRuntimeEntries()) {
-        controller.updatePlayback([looperState], now);
-      }
-    },
-    updateLooperPlaybackAudio() {
-      const updatedControllers = new Set();
-      for (const { controller } of this.getLooperRuntimeEntries()) {
-        if (!updatedControllers.has(controller)) {
-          controller.updateAutomationAudio();
-          updatedControllers.add(controller);
-        }
-      }
-    },
-    connectLooperTrackToHonk(looperState, trackIndexOrId, honkOrId) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      const honkId = this.getStableInstrumentId(honkOrId);
-      if (!runtimeState?.looperController || honkId === null || honkId === undefined) {
-        return false;
-      }
-      return Boolean(runtimeState.looperController.connectTrackToHonk(runtimeState, trackIndexOrId, honkId));
-    },
-    disconnectLooperTrack(looperState, trackIndexOrId) {
-      const runtimeState = this.getLooperRuntimeState(looperState);
-      return runtimeState?.looperController?.disconnectTrack(runtimeState, trackIndexOrId) || null;
-    },
+    }
+  },
+  connectLooperTrackToHonk(looperState, trackIndexOrId, honkOrId) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    const honkId = this.getStableInstrumentId(honkOrId);
+    if (!runtimeState?.looperController || honkId === null || honkId === undefined) {
+      return false;
+    }
+    return Boolean(
+      runtimeState.looperController.connectTrackToHonk(runtimeState, trackIndexOrId, honkId),
+    );
+  },
+  disconnectLooperTrack(looperState, trackIndexOrId) {
+    const runtimeState = this.getLooperRuntimeState(looperState);
+    return runtimeState?.looperController?.disconnectTrack(runtimeState, trackIndexOrId) || null;
+  },
 };

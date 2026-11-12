@@ -3,7 +3,13 @@ import { applyMetronomeSpawnOrientation } from "../instruments/metronome/metrono
 import { stepSpawnPreviewDistance } from "./spawnPreviewControls.js";
 
 export class SpawnPreview {
-  constructor({ controller, instruments = [], catalogEntry = null, distance = 1.5, spacing = 0.32 } = {}) {
+  constructor({
+    controller,
+    instruments = [],
+    catalogEntry = null,
+    distance = 1.5,
+    spacing = 0.32,
+  } = {}) {
     this.controller = controller;
     this.instruments = instruments;
     this.group = new THREE.Group();

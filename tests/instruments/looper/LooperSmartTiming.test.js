@@ -35,7 +35,10 @@ test("clocked recording preserves relative event timing from the first sound", (
   recorder.updateTrack(timeline, track, 1275, capture);
   recorder.stop(timeline, [track], 1600, 1, capture);
 
-  assert.deepEqual(timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs), [0, 225]);
+  assert.deepEqual(
+    timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs),
+    [0, 225],
+  );
   assert.equal(timeline.contentEndMs, 225);
   assert.equal(timeline.durationMs, 225);
 });
@@ -73,7 +76,10 @@ test("a held final note is safely released and keeps its performed duration thro
 
   recorder.stop(timeline, [track], 1400, 1, capture);
 
-  assert.deepEqual(timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs), [0, 400]);
+  assert.deepEqual(
+    timeline.getTrack(track.trackId).gateEvents.map((event) => event.timeMs),
+    [0, 400],
+  );
   assert.equal(timeline.contentEndMs, 400);
   assert.equal(timeline.recordedDurationMs, 400);
   assert.equal(timeline.durationMs, 400);
@@ -91,10 +97,18 @@ test("clocked playback chooses the next beat and stays silent while waiting", ()
   const engine = new LooperPlaybackEngine();
   let snapshots = 0;
   engine.start(1500);
-  engine.update(1499, timeline, 1, { onTrackSnapshot: () => { snapshots += 1; } });
+  engine.update(1499, timeline, 1, {
+    onTrackSnapshot: () => {
+      snapshots += 1;
+    },
+  });
   assert.equal(snapshots, 0);
   assert.equal(engine.elapsedMs, 0);
-  engine.update(1500, timeline, 1, { onTrackSnapshot: () => { snapshots += 1; } });
+  engine.update(1500, timeline, 1, {
+    onTrackSnapshot: () => {
+      snapshots += 1;
+    },
+  });
   assert.equal(snapshots, 1);
 });
 

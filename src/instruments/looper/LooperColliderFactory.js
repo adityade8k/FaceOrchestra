@@ -1,8 +1,5 @@
 import * as THREE from "three";
-import {
-  COLLIDER_DEBUG_VISUAL_SETTINGS,
-  DEBUG_MODE,
-} from "../../config/debug.js";
+import { COLLIDER_DEBUG_VISUAL_SETTINGS, DEBUG_MODE } from "../../config/debug.js";
 import {
   LOOPER_BUTTON_COLLIDERS,
   LOOPER_BUTTON_ACTIONS,
@@ -15,11 +12,7 @@ import {
   LOOPER_NODE_COLLIDER_LAYOUT,
   LOOPER_TRACK_COUNT,
 } from "../../config/looper.js";
-import {
-  getLooperButtonName,
-  getLooperControlName,
-  getLooperNodeName,
-} from "./looperNames.js";
+import { getLooperButtonName, getLooperControlName, getLooperNodeName } from "./looperNames.js";
 import { deriveLooperControlGeometry } from "./looperMorphGeometry.js";
 import { getLooperControlColliderPosition } from "./view/looperControlPresentation.js";
 
@@ -52,19 +45,9 @@ export class LooperColliderFactory {
       maxSize * buttonScale.z,
     );
     const nodeGeometry = new THREE.SphereGeometry(
-      maxSize *
-        getNumber(
-          nodeLayout.sphereScale,
-          LOOPER_NODE_COLLIDER_LAYOUT.sphereScale,
-        ),
-      getNumber(
-        nodeLayout.sphereSegments,
-        LOOPER_NODE_COLLIDER_LAYOUT.sphereSegments,
-      ),
-      getNumber(
-        nodeLayout.sphereRings,
-        LOOPER_NODE_COLLIDER_LAYOUT.sphereRings,
-      ),
+      maxSize * getNumber(nodeLayout.sphereScale, LOOPER_NODE_COLLIDER_LAYOUT.sphereScale),
+      getNumber(nodeLayout.sphereSegments, LOOPER_NODE_COLLIDER_LAYOUT.sphereSegments),
+      getNumber(nodeLayout.sphereRings, LOOPER_NODE_COLLIDER_LAYOUT.sphereRings),
     );
     const looperColliderOpacity = getDebugHitOpacity(LOOPER_COLLIDER_OPACITY);
 
@@ -101,16 +84,11 @@ export class LooperColliderFactory {
         buttonConfig,
         LOOPER_COLLIDER_GEOMETRY.buttonDefaultTransform,
       );
-      addCollider(
-        button,
-        getLooperButtonName(action),
-        LOOPER_DEBUG_COLORS.button[action],
-        {
-          isLooperButton: true,
-          looperButtonAction: action,
-          looperMorphName: buttonConfig.morphTarget,
-        },
-      );
+      addCollider(button, getLooperButtonName(action), LOOPER_DEBUG_COLORS.button[action], {
+        isLooperButton: true,
+        looperButtonAction: action,
+        looperMorphName: buttonConfig.morphTarget,
+      });
       createColliderTransformDebug(
         button,
         getLooperButtonName(action),
@@ -119,9 +97,7 @@ export class LooperColliderFactory {
     }
 
     const columnCount = Math.max(
-      Math.round(
-        getNumber(nodeLayout.columns, LOOPER_NODE_COLLIDER_LAYOUT.columns),
-      ),
+      Math.round(getNumber(nodeLayout.columns, LOOPER_NODE_COLLIDER_LAYOUT.columns)),
       LOOPER_NODE_COLLIDER_LAYOUT.minColumns,
     );
     const nodeCenter = nodeLayout.center || {};
@@ -130,10 +106,7 @@ export class LooperColliderFactory {
       const row = Math.floor(index / columnCount);
       const columnOffset =
         (column - LOOPER_NODE_COLLIDER_LAYOUT.centerColumn) *
-        getNumber(
-          nodeLayout.columnSpacing,
-          LOOPER_NODE_COLLIDER_LAYOUT.columnSpacing,
-        );
+        getNumber(nodeLayout.columnSpacing, LOOPER_NODE_COLLIDER_LAYOUT.columnSpacing);
       const node = new THREE.Mesh(
         nodeGeometry.clone(),
         this.makeHitTargetMaterial(
@@ -145,74 +118,50 @@ export class LooperColliderFactory {
       node.position.set(
         tempBoxCenter.x +
           tempBoxSize.x *
-            (getNumber(nodeCenter.x, LOOPER_NODE_COLLIDER_LAYOUT.center.x) +
-              columnOffset),
+            (getNumber(nodeCenter.x, LOOPER_NODE_COLLIDER_LAYOUT.center.x) + columnOffset),
         tempBoxCenter.y +
           tempBoxSize.y *
             (getNumber(nodeCenter.y, LOOPER_NODE_COLLIDER_LAYOUT.center.y) -
-              row *
-                getNumber(
-                  nodeLayout.rowSpacing,
-                  LOOPER_NODE_COLLIDER_LAYOUT.rowSpacing,
-                )),
+              row * getNumber(nodeLayout.rowSpacing, LOOPER_NODE_COLLIDER_LAYOUT.rowSpacing)),
         tempBoxCenter.z +
-          tempBoxSize.z *
-            getNumber(nodeCenter.z, LOOPER_NODE_COLLIDER_LAYOUT.center.z) +
+          tempBoxSize.z * getNumber(nodeCenter.z, LOOPER_NODE_COLLIDER_LAYOUT.center.z) +
           maxSize *
             getNumber(
               nodeLayout.forwardOffsetScale,
               LOOPER_NODE_COLLIDER_LAYOUT.forwardOffsetScale,
             ),
       );
-      addCollider(
-        node,
-        getLooperNodeName(index),
-        LOOPER_DEBUG_COLORS.nodeOpen,
-        {
-          isLooperNode: true,
-          looperTrackIndex: index,
-          looperBank: nodeLayout.banks[column].id,
-          wireSocketOutward: { ...nodeLayout.banks[column].outward },
-        },
-      );
+      addCollider(node, getLooperNodeName(index), LOOPER_DEBUG_COLORS.nodeOpen, {
+        isLooperNode: true,
+        looperTrackIndex: index,
+        looperBank: nodeLayout.banks[column].id,
+        wireSocketOutward: { ...nodeLayout.banks[column].outward },
+      });
     }
 
     const controlColors = {
       volume: LOOPER_DEBUG_COLORS.controlVolume,
       gap: LOOPER_DEBUG_COLORS.controlGap,
     };
-    for (const [control, controlConfig] of Object.entries(
-      LOOPER_CONTROL_COLLIDERS,
-    )) {
-      const calibration = deriveLooperControlGeometry(
-        root,
-        controlConfig.morphTargets,
-        {
-          colliderPadding:
-            LOOPER_COLLIDER_GEOMETRY.controlColliderThicknessPadding,
-          motionSelectionRatio: LOOPER_COLLIDER_GEOMETRY.controlTipMotionRatio,
-          useBoundsCenter: true,
-        },
-      );
+    for (const [control, controlConfig] of Object.entries(LOOPER_CONTROL_COLLIDERS)) {
+      const calibration = deriveLooperControlGeometry(root, controlConfig.morphTargets, {
+        colliderPadding: LOOPER_COLLIDER_GEOMETRY.controlColliderThicknessPadding,
+        motionSelectionRatio: LOOPER_COLLIDER_GEOMETRY.controlTipMotionRatio,
+        useBoundsCenter: true,
+      });
       if (!calibration) {
         warnMissingControlGeometry(control, controlConfig.morphTargets);
         continue;
       }
       const color =
-        controlConfig.colliderColor ||
-        controlColors[control] ||
-        LOOPER_DEBUG_COLORS.controlVolume;
+        controlConfig.colliderColor || controlColors[control] || LOOPER_DEBUG_COLORS.controlVolume;
       const controlSphere = new THREE.Mesh(
         new THREE.SphereGeometry(
           calibration.colliderRadius,
           LOOPER_COLLIDER_GEOMETRY.controlSphereSegments,
           LOOPER_COLLIDER_GEOMETRY.controlSphereRings,
         ),
-        this.makeHitTargetMaterial(
-          getLooperControlName(control),
-          color,
-          looperColliderOpacity,
-        ),
+        this.makeHitTargetMaterial(getLooperControlName(control), color, looperColliderOpacity),
       );
       addCollider(controlSphere, getLooperControlName(control), color, {
         isLooperControl: true,
@@ -229,17 +178,8 @@ export class LooperColliderFactory {
         controlSphere.userData,
         LOOPER_CONTROL_DEFAULT_VALUES[control] ?? 0,
       );
-      controlSphere.position.set(
-        defaultPosition.x,
-        defaultPosition.y,
-        defaultPosition.z,
-      );
-      createControlPathDebug(
-        root,
-        getLooperControlName(control),
-        color,
-        controlSphere.userData,
-      );
+      controlSphere.position.set(defaultPosition.x, defaultPosition.y, defaultPosition.z);
+      createControlPathDebug(root, getLooperControlName(control), color, controlSphere.userData);
       createColliderTransformDebug(
         controlSphere,
         getLooperControlName(control),
@@ -270,23 +210,15 @@ function applyConfiguredColliderTransform(mesh, config = {}, defaults = {}) {
 
   const rotationDegrees = config.rotationDegrees || {};
   const defaultRotationDegrees =
-    defaults.rotationDegrees ||
-    LOOPER_COLLIDER_TRANSFORM_DEFAULTS.rotationDegrees;
+    defaults.rotationDegrees || LOOPER_COLLIDER_TRANSFORM_DEFAULTS.rotationDegrees;
   mesh.rotation.set(
-    THREE.MathUtils.degToRad(
-      getNumber(rotationDegrees.x, defaultRotationDegrees.x),
-    ),
-    THREE.MathUtils.degToRad(
-      getNumber(rotationDegrees.y, defaultRotationDegrees.y),
-    ),
-    THREE.MathUtils.degToRad(
-      getNumber(rotationDegrees.z, defaultRotationDegrees.z),
-    ),
+    THREE.MathUtils.degToRad(getNumber(rotationDegrees.x, defaultRotationDegrees.x)),
+    THREE.MathUtils.degToRad(getNumber(rotationDegrees.y, defaultRotationDegrees.y)),
+    THREE.MathUtils.degToRad(getNumber(rotationDegrees.z, defaultRotationDegrees.z)),
   );
 
   const scale = config.scale || {};
-  const defaultScale =
-    defaults.scale || LOOPER_COLLIDER_TRANSFORM_DEFAULTS.scale;
+  const defaultScale = defaults.scale || LOOPER_COLLIDER_TRANSFORM_DEFAULTS.scale;
   mesh.scale.set(
     getNumber(scale.x, defaultScale.x),
     getNumber(scale.y, defaultScale.y),
@@ -302,15 +234,10 @@ function createColliderTransformDebug(mesh, name, length) {
   }
 
   const geometry = new THREE.BufferGeometry();
-  const axisPositions = COLLIDER_DEBUG_VISUAL_SETTINGS.axisPositions.map(
-    (value) => value * length,
-  );
+  const axisPositions = COLLIDER_DEBUG_VISUAL_SETTINGS.axisPositions.map((value) => value * length);
   geometry.setAttribute(
     "position",
-    new THREE.Float32BufferAttribute(
-      axisPositions,
-      COLLIDER_DEBUG_VISUAL_SETTINGS.axisItemSize,
-    ),
+    new THREE.Float32BufferAttribute(axisPositions, COLLIDER_DEBUG_VISUAL_SETTINGS.axisItemSize),
   );
   geometry.setAttribute(
     "color",

@@ -2,13 +2,7 @@ import { XR_AXES, XR_BUTTONS, thumbstickButton } from "./controllerBindings.js";
 import { SCALE_JOYSTICK_DEADZONE } from "../config/spawning.js";
 
 export class XRInputSourceManager {
-  constructor({
-    renderer,
-    scene,
-    createRayLine,
-    createRadialMenu,
-    onInput = () => {},
-  }) {
+  constructor({ renderer, scene, createRayLine, createRadialMenu, onInput = () => {} }) {
     this.renderer = renderer;
     this.scene = scene;
     this.createRayLine = createRayLine;
@@ -27,17 +21,13 @@ export class XRInputSourceManager {
       controller.userData.inputConnected = false;
       controller.addEventListener("connected", (event) => {
         controller.userData.inputConnected = true;
-        controller.userData.handedness =
-          event.data.handedness || controller.userData.handedness;
+        controller.userData.handedness = event.data.handedness || controller.userData.handedness;
         controller.userData.gamepad = event.data.gamepad || null;
         controller.userData.profiles = event.data.profiles || [];
         const hardware = createHardwareState();
         // A stick already held during connection is not a fresh press edge.
         hardware.buttons.thumbstick = Boolean(
-          thumbstickButton(
-            controller.userData.gamepad,
-            controller.userData.profiles,
-          )?.pressed,
+          thumbstickButton(controller.userData.gamepad, controller.userData.profiles)?.pressed,
         );
         this.hardwareStates.set(controller, hardware);
       });
@@ -67,8 +57,7 @@ export class XRInputSourceManager {
   }
 
   poll(now = performance.now()) {
-    for (const controller of this.controllers)
-      this.pollController(controller, now);
+    for (const controller of this.controllers) this.pollController(controller, now);
   }
 
   pollController(controller, now = performance.now()) {
@@ -77,9 +66,7 @@ export class XRInputSourceManager {
     if (!state || !gamepad) return;
 
     const nextButtons = {
-      thumbstick: Boolean(
-        thumbstickButton(gamepad, controller.userData.profiles)?.pressed,
-      ),
+      thumbstick: Boolean(thumbstickButton(gamepad, controller.userData.profiles)?.pressed),
       trigger: Boolean(gamepad.buttons[XR_BUTTONS.trigger]?.pressed),
       grip: Boolean(gamepad.buttons[XR_BUTTONS.grip]?.pressed),
       primary: Boolean(gamepad.buttons[XR_BUTTONS.primary]?.pressed),
@@ -116,10 +103,7 @@ export class XRInputSourceManager {
   }
 
   getGamepad(controller) {
-    return (
-      controller?.userData?.gamepad ||
-      this.findGamepad(controller?.userData?.handedness)
-    );
+    return controller?.userData?.gamepad || this.findGamepad(controller?.userData?.handedness);
   }
 
   findGamepad(handedness) {
@@ -155,9 +139,8 @@ export class XRInputSourceManager {
 
   getRightController() {
     return (
-      this.controllers.find(
-        ({ userData }) => userData.handedness === "right",
-      ) || this.controllers[1]
+      this.controllers.find(({ userData }) => userData.handedness === "right") ||
+      this.controllers[1]
     );
   }
 
@@ -166,10 +149,8 @@ export class XRInputSourceManager {
       controller.userData.inputConnected = false;
       controller.userData.gamepad = null;
       this.hardwareStates.set(controller, createHardwareState());
-      if (controller.userData.rayLine)
-        controller.userData.rayLine.visible = false;
-      if (controller.userData.radialMenu)
-        controller.userData.radialMenu.visible = false;
+      if (controller.userData.rayLine) controller.userData.rayLine.visible = false;
+      if (controller.userData.radialMenu) controller.userData.radialMenu.visible = false;
     }
   }
 }

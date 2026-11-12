@@ -12,7 +12,8 @@ const VALID_PORT_IDS = new Set(METRONOME_CONNECTION_PORTS.map(({ portId }) => po
 
 export class MetronomeConnectionManager {
   constructor({ registry, onConnectionAdded = null, onConnectionRemoved = null } = {}) {
-    if (!registry) throw new TypeError("MetronomeConnectionManager requires an InstrumentRegistry.");
+    if (!registry)
+      throw new TypeError("MetronomeConnectionManager requires an InstrumentRegistry.");
     this.registry = registry;
     this.onConnectionAdded = onConnectionAdded;
     this.onConnectionRemoved = onConnectionRemoved;
@@ -23,9 +24,10 @@ export class MetronomeConnectionManager {
     this.incomingByTarget = new Map();
     this.endpointDisposalSubscriptions = new Map();
     this.listeners = new Set();
-    this.unsubscribeRegistry = registry.subscribe?.((event) => {
-      if (event.type === "instrument.removed") this.disconnectInstrument(event.instrumentId);
-    }) || null;
+    this.unsubscribeRegistry =
+      registry.subscribe?.((event) => {
+        if (event.type === "instrument.removed") this.disconnectInstrument(event.instrumentId);
+      }) || null;
   }
 
   connect({ metronomeId, portId, targetKind, targetId, targetPortId } = {}) {
@@ -38,7 +40,8 @@ export class MetronomeConnectionManager {
     if (existingIncoming && connectionsEqual(existingIncoming, candidate)) return existingIncoming;
     // Preserve direct Honk output replacement semantics. Only Looper outputs fan out.
     for (const existing of this.getConnectionsForPort(metronomeId, portId)) {
-      if (targetKind !== "looper" || existing.targetKind !== "looper") this.disconnectConnection(existing, "port-replaced");
+      if (targetKind !== "looper" || existing.targetKind !== "looper")
+        this.disconnectConnection(existing, "port-replaced");
     }
     if (existingIncoming) this.disconnectConnection(existingIncoming, "incoming-replaced");
 
@@ -80,7 +83,9 @@ export class MetronomeConnectionManager {
   }
 
   disconnectPort(metronomeId, portId, reason = "disconnect") {
-    return this.getConnectionsForPort(metronomeId, portId).map(connection => this.disconnectConnection(connection, reason));
+    return this.getConnectionsForPort(metronomeId, portId).map((connection) =>
+      this.disconnectConnection(connection, reason),
+    );
   }
 
   disconnectTarget(targetKind, targetId, reason = "disconnect") {
@@ -105,12 +110,15 @@ export class MetronomeConnectionManager {
     if (!connections?.delete(connection)) return null;
     if (!connections.size) this.connectionsByPort.delete(portKey);
     if (connection.targetKind === "looper") {
-      const looper = this.registry.get(connection.targetId) || this.endpointDisposalSubscriptions.get(connection.targetId)?.instrument;
+      const looper =
+        this.registry.get(connection.targetId) ||
+        this.endpointDisposalSubscriptions.get(connection.targetId)?.instrument;
       this.portTransport.remove(looper);
       looper?.looperController?.handleClockDisconnected?.(looper);
     }
     const targetKey = this.getTargetKey(connection.targetKind, connection.targetId);
-    if (this.incomingByTarget.get(targetKey) === connection) this.incomingByTarget.delete(targetKey);
+    if (this.incomingByTarget.get(targetKey) === connection)
+      this.incomingByTarget.delete(targetKey);
     this.releaseEndpoint(connection.metronomeId);
     this.releaseEndpoint(connection.targetId);
     this.onConnectionRemoved?.(connection, reason);
@@ -126,20 +134,23 @@ export class MetronomeConnectionManager {
     return [...(this.connectionsByPort.get(this.getPortKey(metronomeId, portId)) || [])];
   }
 
-  getConnections() { return [...this.connectionsByPort.values()].flatMap(set => [...set]); }
+  getConnections() {
+    return [...this.connectionsByPort.values()].flatMap((set) => [...set]);
+  }
 
   getConnectionForTarget(targetKind, targetId) {
     return this.incomingByTarget.get(this.getTargetKey(targetKind, targetId)) || null;
   }
 
   getConnectionsForMetronome(metronomeId) {
-    return this.getConnections().filter(
-      (connection) => connection.metronomeId === metronomeId,
-    );
+    return this.getConnections().filter((connection) => connection.metronomeId === metronomeId);
   }
 
   getTimingForLooper(looperId, now = performance.now()) {
-    const connection = this.getConnectionForTarget(METRONOME_CONNECTION_TARGET_KINDS.looper, looperId);
+    const connection = this.getConnectionForTarget(
+      METRONOME_CONNECTION_TARGET_KINDS.looper,
+      looperId,
+    );
     if (!connection) return inactiveTiming({ connected: false });
     const metronome = this.registry.get(connection.metronomeId);
     if (!isAvailableInstrument(metronome, "metronome")) {
@@ -159,8 +170,9 @@ export class MetronomeConnectionManager {
   serialize(savedIds = null) {
     const allowedIds = savedIds ? new Set(savedIds) : null;
     return this.getConnections()
-      .filter(({ metronomeId, targetId }) =>
-        !allowedIds || (allowedIds.has(metronomeId) && allowedIds.has(targetId)),
+      .filter(
+        ({ metronomeId, targetId }) =>
+          !allowedIds || (allowedIds.has(metronomeId) && allowedIds.has(targetId)),
       )
       .map((connection) => ({ ...connection }));
   }
@@ -182,7 +194,8 @@ export class MetronomeConnectionManager {
   }
 
   subscribe(listener) {
-    if (typeof listener !== "function") throw new TypeError("Connection listener must be a function.");
+    if (typeof listener !== "function")
+      throw new TypeError("Connection listener must be a function.");
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -211,9 +224,10 @@ export class MetronomeConnectionManager {
       return;
     }
     const instrument = this.registry.get(instrumentId);
-    const unsubscribe = instrument?.addDisposeHandler?.(() => {
-      this.disconnectInstrument(instrumentId, "endpoint-disposed");
-    }) || null;
+    const unsubscribe =
+      instrument?.addDisposeHandler?.(() => {
+        this.disconnectInstrument(instrumentId, "endpoint-disposed");
+      }) || null;
     this.endpointDisposalSubscriptions.set(instrumentId, { count: 1, unsubscribe, instrument });
   }
 
@@ -246,11 +260,13 @@ function getLooperTracks(looper) {
 }
 
 function connectionsEqual(first, second) {
-  return first.metronomeId === second.metronomeId &&
+  return (
+    first.metronomeId === second.metronomeId &&
     first.portId === second.portId &&
     first.targetKind === second.targetKind &&
     first.targetId === second.targetId &&
-    first.targetPortId === second.targetPortId;
+    first.targetPortId === second.targetPortId
+  );
 }
 
 function inactiveTiming({ connected = false } = {}) {

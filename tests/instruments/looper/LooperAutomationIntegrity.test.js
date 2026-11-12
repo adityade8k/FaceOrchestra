@@ -34,12 +34,13 @@ test("60 BPM recording and playback preserve full squeeze and bend extrema at ev
     for (const recordedTimeMs of [500, 1000, 1500]) {
       const wallTimeMs = (recordedTimeMs - timeline.onsetOffsetMs) / rate;
       engine.update(wallTimeMs, timeline, rate, {
-        onTrackSnapshot: (_track, snapshot) => snapshots.push({
-          wallTimeMs,
-          recordedTimeMs: engine.elapsedMs,
-          squeeze: snapshot.squeeze,
-          bend: snapshot.bend,
-        }),
+        onTrackSnapshot: (_track, snapshot) =>
+          snapshots.push({
+            wallTimeMs,
+            recordedTimeMs: engine.elapsedMs,
+            squeeze: snapshot.squeeze,
+            bend: snapshot.bend,
+          }),
       });
     }
 
@@ -144,7 +145,7 @@ function recordFullRangeGesture(renderHz) {
   });
 
   for (let frame = 0; frame <= renderHz * 2; frame += 1) {
-    const timeMs = frame * 1000 / renderHz;
+    const timeMs = (frame * 1000) / renderHz;
     const phase = timeMs / 2000;
     action = {
       squeeze: phase <= 0.5 ? phase * 2 : (1 - phase) * 2,
@@ -161,7 +162,8 @@ function fieldValues(track, field, { includeSynthetic = true } = {}) {
     .filter((event) => includeSynthetic || !event.synthetic)
     .map((event) => getEventFieldValue(event, field))
     .filter((value) => value !== undefined);
-  if (track.baselineActionState[field] !== undefined) values.unshift(track.baselineActionState[field]);
+  if (track.baselineActionState[field] !== undefined)
+    values.unshift(track.baselineActionState[field]);
   return values;
 }
 

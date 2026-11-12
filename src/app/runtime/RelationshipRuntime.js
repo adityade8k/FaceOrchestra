@@ -21,7 +21,7 @@ export const RelationshipRuntimeMethods = {
       const member = this.instrumentRegistry.get(memberId);
       if (!member) continue;
       member.locked = Boolean(locked);
-      this.updateLockVisual(member);
+      this.presentation.updateLockVisual(member);
     }
   },
 

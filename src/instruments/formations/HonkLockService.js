@@ -22,11 +22,12 @@ export class HonkLockService {
     this.groups = new Map();
     this.groupIdByMember = new Map();
     this.listeners = new Set();
-    this.unsubscribeRegistry = instrumentRegistry.subscribe?.((event) => {
-      if (event.type === "instrument.removed") {
-        this.removeMember(event.instrumentId);
-      }
-    }) || null;
+    this.unsubscribeRegistry =
+      instrumentRegistry.subscribe?.((event) => {
+        if (event.type === "instrument.removed") {
+          this.removeMember(event.instrumentId);
+        }
+      }) || null;
   }
 
   lockFormation(honkId) {
@@ -41,18 +42,19 @@ export class HonkLockService {
 
     // Existing lock groups are immutable memberships. Contacting them neither
     // adds a new honk nor merges two groups.
-    const eligibleMemberIds = formation.memberIds.filter((memberId) => !this.groupIdByMember.has(memberId));
+    const eligibleMemberIds = formation.memberIds.filter(
+      (memberId) => !this.groupIdByMember.has(memberId),
+    );
     if (!eligibleMemberIds.includes(honkId) || eligibleMemberIds.length < this.minimumMembers) {
       return null;
     }
     return this.lockMembers(eligibleMemberIds, { anchorId: honkId });
   }
 
-  lockMembers(memberIds, {
-    id = this.idFactory(),
-    anchorId = memberIds?.[0],
-    memberLocalTransforms = null,
-  } = {}) {
+  lockMembers(
+    memberIds,
+    { id = this.idFactory(), anchorId = memberIds?.[0], memberLocalTransforms = null } = {},
+  ) {
     const uniqueMemberIds = [...new Set(memberIds || [])].filter((memberId) => {
       const instrument = this.instrumentRegistry.get(memberId);
       return instrument?.kind === INSTRUMENT_KINDS.honk && !instrument.disposed;
@@ -60,7 +62,10 @@ export class HonkLockService {
     if (uniqueMemberIds.length < this.minimumMembers || !uniqueMemberIds.includes(anchorId)) {
       return null;
     }
-    if (this.groups.has(id) || uniqueMemberIds.some((memberId) => this.groupIdByMember.has(memberId))) {
+    if (
+      this.groups.has(id) ||
+      uniqueMemberIds.some((memberId) => this.groupIdByMember.has(memberId))
+    ) {
       return null;
     }
 

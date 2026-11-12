@@ -151,14 +151,20 @@ export class RadialSpawnMenu {
   setLabelText(label, text) {
     if (!label || label.userData.labelText === text) return;
     label.userData.labelText = text;
-    const canvas = label.material.map.image, ctx = canvas.getContext('2d');
+    const canvas = label.material.map.image,
+      ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#10100e'; ctx.font = '700 24px Arial';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const words = text.split(' '), lines = [''];
+    ctx.fillStyle = "#10100e";
+    ctx.font = "700 24px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const words = text.split(" "),
+      lines = [""];
     for (const word of words) {
-      const i = lines.length - 1, candidate = lines[i] ? `${lines[i]} ${word}` : word;
-      if (ctx.measureText(candidate).width > 310 && lines[i]) lines.push(word); else lines[i] = candidate;
+      const i = lines.length - 1,
+        candidate = lines[i] ? `${lines[i]} ${word}` : word;
+      if (ctx.measureText(candidate).width > 310 && lines[i]) lines.push(word);
+      else lines[i] = candidate;
     }
     lines.forEach((line, i) => ctx.fillText(line, 160, 48 + (i - (lines.length - 1) / 2) * 27));
     label.material.map.needsUpdate = true;
@@ -282,7 +288,8 @@ export class RadialSpawnMenu {
     controller.updateMatrixWorld(true);
     controller.getWorldQuaternion(state.radialMenuParentStartQuaternion);
     state.radialMenuParentDialBaseRotation = state.radialMenuParentDialRotation;
-    state.radialMenuParentRingBaseRotation = parentRing?.rotation.z ?? state.radialMenuParentRingRotation;
+    state.radialMenuParentRingBaseRotation =
+      parentRing?.rotation.z ?? state.radialMenuParentRingRotation;
     state.radialMenuParentRingRotation = state.radialMenuParentRingBaseRotation;
     state.radialMenuParentControllerRoll = 0;
     state.radialMenuParentSelectedIndex = state.radialMenuLatchedParentIndex ?? 0;
@@ -339,7 +346,9 @@ export class RadialSpawnMenu {
   applyRingVisuals(ring, selectedIndex) {
     for (const [index, segment] of ring.userData.segments.entries()) {
       const selected = index === selectedIndex;
-      segment.material.opacity = selected ? RADIAL_MENU_HIGHLIGHT_OPACITY : RADIAL_MENU_BASE_OPACITY;
+      segment.material.opacity = selected
+        ? RADIAL_MENU_HIGHLIGHT_OPACITY
+        : RADIAL_MENU_BASE_OPACITY;
       segment.scale.setScalar(selected ? 1.08 : 1);
     }
     for (const label of ring.userData.labels) label.material.opacity = 1;
@@ -362,11 +371,13 @@ export class RadialSpawnMenu {
     controller.updateMatrixWorld(true);
     menu.updateMatrixWorld(true);
     menu.getWorldPosition(tempMenuWorldPosition);
-    tempLockedMenuWorldPosition.fromArray(lockPositionToOpeningPlane(
-      state.radialMenuOpeningMenuWorldPosition,
-      tempMenuWorldPosition,
-      state.radialMenuPullAxis,
-    ));
+    tempLockedMenuWorldPosition.fromArray(
+      lockPositionToOpeningPlane(
+        state.radialMenuOpeningMenuWorldPosition,
+        tempMenuWorldPosition,
+        state.radialMenuPullAxis,
+      ),
+    );
     tempMenuWorldCorrection.subVectors(tempLockedMenuWorldPosition, tempMenuWorldPosition);
     controller.getWorldQuaternion(tempInverseControllerQuaternion).invert();
     tempMenuWorldCorrection.applyQuaternion(tempInverseControllerQuaternion);

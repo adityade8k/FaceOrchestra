@@ -10,14 +10,14 @@ export class MenuController {
     this.offset = new THREE.Matrix4();
     this.world = new THREE.Matrix4();
   }
-  toggle() {
-    this.setVisible(!this.visible);
+  toggle(intent = null) {
+    this.setVisible(!this.visible, intent);
   }
-  setVisible(visible) {
+  setVisible(visible, intent = null) {
     this.cancelDrag();
     this.visible = visible;
     this.panel.setVisible(visible);
-    this.onEvent(visible ? "menu.show" : "menu.hide");
+    this.onEvent(visible ? "menu.show" : "menu.hide", intent);
     for (const listener of this.visibilityListeners) listener(visible);
   }
   subscribeVisibility(listener) {
@@ -35,11 +35,10 @@ export class MenuController {
     const controller = intent.controller;
     if (controller?.userData?.virtualTutorial) return false;
     if (intent.type === "menu.toggle") {
-      this.toggle();
+      this.toggle(intent);
       return true;
     }
-    const held =
-      state.trigger || state.grip || state.primary || state.secondary;
+    const held = state.trigger || state.grip || state.primary || state.secondary;
     if (this.blocked.has(controller)) {
       if (this.sliderDrag === controller && !state.trigger) {
         this.sliderDrag = null;
@@ -61,10 +60,7 @@ export class MenuController {
       if (target.object.userData.menuHandle && !this.drag) {
         controller.updateWorldMatrix(true, false);
         this.panel.group.updateWorldMatrix(true, false);
-        this.offset
-          .copy(controller.matrixWorld)
-          .invert()
-          .multiply(this.panel.group.matrixWorld);
+        this.offset.copy(controller.matrixWorld).invert().multiply(this.panel.group.matrixWorld);
         this.drag = controller;
       }
       return true;
@@ -79,10 +75,7 @@ export class MenuController {
         this.panel.tempoControls.begin(target)
       )
         this.sliderDrag = controller;
-      else if (
-        target.object.userData.action &&
-        !target.object.userData.disabled
-      )
+      else if (target.object.userData.action && !target.object.userData.disabled)
         this.panel.activate(target.object);
       return true;
     }
@@ -133,8 +126,7 @@ export class MenuController {
     this.recenter(camera);
   }
   disconnect(controller) {
-    if (this.drag === controller || this.sliderDrag === controller)
-      this.cancelDrag();
+    if (this.drag === controller || this.sliderDrag === controller) this.cancelDrag();
     this.blocked.delete(controller);
   }
 }

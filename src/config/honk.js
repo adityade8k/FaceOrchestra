@@ -34,13 +34,12 @@ export const INTERACTION_TYPES = {
   horn: "horn",
 };
 
-export const BEND_ALIGNED_INTERACTION_TYPES = [
-  INTERACTION_TYPES.ear,
-  INTERACTION_TYPES.nose,
-];
+export const BEND_ALIGNED_INTERACTION_TYPES = [INTERACTION_TYPES.ear, INTERACTION_TYPES.nose];
 
 // Reduce wrist-bend gain by another 25%, preserving the full pitch range.
 export const BEND_SENSITIVITY = (2.5 / 1.2) * 0.75;
+// A deliberate wrist bend captures the played Honk until Trigger is released.
+export const BEND_LOCK_THRESHOLD_DEGREES = 6;
 export const BEND_SMOOTHING = 0.18;
 export const BEND_COLLIDER_ROTATION_DEGREES = -18;
 export const MAX_PITCH_BEND_SEMITONES = 4;
@@ -94,7 +93,7 @@ export const INTERACTION_COLLIDERS = [
     size: 0.045,
     x: 0,
     y: 0.21,
-    z: 0.20,
+    z: 0.2,
     movementRange: 0.03,
     color: 0x5ac8fa,
   },

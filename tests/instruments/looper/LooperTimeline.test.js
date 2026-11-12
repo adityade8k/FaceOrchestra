@@ -24,7 +24,7 @@ test("LooperTimeline trims silence before the first sound and after the last sou
 
 test("LooperTimeline keeps squeeze closed throughout a rest between notes", () => {
   const timeline = new LooperTimeline();
-  timeline.addActionEvent("track-0", {type: "squeezeStart", timeMs: 0, value: 1});
+  timeline.addActionEvent("track-0", { type: "squeezeStart", timeMs: 0, value: 1 });
   timeline.addActionEvent("track-0", {
     trackIndex: 0,
     type: LooperActionEventType.SqueezeEnd,
@@ -86,7 +86,9 @@ test("stick hits and individually played Honks keep their shared rhythm across l
   let squeeze;
   const handlers = {
     onDrumHit: (_track, event, timeMs) => drumHits.push([event.value, timeMs]),
-    onTrackSnapshot: (_track, state) => { squeeze = state.squeeze; },
+    onTrackSnapshot: (_track, state) => {
+      squeeze = state.squeeze;
+    },
   };
   engine.start(0);
   engine.update(0, timeline, 1, handlers);
@@ -96,7 +98,10 @@ test("stick hits and individually played Honks keep their shared rhythm across l
   engine.update(399, timeline, 1, handlers);
   assert.equal(squeeze, 0);
   engine.update(400, timeline, 1, handlers);
-  assert.deepEqual(drumHits, [["boink", 0], ["hihat", 400]]);
+  assert.deepEqual(drumHits, [
+    ["boink", 0],
+    ["hihat", 400],
+  ]);
   engine.update(699, timeline, 1, handlers);
   assert.equal(squeeze, 0);
   engine.update(700, timeline, 1, handlers);
@@ -105,14 +110,14 @@ test("stick hits and individually played Honks keep their shared rhythm across l
   assert.equal(squeeze, 0);
   engine.update(timeline.durationMs, timeline, 1, handlers);
   assert.deepEqual(drumHits.at(-1), ["boink", 0]);
-  engine.update(timeline.durationMs+100.000001, timeline, 1, handlers);
+  engine.update(timeline.durationMs + 100.000001, timeline, 1, handlers);
   assert.equal(squeeze, 1);
 });
 
 test("LooperTimeline linearly samples numeric fields and steps vowel fields", () => {
   const timeline = new LooperTimeline();
-  timeline.addActionEvent("track-0", {type: "squeezeStart", timeMs: 0, value: 1});
-  timeline.addActionEvent("track-0", {type: "squeezeEnd", timeMs: 100, value: 0});
+  timeline.addActionEvent("track-0", { type: "squeezeStart", timeMs: 0, value: 1 });
+  timeline.addActionEvent("track-0", { type: "squeezeEnd", timeMs: 100, value: 0 });
   timeline.addFieldEvent("track-0", "bend", 0, -1, { trackIndex: 0 });
   timeline.addFieldEvent("track-0", "bend", 100, 1, { trackIndex: 0 });
   timeline.addFieldEvent("track-0", "vowel", 0, "A", {
@@ -201,7 +206,10 @@ test("LooperTimeline orders simultaneous drum events deterministically", () => {
 
   const entries = timeline.getDrumHitEventsAt(20);
 
-  assert.deepEqual(entries.map(({ track }) => track.trackId), ["track-0", "track-2"]);
+  assert.deepEqual(
+    entries.map(({ track }) => track.trackId),
+    ["track-0", "track-2"],
+  );
 });
 
 test("LooperTimeline survives a plain-JSON round trip and rebuilds derived state", () => {
@@ -238,15 +246,17 @@ test("schema-v4 gate recordings migrate without turning held notes into ramps", 
     schemaVersion: 4,
     durationMs: 500,
     recordedDurationMs: 500,
-    tracks: [{
-      trackId: "track-0",
-      trackIndex: 0,
-      baselineActionState: { squeeze: 0 },
-      events: [
-        { id: 1, type: "squeezeStart", timeMs: 0, value: 1, interpolation: "linear" },
-        { id: 2, type: "squeezeEnd", timeMs: 500, value: 0, interpolation: "linear" },
-      ],
-    }],
+    tracks: [
+      {
+        trackId: "track-0",
+        trackIndex: 0,
+        baselineActionState: { squeeze: 0 },
+        events: [
+          { id: 1, type: "squeezeStart", timeMs: 0, value: 1, interpolation: "linear" },
+          { id: 2, type: "squeezeEnd", timeMs: 500, value: 0, interpolation: "linear" },
+        ],
+      },
+    ],
   });
   const snapshot = createActionState();
 
@@ -275,7 +285,10 @@ test("metronome-synchronized recording keeps relative timing and full hold witho
   timeline.addFieldEvent("track-0", "squeeze", 410, 0, { trackIndex: 0 });
   timeline.stopRecording(1992, 1);
 
-  assert.deepEqual(timeline.getTrack("track-0").events.map((event) => event.timeMs), [0, 305]);
+  assert.deepEqual(
+    timeline.getTrack("track-0").events.map((event) => event.timeMs),
+    [0, 305],
+  );
   assert.equal(timeline.recordedDurationMs, 305);
   assert.equal(timeline.durationMs, 305);
   assert.deepEqual(LooperTimeline.fromJSON(timeline.toJSON()).toJSON(), timeline.toJSON());
@@ -304,5 +317,9 @@ test("zero gap repeats immediately after the final completed note", () => {
   });
 
   assert.equal(timeline.durationMs, 600);
-  assert.deepEqual(snapshots, [[0, 1], [500, 1], [0, 1]]);
+  assert.deepEqual(snapshots, [
+    [0, 1],
+    [500, 1],
+    [0, 1],
+  ]);
 });

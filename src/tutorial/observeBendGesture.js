@@ -5,12 +5,7 @@ import { getHonkPitchBendRange } from "../config/honk.js";
 export function observeBendGesture(adapter, role, mode) {
   let observed = null;
   for (const [controller, gesture] of adapter.gestures) {
-    if (
-      gesture.role !== role ||
-      gesture.invalidMembers ||
-      gesture.voiceInterrupted
-    )
-      continue;
+    if (gesture.role !== role || gesture.invalidMembers || gesture.voiceInterrupted) continue;
     if (mode !== "demonstration" && gesture.origin !== "learner") continue;
     const input = adapter.r.controllerStates.get(controller);
     const target =

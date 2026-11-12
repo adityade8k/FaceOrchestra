@@ -52,19 +52,14 @@ function createInstrument(kind, map) {
 
 test("lock texture policy resolves Honks and Loopers explicitly but never Metronomes", () => {
   const runtime = createRuntime();
-  const resolve = (instrument) => resolveInstrumentLockTextureSet(instrument, {
-    honk: runtime.instrumentMaterialTextures,
-    looper: runtime.looperMaterialTextures,
-  });
+  const resolve = (instrument) =>
+    resolveInstrumentLockTextureSet(instrument, {
+      honk: runtime.instrumentMaterialTextures,
+      looper: runtime.looperMaterialTextures,
+    });
 
-  assert.equal(
-    resolve({ kind: "honk" }),
-    runtime.instrumentMaterialTextures,
-  );
-  assert.equal(
-    resolve({ kind: "looper" }),
-    runtime.looperMaterialTextures,
-  );
+  assert.equal(resolve({ kind: "honk" }), runtime.instrumentMaterialTextures);
+  assert.equal(resolve({ kind: "looper" }), runtime.looperMaterialTextures);
   assert.equal(resolve({ kind: "metronome" }), null);
   assert.equal(resolve({ kind: "future-instrument" }), null);
 });
@@ -143,13 +138,16 @@ test("visible body-grip meshes swap Honk and Looper textures without touching co
     assert.equal(visibleMesh.userData.usesVisibleMeshForGrip, true);
     assert.equal(collider.userData.usesVisibleMeshForGrip, undefined);
 
-    assert.equal(applyInstrumentLockedTexture(instrument, true, textureSet, {
-      swapMaterial: cloneAndSwapMaterial,
-    }), true);
-    assert.deepEqual(visibleMesh.material.map((material) => material.map), [
-      textureSet.lockedBaseMap,
-      textureSet.lockedBaseMap,
-    ]);
+    assert.equal(
+      applyInstrumentLockedTexture(instrument, true, textureSet, {
+        swapMaterial: cloneAndSwapMaterial,
+      }),
+      true,
+    );
+    assert.deepEqual(
+      visibleMesh.material.map((material) => material.map),
+      [textureSet.lockedBaseMap, textureSet.lockedBaseMap],
+    );
     assert.equal(instrument.lockedTextureApplied, true);
     assert.equal(collider.material, colliderMaterial);
     assert.equal(untouchedCloneMesh.material, sharedTemplateMaterial);
@@ -163,13 +161,16 @@ test("visible body-grip meshes swap Honk and Looper textures without touching co
       assert.equal(material.metalness, 0.12);
     }
 
-    assert.equal(applyInstrumentLockedTexture(instrument, false, textureSet, {
-      swapMaterial: cloneAndSwapMaterial,
-    }), true);
-    assert.deepEqual(visibleMesh.material.map((material) => material.map), [
-      textureSet.baseMap,
-      textureSet.baseMap,
-    ]);
+    assert.equal(
+      applyInstrumentLockedTexture(instrument, false, textureSet, {
+        swapMaterial: cloneAndSwapMaterial,
+      }),
+      true,
+    );
+    assert.deepEqual(
+      visibleMesh.material.map((material) => material.map),
+      [textureSet.baseMap, textureSet.baseMap],
+    );
     assert.equal(instrument.lockedTextureApplied, false);
     assert.equal(collider.material, colliderMaterial);
     assert.equal(untouchedClone.lockedTextureApplied, undefined);
@@ -183,12 +184,12 @@ test("a traversal with only procedural hit targets reports failure without chang
   });
   const instrument = createTraversedInstrument("honk", [collider]);
 
-  assert.equal(applyInstrumentLockedTexture(
-    instrument,
-    true,
-    runtime.instrumentMaterialTextures,
-    { swapMaterial: cloneAndSwapMaterial },
-  ), false);
+  assert.equal(
+    applyInstrumentLockedTexture(instrument, true, runtime.instrumentMaterialTextures, {
+      swapMaterial: cloneAndSwapMaterial,
+    }),
+    false,
+  );
   assert.equal(instrument.lockedTextureApplied, undefined);
 });
 

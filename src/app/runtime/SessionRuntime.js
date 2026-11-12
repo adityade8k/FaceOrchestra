@@ -4,7 +4,7 @@ export const SessionRuntimeMethods = {
   onRuntimeInitialized() {
     if (this.tutorial && this.sessionMode !== "play") return;
     if (this.xrSessionActive && this.instructionPanelClosed) {
-      this.spawnDefaultInstrumentPreview();
+      this.spawn.spawnDefaultInstrumentPreview();
     }
   },
   onXRSessionStart() {
@@ -19,7 +19,7 @@ export const SessionRuntimeMethods = {
       this.showInstructionPanel();
     } else {
       this.hideInstructionPanel();
-      this.spawnDefaultInstrumentPreview();
+      this.spawn.spawnDefaultInstrumentPreview();
     }
   },
   onXRSessionEnd(now = performance.now()) {
@@ -29,7 +29,7 @@ export const SessionRuntimeMethods = {
     try {
       this.hideInstructionPanel();
       this.pendingPanelPlacementFrames = 0;
-      this.deletePendingSpawnPlacement();
+      this.spawn.deletePendingSpawnPlacement();
       for (const looper of this.instrumentRegistry.getByKind("looper")) {
         if (looper.transport?.recording) {
           looper.finishRecording(now);
@@ -67,17 +67,14 @@ export const SessionRuntimeMethods = {
     this.hideInstructionPanel();
     this.instructionPanelClosed = true;
 
-    this.spawnDefaultInstrumentPreview();
+    this.spawn.spawnDefaultInstrumentPreview();
   },
   updatePendingPanelPlacement() {
     if (!this.pendingPanelPlacementFrames || !this.instructionPanel?.visible) {
       return;
     }
 
-    this.instructionPanelView?.positionInFrontOfCamera(
-      this.getUserCamera(),
-      1.15,
-    );
+    this.instructionPanelView?.positionInFrontOfCamera(this.getUserCamera(), 1.15);
     this.pendingPanelPlacementFrames -= 1;
   },
   pollControllers(now = performance.now()) {
@@ -90,10 +87,7 @@ export const SessionRuntimeMethods = {
     return this.inputSourceManager.findGamepad(handedness);
   },
   getControllerGamepad(controller) {
-    return (
-      controller?.userData?.gamepad ||
-      this.findGamepad(controller?.userData?.handedness)
-    );
+    return controller?.userData?.gamepad || this.findGamepad(controller?.userData?.handedness);
   },
   getThumbstickScaleDirection(gamepad) {
     return this.inputSourceManager.getThumbstickScaleDirection(gamepad);
@@ -105,8 +99,7 @@ export const SessionRuntimeMethods = {
     const hand = controller.userData.handedness;
     return hand && hand !== "none"
       ? hand
-      : controller.userData.controllerId ||
-          `controller-${controller.userData.index}`;
+      : controller.userData.controllerId || `controller-${controller.userData.index}`;
   },
   getInstrumentVoiceId(controllerVoiceId, instrumentState) {
     return `${controllerVoiceId}:instrument-${instrumentState.id}`;

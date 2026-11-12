@@ -34,8 +34,7 @@ export class BendGauge {
     ac.fillStyle = "#fff4dd";
     ac.font = "28px sans-serif";
     ac.textAlign = "center";
-    for (let i = -5; i <= 5; i++)
-      ac.fillText(i > 0 ? `+${i}` : String(i), (i + 5) * 64 + 32, 42);
+    for (let i = -5; i <= 5; i++) ac.fillText(i > 0 ? `+${i}` : String(i), (i + 5) * 64 + 32, 42);
     this.tickTexture = new THREE.CanvasTexture(atlas);
     this.tickTexture.colorSpace = THREE.SRGBColorSpace;
     this.tickLabels = [];
@@ -65,7 +64,9 @@ export class BendGauge {
     // captured by the existing presentation recorder, unlike draw-range edits.
     this.arc = new THREE.Group();
     this.root.add(this.arc);
-    this.arcGeometries = [4, 5].map(range => new THREE.RingGeometry(1.1, 1.15, 4, 1, 0, span / (range * 4)));
+    this.arcGeometries = [4, 5].map(
+      (range) => new THREE.RingGeometry(1.1, 1.15, 4, 1, 0, span / (range * 4)),
+    );
     this.arcGeometry = this.arcGeometries[0];
     this.arcMaterial = new THREE.MeshBasicMaterial({
       color: 0x60ef9b,
@@ -92,19 +93,12 @@ export class BendGauge {
     this.root.visible = false;
   }
   place(node, value, radius, orientation) {
-    const angle = (Math.max(-this.range, Math.min(this.range, value)) / this.range) * span * orientation;
+    const angle =
+      (Math.max(-this.range, Math.min(this.range, value)) / this.range) * span * orientation;
     node.position.set(Math.sin(angle) * radius, Math.cos(angle) * radius, 0.01);
     node.rotation.z = -angle;
   }
-  update(
-    state,
-    point,
-    radius,
-    quaternion,
-    orientation = 1,
-    binding = null,
-    now = 0,
-  ) {
+  update(state, point, radius, quaternion, orientation = 1, binding = null, now = 0) {
     this.range = state.range === 5 ? 5 : 4;
     this.root.visible = true;
     this.root.position.copy(point);
@@ -147,14 +141,14 @@ export class BendGauge {
         const i = sector.userData.segment;
         sector.geometry = this.arcGeometries[this.range === 5 ? 1 : 0];
         sector.visible =
-          amount >= 0
-            ? i >= 0 && i < Math.floor(amount)
-            : i < 0 && i >= Math.ceil(amount);
+          amount >= 0 ? i >= 0 && i < Math.floor(amount) : i < 0 && i >= Math.ceil(amount);
         sector.rotation.z =
           Math.PI / 2 - ((orientation > 0 ? i + 1 : -i) * span) / (this.range * 4);
       }
     }
-    const text = state.normalPlay ? `Bend ${signed(state.actual)} semitones\nRange −${this.range} to +${this.range}` : `${state.start} → ${state.destination}\n▲ Target ${signed(state.required)} · ● ${state.demonstration ? "Demo" : "You"} ${state.actual === null ? "—" : signed(state.actual)}\n${state.status}`;
+    const text = state.normalPlay
+      ? `Bend ${signed(state.actual)} semitones\nRange −${this.range} to +${this.range}`
+      : `${state.start} → ${state.destination}\n▲ Target ${signed(state.required)} · ● ${state.demonstration ? "Demo" : "You"} ${state.actual === null ? "—" : signed(state.actual)}\n${state.status}`;
     if (
       text !== this.text &&
       (now - (this.labelAt ?? -Infinity) >= 100 ||
@@ -172,9 +166,7 @@ export class BendGauge {
       ctx.textAlign = "center";
       ctx.fillStyle = "#fff4dd";
       ctx.font = "26px sans-serif";
-      text
-        .split("\n")
-        .forEach((line, i) => ctx.fillText(line, 320, 32 + i * 39));
+      text.split("\n").forEach((line, i) => ctx.fillText(line, 320, 32 + i * 39));
       this.texture.needsUpdate = true;
     }
   }

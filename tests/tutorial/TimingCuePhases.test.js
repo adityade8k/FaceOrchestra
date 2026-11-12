@@ -2,8 +2,24 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { timingCueState } from "../../src/tutorial/timingCueState.js";
 import { bendGaugeState } from "../../src/tutorial/bendGaugeState.js";
-const ARRANGEMENTS = {"easier-bends":{events:[{midi:60,beat:4,beats:4,bend:[{fraction:0,semitones:0},{fraction:.2,semitones:0},{fraction:.8,semitones:2},{fraction:1,semitones:2}]}]}};
-const PRACTICE_TEMPOS = [40,50,60,70,80,92];
+const ARRANGEMENTS = {
+  "easier-bends": {
+    events: [
+      {
+        midi: 60,
+        beat: 4,
+        beats: 4,
+        bend: [
+          { fraction: 0, semitones: 0 },
+          { fraction: 0.2, semitones: 0 },
+          { fraction: 0.8, semitones: 2 },
+          { fraction: 1, semitones: 2 },
+        ],
+      },
+    ],
+  },
+};
+const PRACTICE_TEMPOS = [40, 50, 60, 70, 80, 92];
 
 for (const bpm of PRACTICE_TEMPOS) {
   test(`${bpm} BPM green counts down alone, yellow grows from zero to the white boundary at release`, () => {
@@ -23,11 +39,7 @@ for (const bpm of PRACTICE_TEMPOS) {
       assert.equal(attack.yellow, 0);
       let previousYellow = 0;
       for (const fraction of [0.001, 0.1, 0.25, 0.5, 0.75, 0.9999]) {
-        const yellow = timingCueState(
-          4 + fraction * beats,
-          event,
-          options,
-        ).yellow;
+        const yellow = timingCueState(4 + fraction * beats, event, options).yellow;
         assert.ok(yellow > previousYellow && yellow < 1);
         assert.ok(Math.abs(yellow - fraction) < 1e-10);
         previousYellow = yellow;
@@ -43,9 +55,7 @@ for (const bpm of PRACTICE_TEMPOS) {
 }
 
 test("every authored bend previews its start and destination without borrowing live input or rotating early", () => {
-  for (const event of ARRANGEMENTS["easier-bends"].events.filter(
-    (e) => e.bend,
-  )) {
+  for (const event of ARRANGEMENTS["easier-bends"].events.filter((e) => e.bend)) {
     for (const fraction of [-1 / event.beats, -0.01, -0.000001]) {
       const state = bendGaugeState(event, fraction, {
         semitones: 2,
@@ -68,10 +78,7 @@ test("every authored bend previews its start and destination without borrowing l
     }
     const middle = (event.bend[1].fraction + event.bend[2].fraction) / 2;
     assert.notEqual(bendGaugeState(event, middle).required, 0);
-    assert.equal(
-      bendGaugeState(event, 1).required,
-      event.bend.at(-1).semitones,
-    );
+    assert.equal(bendGaugeState(event, 1).required, event.bend.at(-1).semitones);
   }
 });
 

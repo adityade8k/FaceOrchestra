@@ -2,21 +2,13 @@ import * as THREE from "three";
 
 // Shared material helpers for runtime asset loading.
 
-export function applyStandardInstrumentMaterials(
-  root,
-  textures = {},
-  options = {},
-) {
+export function applyStandardInstrumentMaterials(root, textures = {}, options = {}) {
   root.traverse((object) => {
     if (!object.isMesh || object.userData.isHitTarget) {
       return;
     }
 
-    object.material = makeStandardInstrumentMaterial(
-      object.material,
-      textures,
-      options,
-    );
+    object.material = makeStandardInstrumentMaterial(object.material, textures, options);
     object.castShadow = true;
     object.receiveShadow = true;
   });
@@ -25,18 +17,10 @@ export function applyStandardInstrumentMaterials(
 export function makeStandardInstrumentMaterial(
   sourceMaterial,
   textures = {},
-  {
-    useSourceMaterialMaps = true,
-    textureTransforms = {},
-    bumpScale = 0.035,
-  } = {},
+  { useSourceMaterialMaps = true, textureTransforms = {}, bumpScale = 0.035 } = {},
 ) {
   const map = applyTextureTransform(
-    getMaterialTexture(
-      textures.baseMap,
-      sourceMaterial?.map,
-      useSourceMaterialMaps,
-    ),
+    getMaterialTexture(textures.baseMap, sourceMaterial?.map, useSourceMaterialMaps),
     textureTransforms.baseMap,
   );
   const normalMap = getMaterialTexture(
@@ -89,35 +73,24 @@ function applyTextureTransform(texture, transform) {
 
   const transformedTexture = texture.clone();
   if (transform.center) {
-    transformedTexture.center.set(
-      transform.center.x ?? 0.5,
-      transform.center.y ?? 0.5,
-    );
+    transformedTexture.center.set(transform.center.x ?? 0.5, transform.center.y ?? 0.5);
   } else {
     transformedTexture.center.set(0.5, 0.5);
   }
   if (Number.isFinite(transform.rotationDegrees)) {
-    transformedTexture.rotation += THREE.MathUtils.degToRad(
-      transform.rotationDegrees,
-    );
+    transformedTexture.rotation += THREE.MathUtils.degToRad(transform.rotationDegrees);
   }
   transformedTexture.matrixAutoUpdate = true;
   transformedTexture.needsUpdate = true;
   return transformedTexture;
 }
 
-function getMaterialTexture(
-  replacementTexture,
-  sourceTexture,
-  useSourceMaterialMaps,
-) {
+function getMaterialTexture(replacementTexture, sourceTexture, useSourceMaterialMaps) {
   if (!replacementTexture) {
     return useSourceMaterialMaps ? (sourceTexture ?? null) : null;
   }
 
-  return sourceTexture
-    ? copyTextureMapping(replacementTexture, sourceTexture)
-    : replacementTexture;
+  return sourceTexture ? copyTextureMapping(replacementTexture, sourceTexture) : replacementTexture;
 }
 
 function copyTextureMapping(texture, sourceTexture) {

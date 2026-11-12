@@ -13,10 +13,12 @@ export class SongRecordingSession {
     createGuidance,
     recorder,
     ensemble,
+    demonstration,
     ensureAudio,
     trackingReady,
     onExit,
     onChange = () => {},
+    prepareLayout = () => {},
     guidedPlayOffsetMs = () => 0,
     now = () => performance.now(),
     uuid = () => crypto.randomUUID(),
@@ -28,27 +30,32 @@ export class SongRecordingSession {
     Object.assign(this, {
       recorder,
       ensemble,
+      demonstration,
       ensureAudio,
       trackingReady,
       onExit,
-      onChange,
+      prepareLayout,
       guidedPlayOffsetMs,
       now,
     });
+    this.onChange = () => {
+      this.ensemble.layoutFrame?.setEnabled(this.phase === "ready");
+      onChange();
+    };
     this.groupId = uuid();
     this.attempt = 0;
     this.generation = 0;
     this.phase = "unprepared";
+    this.playback = "live";
+    this.demonstrationFinished = false;
     this.feedback = "";
     this.transition = null;
     recorder.claim(this);
     this.changed = () => {
-      if (this.phase === "saving" && !recorder.connected)
-        this.cancelRestart = true;
+      if (this.phase === "saving" && !recorder.connected) this.cancelRestart = true;
       if (
         RUNNING.has(this.phase) &&
-        (recorder.state === "stopping" ||
-          (recorder.active && !recorder.connected))
+        (recorder.state === "stopping" || (recorder.active && !recorder.connected))
       )
         this.interrupt(recorder.stopReason || "receiver-disconnected");
       if (this.phase === "save-pending" && !recorder.pendingFinalization) {
@@ -60,8 +67,7 @@ export class SongRecordingSession {
     recorder.addEventListener("change", this.changed);
   }
   captureCommand(id) {
-    if (id === "capture-toggle")
-      return this.action(RUNNING.has(this.phase) ? "stop" : "start");
+    if (id === "capture-toggle") return this.action(RUNNING.has(this.phase) ? "stop" : "start");
     if (id === "capture-pose") this.recorder.markPose();
     // Sync belongs to the attempt; desktop/radial Mark Sync cannot duplicate it.
   }
@@ -71,6 +77,7 @@ export class SongRecordingSession {
       ![
         "prepare",
         "start",
+        "demonstrate",
         "restart",
         "stop",
         "exit",
@@ -88,20 +95,19 @@ export class SongRecordingSession {
         this.pendingEnd = id;
         this.generation++;
         this.ensemble.cancel();
+        this.demonstration?.stop();
         this.recorder.audio.cancelCues();
         if (this.recorder.state === "preparing")
           this.recorder.stop(
-            id === "interrupt"
-              ? "performance-interruption"
-              : "performance-cancelled",
+            id === "interrupt" ? "performance-interruption" : "performance-cancelled",
             { tailMs: 0 },
           );
         return this.transition;
       }
       return this.transition;
     }
-    if (id === "start" && !["ready"].includes(this.phase))
-      return Promise.resolve();
+    if (["start", "demonstrate"].includes(id) && this.phase !== "ready") return Promise.resolve();
+    if (id === "demonstrate" && !this.demonstration) return Promise.resolve();
     if (id === "restart" && !["count-in", "performing"].includes(this.phase))
       return Promise.resolve();
     const operation = async () => {
@@ -110,15 +116,16 @@ export class SongRecordingSession {
           this.phase = "preparing";
           this.onChange();
           if (!this.trackingReady())
-            throw new Error(
-              "Enter XR with tracking, then choose Prepare ensemble.",
-            );
+            throw new Error("Enter XR with tracking, then choose Prepare ensemble.");
           await this.ensureAudio();
           this.ensemble.prepare({ bpm: this.bpm });
+          this.prepareLayout();
           this.phase = "ready";
           this.feedback = "Ensemble ready. Adjust placement, then Start.";
-        } else if (id === "start") await this.begin();
-        else if (id === "check-saving") {
+        } else if (id === "start" || id === "demonstrate") {
+          this.playback = id === "demonstrate" ? "demonstration" : "live";
+          await this.begin();
+        } else if (id === "check-saving") {
           this.phase = "saving";
           await this.recorder.waitForFinalization();
           this.phase = "ready";
@@ -126,11 +133,7 @@ export class SongRecordingSession {
         } else {
           this.cancelRestart = false;
           await this.end(
-            id === "restart"
-              ? "restarted"
-              : id === "interrupt"
-                ? "interrupted"
-                : "stopped",
+            id === "restart" ? "restarted" : id === "interrupt" ? "interrupted" : "stopped",
           );
           if (id === "restart" && !this.cancelRestart) await this.begin();
           if (id === "exit") await this.exit();
@@ -138,6 +141,7 @@ export class SongRecordingSession {
       } catch (error) {
         this.generation++;
         this.ensemble.cancel();
+        this.demonstration?.stop();
         this.recorder.audio.cancelCues();
         if (this.recorder.pendingFinalization) {
           this.phase = "save-pending";
@@ -179,15 +183,16 @@ export class SongRecordingSession {
   }
   async begin() {
     const token = ++this.generation;
+    this.interruption = null;
+    this.demonstrationFinished = false;
     this.phase = "starting";
     this.feedback = "Checking receiver, XR and audio…";
     this.onChange();
     this.ensemble.cancel();
+    this.demonstration?.stop();
     this.ensemble.validate();
     if (!this.trackingReady())
-      throw new Error(
-        "XR tracking is unavailable. Enter XR and try Start again.",
-      );
+      throw new Error("XR tracking is unavailable. Enter XR and try Start again.");
     await this.ensureAudio();
     if (token !== this.generation) return;
     const status = await this.recorder.readiness();
@@ -197,15 +202,16 @@ export class SongRecordingSession {
         "Use Mixed Reality Capture on the headset browser page to enter the existing receiver pairing code, then return to XR.",
       );
     if (!this.trackingReady())
-      throw new Error(
-        "XR tracking was interrupted. Start again when tracking is available.",
-      );
+      throw new Error("XR tracking was interrupted. Start again when tracking is available.");
     this.ensemble.validate();
     const attempt = ++this.attempt;
+    if (this.playback === "demonstration") this.demonstration.start();
     await this.recorder.startReady({
       owner: this,
+      includeUI: false,
       performance: {
         mode: "song-mixed-reality",
+        playback: this.playback,
         compositionId: this.composition.id,
         compositionVersion: this.composition.contentVersion,
         compositionHash: this.composition.contentHash || null,
@@ -216,25 +222,20 @@ export class SongRecordingSession {
         arrangementVersion: this.composition.arrangement?.version || null,
         groupId: this.groupId,
         attempt,
-        label: `${this.composition.title} — Take ${String(attempt).padStart(2, "0")}`,
+        label: `${this.composition.title} — ${this.playback === "demonstration" ? "Demo " : ""}Take ${String(attempt).padStart(2, "0")}`,
         completionAction: null,
         performanceStart: null,
       },
     });
     if (token !== this.generation) return;
     if (!this.trackingReady() || !this.recorder.connected)
-      throw new Error(
-        "Tracking or receiver connection interrupted before count-in.",
-      );
+      throw new Error("Tracking or receiver connection interrupted before count-in.");
     const cue = this.recorder.markSync(this);
     if (!cue) throw new Error("Capture is not ready for sync.");
     const audio = this.recorder.audio,
       audioNow = audio.context.currentTime,
       wallNow = this.now();
-    const countContextTime = Math.max(
-      cue.endContextTime + 0.12,
-      audioNow + 0.1,
-    );
+    const countContextTime = Math.max(cue.endContextTime + 0.12, audioNow + 0.1);
     const countAt = wallNow + (countContextTime - audioNow) * 1000,
       beatZero = countAt + 4 * this.beatMs;
     this.anchor = {
@@ -244,30 +245,51 @@ export class SongRecordingSession {
       contextTime: countContextTime + (4 * this.beatMs) / 1000,
     };
     this.melodyGuide = this.createGuidance(beatZero);
+    // Headset cues follow authored playback; clean capture still excludes UI.
+    this.melodyGuide.mode = this.playback === "demonstration" ? "demonstration" : "practice";
     this.recorder.updatePerformance(
       {
         sync: cue,
         scheduledPerformanceStart:
-          audio.mapping.sceneTime +
-          this.anchor.contextTime -
-          audio.mapping.contextTime,
+          audio.mapping.sceneTime + this.anchor.contextTime - audio.mapping.contextTime,
       },
       "count-in",
     );
     audio.countIn(countContextTime, this.beatMs / 1000);
-    this.ensemble.schedule({ countAt, beatZero, wallNow, audioNow, bpm: this.bpm });
+    this.ensemble.schedule({
+      countAt,
+      beatZero,
+      wallNow,
+      audioNow,
+      bpm: this.bpm,
+      origin: this.playback === "demonstration" ? "demonstration" : "performance",
+    });
     this.phase = "count-in";
+    if (this.playback === "demonstration")
+      this.demonstration.schedule?.(
+        (now) => this.melodyGuide.beatAt(now),
+        (error) => this.interrupt(error.message),
+      );
     this.lastFrame = wallNow;
     this.feedback = "Recording · Sync cue, then 4, 3, 2, 1.";
     this.onChange();
   }
   update(now = this.now()) {
-    this.ensemble.update?.(now);
+    this.ensemble.layoutFrame?.update();
+    try {
+      this.ensemble.update?.(now);
+      if (
+        this.demonstrating &&
+        !this.demonstrationFinished &&
+        this.anchor?.token === this.generation
+      )
+        this.demonstration.update(now, this.melodyGuide.beatAt(now));
+    } catch (error) {
+      this.interrupt(error.message);
+      return;
+    }
     if (!["count-in", "performing"].includes(this.phase)) return;
-    if (
-      !this.trackingReady() ||
-      this.recorder.audio.context.state !== "running"
-    ) {
+    if (!this.trackingReady() || this.recorder.audio.context.state !== "running") {
       this.interrupt("tracking-or-audio-interruption");
       return;
     }
@@ -276,17 +298,27 @@ export class SongRecordingSession {
     if (this.phase === "count-in" && now >= this.anchor.beatZero) {
       this.phase = "performing";
       this.ensemble.play();
-      this.feedback =
-        "Recording. Follow the highlighted squares; Stop Recording finishes the take.";
+      this.feedback = this.demonstrating
+        ? "Recording the full demonstration. Press Stop Recording when you want to finish the take."
+        : "Recording. Follow the highlighted squares; Stop Recording finishes the take.";
       const t =
         this.recorder.audio.mapping.sceneTime +
         this.anchor.contextTime -
         this.recorder.audio.mapping.contextTime;
-      this.recorder.updatePerformance(
-        { performanceStart: t },
-        "performance-start",
-        t,
-      );
+      this.recorder.updatePerformance({ performanceStart: t }, "performance-start", t);
+      this.onChange();
+    }
+    if (
+      this.demonstrating &&
+      !this.demonstrationFinished &&
+      this.phase === "performing" &&
+      this.melodyGuide.complete(now)
+    ) {
+      // End authored playback without ending capture; the player controls the tail.
+      this.demonstrationFinished = true;
+      this.demonstration.stop();
+      this.ensemble.cancel();
+      this.feedback = "Demonstration finished. Recording continues until you press Stop Recording.";
       this.onChange();
     }
   }
@@ -299,6 +331,7 @@ export class SongRecordingSession {
     this.interruption = reason;
     this.generation++;
     this.ensemble.cancel();
+    this.demonstration?.stop();
     this.recorder.audio.cancelCues();
     this.recorder.updatePerformance({
       completionAction: "interrupted",
@@ -313,6 +346,7 @@ export class SongRecordingSession {
     this.onChange();
     this.recorder.audio.cancelCues();
     this.ensemble.cancel();
+    this.demonstration?.stop();
     this.anchor = null;
     if (this.recorder.pendingFinalization)
       await this.recorder.stopAndFinalize({
@@ -328,11 +362,14 @@ export class SongRecordingSession {
     this.feedback = this.savedMessage();
   }
   savedMessage() {
-    return this.recorder.saved
+    const saved = this.recorder.saved
       ? this.recorder.saved.complete
         ? "Take saved."
         : "Take saved with capture interruptions. Inspect gaps in the local editor."
       : "Ready.";
+    return this.interruption
+      ? `Playback interrupted: ${this.interruption}. ${saved} Start again when ready.`
+      : saved;
   }
   async exit() {
     await this.onExit();
@@ -342,11 +379,15 @@ export class SongRecordingSession {
   }
   guidance(now = this.now()) {
     return !this.disposed &&
+      !this.demonstrationFinished &&
       ["count-in", "performing"].includes(this.phase) &&
       this.anchor?.token === this.generation &&
       now >= this.anchor.countAt
       ? this.melodyGuide
       : null;
+  }
+  get demonstrating() {
+    return this.playback === "demonstration" && RUNNING.has(this.phase);
   }
   model(now = this.now()) {
     const running = RUNNING.has(this.phase),
@@ -357,9 +398,7 @@ export class SongRecordingSession {
       disabled,
     });
     const countdown =
-      this.anchor &&
-      this.anchor.token === this.generation &&
-      now >= this.anchor.countAt
+      this.anchor && this.anchor.token === this.generation && now >= this.anchor.countAt
         ? Math.ceil((this.anchor.beatZero - now) / this.beatMs)
         : null;
     return {
@@ -368,9 +407,17 @@ export class SongRecordingSession {
       progress: this.attempt
         ? `${this.composition.title} — TAKE ${String(this.attempt).padStart(2, "0")}`
         : `${this.composition.title} · ${this.bpm} BPM`,
-      instruction: PHONE_REMINDER,
+      instruction:
+        this.phase === "performing" && this.demonstrationFinished
+          ? "Press Stop Recording when you are ready to end this take."
+          : PHONE_REMINDER,
       feedback:
-        this.feedback + (this.phase === "ready" ? `\n\n${this.composition.recording?.instructions || MELODY_HELP}` : ""),
+        (this.phase === "starting" && this.recorder.state === "preparing"
+          ? this.recorder.message
+          : this.feedback) +
+        (this.phase === "ready"
+          ? `\n\n${this.ensemble.layoutFrame ? "Hold Grip on the blue Melody frame to move and rotate the horns. Drag an orange corner to resize; Reset restores the default layout.\n\n" : ""}${this.composition.recording?.instructions || MELODY_HELP}`
+          : ""),
       transport:
         this.phase === "count-in"
           ? countdown === null
@@ -379,13 +426,19 @@ export class SongRecordingSession {
               ? String(countdown)
               : "Play"
           : this.phase === "performing"
-            ? "Play · Recording"
+            ? this.demonstrationFinished
+              ? "Recording · Demonstration complete"
+              : "Play · Recording"
             : this.phase === "saving"
               ? "Saving…"
               : "",
       ...this.guidance(now)?.model(now),
-      ...(this.guidance(now) ? { instruction: this.guidance(now).model(
-        now + (this.guidedPlayOffsetMs?.() || 0)).instruction } : {}),
+      ...(this.guidance(now)
+        ? {
+            instruction: this.guidance(now).model(now + (this.guidedPlayOffsetMs?.() || 0))
+              .instruction,
+          }
+        : {}),
       actions: running
         ? [
             button("restart", "Restart Recording", this.phase === "starting"),
@@ -403,6 +456,9 @@ export class SongRecordingSession {
                 this.ensemble.prepared ? "Start" : "Prepare ensemble",
                 Boolean(this.transition),
               ),
+              ...(this.ensemble.prepared && this.demonstration
+                ? [button("demonstrate", "Demonstrate", Boolean(this.transition))]
+                : []),
               ...(this.ensemble.prepared && this.feedback.includes("Repair")
                 ? [button("prepare", "Prepare ensemble")]
                 : []),

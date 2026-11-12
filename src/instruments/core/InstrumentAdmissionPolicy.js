@@ -1,4 +1,5 @@
-export const SINGLE_METRONOME_MESSAGE = 'Only one metronome can be placed. Use the existing metronome.';
+export const SINGLE_METRONOME_MESSAGE =
+  "Only one metronome can be placed. Use the existing metronome.";
 
 // One policy per active registry. Serialized snapshots never reserve a slot.
 export class InstrumentAdmissionPolicy {
@@ -9,17 +10,17 @@ export class InstrumentAdmissionPolicy {
   }
 
   reserve(kind, token = null) {
-    if (kind !== 'metronome') return {};
-    const existing = this.registry.getByKind('metronome').find(h => !h.disposed);
+    if (kind !== "metronome") return {};
+    const existing = this.registry.getByKind("metronome").find((h) => !h.disposed);
     if (existing || (this.reservation && this.reservation !== token)) {
       this.onRejected(SINGLE_METRONOME_MESSAGE, existing);
       return null;
     }
-    return this.reservation ||= token || {};
+    return (this.reservation ||= token || {});
   }
 
   admit(instrument) {
-    if (instrument.kind !== 'metronome') return true;
+    if (instrument.kind !== "metronome") return true;
     const token = this.reserve(instrument.kind, instrument.creationReservation);
     if (!token) return false;
     this.release(token);

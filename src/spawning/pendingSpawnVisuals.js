@@ -1,10 +1,6 @@
-export function applyPendingSpawnVisualsToState(
-  state,
-  { createPreviewMaterial, renderOrder },
-) {
+export function applyPendingSpawnVisualsToState(state, { createPreviewMaterial, renderOrder }) {
   state.root.traverse((object) => {
-    const isVisibleGripMesh =
-      object.isMesh && object.userData.usesVisibleMeshForGrip === true;
+    const isVisibleGripMesh = object.isMesh && object.userData.usesVisibleMeshForGrip === true;
     if (!isVisibleGripMesh && isPendingSpawnInteractionGeometry(object, state.root)) {
       preservePendingSpawnVisibility(object);
       object.visible = false;
@@ -39,7 +35,10 @@ export function restorePendingSpawnVisualsToState(state, { disposePreviewMateria
       delete object.userData.pendingSpawnPreviousVisible;
     }
 
-    if (!object.isMesh || !Object.prototype.hasOwnProperty.call(object.userData, "pendingSpawnOriginalMaterial")) {
+    if (
+      !object.isMesh ||
+      !Object.prototype.hasOwnProperty.call(object.userData, "pendingSpawnOriginalMaterial")
+    ) {
       return;
     }
 

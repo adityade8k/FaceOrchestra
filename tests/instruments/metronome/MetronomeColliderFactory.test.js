@@ -11,23 +11,25 @@ import { createMetronomeConnectionPortMaterial } from "../../../src/instruments/
 
 test("every Metronome has exactly four stable procedural connection ports", () => {
   assert.equal(METRONOME_CONNECTION_PORTS.length, 4);
-  const targets = Object.fromEntries(METRONOME_CONNECTION_PORTS.map((config) => {
-    const target = {
-      visible: true,
-      userData: {
-        isHitTarget: true,
-        isBodyGripTarget: false,
-        isMetronomeTarget: true,
-        isMetronomeConnectionPort: true,
-        metronomePortId: config.portId,
-        interactionRole: METRONOME_CONNECTION_ROLE,
-        wireSocketOutward: { ...config.socketDirection },
-        baseHitOpacity: METRONOME_SETTINGS.connectionPortOpacity,
-        hitColor: config.colliderColor,
-      },
-    };
-    return [`connectionPort:${config.portId}`, target];
-  }));
+  const targets = Object.fromEntries(
+    METRONOME_CONNECTION_PORTS.map((config) => {
+      const target = {
+        visible: true,
+        userData: {
+          isHitTarget: true,
+          isBodyGripTarget: false,
+          isMetronomeTarget: true,
+          isMetronomeConnectionPort: true,
+          metronomePortId: config.portId,
+          interactionRole: METRONOME_CONNECTION_ROLE,
+          wireSocketOutward: { ...config.socketDirection },
+          baseHitOpacity: METRONOME_SETTINGS.connectionPortOpacity,
+          hitColor: config.colliderColor,
+        },
+      };
+      return [`connectionPort:${config.portId}`, target];
+    }),
+  );
   const ports = Object.values(targets);
 
   assert.equal(ports.length, 4);
@@ -68,7 +70,8 @@ test("connection-port materials are colored visible wireframes in debug mode", (
       THREE,
       color: colliderColor,
       showDebug: true,
-    }));
+    }),
+  );
 
   assert.equal(materials.length, 4);
   for (const [index, material] of materials.entries()) {
@@ -87,7 +90,8 @@ test("connection-port materials are fully transparent outside debug mode", () =>
       THREE,
       color: colliderColor,
       showDebug: false,
-    }));
+    }),
+  );
 
   assert.equal(materials.length, 4);
   for (const material of materials) {
@@ -100,23 +104,28 @@ test("connection-port materials are fully transparent outside debug mode", () =>
 
 test("production connection ports remain registered raycast targets without becoming visible", () => {
   const THREE = createThreeStub();
-  const targets = Object.fromEntries(METRONOME_CONNECTION_PORTS.map((config) => {
-    const material = createMetronomeConnectionPortMaterial({
-      THREE,
-      color: config.colliderColor,
-      showDebug: false,
-    });
-    return [`connectionPort:${config.portId}`, {
-      visible: true,
-      material,
-      userData: {
-        isHitTarget: true,
-        isMetronomeConnectionPort: true,
-        metronomePortId: config.portId,
-        baseHitOpacity: 0,
-      },
-    }];
-  }));
+  const targets = Object.fromEntries(
+    METRONOME_CONNECTION_PORTS.map((config) => {
+      const material = createMetronomeConnectionPortMaterial({
+        THREE,
+        color: config.colliderColor,
+        showDebug: false,
+      });
+      return [
+        `connectionPort:${config.portId}`,
+        {
+          visible: true,
+          material,
+          userData: {
+            isHitTarget: true,
+            isMetronomeConnectionPort: true,
+            metronomePortId: config.portId,
+            baseHitOpacity: 0,
+          },
+        },
+      ];
+    }),
+  );
   const metronome = new MetronomeInstrument({
     id: "production-metro-ports",
     root: { visible: true, userData: {} },

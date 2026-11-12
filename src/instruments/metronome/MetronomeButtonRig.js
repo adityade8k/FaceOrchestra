@@ -10,7 +10,9 @@ export class MetronomeButtonRig {
   createButton(config) {
     const node = this.root?.getObjectByName?.(config.nodeName);
     if (!node?.position) {
-      console.warn(`Metronome eye node "${config.nodeName}" was not found; ${config.action} disabled.`);
+      console.warn(
+        `Metronome eye node "${config.nodeName}" was not found; ${config.action} disabled.`,
+      );
       return;
     }
     this.buttons.set(config.action, {

@@ -1,35 +1,22 @@
-import { ChunkedTimeline } from "/src/capture/ChunkedTimeline.js";
+import { EditorProject } from "./EditorProject.js";
+import { EditorPreview } from "./EditorPreview.js";
+import { EditorCamera } from "./EditorCamera.js";
+import { EditorExport } from "./EditorExport.js";
+
 import * as THREE from "three";
-import { Timeline } from "/src/capture/Timeline.js";
+
+import { DEFAULT_REPLAY_LAYERS } from "/src/capture/ReplayScene.js";
+import { fitCamera, controllerLandmark, outputPixel } from "/src/capture/calibration.js";
+import { fitTimeMap, timeMap } from "/src/capture/format.js";
 import {
-  ReplayScene,
-  DEFAULT_REPLAY_LAYERS,
-} from "/src/capture/ReplayScene.js";
-import {
-  fitCamera,
-  projectPoint,
-  controllerLandmark,
-  cropRect,
-  outputPixel,
-} from "/src/capture/calibration.js";
-import { fitTimeMap, timeMap, exportTimes } from "/src/capture/format.js";
-import {
-  CameraHistory,
   defaultCamera,
   validCamera,
   cameraFromHandle,
   normalizeBookmarks,
-  sameVideo,
 } from "/src/capture/alignment.js";
 import { SceneInspector } from "./SceneInspector.js";
-import { PreviewSeekQueue } from "/src/capture/PreviewSeekQueue.js";
-import { readVideoFrame } from "/src/capture/videoFrame.js";
-import {
-  normalizeFrameMatches,
-  savedFrameObservations,
-  fitSavedFrames,
-  cameraMatchError,
-} from "/src/capture/savedFrames.js";
+
+import { normalizeFrameMatches } from "/src/capture/savedFrames.js";
 import { normalizeRayStyle } from "/src/capture/rayStyle.js";
 
 const $ = (id) => document.getElementById(id),
@@ -38,8 +25,7 @@ const video = $("video"),
   audio = $("audio"),
   canvas = $("composite"),
   ctx = canvas.getContext("2d");
-const exportVideo = document.createElement("canvas"),
-  exportVideoContext = exportVideo.getContext("2d");
+
 const renderer = new THREE.WebGLRenderer({
   alpha: true,
   antialias: true,
@@ -50,757 +36,156 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setPixelRatio(1);
 renderer.setSize(540, 960);
-let replay = new ReplayScene(renderer),
-  timeline = null,
-  take = null,
-  videoURL = null,
-  videoTime = 0,
-  selectedPoint = false,
-  exporting = false,
-  cancelled = false,
-  presentedPTS = 0;
-let selectedVideo = null,
-  restoreVideoSettings = false,
-  expectedVideo = null;
-let pendingFrame = null;
-let observationCache = null;
-let takeLoadGeneration = 0,
-  takeAbort = null,
-  videoLoadGeneration = 0,
-  projectLoadGeneration = 0;
-let project = {
-  version: 1,
-  takeId: null,
-  segment: 0,
-  mapping: { a: 1, b: 0 },
-  camera: defaultCamera(),
-  crop: { zoom: 1, x: 0, y: 0 },
-  observations: [],
-  bookmarks: [],
-  frameMatches: [],
-  frameFit: null,
-  trim: { start: 0, end: 1 },
-  output: { width: 1080, height: 1920, fps: 30 },
-  layers: { ...replay.layers },
-  rayStyle: normalizeRayStyle(),
-  opacity: 1,
-  calibration: null,
+const editor = {
+  view: { $, number, video, audio, canvas, ctx, renderer },
+  ui: {
+    notice,
+    api,
+    post,
+    run,
+    updateInputs,
+    updateRayInputs,
+    readSettings,
+    downloadJSON,
+  },
 };
-const cameraHistory = new CameraHistory();
-const previewSeeks = new PreviewSeekQueue(
-  (time) => seek(time, { preview: true }),
-  () => render(),
-);
-let handleStartCamera = null;
-const inspector = new SceneInspector($("scene-inspector"), {
+editor.preview = new EditorPreview(editor);
+editor.project = new EditorProject(editor);
+editor.camera = new EditorCamera(editor);
+editor.exporter = new EditorExport(editor);
+
+const inspector = new SceneInspector(editor.view.$("scene-inspector"), {
   begin: () => {
-    beginCameraEdit();
-    handleStartCamera = structuredClone(project.camera);
+    editor.camera.beginCameraEdit();
+    editor.camera.handleStartCamera = structuredClone(editor.project.current.camera);
   },
   change: (object, mode) =>
-    applyCamera(
-      cameraFromHandle(project.camera, object, mode, {
-        startCamera: handleStartCamera || project.camera,
-        axis: inspector.transform.axis || "XYZ",
+    editor.camera.applyCamera(
+      cameraFromHandle(editor.project.current.camera, object, mode, {
+        startCamera: editor.camera.handleStartCamera || editor.project.current.camera,
+        axis: editor.view.inspector.transform.axis || "XYZ",
       }),
     ),
   end: () => {
-    finishCameraEdit();
-    handleStartCamera = null;
+    editor.camera.finishCameraEdit();
+    editor.camera.handleStartCamera = null;
   },
 });
-const cameraFields = [
-  "cam-x",
-  "cam-y",
-  "cam-z",
-  "cam-pitch",
-  "cam-yaw",
-  "cam-roll",
-  "cam-fov",
-  "cam-cx",
-  "cam-cy",
-];
-const cameraState = () => ({
-  camera: project.camera,
-  calibration: project.calibration,
-  frameFit: project.frameFit,
-});
-function updateCameraInputs() {
-  const values = [
-    ...project.camera.position,
-    ...project.camera.rotation,
-    project.camera.fov,
-    ...project.camera.center,
-  ];
-  cameraFields.forEach((id, i) => {
-    if (document.activeElement !== $(id)) $(id).value = values[i];
-  });
-  // Only this readout is rounded. Project data and fine inputs keep exact values.
-  $("lens-fov").value = project.camera.fov;
-  $("lens-value").textContent = `${project.camera.fov.toFixed(1)}°`;
-  $("undo-camera").disabled =
-    exporting || !cameraHistory.available(cameraState());
-}
-function beginCameraEdit() {
-  if (exporting) return;
-  cancelFrameMatching();
-  pause();
-  cameraHistory.begin(cameraState());
-  selectedPoint = false;
-  canvas.classList.remove("pick-landmark");
-}
-function applyCamera(camera) {
-  if (exporting || !validCamera(camera)) return;
-  project.camera = camera;
-  project.calibration = null;
-  project.frameFit = null;
-  updateCameraInputs();
-  updateObservations();
-  updateFrameFit();
-  render();
-}
-function finishCameraEdit() {
-  cameraHistory.commit(cameraState());
-  updateCameraInputs();
-}
-function updateBookmarks() {
-  $("save-frame").disabled = exporting || !timeline || !videoURL;
-  $("saved-frames").replaceChildren();
-  if (!project.bookmarks.length) {
-    const empty = document.createElement("span");
-    empty.className = "empty-frames";
-    empty.textContent = "Save clear controller poses to start matching.";
-    $("saved-frames").append(empty);
-  }
-  for (const time of project.bookmarks) {
-    const group = document.createElement("span");
-    group.className = "bookmark";
-    const count =
-      project.frameMatches.find(
-        (frame) => Math.abs(frame.videoTime - time) < 0.001,
-      )?.points.length || 0;
-    const visit = document.createElement("button");
-    visit.textContent = `${time.toFixed(3)} s${count ? ` · ${count} matched` : ""}`;
-    visit.dataset.time = time;
-    visit.disabled = !timeline || !videoURL;
-    visit.title = videoURL
-      ? `Check video time ${time} seconds. Save this frame again to replace its matches.`
-      : "Reselect the matching video to check this frame";
-    visit.onclick = run(() => scrub(time));
-    const remove = document.createElement("button");
-    remove.textContent = "×";
-    remove.setAttribute(
-      "aria-label",
-      `Remove saved frame ${time.toFixed(3)} seconds`,
-    );
-    remove.onclick = () => {
-      cancelFrameMatching();
-      project.bookmarks = project.bookmarks.filter((value) => value !== time);
-      project.frameMatches = normalizeFrameMatches(
-        project.frameMatches,
-        project.bookmarks,
-      );
-      refineSavedCamera();
-      updateBookmarks();
-      render();
-    };
-    group.append(visit, remove);
-    $("saved-frames").append(group);
-  }
-  updateFrameFit();
-}
-function frameObservations() {
-  if (!timeline) return [];
-  if (
-    observationCache?.timeline !== timeline ||
-    observationCache.matches !== project.frameMatches ||
-    observationCache.mapping !== project.mapping ||
-    observationCache.segment !== project.segment
-  ) {
-    observationCache = {
-      timeline,
-      matches: project.frameMatches,
-      mapping: project.mapping,
-      segment: project.segment,
-      points: savedFrameObservations(
-        project.frameMatches,
-        timeline,
-        project.mapping,
-        project.segment,
-      ),
-    };
-  }
-  return observationCache.points;
-}
-function updateFrameFit() {
-  const points = frameObservations(),
-    rms = cameraMatchError(points, project.camera),
-    fit = project.frameFit;
-  $("frame-fit").textContent = points.length
-    ? `${fit?.message || "Saved controller matches. Save another frame to refine."} ${points.length} matches · ${Number.isFinite(rms) ? rms.toFixed(1) + " px match error" : "points outside camera view"} (1080 × 1920). Approximate grip fit, not independently validated.`
-    : "Save a frame, then click its left and right controllers to estimate the camera.";
-  $("frame-fit").classList.toggle("bad", fit?.status === "rejected");
-}
-function cancelFrameMatching() {
-  pendingFrame = null;
-  $("frame-matching").hidden = true;
-  canvas.classList.remove("pick-landmark");
-}
-function refineSavedCamera() {
-  const result = fitSavedFrames(frameObservations(), project.camera);
-  if (result.applied) {
-    finishCameraEdit();
-    beginCameraEdit();
-    project.camera = result.camera;
-    project.calibration = null;
-  }
-  const { camera, ...report } = result;
-  project.frameFit = report;
-  if (result.applied) finishCameraEdit();
-  updateCameraInputs();
-  updateObservations();
-  updateFrameFit();
-}
-function advanceFrameMatching() {
-  if (!pendingFrame) return;
-  if (pendingFrame.index >= pendingFrame.hands.length) {
-    const completed = pendingFrame;
-    cancelFrameMatching();
-    if (completed.points.length) {
-      project.frameMatches = normalizeFrameMatches(
-        [
-          ...project.frameMatches.filter(
-            (frame) => Math.abs(frame.videoTime - completed.videoTime) >= 0.001,
-          ),
-          completed,
-        ],
-        project.bookmarks,
-      );
-      refineSavedCamera();
-      notice(project.frameFit.message);
-    } else notice("Frame saved as a bookmark. No controller matches changed.");
-    updateBookmarks();
-    render();
-    return;
-  }
-  const hand = pendingFrame.hands[pendingFrame.index];
-  $("frame-matching").hidden = false;
-  $("match-prompt").textContent =
-    `Click the ${hand.toUpperCase()} controller in the phone video`;
-  canvas.classList.add("pick-landmark");
-  notice(
-    `Saved frame: click the ${hand} controller's grip center, or skip it if hidden.`,
-  );
-  render();
-}
+editor.view.inspector = inspector;
+
 function notice(message, error = false) {
-  $("notice").textContent = message;
-  $("notice").classList.toggle("error", error);
+  editor.view.$("notice").textContent = message;
+  editor.view.$("notice").classList.toggle("error", error);
 }
 async function api(path, options = {}) {
   const response = await fetch(path, options);
   const data = await response.json();
-  if (!response.ok)
-    throw new Error(data.error || `Local service returned ${response.status}`);
+  if (!response.ok) throw new Error(data.error || `Local service returned ${response.status}`);
   return data;
 }
-const post = (path, data) =>
-  api(path, {
+function post(path, data) {
+  return editor.ui.api(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+}
 function run(fn) {
   return async (event) => {
     try {
       await fn(event);
     } catch (error) {
-      if (error.name !== "AbortError") notice(error.message, true);
+      if (error.name !== "AbortError") editor.ui.notice(error.message, true);
     }
   };
 }
-async function readNDJSON(path, signal, headers) {
-  const response = await fetch(path, { signal, headers });
-  if (!response.ok) throw new Error(`Cannot read ${path}`);
-  const records = [];
-  let pending = "";
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    pending += value;
-    let at;
-    while ((at = pending.indexOf("\n")) >= 0) {
-      const line = pending.slice(0, at);
-      pending = pending.slice(at + 1);
-      if (line) records.push(JSON.parse(line));
-    }
-  }
-  return records;
-}
-async function refresh() {
-  const status = await api("/api/status");
-  $("connection").textContent = status.paired
-    ? "Local receiver connected"
-    : "Receiver available · pairing required";
-  $("pair").hidden = status.paired;
-  if (!status.paired) return;
-  const takes = await api("/api/takes");
-  $("takes").replaceChildren(new Option("Select a take", ""));
-  for (const row of takes)
-    $("takes").add(
-      new Option(
-        `${row.synthetic ? "SYNTHETIC · " : ""}${row.performance?.label ? row.performance.label + " · " : ""}${row.created?.slice(0, 19) || row.id} · ${row.performance?.completionAction ? row.performance.completionAction + " · " : ""}${row.status}`,
-        row.id,
-      ),
-    );
-  if (take) $("takes").value = take.id;
-}
-async function loadTake(id, { projectGeneration = null } = {}) {
-  if (projectGeneration === null) projectLoadGeneration++;
-  if (!id) return;
-  const generation = ++takeLoadGeneration;
-  takeAbort?.abort();
-  const abort = new AbortController();
-  takeAbort = abort;
-  const signal = abort.signal;
-  await previewSeeks.idle();
-  if (generation !== takeLoadGeneration) return;
-  cancelFrameMatching();
-  notice("Loading take and recorded presentation assets…");
-  pause();
-  const changed = take?.id !== id;
-  const metadata = await api(`/api/takes/${id}`, { signal });
-  const receiver = await api("/api/status", { signal });
-  if (!metadata.assetsBundled)
-    for (const [path, hash] of Object.entries(metadata.build?.assets || {}))
-      if (receiver.build.assets[path] !== hash)
-        throw new Error(
-          `Asset version mismatch for ${path}. Open the portable take with its matching repository assets.`,
-        );
-  const [index, events] = await Promise.all([
-    api(`/api/takes/${id}/sample-index`, { signal }),
-    readNDJSON(`/api/takes/${id}/events.ndjson`, signal),
-  ]);
-  const rangeAbort = new AbortController();
-  const next =
-    index.bytes > 16 * 1024 * 1024
-      ? new ChunkedTimeline(
-          index,
-          events,
-          metadata.gaps || [],
-          (start, end) =>
-            readNDJSON(`/api/takes/${id}/samples.ndjson`, rangeAbort.signal, {
-              Range: `bytes=${start}-${end}`,
-            }),
-          {
-            onReady: () => {
-              observationCache = null;
-              if (timeline === next) render();
-            },
-          },
-        )
-      : new Timeline(
-          await readNDJSON(`/api/takes/${id}/samples.ndjson`, signal),
-          events,
-          metadata.gaps || [],
-        );
-  next.onDispose = () => rangeAbort.abort();
-  if (next.ensure) await next.ensure(0);
-  next.onError = (error) => notice(error.message, true);
-  const scene = new ReplayScene(renderer, {
-    assetURL: (path) =>
-      metadata.assetsBundled ? `/api/takes/${id}/assets${path}` : path,
-  });
-  try {
-    await scene.load(events);
-    if (generation !== takeLoadGeneration) {
-      scene.dispose();
-      next.dispose?.();
-      return;
-    }
-  } catch (error) {
-    scene.dispose();
-    next.dispose?.();
-    throw error;
-  }
-  replay.dispose();
-  timeline?.dispose?.();
-  replay = scene;
-  timeline = next;
-  take = metadata;
-  project.takeId = id;
-  project.takeIdentity = {
-    id,
-    originalId: metadata.originalId,
-    created: metadata.created,
-    build: metadata.build,
-  };
-  project.segment = next.frames[0].segment;
-  $("takes").value = id;
-  $("gaps").replaceChildren();
-  for (const gap of [
-    ...(metadata.gaps || []),
-    ...(metadata.missingIntervals || []),
-  ]) {
-    const item = document.createElement("li");
-    item.textContent = `${gap.stream}: ${gap.start.toFixed(3)}–${gap.end === null ? "unknown end" : gap.end.toFixed(3)} s · ${gap.reason}`;
-    $("gaps").append(item);
-  }
-  audio.src = `/api/takes/${id}/audio.wav`;
-  audio.load();
-  $("take-info").textContent =
-    `${metadata.synthetic ? "SYNTHETIC DEMO. " : ""}${metadata.performance?.label ? metadata.performance.label + " · " + (metadata.performance.completionAction || "in progress") + " · " : ""}${metadata.performance?.performanceStart != null ? "Play starts at " + metadata.performance.performanceStart.toFixed(2) + " s · " : ""}${metadata.duration?.toFixed(2) || next.duration.toFixed(2)} s · ${metadata.status}. ${metadata.complete ? "All expected streams saved." : `${metadata.reason || "Not finalized"}; inspect ${metadata.gaps?.length || 0} reported gaps. Use Finalize interrupted take after disconnecting to rebuild WAV.`}`;
-  $("download-take").hidden = false;
-  $("download-take").href = `/api/takes/${id}/archive`;
-  $("marks").replaceChildren();
-  for (const e of events.filter((e) =>
-    ["sync", "calibration-mark", "reference-reset"].includes(e.data.kind),
-  )) {
-    const b = document.createElement("button");
-    b.textContent = `${e.data.kind} ${e.t.toFixed(3)}s`;
-    b.onclick = run(() => scrub((e.t - project.mapping.b) / project.mapping.a));
-    $("marks").append(b);
-  }
-  if (!videoURL) {
-    $("timeline").max = String(next.duration);
-    project.trim.end = next.duration;
-  }
-  project.camera = defaultCamera();
-  project.observations = [];
-  project.calibration = null;
-  project.frameMatches = [];
-  project.frameFit = null;
-  if (changed) project.bookmarks = [];
-  cameraHistory.clear();
-  restoreVideoSettings = false;
-  expectedVideo = null;
-  updateInputs();
-  render();
-  notice(
-    scene.issues.length
-      ? scene.issues.join(" ")
-      : metadata.synthetic
-        ? "Synthetic take loaded. This does not validate real headset or phone capture."
-        : "Take loaded. Select video, match timing, then position the phone camera.",
-    scene.issues.length > 0,
-  );
-}
+
 function updateInputs() {
   for (const [id, value] of Object.entries({
-    rate: project.mapping.a,
-    offset: project.mapping.b,
-    "crop-zoom": project.crop.zoom,
-    "crop-x": project.crop.x,
-    "crop-y": project.crop.y,
-    "trim-start": project.trim.start,
-    "trim-end": project.trim.end,
-    resolution: project.output.width,
-    fps: project.output.fps,
-    opacity: project.opacity,
+    rate: editor.project.current.mapping.a,
+    offset: editor.project.current.mapping.b,
+    "crop-zoom": editor.project.current.crop.zoom,
+    "crop-x": editor.project.current.crop.x,
+    "crop-y": editor.project.current.crop.y,
+    "trim-start": editor.project.current.trim.start,
+    "trim-end": editor.project.current.trim.end,
+    resolution: editor.project.current.output.width,
+    fps: editor.project.current.output.fps,
+    opacity: editor.project.current.opacity,
   }))
-    $(id).value = value;
-  updateCameraInputs();
-  $("preview-guides").checked = project.layers.controllers;
-  $("preview-rays").checked = project.layers.controllerRays;
-  $("preview-headset").checked = project.layers.headset;
-  updateRayInputs();
-  for (const box of $("layers").querySelectorAll("input"))
-    box.checked = project.layers[box.name];
-  updateObservations();
-  updateBookmarks();
+    editor.view.$(id).value = value;
+  editor.camera.updateCameraInputs();
+  editor.view.$("preview-guides").checked = editor.project.current.layers.controllers;
+  editor.view.$("preview-rays").checked = editor.project.current.layers.controllerRays;
+  editor.view.$("preview-headset").checked = editor.project.current.layers.headset;
+  editor.ui.updateRayInputs();
+  for (const box of editor.view.$("layers").querySelectorAll("input"))
+    box.checked = editor.project.current.layers[box.name];
+  editor.camera.updateObservations();
+  editor.camera.updateBookmarks();
 }
 function updateRayInputs() {
-  project.rayStyle = normalizeRayStyle(project.rayStyle);
-  $("ray-left-color").value = project.rayStyle.leftColor;
-  $("ray-right-color").value = project.rayStyle.rightColor;
-  $("ray-opacity").value = project.rayStyle.opacity;
-  $("ray-length").value = project.rayStyle.length;
-  $("ray-opacity-value").textContent =
-    `${Math.round(project.rayStyle.opacity * 100)}%`;
-  $("ray-length-value").textContent = `${project.rayStyle.length.toFixed(2)} m`;
+  editor.project.current.rayStyle = normalizeRayStyle(editor.project.current.rayStyle);
+  editor.view.$("ray-left-color").value = editor.project.current.rayStyle.leftColor;
+  editor.view.$("ray-right-color").value = editor.project.current.rayStyle.rightColor;
+  editor.view.$("ray-opacity").value = editor.project.current.rayStyle.opacity;
+  editor.view.$("ray-length").value = editor.project.current.rayStyle.length;
+  editor.view.$("ray-opacity-value").textContent =
+    `${Math.round(editor.project.current.rayStyle.opacity * 100)}%`;
+  editor.view.$("ray-length-value").textContent =
+    `${editor.project.current.rayStyle.length.toFixed(2)} m`;
 }
 function readSettings() {
-  project.mapping = { a: number("rate"), b: number("offset") };
+  editor.project.current.mapping = {
+    a: editor.view.number("rate"),
+    b: editor.view.number("offset"),
+  };
   if (
-    !(project.mapping.a > 0.9 && project.mapping.a < 1.1) ||
-    !Number.isFinite(project.mapping.b)
+    !(editor.project.current.mapping.a > 0.9 && editor.project.current.mapping.a < 1.1) ||
+    !Number.isFinite(editor.project.current.mapping.b)
   )
     throw new Error("Enter a finite offset and a rate between 0.9 and 1.1.");
-  if (!validCamera(project.camera)) throw new Error("Invalid camera values.");
-  project.crop = {
-    zoom: number("crop-zoom"),
-    x: number("crop-x"),
-    y: number("crop-y"),
+  if (!validCamera(editor.project.current.camera)) throw new Error("Invalid camera values.");
+  editor.project.current.crop = {
+    zoom: editor.view.number("crop-zoom"),
+    x: editor.view.number("crop-x"),
+    y: editor.view.number("crop-y"),
   };
-  project.trim = { start: number("trim-start"), end: number("trim-end") };
-  project.output = {
-    width: number("resolution"),
-    height: (number("resolution") * 16) / 9,
-    fps: number("fps"),
+  editor.project.current.trim = {
+    start: editor.view.number("trim-start"),
+    end: editor.view.number("trim-end"),
   };
-  project.opacity = number("opacity");
+  editor.project.current.output = {
+    width: editor.view.number("resolution"),
+    height: (editor.view.number("resolution") * 16) / 9,
+    fps: editor.view.number("fps"),
+  };
+  editor.project.current.opacity = editor.view.number("opacity");
   if (
-    !Object.values(project.crop).every(Number.isFinite) ||
-    project.crop.zoom < 1 ||
-    project.crop.zoom > 4 ||
-    Math.abs(project.crop.x) > 1 ||
-    Math.abs(project.crop.y) > 1
+    !Object.values(editor.project.current.crop).every(Number.isFinite) ||
+    editor.project.current.crop.zoom < 1 ||
+    editor.project.current.crop.zoom > 4 ||
+    Math.abs(editor.project.current.crop.x) > 1 ||
+    Math.abs(editor.project.current.crop.y) > 1
   )
-    throw new Error(
-      "Crop zoom must be 1–4, and crop offsets between −1 and 1.",
-    );
+    throw new Error("Crop zoom must be 1–4, and crop offsets between −1 and 1.");
 }
-function render({
-  time = videoTime,
-  transparent = false,
-  calibration = !exporting,
-  videoSource = video,
-  strict = false,
-} = {}) {
-  const w = canvas.width,
-    h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-  if (!transparent) {
-    const ready =
-      videoSource === video
-        ? video.readyState >= 2 && !video.seeking
-        : videoSource?.width > 0 && videoSource?.height > 0;
-    if (strict && !ready)
-      throw new Error(
-        `Phone video is missing at ${time.toFixed(3)} s. Export stopped before saving this frame.`,
-      );
-    ctx.fillStyle = "#17221b";
-    ctx.fillRect(0, 0, w, h);
-    if (ready) {
-      const c = cropRect(
-        videoSource.videoWidth || videoSource.width,
-        videoSource.videoHeight || videoSource.height,
-        w,
-        h,
-        project.crop,
-      );
-      ctx.drawImage(videoSource, c.sx, c.sy, c.sw, c.sh, 0, 0, w, h);
-    } else {
-      ctx.fillStyle = "#afc3aa";
-      ctx.font = "18px system-ui";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        videoURL ? "Loading video frame…" : "Select a phone video",
-        w / 2,
-        h / 2,
-      );
-    }
-  }
-  const sceneTime = timeMap(time, project.mapping);
-  replay.setRayStyle(project.rayStyle);
-  replay.setCamera(project.camera, w, h);
-  const frame = timeline?.seek(sceneTime);
-  if (frame) {
-    replay.layers = { ...project.layers };
-    if (!calibration) {
-      replay.layers.controllers = false;
-      replay.layers.headset = false;
-    }
-    replay.apply(frame);
-    replay.render({ guides: calibration });
-    if (!pendingFrame || !calibration) {
-      ctx.globalAlpha = project.opacity;
-      ctx.drawImage(renderer.domElement, 0, 0, w, h);
-      ctx.globalAlpha = 1;
-    }
-    $("profiles").textContent =
-      frame.xr.controllers
-        .map((c) => `${c.handedness}: ${c.profiles.join(", ") || "no profile"}`)
-        .join(" · ") || "No tracked controllers at this timestamp.";
-    if (calibration && !pendingFrame)
-      for (const observation of [
-        ...project.observations,
-        ...frameObservations(),
-      ]) {
-        if (Math.abs(observation.videoTime - time) > 0.12) continue;
-        const p = projectPoint(observation.world, project.camera);
-        const x = (observation.pixel[0] / 1080) * w,
-          y = (observation.pixel[1] / 1920) * h;
-        ctx.strokeStyle = observation.hand === "right" ? "#ffb56e" : "#96edb1";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, 2 * Math.PI);
-        ctx.stroke();
-        if (p) {
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo((p[0] / 1080) * w, (p[1] / 1920) * h);
-          ctx.stroke();
-          ctx.fillStyle = "#ff716a";
-          ctx.fillRect((p[0] / 1080) * w - 3, (p[1] / 1920) * h - 3, 6, 6);
-        }
-      }
-  }
-  if (calibration && pendingFrame)
-    for (const point of pendingFrame.points) {
-      ctx.fillStyle = point.hand === "left" ? "#66edbe" : "#ffa96c";
-      ctx.beginPath();
-      ctx.arc(
-        (point.pixel[0] / 1080) * w,
-        (point.pixel[1] / 1920) * h,
-        5,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-    }
-  if (!exporting) inspector.update(replay, frame);
-  const requested = previewSeeks.target ?? time;
-  $("frame-time").textContent =
-    `VIDEO ${time.toFixed(3)} s · SCENE ${sceneTime.toFixed(3)} s`;
-  $("seek-time").value = requested.toFixed(3);
-  $("timeline").value = requested;
-  for (const button of $("saved-frames").querySelectorAll("[data-time]"))
-    button.setAttribute(
-      "aria-current",
-      String(Math.abs(Number(button.dataset.time) - time) < 0.001),
-    );
-}
-async function seek(time, { preview = false } = {}) {
-  videoTime = Math.max(
-    0,
-    Math.min(time, videoURL ? video.duration : timeline?.duration || time),
-  );
-  await timeline?.ensure?.(timeMap(videoTime, project.mapping));
-  let decoded;
-  if (videoURL)
-    decoded = await readVideoFrame(video, videoTime, {
-      presentedTime: presentedPTS,
-      capture: exporting
-        ? (source) => {
-            // Freeze the decoded pixels while readiness is known, before yielding back
-            // to the export loop. Later media events cannot replace this with a slate.
-            exportVideo.width = source.videoWidth;
-            exportVideo.height = source.videoHeight;
-            exportVideoContext.drawImage(source, 0, 0);
-            return exportVideo;
-          }
-        : undefined,
-    });
-  if (decoded) presentedPTS = decoded.presentedPTS;
-  if (!exporting && audio.readyState >= 1) {
-    audio.currentTime = Math.max(0, timeMap(videoTime, project.mapping));
-    audio.playbackRate = project.mapping.a;
-  }
-  if (!exporting) render();
-  return { videoTime, presentedPTS, source: decoded?.source };
-}
-function stopPlayback() {
-  video.pause();
-  audio.pause();
-  $("play").textContent = "Play";
-}
-function pause() {
-  stopPlayback();
-  if (videoURL && !exporting) {
-    videoTime = video.currentTime;
-    render();
-  }
-}
-function scrub(time) {
-  if (exporting) return Promise.resolve();
-  if (!Number.isFinite(time)) throw new Error("Enter a finite video time.");
-  const target = Math.max(
-    0,
-    Math.min(time, videoURL ? video.duration : timeline?.duration || time),
-  );
-  // Stop without redrawing: a redraw here would overwrite the slider's input.
-  cancelFrameMatching();
-  stopPlayback();
-  $("timeline").value = target;
-  $("seek-time").value = target.toFixed(3);
-  return previewSeeks.request(target);
-}
-async function play() {
-  if (!videoURL) throw new Error("Choose a video first.");
-  cancelFrameMatching();
-  if (!video.paused) {
-    pause();
-    return;
-  }
-  await previewSeeks.idle();
-  readSettings();
-  audio.currentTime = Math.max(0, timeMap(video.currentTime, project.mapping));
-  audio.playbackRate = project.mapping.a;
-  audio.muted = $("phone-audio").checked;
-  video.muted = !$("phone-audio").checked;
-  await video.play();
-  if (take)
-    audio
-      .play()
-      .catch(() =>
-        notice("Clean WAV is not ready. Finalize or recover the take.", true),
-      );
-  $("play").textContent = "Pause";
-}
-function videoFrame(_, metadata) {
-  presentedPTS = metadata.mediaTime;
-  if (!exporting && !video.paused) {
-    const desired = timeMap(video.currentTime, project.mapping);
-    if (desired < 0) {
-      audio.pause();
-    } else if (
-      audio.readyState >= 2 &&
-      Math.abs(audio.currentTime - desired) > 0.08
-    ) {
-      audio.currentTime = desired;
-      audio.play().catch(() => {});
-    }
-  }
-  video.requestVideoFrameCallback(videoFrame);
-}
-if (video.requestVideoFrameCallback)
-  video.requestVideoFrameCallback(videoFrame);
+
+if (editor.view.video.requestVideoFrameCallback)
+  editor.view.video.requestVideoFrameCallback(editor.preview.videoFrame);
 else
-  video.addEventListener("timeupdate", () => {
-    if (!exporting) {
-      videoTime = video.currentTime;
-      render();
+  editor.view.video.addEventListener("timeupdate", () => {
+    if (!editor.exporter.exporting) {
+      editor.preview.videoTime = editor.view.video.currentTime;
+      editor.preview.render();
     }
   });
 // The playhead drives the same scene-time mapping as offline output. Source PTS
 // remains independent and is used when a clicked video frame supplies a landmark.
-function animatePreview() {
-  if (!exporting && videoURL && !video.paused) {
-    videoTime = video.currentTime;
-    render();
-  }
-  requestAnimationFrame(animatePreview);
-}
-requestAnimationFrame(animatePreview);
-video.onended = pause;
-function updateObservations() {
-  $("observations").replaceChildren();
-  for (const [index, o] of project.observations.entries()) {
-    const p = projectPoint(o.world, project.camera),
-      error = p ? Math.hypot(p[0] - o.pixel[0], p[1] - o.pixel[1]) : Infinity;
-    const row = document.createElement("li");
-    row.textContent = `${o.heldOut ? "VALIDATE" : "FIT"} · ${o.hand} · ${o.videoTime.toFixed(3)}s · ${error.toFixed(1)} px`;
-    const remove = document.createElement("button");
-    remove.textContent = "Remove";
-    remove.onclick = () => {
-      project.observations.splice(index, 1);
-      project.calibration = null;
-      cameraHistory.clear();
-      updateCameraInputs();
-      updateObservations();
-      render();
-    };
-    row.append(remove);
-    $("observations").append(row);
-  }
-  const c = project.calibration;
-  $("fit-report").textContent = c
-    ? `${c.valid ? "Fit accepted" : "FIT FAILED"} · ${c.fitRms.toFixed(2)} px RMS\nHeld-out: ${c.heldOutRms === null ? "add observations" : c.heldOutRms.toFixed(2) + " px RMS"}\n${c.validated ? "Held-out validation passed" : "Not validated: use at least two additional observations"}`
-    : "Manual / uncalibrated camera";
-  $("fit-report").classList.toggle("bad", Boolean(c && !c.valid));
-}
+
+requestAnimationFrame(editor.preview.animatePreview);
+editor.view.video.onended = editor.preview.pause;
+
 function downloadJSON(value, name) {
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
@@ -812,160 +197,70 @@ function downloadJSON(value, name) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-$("pair").onsubmit = run(async (e) => {
+editor.view.$("pair").onsubmit = editor.ui.run(async (e) => {
   e.preventDefault();
-  await post("/api/pair", { code: $("code").value });
-  await refresh();
-  notice("This browser is paired.");
+  await editor.ui.post("/api/pair", { code: editor.view.$("code").value });
+  await editor.project.refresh();
+  editor.ui.notice("This browser is paired.");
 });
-$("refresh").onclick = run(refresh);
-$("takes").onchange = run((e) => loadTake(e.target.value));
-$("recover").onclick = run(async () => {
-  if (!take) throw new Error("Select a take.");
-  await post(`/api/takes/${take.id}/recover`, {});
-  await loadTake(take.id);
+editor.view.$("refresh").onclick = editor.ui.run(editor.project.refresh);
+editor.view.$("takes").onchange = editor.ui.run((e) => editor.project.loadTake(e.target.value));
+editor.view.$("recover").onclick = editor.ui.run(async () => {
+  if (!editor.project.take) throw new Error("Select a take.");
+  await editor.ui.post(`/api/takes/${editor.project.take.id}/recover`, {});
+  await editor.project.loadTake(editor.project.take.id);
 });
-$("import-take").onchange = run(async (e) => {
+editor.view.$("import-take").onchange = editor.ui.run(async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  notice("Importing portable take locally…");
-  const result = await api("/api/import", { method: "POST", body: file });
-  await refresh();
-  await loadTake(result.id);
+  editor.ui.notice("Importing portable take locally…");
+  const result = await editor.ui.api("/api/import", { method: "POST", body: file });
+  await editor.project.refresh();
+  await editor.project.loadTake(result.id);
 });
-$("video-file").onchange = run(async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const generation = ++videoLoadGeneration;
-  await previewSeeks.idle();
-  if (generation !== videoLoadGeneration) return;
-  cancelFrameMatching();
-  if (!video.requestVideoFrameCallback)
-    throw new Error(
-      "Video presentation timestamps are unavailable. Use a current desktop Chrome browser for calibration and export.",
-    );
-  const previousVideo = expectedVideo || project.video;
-  const candidate = document.createElement("video"),
-    candidateURL = URL.createObjectURL(file);
-  candidate.muted = true;
-  candidate.preload = "auto";
-  try {
-    await new Promise((resolve, reject) => {
-      candidate.onloadeddata = resolve;
-      candidate.onerror = () =>
-        reject(
-          new Error(
-            "Unsupported video codec. Convert to a seekable SDR MP4 locally.",
-          ),
-        );
-      candidate.src = candidateURL;
-    });
-    if (!Number.isFinite(candidate.duration))
-      throw new Error("Video has no finite duration.");
-    if (generation !== videoLoadGeneration) {
-      URL.revokeObjectURL(candidateURL);
-      return;
-    }
-    pause();
-    if (videoURL) URL.revokeObjectURL(videoURL);
-    videoURL = candidateURL;
-    await new Promise((resolve, reject) => {
-      video.onloadeddata = resolve;
-      video.onerror = reject;
-      video.src = candidateURL;
-      video.muted = true;
-    });
-    if (generation !== videoLoadGeneration) return;
-  } catch (error) {
-    URL.revokeObjectURL(candidateURL);
-    throw error;
-  } finally {
-    candidate.removeAttribute("src");
-    candidate.load();
-  }
-  selectedVideo = {
-    name: file.name,
-    size: file.size,
-    lastModified: file.lastModified,
-    width: video.videoWidth,
-    height: video.videoHeight,
-    duration: video.duration,
-  };
-  const changed = Boolean(
-    previousVideo && !sameVideo(previousVideo, selectedVideo),
-  );
-  if (changed) {
-    project.bookmarks = [];
-    project.observations = [];
-    project.calibration = null;
-    project.frameMatches = [];
-    project.frameFit = null;
-    cameraHistory.clear();
-  }
-  if (!restoreVideoSettings || changed) project.trim.end = video.duration;
-  project.bookmarks = normalizeBookmarks(project.bookmarks, video.duration);
-  project.frameMatches = normalizeFrameMatches(
-    project.frameMatches,
-    project.bookmarks,
-  );
-  project.video = selectedVideo;
-  restoreVideoSettings = false;
-  expectedVideo = null;
-  $("timeline").max = video.duration;
-  $("video-info").textContent =
-    `${file.name} · ${video.videoWidth} × ${video.videoHeight} · ${video.duration.toFixed(3)}s. Rotation decoded by browser.`;
-  updateInputs();
-  await seek(0);
-  notice(
-    changed
-      ? "Different video selected. Saved frames and calibration observations cleared; match timing again."
-      : "Video ready. Match a sync cue or controller gesture.",
-  );
-});
-$("play").onclick = run(play);
-const currentPlayhead = () =>
-  previewSeeks.target ??
-  (videoURL && !video.paused ? video.currentTime : videoTime);
-$("previous").onclick = run(() =>
-  scrub(currentPlayhead() - 1 / project.output.fps),
+editor.view.$("video-file").onchange = editor.ui.run(editor.project.loadVideo);
+editor.view.$("play").onclick = editor.ui.run(editor.preview.play);
+
+editor.view.$("previous").onclick = editor.ui.run(() =>
+  editor.preview.scrub(editor.preview.currentPlayhead() - 1 / editor.project.current.output.fps),
 );
-$("next").onclick = run(() =>
-  scrub(currentPlayhead() + 1 / project.output.fps),
+editor.view.$("next").onclick = editor.ui.run(() =>
+  editor.preview.scrub(editor.preview.currentPlayhead() + 1 / editor.project.current.output.fps),
 );
-$("timeline").onpointerdown = stopPlayback;
-$("timeline").oninput =
-  $("timeline").onchange =
-  $("seek-time").onchange =
-    run((e) => {
+editor.view.$("timeline").onpointerdown = editor.preview.stopPlayback;
+editor.view.$("timeline").oninput =
+  editor.view.$("timeline").onchange =
+  editor.view.$("seek-time").onchange =
+    editor.ui.run((e) => {
       const target = e.target.valueAsNumber;
-      return scrub(target);
+      return editor.preview.scrub(target);
     });
-$("align").onclick = run(() => {
-  cancelFrameMatching();
-  project.mapping = fitTimeMap(
-    { video: number("v1"), scene: number("s1") },
-    $("v2").value !== "" && $("s2").value !== ""
-      ? { video: number("v2"), scene: number("s2") }
+editor.view.$("align").onclick = editor.ui.run(() => {
+  editor.camera.cancelFrameMatching();
+  editor.project.current.mapping = fitTimeMap(
+    { video: editor.view.number("v1"), scene: editor.view.number("s1") },
+    editor.view.$("v2").value !== "" && editor.view.$("s2").value !== ""
+      ? { video: editor.view.number("v2"), scene: editor.view.number("s2") }
       : null,
   );
-  project.anchors = [
-    { video: number("v1"), scene: number("s1") },
-    ...($("v2").value !== ""
-      ? [{ video: number("v2"), scene: number("s2") }]
+  editor.project.current.anchors = [
+    { video: editor.view.number("v1"), scene: editor.view.number("s1") },
+    ...(editor.view.$("v2").value !== ""
+      ? [{ video: editor.view.number("v2"), scene: editor.view.number("s2") }]
       : []),
   ];
-  project.observations = [];
-  project.calibration = null;
-  refineSavedCamera();
-  updateInputs();
-  render();
-  notice(
+  editor.project.current.observations = [];
+  editor.project.current.calibration = null;
+  editor.camera.refineSavedCamera();
+  editor.ui.updateInputs();
+  editor.preview.render();
+  editor.ui.notice(
     "Time mapping applied. Saved controller matches now use the updated scene times.",
   );
 });
-$("phone-audio").onchange = (e) => {
-  video.muted = !e.target.checked;
-  audio.muted = e.target.checked;
+editor.view.$("phone-audio").onchange = (e) => {
+  editor.view.video.muted = !e.target.checked;
+  editor.view.audio.muted = e.target.checked;
 };
 for (const id of [
   "rate",
@@ -979,28 +274,26 @@ for (const id of [
   "fps",
   "opacity",
 ])
-  $(id).onchange = run(() => {
-    cancelFrameMatching();
-    readSettings();
+  editor.view.$(id).onchange = editor.ui.run(() => {
+    editor.camera.cancelFrameMatching();
+    editor.ui.readSettings();
     if (id.startsWith("crop")) {
-      project.calibration = null;
-      project.observations = [];
-      project.frameMatches = [];
-      project.frameFit = null;
-      cameraHistory.clear();
-      updateCameraInputs();
-      notice(
-        "Crop changed. Save frames and click controllers again in the new crop.",
-      );
+      editor.project.current.calibration = null;
+      editor.project.current.observations = [];
+      editor.project.current.frameMatches = [];
+      editor.project.current.frameFit = null;
+      editor.camera.cameraHistory.clear();
+      editor.camera.updateCameraInputs();
+      editor.ui.notice("Crop changed. Save frames and click controllers again in the new crop.");
     }
     if (id === "rate" || id === "offset") {
-      project.calibration = null;
-      project.observations = [];
-      refineSavedCamera();
+      editor.project.current.calibration = null;
+      editor.project.current.observations = [];
+      editor.camera.refineSavedCamera();
     }
-    updateObservations();
-    updateBookmarks();
-    render();
+    editor.camera.updateObservations();
+    editor.camera.updateBookmarks();
+    editor.preview.render();
   });
 const layerLabels = {
   instruments: "Instruments",
@@ -1014,22 +307,22 @@ for (const [name, title] of Object.entries(layerLabels)) {
     box = document.createElement("input");
   box.type = "checkbox";
   box.name = name;
-  box.checked = project.layers[name];
+  box.checked = editor.project.current.layers[name];
   box.onchange = () => {
-    project.layers[name] = box.checked;
-    render();
+    editor.project.current.layers[name] = box.checked;
+    editor.preview.render();
   };
   label.append(box, document.createTextNode(title));
-  $("layers").append(label);
+  editor.view.$("layers").append(label);
 }
 for (const [id, layer] of [
   ["preview-guides", "controllers"],
   ["preview-rays", "controllerRays"],
   ["preview-headset", "headset"],
 ])
-  $(id).onchange = (e) => {
-    project.layers[layer] = e.target.checked;
-    render();
+  editor.view.$(id).onchange = (e) => {
+    editor.project.current.layers[layer] = e.target.checked;
+    editor.preview.render();
   };
 for (const [id, key] of [
   ["ray-left-color", "leftColor"],
@@ -1037,20 +330,19 @@ for (const [id, key] of [
   ["ray-opacity", "opacity"],
   ["ray-length", "length"],
 ]) {
-  $(id).oninput = $(id).onchange = (e) => {
-    project.rayStyle = normalizeRayStyle({
-      ...project.rayStyle,
-      [key]:
-        e.target.type === "color" ? e.target.value : e.target.valueAsNumber,
+  editor.view.$(id).oninput = editor.view.$(id).onchange = (e) => {
+    editor.project.current.rayStyle = normalizeRayStyle({
+      ...editor.project.current.rayStyle,
+      [key]: e.target.type === "color" ? e.target.value : e.target.valueAsNumber,
     });
-    updateRayInputs();
-    render();
+    editor.ui.updateRayInputs();
+    editor.preview.render();
   };
 }
-$("reset-rays").onclick = () => {
-  project.rayStyle = normalizeRayStyle();
-  updateRayInputs();
-  render();
+editor.view.$("reset-rays").onclick = () => {
+  editor.project.current.rayStyle = normalizeRayStyle();
+  editor.ui.updateRayInputs();
+  editor.preview.render();
 };
 const cameraModes = [
   ["inspect-scene", "inspect"],
@@ -1063,23 +355,22 @@ const cameraHints = {
     "Drag to orbit · right-drag to pan · scroll to zoom. This view does not move the phone camera.",
   translate:
     "Drag the camera’s arrows or squares to move it. Drag elsewhere to orbit; scroll to zoom.",
-  rotate:
-    "Drag the camera’s rings to rotate it. Drag elsewhere to orbit; scroll to zoom.",
+  rotate: "Drag the camera’s rings to rotate it. Drag elsewhere to orbit; scroll to zoom.",
   scale:
     "Drag the camera’s boxes outward to widen the view, inward to narrow it. Scale adjusts the lens; scene size stays fixed.",
 };
 for (const [id, mode] of cameraModes)
-  $(id).onclick = () => {
-    finishCameraEdit();
-    inspector.setMode(mode);
+  editor.view.$(id).onclick = () => {
+    editor.camera.finishCameraEdit();
+    editor.view.inspector.setMode(mode);
     for (const [other] of cameraModes)
-      $(other).setAttribute("aria-pressed", String(other === id));
-    $("scene-hint").textContent = cameraHints[mode];
+      editor.view.$(other).setAttribute("aria-pressed", String(other === id));
+    editor.view.$("scene-hint").textContent = cameraHints[mode];
   };
 document.addEventListener("keydown", (event) => {
   if (
-    exporting ||
-    inspector.transform.dragging ||
+    editor.exporter.exporting ||
+    editor.view.inspector.transform.dragging ||
     event.ctrlKey ||
     event.metaKey ||
     event.altKey ||
@@ -1095,38 +386,38 @@ document.addEventListener("keydown", (event) => {
   }[event.key.toLowerCase()];
   if (id) {
     event.preventDefault();
-    $(id).click();
+    editor.view.$(id).click();
   }
 });
-for (const id of cameraFields) {
-  const input = $(id);
-  input.onfocus = beginCameraEdit;
+for (const id of editor.camera.cameraFields) {
+  const input = editor.view.$(id);
+  input.onfocus = editor.camera.beginCameraEdit;
   input.oninput = () => {
     if (input.value === "" || !Number.isFinite(input.valueAsNumber)) return;
-    const candidate = structuredClone(project.camera),
-      index = cameraFields.indexOf(id);
+    const candidate = structuredClone(editor.project.current.camera),
+      index = editor.camera.cameraFields.indexOf(id);
     if (index < 3) candidate.position[index] = input.valueAsNumber;
     else if (index < 6) candidate.rotation[index - 3] = input.valueAsNumber;
     else if (index === 6) candidate.fov = input.valueAsNumber;
     else candidate.center[index - 7] = input.valueAsNumber;
     if (!validCamera(candidate)) return;
-    beginCameraEdit();
-    applyCamera(candidate);
+    editor.camera.beginCameraEdit();
+    editor.camera.applyCamera(candidate);
   };
   input.onchange = input.onblur = () => {
-    finishCameraEdit();
+    editor.camera.finishCameraEdit();
     // An incomplete/invalid number leaves the last valid camera unchanged.
     const values = [
-      ...project.camera.position,
-      ...project.camera.rotation,
-      project.camera.fov,
-      ...project.camera.center,
+      ...editor.project.current.camera.position,
+      ...editor.project.current.camera.rotation,
+      editor.project.current.camera.fov,
+      ...editor.project.current.camera.center,
     ];
-    input.value = values[cameraFields.indexOf(id)];
+    input.value = values[editor.camera.cameraFields.indexOf(id)];
   };
 }
-$("lens-fov").onpointerdown = beginCameraEdit;
-$("lens-fov").onkeydown = (e) => {
+editor.view.$("lens-fov").onpointerdown = editor.camera.beginCameraEdit;
+editor.view.$("lens-fov").onkeydown = (e) => {
   if (
     [
       "ArrowLeft",
@@ -1139,127 +430,81 @@ $("lens-fov").onkeydown = (e) => {
       "PageDown",
     ].includes(e.key)
   )
-    beginCameraEdit();
+    editor.camera.beginCameraEdit();
 };
-$("lens-fov").oninput = () => {
-  beginCameraEdit();
-  applyCamera({ ...project.camera, fov: number("lens-fov") });
+editor.view.$("lens-fov").oninput = () => {
+  editor.camera.beginCameraEdit();
+  editor.camera.applyCamera({
+    ...editor.project.current.camera,
+    fov: editor.view.number("lens-fov"),
+  });
 };
-$("lens-fov").onchange = $("lens-fov").onblur = finishCameraEdit;
-$("undo-camera").onclick = () => {
-  cancelFrameMatching();
-  pause();
-  const previous = cameraHistory.undo(cameraState());
+editor.view.$("lens-fov").onchange = editor.view.$("lens-fov").onblur =
+  editor.camera.finishCameraEdit;
+editor.view.$("undo-camera").onclick = () => {
+  editor.camera.cancelFrameMatching();
+  editor.preview.pause();
+  const previous = editor.camera.cameraHistory.undo(editor.camera.cameraState());
   if (previous) {
-    project.camera = previous.camera;
-    project.calibration = previous.calibration;
-    project.frameFit = previous.frameFit;
+    editor.project.current.camera = previous.camera;
+    editor.project.current.calibration = previous.calibration;
+    editor.project.current.frameFit = previous.frameFit;
   }
-  updateCameraInputs();
-  updateObservations();
-  updateFrameFit();
-  render();
+  editor.camera.updateCameraInputs();
+  editor.camera.updateObservations();
+  editor.camera.updateFrameFit();
+  editor.preview.render();
 };
-$("reset-camera").onclick = () => {
-  finishCameraEdit();
-  beginCameraEdit();
-  applyCamera(defaultCamera());
-  finishCameraEdit();
+editor.view.$("reset-camera").onclick = () => {
+  editor.camera.finishCameraEdit();
+  editor.camera.beginCameraEdit();
+  editor.camera.applyCamera(defaultCamera());
+  editor.camera.finishCameraEdit();
 };
-$("save-frame").onclick = run(async () => {
-  if (!timeline || !videoURL) throw new Error("Load a take and video first.");
-  await previewSeeks.idle();
-  cancelFrameMatching();
-  pause();
-  await seek(videoTime);
-  readSettings();
-  selectedPoint = false;
-  const savedTime =
-    project.bookmarks.find((time) => Math.abs(time - videoTime) < 0.001) ??
-    videoTime;
-  project.bookmarks = normalizeBookmarks(
-    [...project.bookmarks, savedTime],
-    video.duration,
-  );
-  updateBookmarks();
-  const sceneTime = timeMap(presentedPTS, project.mapping),
-    frame = timeline.seek(sceneTime);
-  const hands =
-    frame &&
-    sceneTime >= timeline.frames[0].t &&
-    sceneTime <= timeline.duration &&
-    !frame.gap &&
-    frame.segment === project.segment
-      ? ["left", "right"].filter((hand) =>
-          frame.xr.controllers.some((c) => c.handedness === hand && c.grip),
-        )
-      : [];
-  if (!hands.length) {
-    notice(
-      "Frame bookmarked, but no tracked controllers at this mapped time. Check synchronization or choose another frame.",
-    );
-    render();
-    return;
-  }
-  pendingFrame = {
-    videoTime: savedTime,
-    sampleTime: presentedPTS,
-    points: [],
-    hands,
-    index: 0,
-  };
-  advanceFrameMatching();
-  $("frame-matching").scrollIntoView({ block: "nearest" });
-});
-$("skip-match").onclick = () => {
-  if (pendingFrame) {
-    pendingFrame.index++;
-    advanceFrameMatching();
+editor.view.$("save-frame").onclick = editor.ui.run(editor.camera.saveFrame);
+editor.view.$("skip-match").onclick = () => {
+  if (editor.camera.pendingFrame) {
+    editor.camera.pendingFrame.index++;
+    editor.camera.advanceFrameMatching();
   }
 };
-$("cancel-match").onclick = () => {
-  cancelFrameMatching();
-  render();
-  notice("Matching cancelled. Existing saved matches are unchanged.");
-};
-$("add-point").onclick = run(async () => {
-  if (!timeline || !videoURL)
+editor.view.$("cancel-match").onclick = editor.camera.cancelMatch;
+editor.view.$("add-point").onclick = editor.ui.run(async () => {
+  if (!editor.project.timeline || !editor.project.videoURL)
     throw new Error("Load a take and phone video first.");
-  if (!$("offset-verified").checked || !$("landmark-name").value.trim())
-    throw new Error(
-      "Name and verify the measured controller-local landmark offset first.",
-    );
-  await previewSeeks.idle();
-  cancelFrameMatching();
-  pause();
-  selectedPoint = true;
-  canvas.classList.add("pick-landmark");
-  notice("Click the identified physical landmark in the portrait preview.");
+  if (!editor.view.$("offset-verified").checked || !editor.view.$("landmark-name").value.trim())
+    throw new Error("Name and verify the measured controller-local landmark offset first.");
+  await editor.preview.previewSeeks.idle();
+  editor.camera.cancelFrameMatching();
+  editor.preview.pause();
+  editor.camera.selectedPoint = true;
+  editor.view.canvas.classList.add("pick-landmark");
+  editor.ui.notice("Click the identified physical landmark in the portrait preview.");
 });
-canvas.onclick = run((e) => {
-  if (pendingFrame) {
-    pendingFrame.points.push({
-      hand: pendingFrame.hands[pendingFrame.index],
-      pixel: outputPixel(e.clientX, e.clientY, canvas.getBoundingClientRect()),
+editor.view.canvas.onclick = editor.ui.run((e) => {
+  if (editor.camera.pendingFrame) {
+    editor.camera.pendingFrame.points.push({
+      hand: editor.camera.pendingFrame.hands[editor.camera.pendingFrame.index],
+      pixel: outputPixel(e.clientX, e.clientY, editor.view.canvas.getBoundingClientRect()),
     });
-    pendingFrame.index++;
-    advanceFrameMatching();
+    editor.camera.pendingFrame.index++;
+    editor.camera.advanceFrameMatching();
     return;
   }
-  if (!selectedPoint) return;
-  readSettings();
-  const observedTime = videoURL ? presentedPTS : videoTime;
-  const frame = timeline.seek(timeMap(observedTime, project.mapping));
-  if (!frame || frame.segment !== project.segment || frame.gap)
-    throw new Error(
-      "This time belongs to a different or missing coordinate segment.",
-    );
-  const hand = $("hand").value,
+  if (!editor.camera.selectedPoint) return;
+  editor.ui.readSettings();
+  const observedTime = editor.project.videoURL
+    ? editor.preview.presentedPTS
+    : editor.preview.videoTime;
+  const frame = editor.project.timeline.seek(timeMap(observedTime, editor.project.current.mapping));
+  if (!frame || frame.segment !== editor.project.current.segment || frame.gap)
+    throw new Error("This time belongs to a different or missing coordinate segment.");
+  const hand = editor.view.$("hand").value,
     controller = frame.xr.controllers.find((c) => c.handedness === hand),
-    offset = ["landmark-x", "landmark-y", "landmark-z"].map(number),
+    offset = ["landmark-x", "landmark-y", "landmark-z"].map(editor.view.number),
     world = controllerLandmark(controller?.grip, offset),
-    rect = canvas.getBoundingClientRect();
-  project.observations.push({
+    rect = editor.view.canvas.getBoundingClientRect();
+  editor.project.current.observations.push({
     world,
     pixel: outputPixel(e.clientX, e.clientY, rect),
     videoTime: observedTime,
@@ -1268,265 +513,100 @@ canvas.onclick = run((e) => {
     hand,
     profiles: controller.profiles,
     offset,
-    landmark: $("landmark-name").value,
-    heldOut: $("held-out").checked,
+    landmark: editor.view.$("landmark-name").value,
+    heldOut: editor.view.$("held-out").checked,
   });
-  selectedPoint = false;
-  canvas.classList.remove("pick-landmark");
-  project.calibration = null;
-  cameraHistory.clear();
-  updateCameraInputs();
-  updateObservations();
-  render();
-  notice("Landmark added.");
+  editor.camera.selectedPoint = false;
+  editor.view.canvas.classList.remove("pick-landmark");
+  editor.project.current.calibration = null;
+  editor.camera.cameraHistory.clear();
+  editor.camera.updateCameraInputs();
+  editor.camera.updateObservations();
+  editor.preview.render();
+  editor.ui.notice("Landmark added.");
 });
-$("fit").onclick = run(async () => {
-  readSettings();
-  finishCameraEdit();
-  beginCameraEdit();
-  notice("Fitting fixed camera…");
+editor.view.$("fit").onclick = editor.ui.run(async () => {
+  editor.ui.readSettings();
+  editor.camera.finishCameraEdit();
+  editor.camera.beginCameraEdit();
+  editor.ui.notice("Fitting fixed camera…");
   await new Promise((r) => setTimeout(r, 30));
   try {
-    const result = fitCamera(project.observations, {
-      initial: project.camera,
-      fitFocal: $("solve-mode").value === "focal",
+    const result = fitCamera(editor.project.current.observations, {
+      initial: editor.project.current.camera,
+      fitFocal: editor.view.$("solve-mode").value === "focal",
     });
-    project.camera = result.camera;
-    project.calibration = result;
-    updateInputs();
-    render();
-    notice(
+    editor.project.current.camera = result.camera;
+    editor.project.current.calibration = result;
+    editor.ui.updateInputs();
+    editor.preview.render();
+    editor.ui.notice(
       result.valid
         ? "Camera fit complete. Check the held-out frames."
         : "Camera fit failed the error threshold. Remove bad observations or add better-spread holds.",
       !result.valid,
     );
   } finally {
-    finishCameraEdit();
+    editor.camera.finishCameraEdit();
   }
 });
-$("save-project").onclick = run(() => {
-  readSettings();
-  downloadJSON(project, `honk-project-${take?.id || "new"}.json`);
-});
-$("load-project").onchange = run(async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const generation = ++projectLoadGeneration;
-  const loaded = JSON.parse(await file.text());
-  if (generation !== projectLoadGeneration) return;
-  if (
-    loaded.version !== 1 ||
-    !loaded.takeId ||
-    !validCamera(loaded.camera) ||
-    !loaded.output ||
-    !Array.isArray(loaded.observations)
-  )
-    throw new Error("Unsupported project file.");
-  if (take?.id !== loaded.takeId) {
-    const rows = await api("/api/takes");
-    const target = rows.find(
-      (t) => t.id === loaded.takeId || t.originalId === loaded.takeId,
-    );
-    if (!target) throw new Error("Import the project’s portable take first.");
-    await loadTake(target.id, { projectGeneration: generation });
-    if (generation !== projectLoadGeneration) return;
-    loaded.takeId = target.id;
-  }
-  await previewSeeks.idle();
-  if (generation !== projectLoadGeneration) return;
-  cancelFrameMatching();
-  pause();
-  project = {
-    ...loaded,
-    frameFit: loaded.frameFit || null,
-    layers: { ...DEFAULT_REPLAY_LAYERS, ...loaded.layers },
-    rayStyle: normalizeRayStyle(loaded.rayStyle),
-    bookmarks: normalizeBookmarks(loaded.bookmarks, loaded.video?.duration),
-  };
-  project.frameMatches = normalizeFrameMatches(
-    loaded.frameMatches,
-    project.bookmarks,
-  );
-  cameraHistory.clear();
-  expectedVideo = loaded.video || null;
-  restoreVideoSettings = true;
-  selectedPoint = false;
-  canvas.classList.remove("pick-landmark");
-  const matches =
-    videoURL && (!expectedVideo || sameVideo(selectedVideo, expectedVideo));
-  if (!matches && videoURL) {
-    URL.revokeObjectURL(videoURL);
-    videoURL = null;
-    video.removeAttribute("src");
-    video.load();
-    selectedVideo = null;
-  }
-  $("timeline").max = matches
-    ? video.duration
-    : loaded.video?.duration || timeline.duration;
-  if (!matches) {
-    videoTime = 0;
-    $("video-info").textContent = expectedVideo
-      ? `Reselect ${expectedVideo.name} to keep its saved frames and alignment.`
-      : "Choose the local phone video.";
-  }
-  updateInputs();
-  readSettings();
-  render();
-  notice(
-    matches
-      ? "Project restored with the selected video."
-      : "Project restored. Reselect the matching local video; saved camera, frames, crop, trim and timing will be retained.",
+editor.view.$("save-project").onclick = editor.ui.run(() => {
+  editor.ui.readSettings();
+  editor.ui.downloadJSON(
+    editor.project.current,
+    `honk-project-${editor.project.take?.id || "new"}.json`,
   );
 });
-$("cancel-export").onclick = () => {
-  cancelled = true;
+editor.view.$("load-project").onchange = editor.ui.run(editor.project.loadProject);
+editor.view.$("cancel-export").onclick = () => {
+  editor.exporter.cancelled = true;
 };
-async function exportProject() {
-  await previewSeeks.idle();
-  if (!timeline || !videoURL)
-    throw new Error("Load a take and a phone video before exporting.");
-  readSettings();
-  if (project.trim.end > video.duration + 0.001)
-    throw new Error("Trim extends beyond the video.");
-  if (project.calibration && !project.calibration.valid)
-    throw new Error(
-      "Calibration fit failed. Correct it or adjust the manual camera before exporting.",
-    );
-  const times = exportTimes({ ...project.trim, fps: project.output.fps });
-  pause();
-  exporting = true;
-  inspector.setLocked(true);
-  cancelled = false;
-  $("export").disabled = true;
-  $("cancel-export").hidden = false;
-  $("export-progress").hidden = false;
-  $("export-progress").max = times.count;
-  $("export-result").replaceChildren();
-  selectedPoint = false;
-  cancelFrameMatching();
-  const controls = [...document.querySelectorAll("input,select,button")]
-    .filter((el) => el.id !== "cancel-export")
-    .map((el) => [el, el.disabled]);
-  for (const [el] of controls) el.disabled = true;
-  const oldTime = videoTime;
-  const pts = [];
-  try {
-    const job = await post("/api/exports", project);
-    canvas.width = project.output.width;
-    canvas.height = project.output.height;
-    renderer.setSize(canvas.width, canvas.height);
-    for (let i = 0; i < times.count; i++) {
-      if (cancelled)
-        throw new Error(
-          "Export cancelled. Partial frames remain on the local service; no completed movie was produced.",
-        );
-      const decoded = await seek(times.at(i));
-      render({
-        time: times.at(i),
-        transparent: !job.ffmpeg,
-        calibration: false,
-        videoSource: decoded.source,
-        strict: true,
-      });
-      pts.push({
-        output: i / project.output.fps,
-        video: times.at(i),
-        presentedPTS,
-        scene: timeMap(times.at(i), project.mapping),
-      });
-      const png = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/png"),
-      );
-      if (!png) throw new Error("PNG rendering failed.");
-      await api(`/api/exports/${job.id}/frame/${i}`, {
-        method: "PUT",
-        body: png,
-      });
-      $("export-progress").value = i + 1;
-      notice(
-        `Rendering ${i + 1} / ${times.count} frames locally${job.ffmpeg ? "" : " · transparent PNG fallback"}`,
-      );
-    }
-    notice("Finalizing clean audio and local export…");
-    const result = await post(`/api/exports/${job.id}/finish`, {});
-    const addLink = (name, label) => {
-      const a = document.createElement("a");
-      a.href = `/api/exports/${job.id}/${name}`;
-      a.textContent = label;
-      a.download = name;
-      $("export-result").append(a);
-    };
-    if (result.ffmpeg) addLink("composite.mp4", "Download MP4");
-    addLink(
-      "archive.tar",
-      result.ffmpeg ? "PNG sequence + WAV" : "Transparent PNG sequence + WAV",
-    );
-    addLink("audio.wav", "Clean WAV");
-    addLink("project.json", "Project");
-    addLink("README.txt", "Premiere instructions");
-    notice(
-      result.ffmpeg
-        ? "MP4 export complete. Clean audio and frame timestamps use the project mapping."
-        : "Transparent PNG sequence + aligned WAV ready. Files are also in captures/exports on this laptop.",
-    );
-    return { ...result, timestamps: pts };
-  } finally {
-    exporting = false;
-    inspector.setLocked(false);
-    for (const [el, disabled] of controls) el.disabled = disabled;
-    $("export").disabled = false;
-    $("cancel-export").hidden = true;
-    canvas.width = 540;
-    canvas.height = 960;
-    renderer.setSize(540, 960);
-    await seek(oldTime);
-  }
-}
-$("export").onclick = run(exportProject);
+
+editor.view.$("export").onclick = editor.ui.run(editor.exporter.exportProject);
 // Used by the local synthetic browser verification, never needed for normal editing.
 window.captureEditor = {
-  loadTake,
-  seek,
-  render,
-  exportProject,
-  inspector,
+  loadTake: editor.project.loadTake,
+  seek: editor.preview.seek,
+  render: editor.preview.render,
+  exportProject: editor.exporter.exportProject,
+  inspector: editor.view.inspector,
   get project() {
-    return project;
+    return editor.project.current;
   },
   get timeline() {
-    return timeline;
+    return editor.project.timeline;
   },
   get take() {
-    return take;
+    return editor.project.take;
   },
   get replay() {
-    return replay;
+    return editor.preview.replay;
   },
   setProject(value) {
-    cancelFrameMatching();
-    project = { ...project, ...value };
-    project.layers = { ...DEFAULT_REPLAY_LAYERS, ...project.layers };
-    project.bookmarks = normalizeBookmarks(
-      project.bookmarks,
-      project.video?.duration,
+    editor.camera.cancelFrameMatching();
+    editor.project.current = { ...editor.project.current, ...value };
+    editor.project.current.layers = { ...DEFAULT_REPLAY_LAYERS, ...editor.project.current.layers };
+    editor.project.current.bookmarks = normalizeBookmarks(
+      editor.project.current.bookmarks,
+      editor.project.current.video?.duration,
     );
-    project.frameMatches = normalizeFrameMatches(
-      project.frameMatches,
-      project.bookmarks,
+    editor.project.current.frameMatches = normalizeFrameMatches(
+      editor.project.current.frameMatches,
+      editor.project.current.bookmarks,
     );
-    cameraHistory.clear();
-    updateInputs();
-    render();
+    editor.camera.cameraHistory.clear();
+    editor.ui.updateInputs();
+    editor.preview.render();
   },
-  refresh,
+  refresh: editor.project.refresh,
 };
-updateInputs();
-render();
-refresh().catch((error) =>
-  notice(
-    `${error.message} Run npm run capture:serve and open this editor through that service.`,
-    true,
-  ),
-);
+editor.ui.updateInputs();
+editor.preview.render();
+editor.project
+  .refresh()
+  .catch((error) =>
+    editor.ui.notice(
+      `${error.message} Run npm run capture:serve and open this editor through that service.`,
+      true,
+    ),
+  );

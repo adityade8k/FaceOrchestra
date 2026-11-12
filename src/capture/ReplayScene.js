@@ -1,7 +1,5 @@
-import {
-  collectResources,
-  releaseResources,
-} from "../scene/resourceOwnership.js";
+import { applyHonkPitchMask } from "../scene/honkPitchColor.js";
+import { collectResources, releaseResources } from "../scene/resourceOwnership.js";
 import * as THREE from "three";
 import { createLighting } from "../scene/createLighting.js";
 import { cameraQuaternion } from "./calibration.js";
@@ -45,8 +43,7 @@ export class ReplayScene {
     guideLight.position.set(2, 4, 3);
     this.guides.add(guideLight);
     for (const name of ["left", "right", "headset"]) {
-      const color =
-        name === "left" ? 0x44ffaa : name === "right" ? 0xffaa44 : 0x77aaff;
+      const color = name === "left" ? 0x44ffaa : name === "right" ? 0xffaa44 : 0x77aaff;
       const proxy = new THREE.Mesh(
         name === "headset"
           ? new THREE.BoxGeometry(0.16, 0.09, 0.1)
@@ -101,9 +98,7 @@ export class ReplayScene {
         chunks.some((c) => typeof c !== "string") ||
         chunks.filter(Boolean).length !== chunks.length
       ) {
-        this.issues.push(
-          `Incomplete resource ${id}; affected nodes are hidden until recovery.`,
-        );
+        this.issues.push(`Incomplete resource ${id}; affected nodes are hidden until recovery.`);
         continue;
       }
       resources.push(JSON.parse(chunks.join("")));
@@ -115,17 +110,12 @@ export class ReplayScene {
       if (!/^\/model\/[\w/.-]+\.glb$/.test(ref.path) || ref.path.includes(".."))
         throw new Error("Invalid local asset reference.");
       if (!models.has(ref.path))
-        models.set(
-          ref.path,
-          (await loader.loadAsync(this.assetURL(ref.path))).scene,
-        );
+        models.set(ref.path, (await loader.loadAsync(this.assetURL(ref.path))).scene);
       collectResources(models.get(ref.path), this.owned);
       let node = models.get(ref.path);
       for (const index of ref.nodePath) node = node?.children[index];
       if (!node)
-        throw new Error(
-          `Asset node missing in ${ref.path}. Use the capture's asset version.`,
-        );
+        throw new Error(`Asset node missing in ${ref.path}. Use the capture's asset version.`);
       if (r.kind === "asset-geometry") this.resources.set(r.id, node.geometry);
       else {
         const material = Array.isArray(node.material)
@@ -163,11 +153,9 @@ export class ReplayScene {
       this.resources.set(r.id, textures[r.data.uuid]);
     }
     for (const r of resources.filter((r) => r.kind === "material")) {
-      const { type, maps, normalScale, ...params } = r.data;
+      const { type, maps, normalScale, honkPitchBaseColor, honkPitchColorMode, ...params } = r.data;
       if (Object.values(maps).some((id) => id && !this.resources.has(id))) {
-        this.issues.push(
-          `Material ${r.id} has missing textures; affected nodes are hidden.`,
-        );
+        this.issues.push(`Material ${r.id} has missing textures; affected nodes are hidden.`);
         continue;
       }
       const Ctor = THREE[type];
@@ -189,8 +177,13 @@ export class ReplayScene {
         if (value !== undefined && key in material) material[key] = value;
       for (const [slot, id] of Object.entries(maps))
         if (id) material[slot] = this.resources.get(id);
-      if (normalScale && material.normalScale)
-        material.normalScale.fromArray(normalScale);
+      if (normalScale && material.normalScale) material.normalScale.fromArray(normalScale);
+      applyHonkPitchMask(
+        material,
+        material.honkPitchMask,
+        honkPitchBaseColor,
+        honkPitchColorMode || "tint",
+      );
       this.resources.set(r.id, material);
     }
     for (const d of descriptors) {
@@ -212,9 +205,7 @@ export class ReplayScene {
       this.nodes.set(d.id, node);
     }
     for (const d of descriptors)
-      (d.parent ? this.nodes.get(d.parent) : this.scene)?.add(
-        this.nodes.get(d.id),
-      );
+      (d.parent ? this.nodes.get(d.parent) : this.scene)?.add(this.nodes.get(d.id));
   }
   setCamera(parameters, width, height) {
     this.camera.position.fromArray(parameters.position);
@@ -223,13 +214,9 @@ export class ReplayScene {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     // Center is in canonical 1080x1920 pixels, same convention as observations.
-    this.camera.projectionMatrix.elements[8] =
-      (-2 * (parameters.center?.[0] || 0)) / 1080;
-    this.camera.projectionMatrix.elements[9] =
-      (2 * (parameters.center?.[1] || 0)) / 1920;
-    this.camera.projectionMatrixInverse
-      .copy(this.camera.projectionMatrix)
-      .invert();
+    this.camera.projectionMatrix.elements[8] = (-2 * (parameters.center?.[0] || 0)) / 1080;
+    this.camera.projectionMatrix.elements[9] = (2 * (parameters.center?.[1] || 0)) / 1920;
+    this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
     this.camera.updateMatrixWorld();
   }
   setRayStyle(value) {
@@ -268,8 +255,7 @@ export class ReplayScene {
       }
       if (state.morphs) {
         node.morphTargetInfluences ||= [];
-        for (let i = 0; i < state.morphs; i++)
-          node.morphTargetInfluences[i] = x[11 + i];
+        for (let i = 0; i < state.morphs; i++) node.morphTargetInfluences[i] = x[11 + i];
         node.morphTargetDictionary = node.userData.capture.morphDictionary;
       }
       const ids = state.materials.join(",");
@@ -278,7 +264,7 @@ export class ReplayScene {
         const materials = state.materials.map((id) => {
           const m = this.resources.get(id);
           if (!m) throw new Error(`Missing material ${id}`);
-          return m.clone();
+          return applyHonkPitchMask(m.clone(), m.honkPitchMask, m.userData.honkPitchBaseColor);
         });
         node.material = materials.length === 1 ? materials[0] : materials;
         node.userData.materials = materials;
@@ -289,8 +275,7 @@ export class ReplayScene {
         material.color?.setRGB(x[at], x[at + 1], x[at + 2]);
         material.emissive?.setRGB(x[at + 3], x[at + 4], x[at + 5]);
         material.opacity = x[at + 6];
-        if ("emissiveIntensity" in material)
-          material.emissiveIntensity = x[at + 7];
+        if ("emissiveIntensity" in material) material.emissiveIntensity = x[at + 7];
       }
       if (state.wire) {
         const signature = JSON.stringify(state.wire);
@@ -323,9 +308,7 @@ export class ReplayScene {
           node.bind(
             new THREE.Skeleton(
               bones,
-              state.skeleton.inverses.map((a) =>
-                new THREE.Matrix4().fromArray(a),
-              ),
+              state.skeleton.inverses.map((a) => new THREE.Matrix4().fromArray(a)),
             ),
             new THREE.Matrix4().fromArray(state.skeleton.bindMatrix),
           );
@@ -337,9 +320,7 @@ export class ReplayScene {
         name === "headset"
           ? frame.xr.viewer
           : frame.xr.controllers.find((c) => c.handedness === name)?.grip;
-      proxy.visible = Boolean(
-        pose && this.layers[name === "headset" ? "headset" : "controllers"],
-      );
+      proxy.visible = Boolean(pose && this.layers[name === "headset" ? "headset" : "controllers"]);
       if (pose) {
         proxy.position.fromArray(pose.p);
         proxy.quaternion.fromArray(pose.q);
@@ -348,10 +329,7 @@ export class ReplayScene {
     for (const [name, ray] of this.controllerRays) {
       const pose = frame.xr.controllers.find((c) => c.handedness === name)?.ray;
       ray.visible = Boolean(
-        pose &&
-          this.layers.controllerRays &&
-          this.rayStyle.opacity > 0 &&
-          this.rayStyle.length > 0,
+        pose && this.layers.controllerRays && this.rayStyle.opacity > 0 && this.rayStyle.length > 0,
       );
       if (pose) {
         ray.position.fromArray(pose.p);
@@ -376,10 +354,7 @@ export class ReplayScene {
     }
     for (const r of this.resources.values()) this.owned.add(r);
     releaseResources(this.owned);
-    for (const proxy of [
-      ...this.proxies.values(),
-      ...this.controllerRays.values(),
-    ]) {
+    for (const proxy of [...this.proxies.values(), ...this.controllerRays.values()]) {
       proxy.geometry.dispose();
       proxy.material.dispose();
     }

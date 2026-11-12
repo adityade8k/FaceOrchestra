@@ -4,11 +4,7 @@ import { migrateSceneData } from "./migrations/index.js";
 // Legacy synchronous store. Never remove the previous valid value on a failed
 // write or migration; callers can surface status without crashing startup.
 export class PersistenceStore {
-  constructor({
-    storage,
-    key = SCENE_STORAGE_KEY,
-    legacyKeys = LEGACY_SCENE_STORAGE_KEYS,
-  } = {}) {
+  constructor({ storage, key = SCENE_STORAGE_KEY, legacyKeys = LEGACY_SCENE_STORAGE_KEYS } = {}) {
     try {
       this.storage = storage === undefined ? globalThis.localStorage : storage;
     } catch (error) {

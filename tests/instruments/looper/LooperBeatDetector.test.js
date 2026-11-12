@@ -41,7 +41,9 @@ test("beat correction leaves pitch actions continuous while snapping note gates"
   detector.apply(timeline, analysis);
   const events = timeline.getTrack("track-0").events;
   const pitch = events.find((event) => event.type === LooperActionEventType.EarLeft);
-  const secondAttack = events.filter((event) => event.type === LooperActionEventType.SqueezeStart)[1];
+  const secondAttack = events.filter(
+    (event) => event.type === LooperActionEventType.SqueezeStart,
+  )[1];
   assert.equal(pitch.timeMs, 233);
   assert.equal(secondAttack.timeMs, analysis.beatIntervalMs);
 });
@@ -58,8 +60,9 @@ test("beat correction drops the record-to-Stop rest and retains the complete cor
   const analysis = detector.analyze(timeline);
   detector.apply(timeline, analysis);
 
-  const attacks = timeline.getTrack("track-0").events
-    .filter((event) => event.type === LooperActionEventType.SqueezeStart)
+  const attacks = timeline
+    .getTrack("track-0")
+    .events.filter((event) => event.type === LooperActionEventType.SqueezeStart)
     .map((event) => event.timeMs);
   assert.equal(attacks[0], 0);
   assert.equal(attacks[2] - attacks[1], 625);

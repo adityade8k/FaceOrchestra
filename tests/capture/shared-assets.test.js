@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile, readFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SharedAssetStore } from "../../scripts/capture/assets.mjs";
+import { SharedAssetStore } from "../../server/capture/assets.mjs";
 test("takes retain portable files backed by one immutable hash object", async () => {
   const root = await mkdtemp(join(tmpdir(), "honk-assets-"));
   try {
@@ -17,10 +17,7 @@ test("takes retain portable files backed by one immutable hash object", async ()
     assert.equal((await stat(a)).ino, (await stat(b)).ino);
     assert.equal(await readFile(a, "utf8"), "fixture-model-bytes");
     await writeFile(source, "new-model");
-    await assert.rejects(
-      assets.snapshot(source, join(root, "c.glb"), hash),
-      /changed/,
-    );
+    await assert.rejects(assets.snapshot(source, join(root, "c.glb"), hash), /changed/);
     assert.equal(await readFile(a, "utf8"), "fixture-model-bytes");
   } finally {
     await rm(root, { recursive: true, force: true });

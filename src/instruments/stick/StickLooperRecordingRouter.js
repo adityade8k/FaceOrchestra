@@ -23,15 +23,15 @@ export function routeStickStrikeToLooperRecordings({
   if (target.kind === INSTRUMENT_KINDS.metronome) {
     let recordedCount = 0;
     const looperById = new Map([...loopers].map((looper) => [looper.id, looper]));
-    for (const connection of metronomeConnectionManager?.getConnectionsForMetronome?.(target.id) || []) {
+    for (const connection of metronomeConnectionManager?.getConnectionsForMetronome?.(target.id) ||
+      []) {
       if (connection.targetKind !== INSTRUMENT_KINDS.looper) continue;
-      const looper = resolveInstrument?.(connection.targetId) || looperById.get(connection.targetId);
+      const looper =
+        resolveInstrument?.(connection.targetId) || looperById.get(connection.targetId);
       if (looper?.kind !== INSTRUMENT_KINDS.looper) continue;
-      if (looper.recordTrackDrumHit?.(
-        connection.targetPortId,
-        event.percussionType,
-        event.timestamp,
-      )) {
+      if (
+        looper.recordTrackDrumHit?.(connection.targetPortId, event.percussionType, event.timestamp)
+      ) {
         recordedCount += 1;
       }
     }
@@ -45,11 +45,10 @@ export function routeStickStrikeToLooperRecordings({
   let recordedCount = 0;
   for (const looper of loopers) {
     const track = looper.tracks?.find(({ connectedHonkId }) => connectedHonkId === target.id);
-    if (track && looper.recordTrackDrumHit?.(
-      track.trackId,
-      event.percussionType,
-      event.timestamp,
-    )) {
+    if (
+      track &&
+      looper.recordTrackDrumHit?.(track.trackId, event.percussionType, event.timestamp)
+    ) {
       recordedCount += 1;
     }
   }

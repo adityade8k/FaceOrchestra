@@ -8,8 +8,7 @@ export class AsyncSceneStore {
     this.legacy = legacy;
     this.status = { state: "empty" };
     try {
-      this.indexedDB =
-        indexedDB === undefined ? globalThis.indexedDB : indexedDB;
+      this.indexedDB = indexedDB === undefined ? globalThis.indexedDB : indexedDB;
     } catch (error) {
       this.status = { state: "unavailable", error };
     }
@@ -18,8 +17,7 @@ export class AsyncSceneStore {
     if (!this.indexedDB) return null;
     return (this.opening ||= new Promise((resolve, reject) => {
       const request = this.indexedDB.open("honk-orchestra-workspaces", 1);
-      request.onupgradeneeded = () =>
-        request.result.createObjectStore("scenes");
+      request.onupgradeneeded = () => request.result.createObjectStore("scenes");
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => {
         this.opening = null;

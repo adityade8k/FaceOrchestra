@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sampleIndex } from "../../scripts/capture/sampleIndex.mjs";
+import { sampleIndex } from "../../server/capture/sampleIndex.mjs";
 import { ChunkedTimeline } from "../../src/capture/ChunkedTimeline.js";
 import { Timeline } from "../../src/capture/Timeline.js";
 
@@ -22,10 +22,7 @@ test("30-minute indexed fixture matches whole-take random/sequential seeks with 
       },
     }));
     const file = join(root, "samples.ndjson");
-    await writeFile(
-      file,
-      packets.map((p) => JSON.stringify(p)).join("\n") + '\n{"partial":',
-    );
+    await writeFile(file, packets.map((p) => JSON.stringify(p)).join("\n") + '\n{"partial":');
     const index = await sampleIndex(file),
       bytes = await readFile(file),
       full = new Timeline(packets);
@@ -95,32 +92,49 @@ test("playback uses already loaded overlapping samples while the next chunk requ
   const packets = Array.from({ length: 8 }, (_, i) => ({
     t: i / 2,
     data: {
-      full: i % 2 === 0, segment: i < 4 ? 0 : 1,
+      full: i % 2 === 0,
+      segment: i < 4 ? 0 : 1,
       nodes: { honk: { x: [i, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], morphs: 0 } },
       xr: { viewer: null, controllers: [] },
     },
   }));
-  const index = { duration: 3.5, chunks: Array.from({ length: 4 }, (_, i) =>
-    ({ t: i, offset: i * 2, end: i * 2 + 1, segment: i < 2 ? 0 : 1 })) };
-  const gates = [], calls = [];
-  const gaps = [{ stream: 'samples', start: 1.1, end: 1.2 }];
+  const index = {
+    duration: 3.5,
+    chunks: Array.from({ length: 4 }, (_, i) => ({
+      t: i,
+      offset: i * 2,
+      end: i * 2 + 1,
+      segment: i < 2 ? 0 : 1,
+    })),
+  };
+  const gates = [],
+    calls = [];
+  const gaps = [{ stream: "samples", start: 1.1, end: 1.2 }];
   const whole = new Timeline(packets, [], gaps);
   const bounded = new ChunkedTimeline(index, [], gaps, async (start, end) => {
     calls.push([start, end]);
-    if (start) await new Promise(resolve => gates.push(resolve));
+    if (start) await new Promise((resolve) => gates.push(resolve));
     return packets.slice(start, end + 1);
   });
   await bounded.ensure(0);
   // A seek cannot return stale poses for a timestamp outside cached coverage.
   assert.equal(bounded.seek(2.1), null);
-  for (const t of [1, 1.01, 1.25, 1.5, .75, 1.25])
+  for (const t of [1, 1.01, 1.25, 1.5, 0.75, 1.25])
     assert.deepEqual(bounded.seek(t), whole.seek(t), `Exact recorded overlap at ${t}`);
-  assert.equal(bounded.pending.size, 2, 'Repeated playback frames share their range request');
-  assert.deepEqual(calls, [[0, 3], [4, 7], [2, 5]]);
-  gates.forEach(resolve => resolve());
+  assert.equal(bounded.pending.size, 2, "Repeated playback frames share their range request");
+  assert.deepEqual(calls, [
+    [0, 3],
+    [4, 7],
+    [2, 5],
+  ]);
+  gates.forEach((resolve) => resolve());
   await Promise.all(bounded.pending.values());
   for (const t of [1.25, 1.9, 2, 2.25])
-    assert.deepEqual(bounded.seek(t), whole.seek(t), `Gaps and origin changes retain their semantics at ${t}`);
+    assert.deepEqual(
+      bounded.seek(t),
+      whole.seek(t),
+      `Gaps and origin changes retain their semantics at ${t}`,
+    );
   assert.ok(bounded.cache.size <= 3);
   bounded.dispose();
 });

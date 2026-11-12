@@ -1,3 +1,4 @@
+import { runtimeOwners } from "../helpers/runtimeOwners.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as THREE from "three";
@@ -17,11 +18,11 @@ test("menu immediately gates every badge state; refresh, radial menus and virtua
   physical.userData.gamepad = {};
   other.userData.gamepad = {};
   const xr = new THREE.EventDispatcher(),
-    runtime = {
+    runtime = runtimeOwners({
       xrSessionActive: true,
       renderer: { xr },
       controllers: [virtual, physical, other],
-    };
+    });
   const mesh = new THREE.Object3D(),
     recorder = {
       paired: true,
@@ -43,11 +44,7 @@ test("menu immediately gates every badge state; refresh, radial menus and virtua
   assert.ok(mesh.visible);
   applicable = false;
   badge.refresh();
-  assert.equal(
-    mesh.visible,
-    false,
-    "shown menu preserves status applicability",
-  );
+  assert.equal(mesh.visible, false, "shown menu preserves status applicability");
   applicable = true;
   for (const state of [
     "idle",
@@ -60,11 +57,7 @@ test("menu immediately gates every badge state; refresh, radial menus and virtua
   ]) {
     recorder.state = state;
     menu.setVisible(false);
-    assert.equal(
-      mesh.visible,
-      false,
-      "no timer or recorder change is required to hide",
-    );
+    assert.equal(mesh.visible, false, "no timer or recorder change is required to hide");
     physical.userData.radialMenu = { visible: true };
     badge.refresh();
     badge.refresh();
@@ -75,11 +68,7 @@ test("menu immediately gates every badge state; refresh, radial menus and virtua
   }
   delete recorder.state;
   assert.deepEqual(recorder, original);
-  assert.equal(
-    events.filter((e) => e === "menu.hide").length,
-    7,
-    "Basics still receives events",
-  );
+  assert.equal(events.filter((e) => e === "menu.hide").length, 7, "Basics still receives events");
   assert.equal(refreshes, 14);
   menu.setVisible(false);
   physical.dispatchEvent({ type: "disconnected" });

@@ -10,8 +10,7 @@ export function collectResources(root, resources = new Set()) {
         ? [node.material]
         : []) {
       resources.add(material);
-      for (const value of Object.values(material))
-        if (value?.isTexture) resources.add(value);
+      for (const value of Object.values(material)) if (value?.isTexture) resources.add(value);
     }
   });
   return resources;
@@ -19,8 +18,7 @@ export function collectResources(root, resources = new Set()) {
 export function releaseResources(resources) {
   const images = new Set();
   for (const resource of resources) {
-    if (resource.isTexture && resource.source?.data?.close)
-      images.add(resource.source.data);
+    if (resource.isTexture && resource.source?.data?.close) images.add(resource.source.data);
     resource.dispose?.();
   }
   for (const image of images) image.close();

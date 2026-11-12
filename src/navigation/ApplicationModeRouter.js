@@ -1,21 +1,14 @@
 // One transition owner. Prepare validates/loads before outgoing scene mutation.
 // Queued requests execute in order; rollback is provided by the scene adapter.
 export class ApplicationModeRouter {
-  constructor({
-    identity = "play",
-    checkpoint,
-    quiesce,
-    rollback,
-    onChange = () => {},
-  }) {
+  constructor({ identity = "play", checkpoint, quiesce, rollback, onChange = () => {} }) {
     Object.assign(this, { identity, checkpoint, quiesce, rollback, onChange });
     this.pending = Promise.resolve();
     this.disposed = false;
   }
   enter(id, prepare, commit) {
     const operation = async () => {
-      if (this.disposed)
-        throw new DOMException("Application closed", "AbortError");
+      if (this.disposed) throw new DOMException("Application closed", "AbortError");
       const cancellation = new AbortController();
       this.cancellation = cancellation;
       const previous = this.identity;

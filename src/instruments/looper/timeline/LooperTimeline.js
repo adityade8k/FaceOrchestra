@@ -22,7 +22,7 @@ export class LooperTimeline {
     this.startedAtMs = 0;
     this.onsetOffsetMs = 0;
     this.recording = false;
-    this.lengthMode = 'content-trimmed';
+    this.lengthMode = "content-trimmed";
     this.fixedWindowBeats = null;
     this.recordingClock = null;
     this.firstOnsetElapsedMs = null;
@@ -64,7 +64,7 @@ export class LooperTimeline {
   }
 
   clearRecording() {
-    this.lengthMode = 'content-trimmed';
+    this.lengthMode = "content-trimmed";
     this.fixedWindowBeats = null;
     this.recordingClock = null;
     this.durationMs = 0;
@@ -137,9 +137,10 @@ export class LooperTimeline {
         tracks.push(track);
       }
     }
-    tracks.sort((first, second) =>
-      (first.trackIndex ?? 0) - (second.trackIndex ?? 0) ||
-      String(first.trackId).localeCompare(String(second.trackId)),
+    tracks.sort(
+      (first, second) =>
+        (first.trackIndex ?? 0) - (second.trackIndex ?? 0) ||
+        String(first.trackId).localeCompare(String(second.trackId)),
     );
     return tracks;
   }
@@ -191,8 +192,8 @@ export class LooperTimeline {
   }
 
   getPerformanceEventsBetween(startMs, endMs, options = {}) {
-    return this.collectTrackEvents(
-      (track) => track.getPerformanceEventsBetween(startMs, endMs, options),
+    return this.collectTrackEvents((track) =>
+      track.getPerformanceEventsBetween(startMs, endMs, options),
     );
   }
 
@@ -202,22 +203,24 @@ export class LooperTimeline {
       if (!track.active) continue;
       for (const event of getEvents(track)) entries.push({ track, event });
     }
-    return entries.sort((first, second) =>
-      first.event.timeMs - second.event.timeMs ||
-      (first.track.trackIndex ?? Number.MAX_SAFE_INTEGER) -
-        (second.track.trackIndex ?? Number.MAX_SAFE_INTEGER) ||
-      String(first.track.trackId).localeCompare(String(second.track.trackId)) ||
-      first.event.id - second.event.id,
+    return entries.sort(
+      (first, second) =>
+        first.event.timeMs - second.event.timeMs ||
+        (first.track.trackIndex ?? Number.MAX_SAFE_INTEGER) -
+          (second.track.trackIndex ?? Number.MAX_SAFE_INTEGER) ||
+        String(first.track.trackId).localeCompare(String(second.track.trackId)) ||
+        first.event.id - second.event.id,
     );
   }
 
   sortDrumHitEntries(events) {
-    return events.sort((first, second) =>
-      first.event.timeMs - second.event.timeMs ||
-      (first.track.trackIndex ?? Number.MAX_SAFE_INTEGER) -
-        (second.track.trackIndex ?? Number.MAX_SAFE_INTEGER) ||
-      String(first.track.trackId).localeCompare(String(second.track.trackId)) ||
-      first.event.id - second.event.id,
+    return events.sort(
+      (first, second) =>
+        first.event.timeMs - second.event.timeMs ||
+        (first.track.trackIndex ?? Number.MAX_SAFE_INTEGER) -
+          (second.track.trackIndex ?? Number.MAX_SAFE_INTEGER) ||
+        String(first.track.trackId).localeCompare(String(second.track.trackId)) ||
+        first.event.id - second.event.id,
     );
   }
 
@@ -254,12 +257,12 @@ export class LooperTimeline {
     });
   }
 
-  addDrumHitEvent(trackId, { nodeId = null, trackIndex = null, timeMs, drumType } = {}) {
+  addDrumHitEvent(trackId, { nodeId = null, trackIndex = null, timeMs, drumType, gain } = {}) {
     const track = this.ensureTrack(trackId, { nodeId, trackIndex });
     if (!track) {
       return null;
     }
-    return track.addDrumHit(timeMs, drumType);
+    return track.addDrumHit(timeMs, drumType, gain);
   }
 
   addFieldEvent(
@@ -283,18 +286,28 @@ export class LooperTimeline {
   }
 
   finalizeDuration(minDurationMs = 1) {
-    if (this.lengthMode === 'fixed-window') {
-      this.contentEndMs = Math.min(this.getContentEndMs(), this.fixedWindowBeats * this.sourceBeatIntervalMs);
-      this.recordedDurationMs = this.getMusicalOnsetTimes().length ? this.fixedWindowBeats * this.sourceBeatIntervalMs : 0;
-      this.durationMs = this.recordedDurationMs > 0
-        ? this.recordedDurationMs + this.gapBeats * this.sourceBeatIntervalMs : 0;
+    if (this.lengthMode === "fixed-window") {
+      this.contentEndMs = Math.min(
+        this.getContentEndMs(),
+        this.fixedWindowBeats * this.sourceBeatIntervalMs,
+      );
+      this.recordedDurationMs = this.getMusicalOnsetTimes().length
+        ? this.fixedWindowBeats * this.sourceBeatIntervalMs
+        : 0;
+      this.durationMs =
+        this.recordedDurationMs > 0
+          ? this.recordedDurationMs + this.gapBeats * this.sourceBeatIntervalMs
+          : 0;
       return;
     }
     // One shared musical origin, independent of clock phase and selected Gap.
     if (!this.recording) this.normalizeToFirstAction();
     this.contentEndMs = this.getContentEndMs();
     this.recordedDurationMs = this.getMusicalOnsetTimes().length
-      ? (this.contentEndMs > 0 ? this.contentEndMs : Math.max(minDurationMs, 1)) : 0;
+      ? this.contentEndMs > 0
+        ? this.contentEndMs
+        : Math.max(minDurationMs, 1)
+      : 0;
     const gapDurationMs = this.gapBeats * (this.beatIntervalMs || DEFAULT_BEAT_INTERVAL_MS);
     this.durationMs = this.recordedDurationMs > 0 ? this.recordedDurationMs + gapDurationMs : 0;
   }
@@ -344,7 +357,7 @@ export class LooperTimeline {
   }
 
   normalizeToFirstAction() {
-    if (this.lengthMode === 'fixed-window') return;
+    if (this.lengthMode === "fixed-window") return;
     const firstActionMs = this.getFirstActionMs();
     if (!Number.isFinite(firstActionMs)) {
       this.tracks.clear();
@@ -359,7 +372,8 @@ export class LooperTimeline {
     // Event t corresponds to startedAtMs + onsetOffsetMs + t.
     this.onsetOffsetMs += firstActionMs;
     if (Number.isFinite(this.beatAnalysis?.originMs)) this.beatAnalysis.originMs -= firstActionMs;
-    if (Number.isFinite(this.firstOnsetElapsedMs)) this.firstOnsetElapsedMs = Math.max(0, this.firstOnsetElapsedMs - firstActionMs);
+    if (Number.isFinite(this.firstOnsetElapsedMs))
+      this.firstOnsetElapsedMs = Math.max(0, this.firstOnsetElapsedMs - firstActionMs);
   }
 
   sortTracks() {
@@ -421,25 +435,42 @@ export class LooperTimeline {
       Number.isFinite(serialized.beatIntervalMs) ? serialized.beatIntervalMs : 0,
       0,
     );
-    timeline.timingMode = [LooperTimingMode.Metronome, LooperTimingMode.Internal].includes(serialized.timingMode)
-      ? serialized.timingMode : LooperTimingMode.Ordinary;
+    timeline.timingMode = [LooperTimingMode.Metronome, LooperTimingMode.Internal].includes(
+      serialized.timingMode,
+    )
+      ? serialized.timingMode
+      : LooperTimingMode.Ordinary;
     // Only explicit metadata or a legacy external-clock take is a reliable source tempo.
-    timeline.sourceBeatIntervalMs = serialized.sourceBeatIntervalMs > 0 ? serialized.sourceBeatIntervalMs
-      : serialized.timingMode === LooperTimingMode.Metronome ? timeline.beatIntervalMs : 0;
-    if (serialized.lengthMode === 'fixed-window' && [2,4,8,16].includes(serialized.fixedWindowBeats) && timeline.sourceBeatIntervalMs > 0) {
-      timeline.lengthMode = 'fixed-window';
+    timeline.sourceBeatIntervalMs =
+      serialized.sourceBeatIntervalMs > 0
+        ? serialized.sourceBeatIntervalMs
+        : serialized.timingMode === LooperTimingMode.Metronome
+          ? timeline.beatIntervalMs
+          : 0;
+    if (
+      serialized.lengthMode === "fixed-window" &&
+      Number.isFinite(serialized.fixedWindowBeats) &&
+      serialized.fixedWindowBeats > 0 &&
+      timeline.sourceBeatIntervalMs > 0
+    ) {
+      timeline.lengthMode = "fixed-window";
       timeline.fixedWindowBeats = serialized.fixedWindowBeats;
     }
-    timeline.beatAnalysis = serialized.beatAnalysis && typeof serialized.beatAnalysis === "object"
-      ? { ...serialized.beatAnalysis }
-      : null;
+    timeline.beatAnalysis =
+      serialized.beatAnalysis && typeof serialized.beatAnalysis === "object"
+        ? { ...serialized.beatAnalysis }
+        : null;
     timeline.gapBeats = Math.min(Math.max(Math.round(serialized.gapBeats || 0), 0), 4);
     // v7 migrates old beat/Stop-padded snapshots from the musical events.
     // Never treat the old saved duration as an instruction to reinsert silence.
     timeline.onsetOffsetMs = Math.max(Number(serialized.onsetOffsetMs) || 0, 0);
     // Only a degenerate zero-length Honk needs its saved nonzero fallback.
     // Positive musical content and all percussion ignore this minimum.
-    timeline.finalizeDuration(Number.isFinite(serialized.recordedDurationMs) ? Math.max(serialized.recordedDurationMs, 1) : 1);
+    timeline.finalizeDuration(
+      Number.isFinite(serialized.recordedDurationMs)
+        ? Math.max(serialized.recordedDurationMs, 1)
+        : 1,
+    );
     timeline.startedAtMs = 0;
     timeline.recording = false;
     timeline.sortTracks();

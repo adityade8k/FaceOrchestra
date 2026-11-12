@@ -30,9 +30,7 @@ export function normalizeFrameMatches(matches, bookmarks) {
     if (points.size)
       frames.set(frame.videoTime, {
         videoTime: frame.videoTime,
-        sampleTime: Number.isFinite(frame.sampleTime)
-          ? frame.sampleTime
-          : frame.videoTime,
+        sampleTime: Number.isFinite(frame.sampleTime) ? frame.sampleTime : frame.videoTime,
         points: [...points.values()],
       });
   }
@@ -47,14 +45,8 @@ export function savedFrameObservations(matches, timeline, mapping, segment) {
     const frame = timeline.poseAt ? timeline.poseAt(time) : timeline.seek(time);
     if (!frame || frame.gap || frame.segment !== segment) continue;
     for (const point of match.points) {
-      const controller = frame.xr.controllers.find(
-        (c) => c.handedness === point.hand,
-      );
-      if (
-        controller?.grip?.p?.length !== 3 ||
-        !controller.grip.p.every(Number.isFinite)
-      )
-        continue;
+      const controller = frame.xr.controllers.find((c) => c.handedness === point.hand);
+      if (controller?.grip?.p?.length !== 3 || !controller.grip.p.every(Number.isFinite)) continue;
       observations.push({
         world: [...controller.grip.p],
         pixel: [...point.pixel],
@@ -106,21 +98,15 @@ export function fitSavedFrames(points, initial) {
     return {
       ...base,
       status: "collecting",
-      message:
-        "Roughly point the camera toward the performer, then add more matched poses.",
+      message: "Roughly point the camera toward the performer, then add more matched poses.",
     };
   const rms = cameraMatchError(points, camera);
   // Do not replace a good manual camera with a worse or inconsistent full fit.
-  if (
-    !Number.isFinite(rms) ||
-    rms > base.rms + 0.01 ||
-    (status === "refined" && rms > 40)
-  )
+  if (!Number.isFinite(rms) || rms > base.rms + 0.01 || (status === "refined" && rms > 40))
     return {
       ...base,
       status: "rejected",
-      message:
-        "Matches disagree. Check timing and controller clicks; camera kept.",
+      message: "Matches disagree. Check timing and controller clicks; camera kept.",
     };
   return {
     camera,

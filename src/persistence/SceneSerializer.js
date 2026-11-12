@@ -16,15 +16,10 @@ export class SceneSerializer {
   serialize() {
     const scene = createEmptySceneData();
     scene.instruments = [...this.registry.values()]
-      .filter(
-        (instrument) =>
-          instrument?.persistable !== false && !instrument.pendingPlacement,
-      )
+      .filter((instrument) => instrument?.persistable !== false && !instrument.pendingPlacement)
       .map((instrument) => this.serializeInstrument(instrument));
     scene.relationships.honkLocks = this.lockService?.serialize?.() || [];
-    scene.relationships.looperConnections = this.serializeLooperConnections(
-      scene.instruments,
-    );
+    scene.relationships.looperConnections = this.serializeLooperConnections(scene.instruments);
     const savedIds = new Set(scene.instruments.map(({ id }) => id));
     scene.relationships.metronomeConnections =
       this.metronomeConnectionManager?.serialize?.(savedIds) || [];
@@ -33,13 +28,8 @@ export class SceneSerializer {
   }
 
   serializeInstrument(instrument) {
-    const serialized = omitTransientLooperState(
-      instrument.serialize?.() || {},
-      instrument.kind,
-    );
-    const scaleOverride = Number.isFinite(instrument.baseScale)
-      ? instrument.baseScale
-      : null;
+    const serialized = omitTransientLooperState(instrument.serialize?.() || {}, instrument.kind);
+    const scaleOverride = Number.isFinite(instrument.baseScale) ? instrument.baseScale : null;
     return {
       ...serialized,
       id: instrument.id,
@@ -110,8 +100,7 @@ function omitTransientLooperState(serialized, kind) {
   for (const field of TRANSIENT_LOOPER_FIELDS) delete persistent[field];
   if (persistent.looper && typeof persistent.looper === "object") {
     persistent.looper = { ...persistent.looper };
-    for (const field of TRANSIENT_LOOPER_FIELDS)
-      delete persistent.looper[field];
+    for (const field of TRANSIENT_LOOPER_FIELDS) delete persistent.looper[field];
   }
   return persistent;
 }

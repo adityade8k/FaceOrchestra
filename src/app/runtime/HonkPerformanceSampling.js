@@ -35,8 +35,10 @@ export { REFERENCE_FRAME_MS };
 // decaying visual offset; processed live motion never passes through another filter.
 export function advanceHonkPresentation(previous, target, live, automationRevision, deltaMs) {
   const state = previous || {
-    squeeze: live.squeeze ?? 0, bend: live.bend ?? 0,
-    targetSqueeze: live.squeeze ?? 0, targetBend: live.bend ?? 0,
+    squeeze: live.squeeze ?? 0,
+    bend: live.bend ?? 0,
+    targetSqueeze: live.squeeze ?? 0,
+    targetBend: live.bend ?? 0,
     automationRevision,
   };
   const membershipChanged = state.automationRevision !== automationRevision;
@@ -47,7 +49,8 @@ export function advanceHonkPresentation(previous, target, live, automationRevisi
     const key = field === "squeeze" ? "targetSqueeze" : "targetBend";
     const value = target[field] ?? 0;
     const jump = value - state[key];
-    const automatedJump = value !== (live[field] ?? 0) &&
+    const automatedJump =
+      value !== (live[field] ?? 0) &&
       Math.abs(jump) > 0.012 * Math.max(deltaMs, REFERENCE_FRAME_MS);
     const transition = membershipChanged || released || (automatedJump && !attack);
     let offset = transition ? state[field] - value : state[field] - state[key];

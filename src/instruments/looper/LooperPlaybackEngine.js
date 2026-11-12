@@ -98,16 +98,12 @@ export class LooperPlaybackEngine {
       this.clockElapsedMs = 0;
     }
     const previousClockElapsedMs = Math.max(this.clockElapsedMs ?? 0, 0);
-    const deltaMs = Math.max(
-      authoritativeElapsedMs - previousClockElapsedMs,
-      0,
-    );
+    const deltaMs = Math.max(authoritativeElapsedMs - previousClockElapsedMs, 0);
     this.clockElapsedMs = authoritativeElapsedMs;
     if (deltaMs <= 0) return false;
     const wrapped = this.advanceBy(deltaMs, timeline, handlers);
     const durationMs = Math.max(timeline.durationMs, 1);
-    this.elapsedMs =
-      ((authoritativeElapsedMs % durationMs) + durationMs) % durationMs;
+    this.elapsedMs = ((authoritativeElapsedMs % durationMs) + durationMs) % durationMs;
     this.emitSnapshots(timeline, handlers);
     return wrapped;
   }
@@ -142,12 +138,7 @@ export class LooperPlaybackEngine {
         continue;
       }
       const segmentEndMs = nextElapsedMs + segmentMs;
-      this.emitDrumHitEventsBetween(
-        timeline,
-        nextElapsedMs,
-        segmentEndMs,
-        handlers,
-      );
+      this.emitDrumHitEventsBetween(timeline, nextElapsedMs, segmentEndMs, handlers);
       remainingMs -= segmentMs;
 
       if (segmentEndMs >= durationMs) {
@@ -167,18 +158,14 @@ export class LooperPlaybackEngine {
 
   emitDrumHitEventsAt(timeline, timeMs, handlers = {}) {
     if (!handlers.onDrumHit) return;
-    for (const { track, event } of timeline.getDrumHitEventsAt?.(timeMs) ||
-      []) {
+    for (const { track, event } of timeline.getDrumHitEventsAt?.(timeMs) || []) {
       handlers.onDrumHit?.(track, event, timeMs);
     }
   }
 
   emitDrumHitEventsBetween(timeline, startMs, endMs, handlers = {}) {
     if (!handlers.onDrumHit) return;
-    for (const { track, event } of timeline.getDrumHitEventsBetween?.(
-      startMs,
-      endMs,
-    ) || []) {
+    for (const { track, event } of timeline.getDrumHitEventsBetween?.(startMs, endMs) || []) {
       handlers.onDrumHit?.(track, event, event.timeMs);
     }
   }

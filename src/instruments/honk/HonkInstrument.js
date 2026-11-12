@@ -306,17 +306,14 @@ export class HonkInstrument extends InstrumentEntity {
   }
 
   hasAudioVoice(voiceId) {
-    return this.activeVoiceIds.has(voiceId) &&
-      (this.voiceService?.hasVoice?.(voiceId) ?? true);
+    return this.activeVoiceIds.has(voiceId) && (this.voiceService?.hasVoice?.(voiceId) ?? true);
   }
 
   releaseVoice(sourceId = "main") {
-    const isFullVoiceId = typeof sourceId === "string" && (
-      this.activeVoiceIds.has(sourceId) || sourceId.startsWith(`${this.id}:source-`)
-    );
-    const voiceId = isFullVoiceId
-      ? sourceId
-      : this.getVoiceId(sourceId);
+    const isFullVoiceId =
+      typeof sourceId === "string" &&
+      (this.activeVoiceIds.has(sourceId) || sourceId.startsWith(`${this.id}:source-`));
+    const voiceId = isFullVoiceId ? sourceId : this.getVoiceId(sourceId);
     this.releaseAudioVoice(voiceId);
   }
 
@@ -335,13 +332,7 @@ export class HonkInstrument extends InstrumentEntity {
     if (getHonkPitchBendRange(this) !== MAX_PITCH_BEND_SEMITONES)
       updateOptions.pitchBendRange = getHonkPitchBendRange(this);
     if (Number.isFinite(scheduledTime)) updateOptions.scheduledTime = scheduledTime;
-    this.voiceService?.updateVoice?.(
-      voiceId,
-      performanceState,
-      tuning,
-      updateOptions,
-      this,
-    );
+    this.voiceService?.updateVoice?.(voiceId, performanceState, tuning, updateOptions, this);
   }
 
   releaseAudioVoice(voiceId, options = {}) {
@@ -362,7 +353,8 @@ export class HonkInstrument extends InstrumentEntity {
 
   setAudioVowel(vowel) {
     const normalized = vowel && vowel !== "neutral" ? vowel : "A";
-    for (const voiceId of this.activeVoiceIds) this.voiceService?.setVoiceVowel?.(voiceId, normalized);
+    for (const voiceId of this.activeVoiceIds)
+      this.voiceService?.setVoiceVowel?.(voiceId, normalized);
   }
 
   getSqueezeColliderSphere() {
@@ -380,7 +372,8 @@ export class HonkInstrument extends InstrumentEntity {
       ...super.serialize(),
       componentId: this.componentId,
       ...(getHonkPitchBendRange(this) !== MAX_PITCH_BEND_SEMITONES
-        ? { pitchBendRange: getHonkPitchBendRange(this) } : {}),
+        ? { pitchBendRange: getHonkPitchBendRange(this) }
+        : {}),
       tuning: { ...this.tuning },
       performanceDefaults: {
         earLeft: this.performance.liveBase.earLeft,

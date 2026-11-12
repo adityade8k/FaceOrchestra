@@ -75,7 +75,10 @@ test("LooperConnectionManager disconnects every track for a deleted honk ID", ()
 
   const disconnected = manager.disconnectHonk(looperState, "honk-a");
 
-  assert.deepEqual(disconnected.map((track) => track.trackId), ["track-0", "track-2"]);
+  assert.deepEqual(
+    disconnected.map((track) => track.trackId),
+    ["track-0", "track-2"],
+  );
   assert.equal(looperState.looperData.tracks[1].connectedHonkId, "honk-b");
 });
 
@@ -88,6 +91,9 @@ test("LooperConnectionManager restores valid persisted connections by track ID",
     { trackId: "track-0", honkId: "missing-honk" },
   ]);
 
-  assert.deepEqual(restored.map((track) => track.trackId), ["track-1"]);
+  assert.deepEqual(
+    restored.map((track) => track.trackId),
+    ["track-1"],
+  );
   assert.equal(looperState.looperData.tracks[1].connectedHonkId, "honk-b");
 });

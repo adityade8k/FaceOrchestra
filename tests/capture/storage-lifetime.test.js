@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { TakeStore } from "../../scripts/capture/storage.mjs";
+import { TakeStore } from "../../server/capture/storage.mjs";
 
 test("20 finalized attempts close all writers, browsing opens none, and duplicate finalization is safe", async () => {
   const root = await mkdtemp(join(tmpdir(), "honk-lifetime-"));
@@ -27,10 +27,7 @@ test("20 finalized attempts close all writers, browsing opens none, and duplicat
         expected: { samples: 0, events: -1, audio: -1 },
         reason: "stop",
       };
-      const [a, b] = await Promise.all([
-        store.finalize(id, options),
-        store.finalize(id, options),
-      ]);
+      const [a, b] = await Promise.all([store.finalize(id, options), store.finalize(id, options)]);
       assert.equal(a.complete, true);
       assert.deepEqual(a, b);
       assert.equal(store.takes.size, 0);

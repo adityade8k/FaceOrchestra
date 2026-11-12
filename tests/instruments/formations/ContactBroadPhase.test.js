@@ -2,9 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { HonkContactSystem } from "../../../src/instruments/formations/HonkContactSystem.js";
 const edges = (system) =>
-  [...system.graph.adjacency]
-    .map(([id, neighbors]) => [id, [...neighbors].sort()])
-    .sort();
+  [...system.graph.adjacency].map(([id, neighbors]) => [id, [...neighbors].sort()]).sort();
 test("sweep matches quadratic contact admission and exits across motion, scale, teleport and removal", () => {
   const fast = new HonkContactSystem(),
     reference = new HonkContactSystem({ broadPhase: false });
@@ -14,8 +12,7 @@ test("sweep matches quadratic contact admission and exits across motion, scale, 
     squeezeColliderSphere: { center: [i * 0.5, 0, 0], radius: 0.3 },
   }));
   let seed = 42;
-  const random = () =>
-    (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32;
+  const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32;
   for (let frame = 0; frame < 180; frame++) {
     for (const h of honks) {
       const sphere = h.squeezeColliderSphere;

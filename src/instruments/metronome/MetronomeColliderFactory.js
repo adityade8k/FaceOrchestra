@@ -4,10 +4,7 @@ import {
   METRONOME_CONNECTION_ROLE,
   METRONOME_SETTINGS,
 } from "../../config/metronome.js";
-import {
-  colliderScaleToRadius,
-  normalizedPositionToModel,
-} from "../core/calibrationMath.js";
+import { colliderScaleToRadius, normalizedPositionToModel } from "../core/calibrationMath.js";
 import { createBodyGripTarget } from "../core/BodyGripTargetFactory.js";
 import { MetronomeButtonRig } from "./MetronomeButtonRig.js";
 import { createMetronomeConnectionPortMaterial } from "./metronomeConnectionPortPresentation.js";
@@ -38,7 +35,9 @@ export class MetronomeColliderFactory {
     const buttonRig = new MetronomeButtonRig({ root });
     for (const [action, button] of buttonRig.buttons) {
       if (!button.node.geometry?.clone) {
-        console.warn(`Metronome eye node "${button.config.nodeName}" has no geometry; ${action} disabled.`);
+        console.warn(
+          `Metronome eye node "${button.config.nodeName}" has no geometry; ${action} disabled.`,
+        );
         continue;
       }
       const geometry = button.node.geometry.clone();
@@ -117,8 +116,12 @@ export class MetronomeColliderFactory {
 
   createMaterial(color) {
     const material = new this.THREE.MeshBasicMaterial({
-      color, transparent: true, opacity: this.showDebug ? METRONOME_SETTINGS.debugOpacity : 0,
-      depthTest: !this.showDebug, depthWrite: false, wireframe: this.showDebug,
+      color,
+      transparent: true,
+      opacity: this.showDebug ? METRONOME_SETTINGS.debugOpacity : 0,
+      depthTest: !this.showDebug,
+      depthWrite: false,
+      wireframe: this.showDebug,
     });
     material.userData.disposeWithOwner = true;
     return material;

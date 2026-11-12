@@ -4,8 +4,7 @@ export function timingCueState(beat, event, { percussion = false } = {}) {
   const elapsed = beat - event.beat;
   const hold = percussion ? 0.1 : event.beats;
   if (elapsed < -1 || elapsed >= hold) return null;
-  if (elapsed < 0)
-    return { phase: "prepare", green: -elapsed * 1.35, yellow: 0 };
+  if (elapsed < 0) return { phase: "prepare", green: -elapsed * 1.35, yellow: 0 };
   return {
     phase: percussion ? "strike" : "hold",
     green: 0,

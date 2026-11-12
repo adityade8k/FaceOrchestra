@@ -4,11 +4,7 @@ import { FrameScheduler } from "./FrameScheduler.js";
 const userPosition = new THREE.Vector3();
 
 export class FaceOrchestraApp {
-  constructor({
-    sceneRuntime,
-    runtime,
-    frameScheduler = new FrameScheduler(),
-  } = {}) {
+  constructor({ sceneRuntime, runtime, frameScheduler = new FrameScheduler() } = {}) {
     if (!sceneRuntime || !runtime) {
       throw new TypeError(
         "FaceOrchestraApp requires sceneRuntime and the composed runtime services.",
@@ -40,13 +36,10 @@ export class FaceOrchestraApp {
     this.sceneRuntime.renderer.setAnimationLoop((frameMs, xrFrame) => {
       if (this.computeSuspended) return;
       const now = Number.isFinite(frameMs) ? frameMs : performance.now();
-      const delta =
-        this.lastFrameMs === null
-          ? 0
-          : Math.max((now - this.lastFrameMs) / 1000, 0);
+      const delta = this.lastFrameMs === null ? 0 : Math.max((now - this.lastFrameMs) / 1000, 0);
       this.lastFrameMs = now;
       this.elapsedSeconds += delta;
-      this.runtime.tutorial?.observeXRFrame?.(now, xrFrame);
+      this.runtime.tutorial?.recording.observeXRFrame?.(now, xrFrame);
       this.update(delta, this.elapsedSeconds, now);
       // Deliberately outside the scheduler: preview phases can exit early.
       this.runtime.capture?.sample(now, xrFrame);
@@ -82,11 +75,7 @@ export class FaceOrchestraApp {
     this.computeSuspended = true;
     const teardownGeneration = ++this.teardownGeneration;
     setTimeout(() => {
-      if (
-        teardownGeneration !== this.teardownGeneration ||
-        !this.computeSuspended
-      )
-        return;
+      if (teardownGeneration !== this.teardownGeneration || !this.computeSuspended) return;
       this.stopCompute();
       try {
         this.runtime.onXRSessionEnd();
@@ -123,7 +112,7 @@ export class FaceOrchestraApp {
     this.frameScheduler.add(
       "INPUT",
       (frame) => {
-        frame.hadPendingSpawn = Boolean(runtime.pendingSpawnPlacement);
+        frame.hadPendingSpawn = Boolean(runtime.spawn.pendingSpawnPlacement);
         runtime.pollControllers(frame.now);
         runtime.tutorial?.beforeFrame(frame.now);
       },
@@ -142,20 +131,20 @@ export class FaceOrchestraApp {
       "TRANSFORM",
       (frame) => {
         runtime.updatePendingPanelPlacement();
-        if (runtime.pendingSpawnPlacement) {
-          runtime.updatePendingSpawnPreview();
-          runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
+        if (runtime.spawn.pendingSpawnPlacement) {
+          runtime.spawn.updatePendingSpawnPreview();
+          runtime.spawn.updateLooperPlaybackDuringPendingSpawn(frame.now);
           runtime.tutorial?.afterFrame(frame.now);
           frame.skipRemaining = true;
           return;
         }
         if (frame.hadPendingSpawn) {
-          runtime.updateLooperPlaybackDuringPendingSpawn(frame.now);
+          runtime.spawn.updateLooperPlaybackDuringPendingSpawn(frame.now);
           runtime.tutorial?.afterFrame(frame.now);
           frame.skipRemaining = true;
           return;
         }
-        runtime.updateRadialMenus();
+        runtime.spawn.updateRadialMenus();
         runtime.updateRaycastHover();
         runtime.updateTriggerInteraction();
         runtime.updateGripTransform();
@@ -176,11 +165,11 @@ export class FaceOrchestraApp {
     this.frameScheduler.add(
       "RELATIONSHIPS",
       (frame) => {
-        runtime.validateMetronomeConnections();
-        runtime.updateLooperFollowerTransforms();
+        runtime.metronomeConnections.validateMetronomeConnections();
+        runtime.looperConnections.updateLooperFollowerTransforms();
         runtime.updateLockedHonkGroupTransforms();
-        runtime.updateShakeDisconnect(frame.now);
-        runtime.updateMetronomes(frame.now);
+        runtime.looperConnections.updateShakeDisconnect(frame.now);
+        runtime.presentation.updateMetronomes(frame.now);
         runtime.updateClockedLooperTransports(frame.now);
       },
       { label: "locks and looper assignments" },
@@ -189,7 +178,7 @@ export class FaceOrchestraApp {
     this.frameScheduler.add(
       "PERFORMANCE",
       (frame) => {
-        runtime.updateMetronomeConnections(frame.now);
+        runtime.metronomeConnections.updateMetronomeConnections(frame.now);
         runtime.updateHorn(frame.now);
         runtime.updateLooperRecordings(frame.now);
       },
@@ -200,8 +189,8 @@ export class FaceOrchestraApp {
       "PRESENTATION",
       (frame) => {
         runtime.updateLooperMorphAnimations(frame.now);
-        runtime.updateLooperWires();
-        runtime.updateMetronomeConnectionWires();
+        runtime.looperConnections.updateLooperWires();
+        runtime.metronomeConnections.updateMetronomeConnectionWires();
         runtime.tutorial?.afterFrame(frame.now);
       },
       { label: "morphs, audio, wires, and UI" },

@@ -39,7 +39,8 @@ export class InstrumentFactory {
       instrument = creator({
         ...options,
         kind,
-        interactionTargetRegistry: options.interactionTargetRegistry || this.interactionTargetRegistry,
+        interactionTargetRegistry:
+          options.interactionTargetRegistry || this.interactionTargetRegistry,
       });
       if (!instrument || instrument.kind !== kind) {
         throw new Error(`Creator for ${kind} did not return a matching instrument.`);

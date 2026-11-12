@@ -31,10 +31,11 @@ test("most recently updated automation layer wins morph and vowel fields", () =>
   const state = new HonkPerformanceState({ earLeft: -0.2, nose: 0.1, vowel: "A" });
   state.setAutomationLayer("first", { earLeft: 0.4, nose: 0.6, vowel: "I" });
   state.setAutomationLayer("second", { earLeft: -0.8, vowel: "O" });
-  assert.deepEqual(
-    pick(state.resolve(), ["earLeft", "nose", "vowel"]),
-    { earLeft: -0.8, nose: 0.6, vowel: "O" },
-  );
+  assert.deepEqual(pick(state.resolve(), ["earLeft", "nose", "vowel"]), {
+    earLeft: -0.8,
+    nose: 0.6,
+    vowel: "O",
+  });
   state.setAutomationLayer("first", { earLeft: 0.2 });
   assert.equal(state.resolve().earLeft, 0.2);
 });

@@ -7,13 +7,9 @@ test("repository releases each shared resource once, including late loads and fa
     texture = new THREE.Texture(),
     material = new THREE.MeshBasicMaterial({ map: texture });
   let released = 0;
-  for (const r of [geometry, texture, material])
-    r.addEventListener("dispose", () => released++);
+  for (const r of [geometry, texture, material]) r.addEventListener("dispose", () => released++);
   const root = new THREE.Group();
-  root.add(
-    new THREE.Mesh(geometry, material),
-    new THREE.Mesh(geometry, material),
-  );
+  root.add(new THREE.Mesh(geometry, material), new THREE.Mesh(geometry, material));
   const repository = new AssetRepository({
     gltfLoader: { loadAsync: async () => ({ scene: root }) },
   });

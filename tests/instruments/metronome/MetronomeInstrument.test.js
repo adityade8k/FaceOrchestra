@@ -132,18 +132,10 @@ test("metronome persists BPM and volume but restores paused", () => {
     root: object3D(),
   });
   restored.restore(metronome.serialize());
-  assert.equal(
-    restored.locked,
-    true,
-    "Restoration preserves the user's editing lock",
-  );
+  assert.equal(restored.locked, true, "Restoration preserves the user's editing lock");
   assert.equal(restored.playing, false);
   restored.restore({ bpm: 90 });
-  assert.equal(
-    restored.locked,
-    false,
-    "Historical scenes without a lock remain compatible",
-  );
+  assert.equal(restored.locked, false, "Historical scenes without a lock remain compatible");
 });
 
 test("changing BPM while playing preserves beat phase instead of immediately retriggering", () => {

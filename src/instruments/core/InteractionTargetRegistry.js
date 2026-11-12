@@ -8,7 +8,14 @@ export class InteractionTargetRegistry {
     this.targetIdByObject = new WeakMap();
   }
 
-  register({ targetId = this.idFactory(), ownerId, role, object3D, handlers = {}, metadata = {} } = {}) {
+  register({
+    targetId = this.idFactory(),
+    ownerId,
+    role,
+    object3D,
+    handlers = {},
+    metadata = {},
+  } = {}) {
     assertStableId(targetId, "Interaction target ID");
     assertStableId(ownerId, "Interaction target owner ID");
     if (typeof role !== "string" || role.length === 0) {
@@ -48,7 +55,8 @@ export class InteractionTargetRegistry {
   }
 
   unregister(targetOrId) {
-    const targetId = typeof targetOrId === "string" ? targetOrId : this.targetIdByObject.get(targetOrId);
+    const targetId =
+      typeof targetOrId === "string" ? targetOrId : this.targetIdByObject.get(targetOrId);
     const record = targetId ? this.targets.get(targetId) : null;
     if (!record) {
       return null;
@@ -105,7 +113,8 @@ export class InteractionTargetRegistry {
   resolveFromObject3D(object3D, { walkParents = true } = {}) {
     let current = object3D;
     while (current) {
-      const targetId = this.targetIdByObject.get(current) || current.userData?.interactionTarget?.targetId;
+      const targetId =
+        this.targetIdByObject.get(current) || current.userData?.interactionTarget?.targetId;
       if (targetId) {
         const record = this.targets.get(targetId);
         if (record) {
@@ -118,9 +127,8 @@ export class InteractionTargetRegistry {
   }
 
   dispatch(targetOrId, action, context = {}) {
-    const record = typeof targetOrId === "string"
-      ? this.get(targetOrId)
-      : this.resolveFromObject3D(targetOrId);
+    const record =
+      typeof targetOrId === "string" ? this.get(targetOrId) : this.resolveFromObject3D(targetOrId);
     const handler = record?.handlers?.[action];
     return typeof handler === "function" ? handler({ ...context, target: record }) : undefined;
   }

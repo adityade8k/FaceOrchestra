@@ -1,39 +1,43 @@
+import { ApplicationNavigation } from "../navigation/ApplicationNavigation.js";
+import { RecordingCoordinator } from "../performance/RecordingCoordinator.js";
+import { TutorialPanels } from "./TutorialPanels.js";
 import { LearningProgress } from "../persistence/LearningProgress.js";
-import { SongRecordingSession } from "../performance/SongRecordingSession.js";
-import {
-  compositionRegistry,
-  libraryPage,
-} from "../compositions/CompositionRegistry.js";
-import { ApplicationModeRouter } from "../navigation/ApplicationModeRouter.js";
-import { MenuController } from "../navigation/MenuController.js";
-import { BasicsTutorial } from "./BasicsTutorial.js";
-import { recordingGuidance } from "./recordingGuidance.js";
+
+import { compositionRegistry } from "../compositions/CompositionRegistry.js";
+
 import * as THREE from "three";
 import { TutorialAdapter } from "./TutorialAdapter.js";
 import { TutorialSession } from "./TutorialSession.js";
 import { TutorialPanel } from "./TutorialPanel.js";
 import { CompositionConductor } from "./CompositionConductor.js";
-import {
-  COMPOSITION as C,
-  describeNote,
-  TUTORIAL_LOOPERS,
-} from "../compositions/jog/definition.js";
-import { scoreForStep } from "./scoring.js";
+import { COMPOSITION as C, TUTORIAL_LOOPERS } from "../compositions/songs/jog/definition.js";
+
 import { TutorialLessonFlow } from "./TutorialLessonFlow.js";
 import { TutorialTimingCues } from "./TutorialTimingCues.js";
-import { LESSON_CONTROL_IDS, setupStatus } from "./TutorialLessonPolicy.js";
-import { GuidedPlayOffset, visualCueTime } from "./GuidedPlayOffset.js";
+import { LESSON_CONTROL_IDS } from "./TutorialLessonPolicy.js";
+import { GuidedPlayOffset } from "./GuidedPlayOffset.js";
 import { BendSnapping } from "./BendSnapping.js";
 import { LiveBendFeedback } from "./LiveBendFeedback.js";
+import { BackingLayout } from "./BackingLayout.js";
 
-const BASIC_BEND_GUIDE = { step: { type: "note", role: "basic", bendSnapEitherDirection: true,
-  bend: [{ semitones: -1 }, { semitones: 0 }, { semitones: 0 }, { semitones: 1 }] } };
+const BASIC_BEND_GUIDE = {
+  step: {
+    type: "note",
+    role: "basic",
+    bendSnapEitherDirection: true,
+    bend: [{ semitones: -1 }, { semitones: 0 }, { semitones: 0 }, { semitones: 1 }],
+  },
+};
 
 export class TutorialRuntime {
   constructor(runtime) {
     this.r = runtime;
+    this.navigation = new ApplicationNavigation(this);
+    this.recording = new RecordingCoordinator(this);
+    this.panels = new TutorialPanels(this);
     this.guidedPlayOffset = new GuidedPlayOffset();
     this.adapter = new TutorialAdapter(runtime, (e) => this.accept(e));
+    this.backingLayout = new BackingLayout(this);
     this.bendSnapping = new BendSnapping(this.adapter);
     this.cues = new TutorialTimingCues(this.adapter);
     this.liveBendFeedback = new LiveBendFeedback(runtime);
@@ -41,7 +45,7 @@ export class TutorialRuntime {
     this.session = null;
     this.conductor = null;
     this.demo = null;
-    this.freePlayScene = null;
+    this.navigation.freePlayScene = null;
     this.busy = false;
     this.screen = "launch";
     this.ready = false;
@@ -58,17 +62,16 @@ export class TutorialRuntime {
     this.simulationProgress = null;
     this.uiFeedback = "";
     this.learningProgress = new LearningProgress();
-    this.navigationScreen = "launch";
-    this.libraryPage = 0;
-    this.catalog = compositionRegistry;
+    this.navigation.screen = "launch";
+    this.navigation.libraryPage = 0;
+    this.navigation.catalog = compositionRegistry;
     this.pendingXRPlacementFrames = 0;
     this.onVisibility = () => {
       if (document.hidden) {
+        for (const frame of this.layoutFrames()) frame.cancelDrag();
         this.basics?.suspend();
-        this.jogRecording?.interrupt("visibility-interruption");
-        this.conductor?.pause(
-          "Tab hidden. Resume restarts the current action.",
-        );
+        this.recording.session?.interrupt("visibility-interruption");
+        this.conductor?.pause("Tab hidden. Resume restarts the current action.");
         if (this.session?.mode === "practice")
           this.flow.cancelOutgoing({
             keepResult: this.session.phase === "results",
@@ -92,95 +95,17 @@ export class TutorialRuntime {
       renderer: this.r.renderer,
       onAction: (id) => this.action(id),
     });
-    this.menu = new MenuController({
-      panel: this.panel,
-      states: this.r.controllerStates,
-      hit: (c) =>
-        this.nearestPanelHit(c, this.r.raycastSystem.getCurrentHit(c)),
-      quiesce: (c) => {
-        this.r.clearControllerTriggerInteraction(
-          this.r.controllerStates.get(c),
-        );
-        this.r.handleGripEndIntent(c);
-        this.r.closeRadialMenu(c);
-        if (this.r.controllerStates.get(c)?.stickActive)
-          this.r.deactivateStick(c);
-      },
-      onEvent: (kind) => this.basics?.accept({ kind, origin: "learner" }),
-    });
-    this.router = new ApplicationModeRouter({
-      checkpoint: async () => {
-        if (!["play", "launch"].includes(this.r.sessionMode)) return;
-        this.flow.cancelOutgoing();
-        this.freePlayScene = this.r.sceneSerializer.serialize();
-        if (
-          !this.r.debugMode &&
-          !(await this.r.scenePersistence.checkpoint({ force: true }))
-        )
-          throw new Error(
-            "Play checkpoint failed. Your scene remains open; free storage or enable site storage, then Retry.",
-          );
-      },
-      quiesce: () => {
-        this.menu.cancelDrag();
-        for (const [c, s] of this.r.controllerStates)
-          if (s.trigger || s.grip || s.primary || s.secondary)
-            this.menu.blocked.add(c);
-      },
-      rollback: async () => {
-        if (this.freePlayScene) await this.enterPlay();
-      },
-      onChange: (state) => {
-        this.navigationStatus = state;
-        this.render(performance.now());
-      },
-    });
-    this.toolbar = document.createElement("nav");
-    this.toolbar.className = "orchestra-utilities";
-    for (const [id, label] of [
-      ["menu-toggle", "Menu"],
-      ["menu-home", "Home"],
-      ["recenter", "Recenter"],
-    ]) {
-      const b = document.createElement("button");
-      b.textContent = label;
-      b.onclick = () => this.action(id);
-      this.toolbar.append(b);
-    }
-    const editor = document.createElement("a");
-    editor.href = "/capture/";
-    editor.target = "_blank";
-    editor.rel = "noopener";
-    editor.textContent = "Open Editor";
-    this.toolbar.append(editor);
-    document.body.append(this.toolbar);
-    this.keydown = (e) => {
-      if (
-        e.key.toLowerCase() === "m" &&
-        !e.repeat &&
-        !e.ctrlKey &&
-        !e.metaKey &&
-        !e.altKey &&
-        !e.target.isContentEditable &&
-        !e.target.closest?.('input,textarea,select,[contenteditable="true"]')
-      ) {
-        e.preventDefault();
-        this.menu.toggle();
-      }
-    };
-    document.addEventListener("keydown", this.keydown);
-    for (const c of this.r.controllers)
-      c.addEventListener("disconnected", () => this.menu.disconnect(c));
+    this.navigation.initialize();
     if (this.r.xrSessionActive) this.onXRStart();
     document.addEventListener("visibilitychange", this.onVisibility);
-    this.render(performance.now());
+    this.panels.render(performance.now());
   }
   accept(event) {
     if (this.dataTutorial) {
       this.dataTutorial.accept(event);
       return;
     }
-    if (this.basics) {
+    if (this.basics && !this.basics.finale) {
       this.basics.accept(event);
       return;
     }
@@ -222,154 +147,30 @@ export class TutorialRuntime {
     this.adapter.snapshotAt = -Infinity;
     this.lastDraw = -Infinity;
   }
-  async action(id, controller = null) {
+  async action(id) {
     if (this.disposed) return;
-    if (id === "guided-play-settings") {
-      this.offsetReturnScreen = this.navigationScreen || "tutorials";
-      this.navigationScreen = "guided-play-settings";
-      this.render(performance.now()); return;
-    }
-    if (id === "guided-offset-back") {
-      this.navigationScreen = this.offsetReturnScreen || "tutorials";
-      this.render(performance.now()); return;
-    }
-    if (id.startsWith("guided-offset:")) {
-      if (!this.guidedPlayRunning()) {
-        const value = id.slice("guided-offset:".length);
-        this.guidedPlayOffset.set(value === "reset" ? 0 : this.guidedPlayOffset.milliseconds + Number(value));
-      }
-      this.render(performance.now()); return;
-    }
-    if (id === "menu-toggle") {
-      this.menu.toggle();
-      return;
-    }
-    if (id === "menu-home") {
-      this.selectionGeneration = (this.selectionGeneration || 0) + 1;
-      this.navigationScreen = "launch";
-      this.menu.setVisible(true);
-      this.render(performance.now());
-      return;
-    }
-    if (id === "recenter") {
-      this.menu.recenter(this.r.getUserCamera());
-      this.basics?.recenter();
-      return;
-    }
-    if (
-      [
-        "tutorial",
-        "tutorials",
-        "record-songs",
-        "back",
-        "library-prev",
-        "library-next",
-      ].includes(id)
-    ) {
-      this.selectionGeneration = (this.selectionGeneration || 0) + 1;
-      if (id === "back")
-        this.navigationScreen =
-          this.navigationScreen === "composition-options"
-            ? this.compositionOptions?.library || "tutorials"
-            : "launch";
-      else if (id === "library-prev") this.libraryPage--;
-      else if (id === "library-next") this.libraryPage++;
-      else {
-        this.navigationScreen =
-          id === "record-songs" ? "record-songs" : "tutorials";
-        this.libraryPage = 0;
-      }
-      this.render(performance.now());
-      return;
-    }
-    if (id === "resume-mode") {
-      this.navigationScreen = null;
-      this.render(performance.now());
-      return;
-    }
-    if (id === "retry-load" && this.lastSelection)
-      return this.selectComposition(...this.lastSelection);
-    if (id === "retry-options" && this.compositionOptions)
-      return this.openCompositionOptions(
-        this.compositionOptions.id,
-        this.compositionOptions.library,
-      );
-    if (id.startsWith("arrangement:") && this.compositionOptions?.module) {
-      const choice = id.slice(12);
-      if (
-        this.compositionOptions.module.arrangements.some((a) => a.id === choice)
-      )
-        this.compositionOptions.arrangementId = choice;
-      this.render(performance.now());
-      return;
-    }
-    if (
-      ["composition-start", "composition-quick-practice"].includes(id) &&
-      this.compositionOptions?.module
-    ) {
-      const {
-        id: compositionId,
-        library,
-        arrangementId,
-      } = this.compositionOptions;
-      if (id === "composition-quick-practice") {
-        if (this.quickEntryPending) return;
-        this.quickEntryPending = true;
-        try {
-          return await this.selectComposition(
-            compositionId,
-            library,
-            arrangementId,
-            { quick: true },
-          );
-        } finally {
-          this.quickEntryPending = false;
-        }
-      }
-      return this.selectComposition(compositionId, library, arrangementId);
-    }
-    if (id.startsWith("composition:"))
-      return this.openCompositionOptions(id.slice(12), this.navigationScreen);
-    if (id === "basics") return this.selectComposition("basics", "tutorials");
-    if (["play", "exit", "jog-record-exit"].includes(id) && this.router) {
-      try {
-        await this.router.enter(
-          "play",
-          async () => null,
-          () => this.enterPlay(),
-        );
-        this.navigationScreen = null;
-      } catch (error) {
-        this.uiFeedback = error.message;
-      }
-      this.render(performance.now());
-      return;
-    }
+    if (this.navigation.handles(id)) return this.navigation.action(id);
     if (this.busy) return;
     if (this.dataTutorial) {
       await this.dataTutorial.action(id);
-      this.render(performance.now());
+      this.panels.render(performance.now());
       return;
     }
     if (this.basics) {
       await this.basics.action(id);
-      this.render(performance.now());
+      this.panels.render(performance.now());
       return;
     }
-    if (this.jogRecording) {
-      await this.jogRecording.action(id.replace("jog-record-", ""));
-      this.render(performance.now());
-      return;
-    }
-    if (id === "record-jog" && !this.session) {
-      await this.selectComposition("virag-2-jog-study", "record-songs");
+    if (this.recording.session) {
+      await this.recording.session.action(id.replace("jog-record-", ""));
+      this.panels.render(performance.now());
       return;
     }
     if (this.session) {
       // No hidden Spawn, Prepare, connection or backing-generation routes.
       if (!LESSON_CONTROL_IDS.includes(id)) return;
       if (id === "exit") {
-        await this.enterPlay();
+        await this.navigation.enterPlay();
         return;
       }
       if (id === "recenter") {
@@ -379,51 +180,14 @@ export class TutorialRuntime {
       try {
         if (this.session.mode === "simulation") {
           if (id === "step-demo" && !this.session.complete) {
-            if (this.conductor?.paused)
-              this.conductor.resume(performance.now());
+            if (this.conductor?.paused) this.conductor.resume(performance.now());
             else this.conductor?.pause();
           }
         } else await this.flow.action(id);
       } catch (error) {
         this.flow.fail(error.message);
       }
-      this.render(performance.now());
-      return;
-    }
-    if (id === "tutorial") {
-      this.screen = "tutorial";
-      this.render(performance.now());
-      return;
-    }
-    if (id === "jog" || id === "kuch") {
-      this.screen = id;
-      this.uiFeedback = "";
-      this.render(performance.now());
-      return;
-    }
-    if (
-      ["kuch-practice", "kuch-simulate", "kuch-quick-practice"].includes(id)
-    ) {
-      try {
-        await this.r.audioSystem.ensureAudio();
-        await this.enterKuch(id === "kuch-simulate");
-        if (id === "kuch-quick-practice" && this.dataTutorial) {
-          this.dataTutorial.index = this.dataTutorial.definition.lessons.length - 1;
-          await this.dataTutorial.action("step-practice");
-        }
-      } catch (error) {
-        this.uiFeedback = error.message;
-        this.render(performance.now());
-      }
-      return;
-    }
-    if (id === "back") {
-      this.screen = "launch";
-      this.render(performance.now());
-      return;
-    }
-    if (id === "play") {
-      await this.enterPlay();
+      this.panels.render(performance.now());
       return;
     }
     if (id === "practice" || id === "simulate") {
@@ -432,177 +196,20 @@ export class TutorialRuntime {
         await this.enter(id === "simulate" ? "simulation" : "practice");
       } catch (error) {
         this.uiFeedback = error.message;
-        this.render(performance.now());
+        this.panels.render(performance.now());
       }
     }
   }
-  async openCompositionOptions(id, library) {
-    const generation = (this.selectionGeneration =
-      (this.selectionGeneration || 0) + 1);
-    this.compositionOptions = { id, library };
-    this.navigationScreen = "composition-options";
-    this.optionsError = "";
-    this.render(performance.now());
-    try {
-      const module = await this.catalog.load(id);
-      if (this.disposed || generation !== this.selectionGeneration) return;
-      if (!module.arrangements?.length)
-        return this.selectComposition(id, library);
-      this.compositionOptions = {
-        id,
-        library,
-        module,
-        arrangementId: module.defaultArrangement,
-      };
-    } catch (error) {
-      if (generation !== this.selectionGeneration || this.disposed) return;
-      this.optionsError = error.message;
-    }
-    this.render(performance.now());
-  }
-  async selectComposition(id, library, arrangementId, { quick = false } = {}) {
-    const generation = (this.selectionGeneration =
-      (this.selectionGeneration || 0) + 1);
-    this.lastSelection = [id, library, arrangementId];
-    try {
-      await this.router.enter(
-        `${library}:${id}`,
-        async (signal) => {
-          if (id === "basics") return null;
-          const module = await this.catalog.load(id, { signal });
-          if (quick && generation !== this.selectionGeneration)
-            throw new DOMException("Preparation cancelled", "AbortError");
-          const selected = module.selectArrangement
-            ? await module.selectArrangement(
-                arrangementId || module.defaultArrangement,
-              )
-            : module;
-          if (quick) {
-            await this.r.audioSystem.ensureAudio();
-            if (generation !== this.selectionGeneration)
-              throw new DOMException("Preparation cancelled", "AbortError");
-          }
-          return selected;
-        },
-        async (module) => {
-          if (quick && generation !== this.selectionGeneration)
-            throw new DOMException("Preparation cancelled", "AbortError");
-          if (
-            this.session ||
-            this.basics ||
-            this.dataTutorial ||
-            this.jogRecording
-          )
-            await this.enterPlay();
-          await this.r.audioSystem.ensureAudio();
-          if (quick && generation !== this.selectionGeneration)
-            throw new DOMException("Preparation cancelled", "AbortError");
-          this.navigationScreen = null;
-          if (id === "basics") {
-            this.freePlayScene ??= this.r.sceneSerializer.serialize();
-            this.adapter.clear();
-            this.adapter.begin("learner");
-            this.basics = new BasicsTutorial(this);
-            this.r.sessionMode = "basics";
-          } else if (library === "record-songs")
-            await this.enterSongRecording(module);
-          else {
-            await module.enterTutorial(this);
-            if (quick && this.dataTutorial) {
-              this.dataTutorial.index = this.dataTutorial.definition.lessons.findIndex(lesson => lesson.completePerformance);
-              await this.dataTutorial.action("step-practice");
-            }
-          }
-        },
-      );
-    } catch (error) {
-      if (quick && error.name === "AbortError") return;
-      this.uiFeedback = error.message;
-      this.navigationScreen = library;
-    }
-    this.render(performance.now());
-  }
-  async enterJogRecording() {
-    return this.selectComposition("virag-2-jog-study", "record-songs");
-  }
-  async enterSongRecording(module) {
-    try {
-      const ensemble = module.createEnsemble(this);
-      const mode = new SongRecordingSession({
-        composition: module.definition,
-        createGuidance: module.createGuidance,
-        guidedPlayOffsetMs: () => this.guidedPlayOffset.milliseconds,
-        recorder: this.r.capture,
-        ensemble,
-        ensureAudio: () => this.r.audioSystem.ensureAudio(),
-        trackingReady: () =>
-          Boolean(
-            this.r.xrSessionActive &&
-              this.r.renderer.xr.getReferenceSpace() &&
-              performance.now() - (this.lastTrackedFrame ?? -Infinity) < 250,
-          ),
-        onChange: () => this.render(performance.now()),
-        onExit: async () => {
-          this.jogRecording.restoring = true;
-          try {
-            ensemble.dispose?.();
-            await this.enterPlay();
-            this.jogRecording = null;
-            this.render(performance.now());
-          } finally {
-            mode.restoring = false;
-          }
-        },
-      });
-      this.freePlayScene ??= this.r.sceneSerializer.serialize();
-      this.jogRecording = mode;
-      this.r.sessionMode = "song-recording";
-      this.render(performance.now());
-      await mode.action("prepare");
-    } catch (error) {
-      this.uiFeedback = error.message;
-      this.render(performance.now());
-    }
-  }
-  placeRecordingPanel() {
-    const camera = this.r.getUserCamera(),
-      position = new THREE.Vector3(),
-      rotation = new THREE.Quaternion();
-    camera.getWorldPosition(position);
-    camera.getWorldQuaternion(rotation);
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(rotation);
-    right.y = 0;
-    right.normalize();
-    this.panel.recenter(camera, true);
-    this.panel.group.position.addScaledVector(right, -0.45);
-    this.panel.group.lookAt(
-      position.x,
-      this.panel.group.position.y,
-      position.z,
-    );
-    this.panel.group.updateMatrixWorld(true);
-  }
-  observeXRFrame(now, frame) {
-    const reference = this.r.renderer.xr.getReferenceSpace();
-    if (frame && reference && frame.getViewerPose(reference))
-      this.lastTrackedFrame = now;
-    else if (this.r.xrSessionActive) {
-      this.lastTrackedFrame = null;
-      this.menu?.cancelDrag();
-      this.jogRecording?.interrupt("tracking-lost");
-      this.dataTutorial?.cancel();
-    }
-  }
+
   async enter(mode) {
-    this.navigationScreen = null;
+    this.navigation.screen = null;
     this.flow.cancelOutgoing();
     this.busy = true;
     this.r.sessionMode = "transition";
     try {
-      if (!this.freePlayScene)
-        this.freePlayScene = this.r.sceneSerializer.serialize();
-      if (this.session?.mode === "practice")
-        this.practiceProgress = this.session.exportProgress();
+      if (!this.navigation.freePlayScene)
+        this.navigation.freePlayScene = this.r.sceneSerializer.serialize();
+      if (this.session?.mode === "practice") this.practiceProgress = this.session.exportProgress();
       if (this.session?.mode === "simulation")
         this.simulationProgress = this.session.exportProgress();
       this.conductor?.stop();
@@ -610,16 +217,11 @@ export class TutorialRuntime {
       this.adapter.clear();
       this.session = new TutorialSession({ mode, now: performance.now() });
       this.r.sessionMode = mode;
-      const progress =
-        mode === "practice" && this.learningProgress.load(C.id, C.version);
+      const progress = mode === "practice" && this.learningProgress.load(C.id, C.version);
       if (progress?.index >= 0 && progress.index < this.session.steps.length) {
         this.session.index = progress.index;
-        this.session.outcomes = new Map(
-          Object.entries(progress.progress?.outcomes || {}),
-        );
-        this.session.demonstrated = new Set(
-          progress.progress?.demonstrated || [],
-        );
+        this.session.outcomes = new Map(Object.entries(progress.progress?.outcomes || {}));
+        this.session.demonstrated = new Set(progress.progress?.demonstrated || []);
         this.session.phrasesPassed = progress.progress?.phrasesPassed || [];
       }
       this.screen = "lesson";
@@ -630,76 +232,13 @@ export class TutorialRuntime {
       this.r.instructionPanelClosed = true;
       this.adapter.begin(this.session.origin);
       this.conductor =
-        mode === "simulation"
-          ? new CompositionConductor(this.adapter, this.session)
-          : null;
-      this.render(performance.now());
+        mode === "simulation" ? new CompositionConductor(this.adapter, this.session) : null;
+      this.panels.render(performance.now());
     } finally {
       this.busy = false;
     }
   }
-  async enterKuch(simulate = false) {
-    await this.selectComposition("kuch-to-hua-hai", "tutorials");
-    if (simulate && this.dataTutorial) await this.dataTutorial.action("rishte-preview");
-  }
-  async enterPlay() {
-    if (this.jogRecording && !this.jogRecording.restoring) {
-      const mode = this.jogRecording;
-      await mode.transition;
-      if (mode.disposed) return;
-      await mode.action("exit");
-      if (!mode.disposed)
-        throw new Error(
-          mode.feedback || "Recording finalization is still pending.",
-        );
-      return;
-    }
-    this.flow.cancelOutgoing();
-    await this.basics?.cancelDemo();
-    this.dataTutorial?.dispose();
-    this.dataTutorial = null;
-    this.basics?.dispose();
-    this.basics = null;
-    const firstPlay = !this.freePlayScene && !this.session;
-    this.busy = true;
-    this.r.sessionMode = "transition";
-    try {
-      this.conductor?.stop();
-      this.conductor = null;
-      this.stopDemo();
-      if (this.session?.mode === "practice")
-        this.practiceProgress = this.session.exportProgress();
-      if (this.session?.mode === "simulation")
-        this.simulationProgress = this.session.exportProgress();
-      this.session = null;
-      if (this.freePlayScene) {
-        this.adapter.clear();
-        const restored = await this.r.sceneRestorer.restore(this.freePlayScene);
-        if (restored.skipped.length) {
-          this.recoveryScene = structuredClone(this.freePlayScene);
-          this.r.scenePersistence.restoreReport = restored;
-          this.r.showRuntimeFeedback(
-            `Scene recovery: ${restored.skipped.length} skipped objects, ${restored.skippedConnections?.length || 0} affected clock connections. Original preserved.`,
-          );
-        }
-        this.freePlayScene = null;
-      }
 
-      this.r.sessionMode = "play";
-      if (this.router) this.router.identity = "play";
-      this.screen = "play";
-      this.r.instructionPanelClosed = true;
-      this.r.hideInstructionPanel();
-      this.navigationScreen = null;
-      this.render(performance.now());
-    } catch (error) {
-      this.uiFeedback = error.message;
-      this.render(performance.now());
-      throw error;
-    } finally {
-      this.busy = false;
-    }
-  }
   retry(now) {
     if (this.session?.mode === "practice") {
       this.flow.practice();
@@ -711,10 +250,7 @@ export class TutorialRuntime {
     if (!step) return;
     const recording = ["record", "finalize"].includes(step.type);
     this.session.retry(now, { recording });
-    if (
-      ["performance", "phrase"].includes(step.type) &&
-      !this.adapter.get("metronome")?.playing
-    )
+    if (["performance", "phrase"].includes(step.type) && !this.adapter.get("metronome")?.playing)
       this.adapter.command("tempo", now, this.session.origin);
     if (this.conductor) {
       this.conductor.stepId = null;
@@ -730,24 +266,42 @@ export class TutorialRuntime {
   stopDemo() {
     this.flow.stopDemo(false);
   }
-  isBendSnapped(controller) { return this.bendSnapping.isSnapped(controller); }
+  isBendSnapped(controller) {
+    return this.bendSnapping.isSnapped(controller);
+  }
   snapBend(controller, interaction, bend, now) {
     let guide = null;
-    if (this.ready && !this.busy && !this.disposed && !this.demo && this.r?.sessionMode !== "play") {
-      if (this.basics) {
-        if (this.basics.practicing && !this.basics.setup && !this.basics.demo &&
-            ["bend", "pitch"].includes(this.basics.step.id)) guide = BASIC_BEND_GUIDE;
+    if (
+      this.ready &&
+      !this.busy &&
+      !this.disposed &&
+      !this.demo &&
+      this.r?.sessionMode !== "play"
+    ) {
+      if (this.basics && !this.basics.finale) {
+        if (
+          this.basics.practicing &&
+          !this.basics.setup &&
+          !this.basics.demo &&
+          this.basics.step.id === "bend"
+        )
+          guide = BASIC_BEND_GUIDE;
       } else if (this.dataTutorial) {
         if (this.dataTutorial.phase === "practice") guide = this.dataTutorial.guide;
-      } else if (this.jogRecording) guide = this.jogRecording.guidance(now);
-      else if (this.session?.mode === "practice" && this.session.phase === "practicing" &&
-          !this.conductor?.paused) guide = this.session;
+      } else if (this.recording.session) guide = this.recording.session.guidance(now);
+      else if (
+        this.session?.mode === "practice" &&
+        this.session.phase === "practicing" &&
+        !this.conductor?.paused
+      )
+        guide = this.session;
     }
     return this.bendSnapping.resolve(guide, controller, interaction, bend, now);
   }
   beforeFrame(now) {
-    this.menu?.update();
+    this.navigation.menu?.update();
     if (!this.ready || this.busy || this.disposed) return;
+    this.backingLayout.update();
     if (this.dataTutorial) {
       this.dataTutorial.update(now);
       return;
@@ -758,17 +312,17 @@ export class TutorialRuntime {
         if (this.pendingXRPlacementFrames === 0) this.basics.relocateToViewer();
       }
       this.basics.update(now);
-      return;
+      if (!this.basics.finale) return;
     }
-    if (this.jogRecording) {
+    if (this.recording.session) {
       if (this.pendingXRPlacementFrames > 0) {
-        this.placeRecordingPanel();
+        this.recording.placePanel();
         this.pendingXRPlacementFrames--;
       }
-      this.jogRecording.update(now);
+      this.recording.session.update(now);
       return;
     }
-    if (this.pendingXRPlacementFrames > 0) {
+    if (this.pendingXRPlacementFrames > 0 && !this.basics) {
       this.panel.recenter(this.r.getUserCamera(), Boolean(this.session));
       this.pendingXRPlacementFrames--;
     }
@@ -804,10 +358,13 @@ export class TutorialRuntime {
     }
   }
   afterFrame(now) {
-    this.liveBendFeedback?.update(now, this.ready && !this.busy && !this.disposed && this.r.sessionMode === "play");
+    this.liveBendFeedback?.update(
+      now,
+      this.ready && !this.busy && !this.disposed && this.r.sessionMode === "play",
+    );
     if (now - (this.progressSavedAt || 0) > 1500) {
       this.progressSavedAt = now;
-      if (this.session?.mode === "practice")
+      if (this.session?.mode === "practice" && !this.basics)
         this.learningProgress.save(C.id, C.version, {
           index: this.session.index,
           progress: this.session.exportProgress(),
@@ -815,36 +372,36 @@ export class TutorialRuntime {
     }
     if (this.dataTutorial) {
       this.adapter.observe(now);
-      this.adapter.updateSustainTimings?.(this.dataTutorial.phase ? this.dataTutorial.guide : null, now);
-      this.cues.update(
+      this.adapter.updateSustainTimings?.(
         this.dataTutorial.phase ? this.dataTutorial.guide : null,
         now,
       );
+      this.cues.update(this.dataTutorial.phase ? this.dataTutorial.guide : null, now);
       if (now - this.lastDraw > 100) {
-        this.render(now);
+        this.panels.render(now);
         this.lastDraw = now;
       }
       return;
     }
-    if (this.basics) {
+    if (this.basics && !this.basics.finale) {
       this.adapter.observe(now);
       this.basics.sample(now);
       if (now - this.lastDraw > 100) {
-        this.render(now);
+        this.panels.render(now);
         this.lastDraw = now;
       }
       return;
     }
     if (!this.ready || this.busy || this.disposed) return;
-    if (this.jogRecording) {
+    if (this.recording.session) {
       this.adapter.observe(now);
-      const guide = this.jogRecording.guidance(now);
+      const guide = this.recording.session.guidance(now);
       this.adapter.updateSustainTimings?.(guide, now);
       this.cues.update(guide, now, {
         active: Boolean(guide && !guide.complete(now)),
       });
       if (now - this.lastDraw >= 50) {
-        this.render(now);
+        this.panels.render(now);
         this.lastDraw = now;
       }
       if (this.panel.xr) {
@@ -868,8 +425,7 @@ export class TutorialRuntime {
           atMs: now,
           loopers: snapshot.loopers.chordLooper.startBeat,
           phaseDifference: Math.abs(
-            snapshot.loopers.chordLooper.phase -
-              snapshot.loopers.percussionLooper.phase,
+            snapshot.loopers.chordLooper.phase - snapshot.loopers.percussionLooper.phase,
           ),
         };
       if (this.demo) {
@@ -917,9 +473,7 @@ export class TutorialRuntime {
           this.adapter.stopSound();
           this.report = {
             ...this.session.exportProgress(),
-            durationSeconds: this.conductor
-              ? this.conductor.elapsedMs / 1000
-              : null,
+            durationSeconds: this.conductor ? this.conductor.elapsedMs / 1000 : null,
             takes: this.adapter.takes,
             liveTakes: this.session.takeEvidence,
             launches: Object.fromEntries(
@@ -940,18 +494,16 @@ export class TutorialRuntime {
     }
     this.adapter.focusRing.visible = false;
     this.cues.update(this.demo?.session || this.session, now, {
-      active:
-        !this.conductor?.paused &&
-        (Boolean(this.demo) || this.session?.phase !== "results"),
+      active: !this.conductor?.paused && (Boolean(this.demo) || this.session?.phase !== "results"),
     });
     this.panel.animate?.(now);
     if (
       now - this.lastDraw >= 100 &&
-      (this.session || this.lastPendingPreview !== this.r.pendingSpawnPlacement)
+      (this.session || this.lastPendingPreview !== this.r.spawn.pendingSpawnPlacement)
     ) {
-      this.render(now);
+      this.panels.render(now);
       this.lastDraw = now;
-      this.lastPendingPreview = this.r.pendingSpawnPlacement;
+      this.lastPendingPreview = this.r.spawn.pendingSpawnPlacement;
     }
     if (this.panel.xr) {
       const hit = this.r.controllers
@@ -964,43 +516,50 @@ export class TutorialRuntime {
   blocksController(controller) {
     return Boolean(
       this.busy ||
-        this.dataTutorial?.ensemble?.layoutFrame?.blocked.has(controller) ||
-        this.menu?.blocked.has(controller) ||
-        ((this.session?.mode === "simulation" ||
-          this.demo ||
-          this.basics?.demo ||
-          this.dataTutorial?.phase === "demo") &&
-          !controller.userData.virtualTutorial),
+      this.layoutFrames().some((frame) => frame.blocked.has(controller)) ||
+      this.navigation.menu?.blocked.has(controller) ||
+      ((this.session?.mode === "simulation" ||
+        this.demo ||
+        this.basics?.demo ||
+        this.recording.session?.demonstrating ||
+        this.dataTutorial?.phase === "demo") &&
+        !controller.userData.virtualTutorial),
     );
   }
   panelHit(controller) {
     if (!this.panel?.group.visible) return null;
     controller.getWorldPosition(this.position);
     controller.getWorldQuaternion(this.quaternion);
-    this.ray.set(
-      this.position,
-      this.rayDirection.set(0, 0, -1).applyQuaternion(this.quaternion),
-    );
+    this.ray.set(this.position, this.rayDirection.set(0, 0, -1).applyQuaternion(this.quaternion));
     return this.panel.hit(this.ray);
+  }
+  layoutFrames() {
+    return [
+      this.dataTutorial?.ensemble?.layoutFrame,
+      this.recording.session?.ensemble?.layoutFrame,
+      this.backingLayout?.frame,
+    ].filter(Boolean);
+  }
+  captureLayoutIntent(intent, state) {
+    const frames = this.layoutFrames();
+    const owner = frames.find((frame) => frame.blocked.has(intent.controller));
+    return owner
+      ? owner.captureIntent(intent, state)
+      : frames.some((frame) => frame.captureIntent(intent, state));
   }
   nearestPanelHit(controller, instrumentHit) {
     const hit = this.panelHit(controller);
-    return hit && (!instrumentHit || hit.distance <= instrumentHit.distance)
-      ? hit
-      : null;
+    return hit && (!instrumentHit || hit.distance <= instrumentHit.distance) ? hit : null;
   }
   capturePanelTrigger(controller) {
-    const hit = this.nearestPanelHit(
-      controller,
-      this.r.raycastSystem.getCurrentHit(controller),
-    );
+    const hit = this.nearestPanelHit(controller, this.r.raycastSystem.getCurrentHit(controller));
     if (!hit) return false;
     const state = this.r.controllerStates.get(controller);
     this.r.clearControllerTriggerInteraction(state);
     state.tutorialPanelCapture = true;
     state.suppressTriggerUntilRelease = true;
     if (hit.object.userData.action && !hit.object.userData.disabled)
-      this.action(hit.object.userData.action, controller);
+      this.action(hit.object.userData.action);
     return true;
   }
   releasePanelTrigger(controller) {
@@ -1013,26 +572,25 @@ export class TutorialRuntime {
   }
   onXRStart() {
     this.pendingXRPlacementFrames = 4;
-    this.lastTrackedFrame = null;
-    this.jogReference?.removeEventListener("reset", this.jogReset);
-    this.jogReference = this.r.renderer.xr.getReferenceSpace();
-    this.jogReset = () => {
-      this.dataTutorial?.ensemble?.layoutFrame?.cancelDrag();
-      this.menu?.referenceChanged(this.r.getUserCamera());
-      this.jogRecording?.interrupt("reference-space-reset");
+    this.recording.lastTrackedFrame = null;
+    this.recording.reference?.removeEventListener("reset", this.recording.onReferenceReset);
+    this.recording.reference = this.r.renderer.xr.getReferenceSpace();
+    this.recording.onReferenceReset = () => {
+      for (const frame of this.layoutFrames()) frame.cancelDrag();
+      this.navigation.menu?.referenceChanged(this.r.getUserCamera());
+      this.recording.session?.interrupt("reference-space-reset");
       this.dataTutorial?.cancel();
+      this.basics?.suspend();
     };
-    this.jogReference?.addEventListener("reset", this.jogReset);
+    this.recording.reference?.addEventListener("reset", this.recording.onReferenceReset);
     this.r.hideInstructionPanel();
     this.r.instructionPanelClosed = true;
     this.panel?.setXR(true, this.r.getUserCamera());
-    this.panel?.recenter(
-      this.r.getUserCamera(),
-      Boolean(this.session || this.jogRecording),
-    );
+    this.panel?.recenter(this.r.getUserCamera(), Boolean(this.session || this.recording.session));
   }
   onXREnd() {
-    this.menu?.cancelDrag();
+    for (const frame of this.layoutFrames()) frame.cancelDrag();
+    this.navigation.menu?.cancelDrag();
     this.dataTutorial?.cancel();
     if (this.basics) {
       this.basics.suspend();
@@ -1040,487 +598,46 @@ export class TutorialRuntime {
         this.uiFeedback = error.message;
       });
     }
-    this.menu?.cancelDrag();
+    this.navigation.menu?.cancelDrag();
     this.pendingXRPlacementFrames = 0;
-    this.lastTrackedFrame = null;
-    this.jogRecording?.interrupt("session-end");
+    this.recording.lastTrackedFrame = null;
+    this.recording.session?.interrupt("session-end");
     this.conductor?.stop();
     this.flow.cancelOutgoing();
     this.adapter.releaseAll();
     this.panel?.setXR(false);
-    if (this.session)
-      this.enterPlay().catch((error) => console.error(error));
+    if (this.session && !this.basics)
+      this.navigation.enterPlay().catch((error) => console.error(error));
   }
-  render(now) {
-    if (!this.panel || this.disposed) return;
-    if (this.navigationScreen) {
-      this.renderNavigation();
-      return;
-    }
-    if (this.dataTutorial) {
-      this.panel.render(this.dataTutorial.model(now));
-      return;
-    }
-    if (this.basics) {
-      this.panel.render(this.basics.model());
-      return;
-    }
-    if (this.jogRecording) {
-      if (!this.jogRecording.guidance(now)) this.cues.reset();
-      const model = this.jogRecording.model(now);
-      this.panel.setTransport(model.transport);
-      this.panel.render(model);
-      return;
-    }
-    const button = (id, label, disabled = false, extra = {}) => ({
-      id,
-      label,
-      disabled,
-      ...extra,
-    });
-    let model;
-    if (!this.session) {
-      if (this.screen === "launch")
-        model = {
-          title: "Honk Orchestra",
-          instruction: "Play freely, or learn a piece with a guided tutorial.",
-          actions: [
-            button("play", "Play"),
-            button("tutorials", "Tutorials"),
-            button("record-songs", "Record Songs"),
-          ],
-        };
-      else if (this.screen === "tutorial")
-        model = {
-          title: "Choose a study",
-          instruction:
-            "Listen to an example, practice each part, then perform with recorded backing.",
-          actions: [
-            button("jog", "Rag Jog Study"),
-            button("kuch", "Kuch To Hua Hai"),
-            button("back", "Back"),
-          ],
-        };
-      else if (this.screen === "jog")
-        model = {
-          title: C.title,
-          instruction:
-            "Build the ensemble with the radial menu. Musical exercises can be skipped. Demonstrate and Practice use your existing instruments.",
-          feedback:
-            "Full simulation builds and performs the composition automatically; allow several minutes.",
-          actions: [
-            button("practice", "Start Lesson"),
-            button("simulate", "Full Simulation"),
-            button("tutorial", "All Tutorials"),
-          ],
-        };
-      else if (this.screen === "kuch")
-        model = {
-          title: "Kuch To Hua Hai",
-          instruction:
-            "Play only the melody, following its rises and falls with held bends. The prepared Loopers handle hi-hat, percussion Honk, flute Honks and chords automatically.",
-          feedback:
-            "Six melody phrases and the full song · 92 BPM · Original intro, interludes and ending. Full Simulation previews all five parts. Your free-play scene returns on Exit.",
-          actions: [
-            button("kuch-practice", "Start Lesson"),
-            button("kuch-simulate", "Full Simulation"),
-            button("kuch-quick-practice", "Practice full song — backing ready"),
-            button("tutorial", "All Tutorials"),
-          ],
-        };
-      else
-        model = {
-          title: "Free play",
-          instruction:
-            "Hold right A or left Y, roll to choose a category, then pull and roll to choose an item. Release to preview; Trigger places. Grip in empty space equips a stick.",
-          actions: [
-            button("tutorials", "Tutorials"),
-            button("record-songs", "Record Songs"),
-          ],
-        };
-      if (this.uiFeedback) model.feedback = this.uiFeedback;
-      this.panel.setTransport("");
-    } else {
-      const s = this.session,
-        simulation = s.mode === "simulation",
-        step = s.step,
-        shown = this.demo?.session || s;
-      const activeDemo = Boolean(this.demo),
-        activePractice = s.phase === "practicing";
-      const snapshot = this.adapter.snapshot(now),
-        setup = step && setupStatus(step, snapshot);
-      const reason = s.complete
-        ? "The study is complete."
-        : simulation
-          ? ""
-          : this.flow.unavailable();
-      const nextDisabled =
-        simulation || s.complete || Boolean(setup && !setup.ok);
-      const navigation = [
-        button("previous-step", "Previous Step", simulation || s.index === 0),
-        button("next-step", "Next Step", nextDisabled, {
-          primary: !nextDisabled && s.phase === "results",
-          reason: setup && !setup.ok ? setup.message : "",
-        }),
-        button(
-          "step-demo",
-          "Demonstrate",
-          s.complete ||
-            (!simulation && !activeDemo && (activePractice || Boolean(reason))),
-          {
-            active: simulation ? !this.conductor?.paused : activeDemo,
-            primary:
-              !reason && s.phase === "ready" && !s.demonstrated.has(step?.id),
-            reason: activePractice
-              ? "Press Practice to stop the attempt."
-              : reason,
-          },
-        ),
-        button(
-          "step-practice",
-          "Practice",
-          simulation ||
-            s.complete ||
-            (!activePractice && (activeDemo || Boolean(reason))),
-          {
-            active: activePractice,
-            primary:
-              !reason &&
-              !activeDemo &&
-              (s.phase === "results" || s.demonstrated.has(step?.id)),
-            reason: activeDemo
-              ? "Press Demonstrate to stop the example."
-              : reason,
-          },
-        ),
-      ];
-      let target = "";
-      if (
-        shown.step?.timed &&
-        shown.anchorMs !== null &&
-        (activeDemo || s.phase !== "results")
-      ) {
-        const beat = shown.beatAt(now);
-        const cueBeat = shown.beatAt(visualCueTime(this.r, now));
-        if (beat < 0) target = "Count in: " + Math.ceil(-beat);
-        else {
-          target =
-            "Beat " +
-            Math.min(shown.step.beats, Math.floor(beat) + 1) +
-            " / " +
-            shown.step.beats;
-          const note = scoreForStep(shown.step).find(
-            (e) => e.beat + (e.beats ?? 0.4) > cueBeat,
-          );
-          if (note?.pitch) target += "\n" + describeNote(note);
-          else if (note?.role)
-            target +=
-              "\n" +
-              (C.backing.find((g) => g.role === note.role)?.label ||
-                {
-                  percussion: "Honk · boink",
-                  metronome: "Metronome · wood",
-                  percussionLooper: "Looper · hihat",
-                }[note.role] ||
-                note.role);
-        }
-      }
-      if (shown.step?.type === "record") {
-        const progress = this.adapter
-          .get(shown.step.looperRole)
-          ?.looperController.getRecordingProgress(
-            this.adapter.get(shown.step.looperRole),
-            now,
-          );
-        target =
-          recordingGuidance(
-            progress,
-            shown.anchorMs === null ? null : shown.beatAt(now),
-          ) || target;
-      }
-      if (this.cues.bendInstruction)
-        target += (target ? "\n" : "") + this.cues.bendInstruction;
-      if (shown.practiceGate && activePractice) target = shown.practiceGate.model(now).transport +
-        (this.cues.bendInstruction ? "\n" + this.cues.bendInstruction : "");
-      this.panel.setTransport(target);
-      let feedback = simulation
-        ? this.conductor?.paused
-          ? "Simulation paused. Press Demonstrate to resume."
-          : "Full simulation running. Press Demonstrate to pause."
-        : setup?.message ||
-          (activePractice && s.practiceGate?.feedback) ||
-          this.uiFeedback ||
-          s.feedback ||
-          reason ||
-          "Demonstrate or Practice. Next Step skips this exercise.";
-      if (!simulation && !activeDemo && !activePractice && reason && !setup)
-        feedback = reason;
-      if (
-        s.result &&
-        !activeDemo &&
-        !setup &&
-        reason !== "No recording yet; you can skip this step"
-      ) {
-        const result = s.result,
-          names = {
-            targets: "Targets",
-            timing: "Onsets",
-            holdRelease: "Hold/release",
-            bend: "Bend",
-          };
-        feedback =
-          (result.score === undefined
-            ? result.ok
-              ? "Completed"
-              : "Try again"
-            : result.score + "/100" + (result.ok ? " · Well played" : "")) +
-          "\n";
-        if (result.components)
-          feedback +=
-            Object.entries(result.components)
-              .map(([key, value]) => names[key] + " " + value)
-              .join(" · ") + "\n";
-        feedback += result.message;
-        const mismatch = result.details?.find(
-          (d) => d.heard === "missing" || d.extra || d.correct === false,
-        );
-        const name = (role) =>
-          C.backing.find((g) => g.role === role)?.label ||
-          role?.replace("melody-", "") ||
-          "rest";
-        if (mismatch)
-          feedback +=
-            "\nExpected " +
-            name(mismatch.expected) +
-            "; heard " +
-            name(mismatch.heard) +
-            ".";
-        else {
-          const timing = result.details?.find(
-            (d) => d.onsetErrorBeats > 0.12 || d.holdErrorBeats > 0.175,
-          );
-          if (timing)
-            feedback += step.timed
-              ? "\n" +
-                name(timing.expected) +
-                ": expected beat " +
-                (timing.beat + 1).toFixed(1) +
-                ", heard " +
-                (timing.heardBeat + 1).toFixed(1) +
-                "."
-              : "\nExpected a " +
-                Math.round(timing.expectedHold) +
-                " ms hold; heard " +
-                Math.round(timing.heardHold) +
-                " ms.";
-        }
-        feedback += "\nPractice retries; Next Step continues.";
-      }
-      if (s.complete)
-        feedback = simulation
-          ? "Simulation complete in " +
-            (this.report?.durationSeconds || 0).toFixed(1) +
-            " seconds."
-          : [...s.outcomes.values()].filter((o) => o.status === "passed")
-              .length +
-            " completed · " +
-            [...s.outcomes.values()].filter((o) => o.status === "skipped")
-              .length +
-            " skipped.";
-      model = {
-        title: s.complete ? "Study complete" : step.title,
-        instruction: s.complete
-          ? "VIRAG 2 · A, B, A, C, B, D."
-          : s.practiceGate && activePractice ? s.practiceGate.model(now).instruction
-          : step.instruction,
-        navigation,
-        actions: [
-          ...(step?.type === "switch"
-            ? [
-                button(
-                  "play-alternativeLooper",
-                  "Play Alternative",
-                  !activePractice,
-                ),
-                button("play-chordLooper", "Play Chords", !activePractice),
-              ]
-            : []),
-          button("recenter", "Recenter"),
-          button("exit", "Exit"),
-        ],
-        feedback,
-        result:
-          !activeDemo && s.phase === "results"
-            ? s.result?.ok
-              ? "passed"
-              : "retry"
-            : null,
-        progress:
-          (simulation
-            ? "Simulation"
-            : activeDemo
-              ? "Demonstration"
-              : "Lesson") +
-          " · " +
-          Math.min(s.index + 1, s.steps.length) +
-          "/" +
-          s.steps.length +
-          (activePractice
-            ? " · Practice"
-            : s.phase === "results"
-              ? " · Results"
-              : ""),
-      };
-    }
-    this.panel.render({ visible: true, ...model });
-  }
-  renderNavigation() {
-    const button = (id, label, disabled = false) => ({ id, label, disabled });
-    if (this.navigationScreen === "guided-play-settings") {
-      const value = this.guidedPlayOffset.milliseconds, running = this.guidedPlayRunning();
-      this.panel.render({ visible: true, title: "Guided Play Offset",
-        instruction: `${value} ms early · range 0–1000 ms\nNote highlights, bend targets and timed instructions appear this much before the beat.`,
-        feedback: running ? "Stop the current practice, demonstration or recording before changing the offset."
-          : "Music, the count-in and scoring stay on the beat. Your actual bend and sustain feedback stay live. This setting is remembered for tutorials and guided play.",
-        navigation: [button("guided-offset:-100", "−100 ms", running || value === 0),
-          button("guided-offset:100", "+100 ms", running || value === 1000),
-          button("guided-offset:-10", "−10 ms", running || value === 0),
-          button("guided-offset:10", "+10 ms", running || value === 1000)],
-        actions: [button("guided-offset:reset", "Reset to 0 ms", running || value === 0), button("guided-offset-back", "Back")],
-      });
-      return;
-    }
-    const status = this.navigationStatus;
-    if (status?.state === "loading") {
-      this.panel.render({
-        visible: true,
-        title: "Loading composition…",
-        instruction: "Preparing the selected composition.",
-        actions: [button("back", "Back")],
-      });
-      return;
-    }
-    if (this.navigationScreen === "composition-options") {
-      const selection = this.compositionOptions,
-        module = selection?.module;
-      const choice = module?.arrangements.find(
-        (a) => a.id === selection.arrangementId,
-      );
-      this.panel.render({
-        visible: true,
-        title: module?.definition.title || "Loading composition…",
-        progress: choice ? `ARRANGEMENT · ${choice.title}` : "",
-        instruction: choice
-          ? `${choice.description} Selection stays fixed throughout the session.`
-          : "Loading song options.",
-        feedback: this.optionsError || "",
-        navigation:
-          module?.arrangements.map((a) =>
-            button(
-              `arrangement:${a.id}`,
-              `${a.id === choice?.id ? "✓ " : ""}${a.title}`,
-            ),
-          ) || [],
-        actions: [
-          button(
-            "composition-start",
-            selection?.library === "record-songs"
-              ? "Prepare Recording"
-              : "Start Tutorial",
-            !module,
-          ),
-          ...(selection?.library === "tutorials" &&
-          selection?.id === "kuch-to-hua-hai"
-            ? [
-                button(
-                  "composition-quick-practice",
-                  "Practice full song — backing ready",
-                  !module,
-                ),
-              ]
-            : []),
-          button("back", "Back"),
-          ...(this.optionsError ? [button("retry-options", "Retry")] : []),
-        ],
-      });
-      return;
-    }
-    const error =
-      status?.state === "error" ? this.uiFeedback || status.error.message : "";
-    if (this.navigationScreen === "launch") {
-      this.panel.render({
-        visible: true,
-        title: "Honk Orchestra",
-        instruction:
-          "Play freely, learn an instrument or composition, or record a song.",
-        feedback: error,
-        actions: [
-          button("play", "Play"),
-          button("tutorials", "Tutorials"),
-          button("record-songs", "Record Songs"),
-        ],
-      });
-      return;
-    }
-    const page = libraryPage(
-      this.catalog,
-      this.navigationScreen,
-      this.libraryPage,
-    );
-    this.libraryPage = page.index;
-    this.panel.render({
-      visible: true,
-      title:
-        this.navigationScreen === "tutorials" ? "Tutorials" : "Record Songs",
-      instruction:
-        this.navigationScreen === "tutorials"
-          ? "Start with Basics, then learn a complete composition."
-          : "Prepare the selected song. Pair the desktop receiver first; use Open Editor on the desktop to edit takes.",
-      feedback: error,
-      progress: `LIBRARY · ${page.index + 1}/${page.pages}`,
-      navigation: [
-        ...page.rows.map((row) =>
-          button(
-            row.id === "basics" ? "basics" : `composition:${row.id}`,
-            row.title,
-          ),
-        ),
-        button("library-prev", "Previous", page.index === 0),
-        button("library-next", "Next", page.index + 1 === page.pages),
-      ],
-      actions: [
-        button("back", "Back"),
-        button(
-          error ? "retry-load" : "resume-mode",
-          error ? "Retry" : "Current session",
-        ),
-        button("guided-play-settings", "Guided Play Offset"),
-      ],
-    });
-  }
+
   guidedPlayRunning() {
-    return Boolean(this.dataTutorial?.phase || this.basics?.demo || this.demo ||
-      ["starting", "syncing", "count-in", "performing", "saving"].includes(this.jogRecording?.phase) ||
+    return Boolean(
+      this.dataTutorial?.phase ||
+      this.basics?.demo ||
+      this.demo ||
+      ["starting", "syncing", "count-in", "performing", "saving"].includes(
+        this.recording.session?.phase,
+      ) ||
       this.session?.phase === "practicing" ||
-      (this.session?.mode === "simulation" && !this.conductor?.paused));
+      (this.session?.mode === "simulation" && !this.conductor?.paused),
+    );
   }
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
-    this.router?.dispose();
+    this.navigation.dispose();
     this.dataTutorial?.dispose();
     this.dataTutorial = null;
     this.conductor?.stop();
     this.stopDemo();
     this.basics?.dispose();
     this.basics = null;
-    this.toolbar?.remove();
-    document.removeEventListener("keydown", this.keydown);
-    this.jogRecording?.interrupt("disposed");
-    this.jogReference?.removeEventListener("reset", this.jogReset);
+    this.recording.session?.interrupt("disposed");
+    this.recording.reference?.removeEventListener("reset", this.recording.onReferenceReset);
     this.flow.cancelOutgoing();
     document.removeEventListener("visibilitychange", this.onVisibility);
     this.cues.dispose();
+    this.backingLayout.dispose();
     this.liveBendFeedback.dispose();
     this.adapter.dispose();
     this.panel?.dispose();

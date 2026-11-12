@@ -66,6 +66,7 @@ export class LooperTrackTimeline {
       support = false,
       preserveDuration = false,
       releaseOrigin = null,
+      gain = undefined,
     } = {},
   ) {
     const event = new LooperActionEvent({
@@ -80,6 +81,7 @@ export class LooperTrackTimeline {
       support,
       preserveDuration,
       releaseOrigin,
+      gain,
     });
     this.nextEventId += 1;
     this.events.push(event);
@@ -89,12 +91,13 @@ export class LooperTrackTimeline {
     return event;
   }
 
-  addDrumHit(timeMs, drumType) {
+  addDrumHit(timeMs, drumType, gain = undefined) {
     if (!drumType) {
       return null;
     }
     return this.addEvent(LooperActionEventType.DrumHit, timeMs, {
       value: drumType,
+      gain,
       interpolation: "step",
     });
   }
@@ -119,7 +122,8 @@ export class LooperTrackTimeline {
 
   getContentEndMs() {
     this.sortEvents();
-    let endMs = 0, held = false;
+    let endMs = 0,
+      held = false;
     for (const event of this.events) {
       if (event.support) continue;
       if (isDrumHitEvent(event)) {
@@ -174,10 +178,7 @@ export class LooperTrackTimeline {
       }
 
       const active = Number(squeeze) > SQUEEZE_ONSET_THRESHOLD;
-      if (
-        event.type === LooperActionEventType.SqueezeStart ||
-        (active && !squeezeActive)
-      ) {
+      if (event.type === LooperActionEventType.SqueezeStart || (active && !squeezeActive)) {
         onsets.push(event.timeMs);
       }
       squeezeActive = active;
@@ -200,13 +201,14 @@ export class LooperTrackTimeline {
       [LooperActionEventType.Vowel]: 6,
       [LooperActionEventType.DrumHit]: 7,
     };
-    this.events.sort((first, second) =>
-      first.timeMs - second.timeMs ||
-      // Equal-time gates keep their recorded order: release then reattack for
-      // adjacent notes, or start then release for a same-frame capture.
-      (isHonkGateEvent(first) && isHonkGateEvent(second) ? first.id - second.id : 0) ||
-      (typeOrder[first.type] ?? 10) - (typeOrder[second.type] ?? 10) ||
-      first.id - second.id,
+    this.events.sort(
+      (first, second) =>
+        first.timeMs - second.timeMs ||
+        // Equal-time gates keep their recorded order: release then reattack for
+        // adjacent notes, or start then release for a same-frame capture.
+        (isHonkGateEvent(first) && isHonkGateEvent(second) ? first.id - second.id : 0) ||
+        (typeOrder[first.type] ?? 10) - (typeOrder[second.type] ?? 10) ||
+        first.id - second.id,
     );
     this.sorted = true;
     this.rebuildIndexes();
@@ -226,7 +228,9 @@ export class LooperTrackTimeline {
       // timestamp. It still belongs to that voice, never to the next cycle.
       this.eventOwners.set(event, owner || (event.timeMs === releasedAt ? releasedOwner : owner));
       if (event.type === LooperActionEventType.SqueezeEnd) {
-        releasedOwner = owner; releasedAt = event.timeMs; owner = null;
+        releasedOwner = owner;
+        releasedAt = event.timeMs;
+        owner = null;
       }
       if (event.gateOnly && isHonkGateEvent(event)) this.hasDiscreteGates = true;
       if (isDrumHitEvent(event)) this.drumEvents.push(event);
@@ -248,7 +252,10 @@ export class LooperTrackTimeline {
 
   getGateEventsAt(timeMs, epsilon = 0.001) {
     this.sortEvents();
-    return sliceEventsBetween(this.gateEvents, timeMs - epsilon, timeMs + epsilon, { includeStart: true, includeEnd: true });
+    return sliceEventsBetween(this.gateEvents, timeMs - epsilon, timeMs + epsilon, {
+      includeStart: true,
+      includeEnd: true,
+    });
   }
 
   getGateEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
@@ -258,7 +265,10 @@ export class LooperTrackTimeline {
 
   getPerformanceEventsAt(timeMs, epsilon = 0.001) {
     this.sortEvents();
-    return sliceEventsBetween(this.performanceEvents, timeMs - epsilon, timeMs + epsilon, { includeStart: true, includeEnd: true });
+    return sliceEventsBetween(this.performanceEvents, timeMs - epsilon, timeMs + epsilon, {
+      includeStart: true,
+      includeEnd: true,
+    });
   }
 
   getPerformanceEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
@@ -268,7 +278,7 @@ export class LooperTrackTimeline {
 
   normalize(offsetMs, endMs = Infinity) {
     if (!Number.isFinite(offsetMs) || offsetMs < 0) return;
-    if (!offsetMs && this.events.every(event => event.timeMs <= endMs)) return;
+    if (!offsetMs && this.events.every((event) => event.timeMs <= endMs)) return;
     this.sortEvents();
     // Sample before removing pre-onset automation. Preserve its interpolation
     // mode so all tracks retain the exact state at the shared first onset.
@@ -276,14 +286,21 @@ export class LooperTrackTimeline {
     for (const [field, events] of this.fieldEvents) {
       const previous = events[upperBoundByTime(events, offsetMs) - 1];
       if (!offsetMs || !previous || previous.timeMs === offsetMs) continue;
-      const value = field === "vowel" ? this.sampleStepField(field, offsetMs) : this.sampleNumericField(field, offsetMs);
-      if (value !== undefined) support.push({field, value, interpolation: previous?.interpolation || "linear"});
+      const value =
+        field === "vowel"
+          ? this.sampleStepField(field, offsetMs)
+          : this.sampleNumericField(field, offsetMs);
+      if (value !== undefined)
+        support.push({ field, value, interpolation: previous?.interpolation || "linear" });
     }
-    this.events = this.events.filter(event => event.timeMs >= offsetMs && event.timeMs <= endMs);
+    this.events = this.events.filter((event) => event.timeMs >= offsetMs && event.timeMs <= endMs);
     for (const event of this.events) {
       event.timeMs -= offsetMs;
     }
-    for (const point of support) this.addFieldEvent(point.field, 0, point.value, point.interpolation, false, {support: true});
+    for (const point of support)
+      this.addFieldEvent(point.field, 0, point.value, point.interpolation, false, {
+        support: true,
+      });
     this.rebuildRecordedFields();
     this.sorted = false;
   }
@@ -300,8 +317,10 @@ export class LooperTrackTimeline {
     }
 
     this.sortEvents();
-    return sliceEventsBetween(this.drumEvents, timeMs - epsilon, timeMs + epsilon,
-      { includeStart: true, includeEnd: true });
+    return sliceEventsBetween(this.drumEvents, timeMs - epsilon, timeMs + epsilon, {
+      includeStart: true,
+      includeEnd: true,
+    });
   }
 
   getDrumHitEventsBetween(startMs, endMs, { includeStart = false, includeEnd = true } = {}) {
@@ -316,10 +335,13 @@ export class LooperTrackTimeline {
     if (owner) return { event: owner, cycleOffset: 0 };
     if (owner === null) return null;
     const last = this.gateEvents.at(-1);
-    const previous = last?.timeMs <= event.timeMs + durationMs ? last
-      : this.gateEvents[upperBoundByTime(this.gateEvents, event.timeMs + durationMs) - 1];
+    const previous =
+      last?.timeMs <= event.timeMs + durationMs
+        ? last
+        : this.gateEvents[upperBoundByTime(this.gateEvents, event.timeMs + durationMs) - 1];
     return previous?.type === LooperActionEventType.SqueezeStart
-      ? { event: previous, cycleOffset: -1 } : null;
+      ? { event: previous, cycleOffset: -1 }
+      : null;
   }
 
   getActiveNote(timeMs, durationMs) {
@@ -329,7 +351,8 @@ export class LooperTrackTimeline {
     const previous = this.gateEvents[upperBoundByTime(this.gateEvents, timeMs + durationMs) - 1];
     const event = current || previous;
     return event?.type === LooperActionEventType.SqueezeStart
-      ? { event, cycleOffset: current ? 0 : -1 } : null;
+      ? { event, cycleOffset: current ? 0 : -1 }
+      : null;
   }
 
   sample(timeMs, target, { inTailPadding = false } = {}) {
@@ -461,7 +484,7 @@ export class LooperTrackTimeline {
         })
       : [];
     timeline.nextEventId = timeline.events.reduce(
-      (nextId, event) => Number.isFinite(event.id) ? Math.max(nextId, event.id + 1) : nextId,
+      (nextId, event) => (Number.isFinite(event.id) ? Math.max(nextId, event.id + 1) : nextId),
       1,
     );
     timeline.sorted = false;
@@ -487,9 +510,7 @@ function sliceEventsBetween(events, startMs, endMs, { includeStart, includeEnd }
   const startIndex = includeStart
     ? lowerBoundByTime(events, startMs)
     : upperBoundByTime(events, startMs);
-  const endIndex = includeEnd
-    ? upperBoundByTime(events, endMs)
-    : lowerBoundByTime(events, endMs);
+  const endIndex = includeEnd ? upperBoundByTime(events, endMs) : lowerBoundByTime(events, endMs);
   return events.slice(startIndex, endIndex);
 }
 

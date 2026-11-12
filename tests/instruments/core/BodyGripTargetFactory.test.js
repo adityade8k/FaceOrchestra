@@ -15,8 +15,12 @@ test("body grip uses imported visible meshes without creating or mutating collid
   const procedural = mesh("HIT_control", {}, {}, { userData: { isHitTarget: true } });
   const objects = [bodyA, bodyB, hidden, procedural];
   const root = {
-    traverse(visitor) { for (const object of objects) visitor(object); },
-    add() { throw new Error("body grip must not add procedural geometry"); },
+    traverse(visitor) {
+      for (const object of objects) visitor(object);
+    },
+    add() {
+      throw new Error("body grip must not add procedural geometry");
+    },
   };
   const hitTargets = {};
 

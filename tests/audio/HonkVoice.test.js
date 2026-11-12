@@ -31,9 +31,7 @@ test("nose uses a legacy-safe note-gain mapping without changing the filter grap
   });
 
   const gainEvent = lastEventOfType(voice.master.gain, "setTargetAtTime");
-  assert.ok(Math.abs(
-    gainEvent.value - VOICE_GAIN_SETTINGS.baseGain * 0.5 * 0.25 * 0.5,
-  ) < 1e-12);
+  assert.ok(Math.abs(gainEvent.value - VOICE_GAIN_SETTINGS.baseGain * 0.5 * 0.25 * 0.5) < 1e-12);
   assert.equal(gainEvent.timeConstant, HONK_NOTE_GAIN_SETTINGS.smoothingSeconds);
   assert.equal(context.filters.length, 4);
 });
@@ -87,11 +85,9 @@ test("controller release within one XR frame uses the legacy target tail while a
   voice.update({ hornAmount: 1, masterGain: 1, noteGain: 1 });
   context.currentTime = 0.011;
 
-  const releaseState = voice.release(
-    HONK_RELEASE_SETTINGS.liveFadeSeconds,
-    undefined,
-    { origin: HONK_RELEASE_ORIGINS.controller },
-  );
+  const releaseState = voice.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, undefined, {
+    origin: HONK_RELEASE_ORIGINS.controller,
+  });
   const releaseEvents = voice.master.gain.events.slice(-2);
   const outputHold = voice.output.gain.events.at(-2);
   const outputRamp = voice.output.gain.events.at(-1);
@@ -191,9 +187,20 @@ test("scheduling a Honk preserves the live attack, pitch settling and expression
   const scheduledContext = createAudioContext({ currentTime: 1 });
   const live = new HonkVoice({ context: liveContext });
   const scheduled = new HonkVoice({ context: scheduledContext });
-  for (const [time, amount] of [[5, .18], [5.017, .33], [5.033, .45], [5.4, 1]]) {
-    const performance = { hornAmount: amount, masterGain: .78, leftEar: -.6,
-      rightEar: -.5, noteGain: 1, pitchBendSemitones: .25 };
+  for (const [time, amount] of [
+    [5, 0.18],
+    [5.017, 0.33],
+    [5.033, 0.45],
+    [5.4, 1],
+  ]) {
+    const performance = {
+      hornAmount: amount,
+      masterGain: 0.78,
+      leftEar: -0.6,
+      rightEar: -0.5,
+      noteGain: 1,
+      pitchBendSemitones: 0.25,
+    };
     liveContext.currentTime = time;
     live.update(performance);
     scheduled.update(performance, { scheduledTime: time });
@@ -205,8 +212,8 @@ test("scheduling a Honk preserves the live attack, pitch settling and expression
     [live.master.gain, scheduled.master.gain],
   ]) {
     assert.deepEqual(
-      scheduledParameter.events.filter(e => e.type === "setTargetAtTime"),
-      liveParameter.events.filter(e => e.type === "setTargetAtTime"),
+      scheduledParameter.events.filter((e) => e.type === "setTargetAtTime"),
+      liveParameter.events.filter((e) => e.type === "setTargetAtTime"),
     );
     assert.equal(eventCount(scheduledParameter, "linearRampToValueAtTime"), 0);
   }
@@ -300,10 +307,7 @@ test("a source-stop error waits through the silent point before fallback cleanup
     completionCount += 1;
   });
 
-  assert.equal(
-    releaseState.silentAt,
-    HONK_RELEASE_SETTINGS.minimumFadeSeconds,
-  );
+  assert.equal(releaseState.silentAt, HONK_RELEASE_SETTINGS.minimumFadeSeconds);
   assert.equal(voice.disconnected, false);
   assert.equal(completionCount, 0);
 

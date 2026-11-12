@@ -26,7 +26,8 @@ export function colliderScaleToRadius(colliderScale, maxModelDimension) {
 }
 
 function assertFiniteVector(value, label = "vector") {
-  if (!value || typeof value !== "object") throw new CalibrationValueError(`${label} must be a vector.`);
+  if (!value || typeof value !== "object")
+    throw new CalibrationValueError(`${label} must be a vector.`);
   for (const axis of ["x", "y", "z"]) assertFiniteNumber(value[axis], `${label}.${axis}`);
   return value;
 }
@@ -38,5 +39,6 @@ function assertFiniteNumber(value, label = "number") {
 
 function assertPositiveDimension(value) {
   assertFiniteNumber(value, "max model dimension");
-  if (value <= EPSILON) throw new CalibrationValueError("max model dimension must be greater than zero.");
+  if (value <= EPSILON)
+    throw new CalibrationValueError("max model dimension must be greater than zero.");
 }

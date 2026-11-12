@@ -38,9 +38,7 @@ test("slider ray maps through a translated, rotated and scaled panel and clamps 
     const target = slider.group.localToWorld(
       new THREE.Vector3((80 + fraction * 912 - 536) * slider.scaleX, 0, 0),
     );
-    controller.position
-      .copy(target)
-      .add(new THREE.Vector3(0, 0, 1).applyQuaternion(q));
+    controller.position.copy(target).add(new THREE.Vector3(0, 0, 1).applyQuaternion(q));
     controller.quaternion.copy(q);
     controller.updateMatrixWorld(true);
     slider.update(controller);

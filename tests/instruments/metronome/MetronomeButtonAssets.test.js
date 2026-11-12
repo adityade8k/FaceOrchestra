@@ -23,8 +23,13 @@ function object3D(name) {
   return {
     name,
     children: [],
-    add(child) { this.children.push(child); child.parent = this; },
-    clone() { return object3D(this.name); },
+    add(child) {
+      this.children.push(child);
+      child.parent = this;
+    },
+    clone() {
+      return object3D(this.name);
+    },
     getObjectByName(targetName) {
       if (this.name === targetName) return this;
       for (const child of this.children) {

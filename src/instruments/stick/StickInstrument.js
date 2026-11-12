@@ -92,11 +92,14 @@ export class StickInstrument extends InstrumentEntity {
     }
   }
 
-  beginContact(target, {
-    percussionType = this.percussionResolver(target),
-    velocity = 0,
-    timestamp = performanceNow(),
-  } = {}) {
+  beginContact(
+    target,
+    {
+      percussionType = this.percussionResolver(target),
+      velocity = 0,
+      timestamp = performanceNow(),
+    } = {},
+  ) {
     const targetId = typeof target === "string" ? target : target?.id;
     if (!this.equipped || !this.colliderActive || !targetId || !percussionType) {
       return null;

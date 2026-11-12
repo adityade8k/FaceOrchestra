@@ -44,23 +44,21 @@ export function createWirePathPlan(
 
   const firstGuide = add(startPoint, scale(resolvedStartTangent, endpointLead));
   const secondGuide = subtract(endPoint, scale(resolvedEndTangent, endpointLead));
-  const gravityPerpendicular = subtract(
-    WORLD_GRAVITY,
-    scale(direct, dot(WORLD_GRAVITY, direct)),
-  );
+  const gravityPerpendicular = subtract(WORLD_GRAVITY, scale(direct, dot(WORLD_GRAVITY, direct)));
   const gravityInfluence = length(gravityPerpendicular);
   const sagDirection = normalize(gravityPerpendicular, { x: 0, y: 0, z: 0 });
-  const requestedSag = distance * (
-    positiveNumber(resolvedSettings.sagRatio, 0.11) +
-    angleRatio * positiveNumber(resolvedSettings.angleSagRatio, 0.025)
-  );
-  const sag = gravityInfluence > EPSILON
-    ? Math.min(
-      Math.max(requestedSag, positiveNumber(resolvedSettings.minSag, 0.012)),
-      positiveNumber(resolvedSettings.maxSag, 0.24),
-      distance * 0.35,
-    ) * gravityInfluence
-    : 0;
+  const requestedSag =
+    distance *
+    (positiveNumber(resolvedSettings.sagRatio, 0.11) +
+      angleRatio * positiveNumber(resolvedSettings.angleSagRatio, 0.025));
+  const sag =
+    gravityInfluence > EPSILON
+      ? Math.min(
+          Math.max(requestedSag, positiveNumber(resolvedSettings.minSag, 0.012)),
+          positiveNumber(resolvedSettings.maxSag, 0.24),
+          distance * 0.35,
+        ) * gravityInfluence
+      : 0;
 
   const knots = [];
   for (let index = 0; index <= spanCount; index += 1) {
@@ -106,23 +104,18 @@ export function createWirePathPlan(
   };
 }
 
-export function selectWireTubularSegments(
-  distance,
-  spanCount,
-  settings = LOOPER_WIRE_SETTINGS,
-) {
+export function selectWireTubularSegments(distance, spanCount, settings = LOOPER_WIRE_SETTINGS) {
   const resolvedSettings = { ...LOOPER_WIRE_SETTINGS, ...(settings || {}) };
-  const minimum = Math.max(1, Math.round(
-    positiveNumber(resolvedSettings.minTubularSegments, 20),
-  ));
-  const maximum = Math.max(minimum, Math.round(
-    positiveNumber(resolvedSettings.maxTubularSegments, 64),
-  ));
+  const minimum = Math.max(1, Math.round(positiveNumber(resolvedSettings.minTubularSegments, 20)));
+  const maximum = Math.max(
+    minimum,
+    Math.round(positiveNumber(resolvedSettings.maxTubularSegments, 64)),
+  );
   const requested = Math.round(
     Math.max(finiteNumber(distance, 0), 0) *
       positiveNumber(resolvedSettings.tubularSegmentsPerMeter, 28) +
-    Math.max(finiteNumber(spanCount, 0), 0) *
-      positiveNumber(resolvedSettings.tubularSegmentsPerSpan, 5),
+      Math.max(finiteNumber(spanCount, 0), 0) *
+        positiveNumber(resolvedSettings.tubularSegmentsPerSpan, 5),
   );
   return clamp(requested, minimum, maximum);
 }
@@ -130,12 +123,11 @@ export function selectWireTubularSegments(
 function selectSplineSpanCount(distance, maxDeflectionRadians, settings) {
   const minimum = Math.max(1, Math.round(positiveNumber(settings.minSplineSpans, 2)));
   const maximum = Math.max(minimum, Math.round(positiveNumber(settings.maxSplineSpans, 5)));
-  const distanceSpans = Math.max(1, Math.ceil(
-    distance / positiveNumber(settings.distancePerSplineSpan, 0.5),
-  ));
-  const angleStepRadians = (
-    positiveNumber(settings.anglePerSplineSpanDegrees, 70) * Math.PI
-  ) / 180;
+  const distanceSpans = Math.max(
+    1,
+    Math.ceil(distance / positiveNumber(settings.distancePerSplineSpan, 0.5)),
+  );
+  const angleStepRadians = (positiveNumber(settings.anglePerSplineSpanDegrees, 70) * Math.PI) / 180;
   const angleSpans = Math.floor(maxDeflectionRadians / angleStepRadians);
   return clamp(distanceSpans + angleSpans, minimum, maximum);
 }

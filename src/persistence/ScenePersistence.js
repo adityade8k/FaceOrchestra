@@ -6,10 +6,7 @@ export class ScenePersistence {
   }
 
   save() {
-    if (
-      this.restoreReport?.skipped?.length ||
-      this.restoreReport?.skippedConnections?.length
-    )
+    if (this.restoreReport?.skipped?.length || this.restoreReport?.skippedConnections?.length)
       return false;
     return this.store.save(this.serializer.serialize());
   }

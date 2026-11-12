@@ -1,11 +1,22 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import * as THREE from 'three';
-import { BendGauge } from '../../src/tutorial/BendGauge.js';
-import { bendGaugeState } from '../../src/tutorial/bendGaugeState.js';
-import { observeBendGesture } from '../../src/tutorial/observeBendGesture.js';
-import { cueCanvas } from '../helpers/cueCanvas.js';
-const event = {midi:60,beat:4,beats:4,bend:[{fraction:0,semitones:0},{fraction:.2,semitones:0},{fraction:.8,semitones:2},{fraction:1,semitones:2}]};
+import { runtimeOwners } from "../helpers/runtimeOwners.js";
+import test from "node:test";
+import assert from "node:assert/strict";
+import * as THREE from "three";
+import { BendGauge } from "../../src/tutorial/BendGauge.js";
+import { bendGaugeState } from "../../src/tutorial/bendGaugeState.js";
+import { observeBendGesture } from "../../src/tutorial/observeBendGesture.js";
+import { cueCanvas } from "../helpers/cueCanvas.js";
+const event = {
+  midi: 60,
+  beat: 4,
+  beats: 4,
+  bend: [
+    { fraction: 0, semitones: 0 },
+    { fraction: 0.2, semitones: 0 },
+    { fraction: 0.8, semitones: 2 },
+    { fraction: 1, semitones: 2 },
+  ],
+};
 for (const hand of ["left", "right"])
   test(`${hand} gauge reads only the correct current processed-live owner`, () => {
     const c = new THREE.Group();
@@ -26,11 +37,11 @@ for (const hand of ["left", "right"])
     const a = {
       ids: (role) => (role === gesture.role ? [h.id] : []),
       gestures: new Map([[c, gesture]]),
-      r: {
+      r: runtimeOwners({
         controllerStates: new Map([[c, input]]),
         getControllerVoiceId: () => hand,
         getInstrumentVoiceId: () => hand,
-      },
+      }),
     };
     assert.equal(observeBendGesture(a, "lead-64", "practice").semitones, 1);
     assert.equal(observeBendGesture(a, "lead-67", "practice"), null);
@@ -39,10 +50,7 @@ for (const hand of ["left", "right"])
     input.trigger = true;
     gesture.origin = "demonstration";
     assert.equal(observeBendGesture(a, "lead-64", "practice"), null);
-    assert.equal(
-      observeBendGesture(a, "lead-64", "demonstration").origin,
-      "demonstration",
-    );
+    assert.equal(observeBendGesture(a, "lead-64", "demonstration").origin, "demonstration");
     gesture.origin = "learner";
     a.gestures.set(new THREE.Group(), { ...gesture });
     assert.equal(observeBendGesture(a, "lead-64", "practice"), null);
@@ -63,9 +71,7 @@ test("radial presentation reuses its objects, keeps matching markers distinct, a
     e = event;
   const ids = () => {
     const values = [];
-    g.root.traverse((n) =>
-      values.push(n.uuid, n.geometry?.uuid, n.material?.uuid),
-    );
+    g.root.traverse((n) => values.push(n.uuid, n.geometry?.uuid, n.material?.uuid));
     return values;
   };
   const before = ids(),
@@ -74,14 +80,9 @@ test("radial presentation reuses its objects, keeps matching markers distinct, a
     rotation = new THREE.Quaternion();
   g.update(state, position, 0.2, rotation, 1, null, 0);
   const version = g.texture.version;
-  for (let now = 1; now < 300; now++)
-    g.update(state, position, 0.2, rotation, 1, null, now);
+  for (let now = 1; now < 300; now++) g.update(state, position, 0.2, rotation, 1, null, now);
   assert.deepEqual(ids(), before);
-  assert.equal(
-    g.texture.version,
-    version,
-    "Unchanged numerical labels do not redraw",
-  );
+  assert.equal(g.texture.version, version, "Unchanged numerical labels do not redraw");
   assert.deepEqual(g.root.position.toArray(), position.toArray());
   assert.equal(g.root.scale.x, 0.2 * 1.12);
   assert.ok(
@@ -102,17 +103,40 @@ test("radial presentation reuses its objects, keeps matching markers distinct, a
 });
 
 test("extended G4 hold reports D4 at the gauge edge without requesting another press", () => {
-  const event = {midi:67,pitchBendRange:5,bendStyle:"melody",bend:[
-    {fraction:0,semitones:0},{fraction:.2,semitones:0},{fraction:.8,semitones:-5},{fraction:1,semitones:-5}]};
-  const c=new THREE.Group(), h={id:"g4",pitchBendRange:5,root:{visible:true},
-    getProcessedLivePerformanceState:()=>({bend:-1}),hasAudioVoice:()=>true};
-  const a={ids:()=>[h.id],gestures:new Map([[c,{role:"lead-67",targetId:h.id,origin:"learner",id:"held"}]]),
-    r:{controllerStates:new Map([[c,{trigger:true,raySqueezeInstrumentState:h}]]),
-      getControllerVoiceId:()=>"right",getInstrumentVoiceId:()=>"right:g4"}};
-  const observation=observeBendGesture(a,"lead-67","practice");
-  assert.equal(observation.semitones,-5);
-  const gauge=bendGaugeState(event,1,observation);
-  assert.equal(gauge.range,5); assert.equal(gauge.required,-5);
-  assert.equal(gauge.destination,"D4"); assert.equal(gauge.status,"On target");
-  assert.match(gauge.instruction,/keep Trigger held/);
+  const event = {
+    midi: 67,
+    pitchBendRange: 5,
+    bendStyle: "melody",
+    bend: [
+      { fraction: 0, semitones: 0 },
+      { fraction: 0.2, semitones: 0 },
+      { fraction: 0.8, semitones: -5 },
+      { fraction: 1, semitones: -5 },
+    ],
+  };
+  const c = new THREE.Group(),
+    h = {
+      id: "g4",
+      pitchBendRange: 5,
+      root: { visible: true },
+      getProcessedLivePerformanceState: () => ({ bend: -1 }),
+      hasAudioVoice: () => true,
+    };
+  const a = {
+    ids: () => [h.id],
+    gestures: new Map([[c, { role: "lead-67", targetId: h.id, origin: "learner", id: "held" }]]),
+    r: runtimeOwners({
+      controllerStates: new Map([[c, { trigger: true, raySqueezeInstrumentState: h }]]),
+      getControllerVoiceId: () => "right",
+      getInstrumentVoiceId: () => "right:g4",
+    }),
+  };
+  const observation = observeBendGesture(a, "lead-67", "practice");
+  assert.equal(observation.semitones, -5);
+  const gauge = bendGaugeState(event, 1, observation);
+  assert.equal(gauge.range, 5);
+  assert.equal(gauge.required, -5);
+  assert.equal(gauge.destination, "D4");
+  assert.equal(gauge.status, "On target");
+  assert.match(gauge.instruction, /keep Trigger held/);
 });

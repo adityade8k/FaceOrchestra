@@ -1,3 +1,4 @@
+import { runtimeOwners } from "../helpers/runtimeOwners.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { FaceOrchestraApp } from "../../src/app/FaceOrchestraApp.js";
@@ -7,10 +8,7 @@ test("the frame captures looper input after current Honk intent is resolved", ()
     calls = [];
   let input = "previous frame",
     recorded;
-  const runtime = {
-    updateMetronomeConnections(now) {
-      calls.push(["connections", now]);
-    },
+  const runtime = runtimeOwners({
     updateHorn(now) {
       calls.push(["honk", now]);
       input = "current frame";
@@ -19,9 +17,14 @@ test("the frame captures looper input after current Honk intent is resolved", ()
       calls.push(["record", now]);
       recorded = input;
     },
-  };
+    metronomeConnections: {
+      updateMetronomeConnections(now) {
+        calls.push(["connections", now]);
+      },
+    },
+  });
   FaceOrchestraApp.prototype.configureFramePhases.call({
-    runtime,
+    runtime: runtimeOwners(runtime),
     frameScheduler: {
       add(phase, callback) {
         phases.set(phase, callback);

@@ -20,7 +20,7 @@ export class StickColliderFactory {
     const material = new this.THREE.MeshBasicMaterial({
       color: this.settings.color ?? 0xf7d04a,
       transparent: true,
-      opacity: this.showDebug ? this.settings.opacity ?? 0.28 : 0,
+      opacity: this.showDebug ? (this.settings.opacity ?? 0.28) : 0,
       depthWrite: false,
       wireframe: this.showDebug,
     });

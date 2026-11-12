@@ -48,7 +48,10 @@ export function resolveArcMotion(config = {}, { label = "arc" } = {}) {
   }
   const minAngleDegrees = finite(config.minAngleDegrees, `${label} minAngleDegrees`);
   const maxAngleDegrees = finite(config.maxAngleDegrees, `${label} maxAngleDegrees`);
-  const referenceAngleDegrees = finite(config.referenceAngleDegrees ?? 0, `${label} referenceAngleDegrees`);
+  const referenceAngleDegrees = finite(
+    config.referenceAngleDegrees ?? 0,
+    `${label} referenceAngleDegrees`,
+  );
   if (minAngleDegrees >= maxAngleDegrees) {
     throw new ArcMotionError(`${label} minAngleDegrees must be less than maxAngleDegrees.`);
   }
@@ -73,17 +76,15 @@ export function rotateOffsetAroundAxis(offset, axis, angleRadians) {
   const sine = Math.sin(angleRadians);
   const crossValue = cross(normal, offset);
   const parallelScale = dot(normal, offset) * (1 - cosine);
-  return add(
-    add(scale(offset, cosine), scale(crossValue, sine)),
-    scale(normal, parallelScale),
-  );
+  return add(add(scale(offset, cosine), scale(crossValue, sine)), scale(normal, parallelScale));
 }
 
 // colliderOffset is the center-relative rest vector. referenceAngleDegrees is
 // applied before the requested movement angle, matching the Metronome rig.
 export function getArcPointAtAngle(config, angleDegrees) {
   const arc = isResolvedArc(config) ? config : resolveArcMotion(config);
-  const deltaRadians = (finite(angleDegrees, "angleDegrees") + arc.referenceAngleDegrees) * DEG_TO_RAD;
+  const deltaRadians =
+    (finite(angleDegrees, "angleDegrees") + arc.referenceAngleDegrees) * DEG_TO_RAD;
   return add(arc.center, rotateOffsetAroundAxis(arc.colliderOffset, arc.axis, deltaRadians));
 }
 
@@ -94,7 +95,13 @@ export function getArcAngleForValue(config, value, valueMin = -1, valueMax = 1) 
 
 export function getArcValueForAngle(config, angleDegrees, valueMin = -1, valueMax = 1) {
   const arc = isResolvedArc(config) ? config : resolveArcMotion(config);
-  return mapAngleToValue(angleDegrees, arc.minAngleDegrees, arc.maxAngleDegrees, valueMin, valueMax);
+  return mapAngleToValue(
+    angleDegrees,
+    arc.minAngleDegrees,
+    arc.maxAngleDegrees,
+    valueMin,
+    valueMax,
+  );
 }
 
 export function getArcPointForValue(config, value, valueMin = -1, valueMax = 1) {
@@ -173,20 +180,19 @@ export function unwrapAngleNear(angle, reference) {
   return reference + unwrapAngleDelta(angle, reference);
 }
 
-export function generateArcPoints(config, {
-  startAngleDegrees,
-  endAngleDegrees,
-  segments = 64,
-} = {}) {
+export function generateArcPoints(
+  config,
+  { startAngleDegrees, endAngleDegrees, segments = 64 } = {},
+) {
   const arc = isResolvedArc(config) ? config : resolveArcMotion(config);
   const start = startAngleDegrees ?? arc.minAngleDegrees;
   const end = endAngleDegrees ?? arc.maxAngleDegrees;
   if (!Number.isInteger(segments) || segments < 1) {
     throw new ArcMotionError("arc segments must be a positive integer.");
   }
-  return Array.from({ length: segments + 1 }, (_, index) => (
-    getArcPointAtAngle(arc, start + (end - start) * (index / segments))
-  ));
+  return Array.from({ length: segments + 1 }, (_, index) =>
+    getArcPointAtAngle(arc, start + (end - start) * (index / segments)),
+  );
 }
 
 export function vectorLength(vector) {

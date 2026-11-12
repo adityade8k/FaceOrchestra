@@ -48,7 +48,9 @@ test("Honk playback releases at wrap and repeats attacks with a 1800 ms period",
   let active = false;
   let now = 0;
   const handlers = {
-    onReleaseTrack: () => { active = false; },
+    onReleaseTrack: () => {
+      active = false;
+    },
     onTrackSnapshot: (_track, snapshot) => {
       const nextActive = (snapshot.squeeze || 0) > 0.025;
       if (nextActive && !active) attacks.push(now);
@@ -166,7 +168,9 @@ test("a large clock update crosses multiple boundaries without missing or duplic
   engine.start(0);
   engine.updateFromClock(timeline.durationMs * 3, timeline, {
     onDrumHit: (_track, event) => hits.push(event.value),
-    onLoopBoundary: () => { boundaries += 1; },
+    onLoopBoundary: () => {
+      boundaries += 1;
+    },
   });
 
   assert.equal(boundaries, 3);

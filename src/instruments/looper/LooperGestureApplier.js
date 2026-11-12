@@ -115,7 +115,7 @@ export class LooperGestureApplier {
     }
 
     this.appliedTracks.delete(layerId);
-    this.cancelRetiringGenerations(s => s.layerId === layerId);
+    this.cancelRetiringGenerations((s) => s.layerId === layerId);
     this.cancelScheduledGenerations(() => true, {}, this.generationsByLayer.get(layerId) || []);
     this.audioTargetsByLayer.delete(layerId);
     this.targetCache.delete(track);
@@ -135,11 +135,11 @@ export class LooperGestureApplier {
     const isStart = event.type === LooperActionEventType.SqueezeStart;
     const isEnd = event.type === LooperActionEventType.SqueezeEnd;
     const resolvedNoteKey = noteKey || `${track.trackId}:legacy`;
-    const eventTargets = targetHonkIds || (
-      isStart
+    const eventTargets =
+      targetHonkIds ||
+      (isStart
         ? this.getPlaybackTargetIds(track, track.connectedHonkId)
-        : this.getGenerationTargetIds(layerId, resolvedNoteKey)
-    );
+        : this.getGenerationTargetIds(layerId, resolvedNoteKey));
     for (const honkId of eventTargets) {
       if (!this.isPlayableHonkId(honkId)) continue;
       const baseVoiceId = this.getActionVoiceId(looperState, track, honkId);
@@ -156,7 +156,11 @@ export class LooperGestureApplier {
           // closed gate must not first ramp the held voice down to zero.
           scheduledSnapshot.squeeze = scheduledVoice.lastSqueeze ?? event.value;
           this.adapter.updateActionVoiceByHonkId?.(
-            scheduledVoice.voiceId, honkId, scheduledSnapshot, volume, { scheduledTime },
+            scheduledVoice.voiceId,
+            honkId,
+            scheduledSnapshot,
+            volume,
+            { scheduledTime },
           );
           this.adapter.releaseActionVoice?.(scheduledVoice.voiceId, honkId, {
             scheduledTime,
@@ -212,7 +216,8 @@ export class LooperGestureApplier {
   clearVisuals(looperState) {
     for (const track of looperState.looperData.tracks) {
       const layerId = this.getLayerId(looperState, track);
-      for (const entry of this.appliedTracks.get(layerId)?.targetEntries.values() || []) this.clearAutomationLayer(entry.honkId, layerId);
+      for (const entry of this.appliedTracks.get(layerId)?.targetEntries.values() || [])
+        this.clearAutomationLayer(entry.honkId, layerId);
       this.appliedTracks.delete(layerId);
       track.resetPlaybackState();
     }
@@ -220,22 +225,27 @@ export class LooperGestureApplier {
 
   cancelScheduledAudio(looperState, options = {}) {
     if (!looperState) return;
-    this.cancelRetiringGenerations(s => s.looperId === looperState.id, options);
-    this.cancelScheduledGenerations(scheduled => scheduled.looperId === looperState.id, options);
+    this.cancelRetiringGenerations((s) => s.looperId === looperState.id, options);
+    this.cancelScheduledGenerations((scheduled) => scheduled.looperId === looperState.id, options);
   }
 
   cancelRetiringGenerations(predicate, options = {}) {
     for (const retired of [...this.retiringGenerations]) {
       if (!predicate(retired)) continue;
       this.adapter.cancelActionVoice?.(retired.voiceId, retired.honkId, {
-        fadeSeconds: LOOPER_ACTION_RELEASE_FADE_SECONDS, ...options,
+        fadeSeconds: LOOPER_ACTION_RELEASE_FADE_SECONDS,
+        ...options,
       });
       if (Number.isFinite(options.scheduledTime)) retired.expiresAt = options.scheduledTime + 0.25;
       else this.retiringGenerations.delete(retired);
     }
   }
 
-  cancelScheduledGenerations(predicate, options = {}, candidates = this.scheduledGenerations.values()) {
+  cancelScheduledGenerations(
+    predicate,
+    options = {},
+    candidates = this.scheduledGenerations.values(),
+  ) {
     for (const scheduled of candidates) {
       const voiceId = scheduled.voiceId;
       if (!predicate(scheduled)) continue;
@@ -250,13 +260,15 @@ export class LooperGestureApplier {
           ...options,
         });
       }
-      if (Number.isFinite(options.scheduledTime)) this.retiringGenerations.add({...scheduled, expiresAt:options.scheduledTime + 0.25});
+      if (Number.isFinite(options.scheduledTime))
+        this.retiringGenerations.add({ ...scheduled, expiresAt: options.scheduledTime + 0.25 });
       this.removeGeneration(scheduled);
     }
   }
 
   pruneScheduledAudio(audioNow) {
-    for (const retired of this.retiringGenerations) if (retired.expiresAt <= audioNow) this.retiringGenerations.delete(retired);
+    for (const retired of this.retiringGenerations)
+      if (retired.expiresAt <= audioNow) this.retiringGenerations.delete(retired);
     for (const scheduled of this.scheduledGenerations.values()) {
       if (Number.isFinite(scheduled.expiresAt) && scheduled.expiresAt <= audioNow) {
         this.removeGeneration(scheduled);
@@ -275,8 +287,9 @@ export class LooperGestureApplier {
   reconcileAudioTargets(looperState, track) {
     const layerId = this.getLayerId(looperState, track);
     const desired = new Set(
-      [...this.getPlaybackTargetIds(track, track.connectedHonkId)]
-        .filter((honkId) => this.isPlayableHonkId(honkId)),
+      [...this.getPlaybackTargetIds(track, track.connectedHonkId)].filter((honkId) =>
+        this.isPlayableHonkId(honkId),
+      ),
     );
     const previous = this.audioTargetsByLayer.get(layerId) || new Set();
     if (desired.size === previous.size && [...desired].every((id) => previous.has(id))) {
@@ -303,7 +316,7 @@ export class LooperGestureApplier {
       this.releaseTargetEntry(entry.layerId, targetEntry);
       entry.targetEntries.delete(honkId);
     }
-    this.cancelRetiringGenerations(s => s.honkId === honkId);
+    this.cancelRetiringGenerations((s) => s.honkId === honkId);
     this.cancelScheduledGenerations((scheduled) => scheduled.honkId === honkId);
     for (const targets of this.audioTargetsByLayer.values()) targets.delete(honkId);
   }
@@ -337,8 +350,10 @@ export class LooperGestureApplier {
   }
 
   getLayerId(looperState, track) {
-    return this.adapter.getAutomationLayerId?.(looperState, track) ||
-      `looper-${looperState.id}:track-${track.index}`;
+    return (
+      this.adapter.getAutomationLayerId?.(looperState, track) ||
+      `looper-${looperState.id}:track-${track.index}`
+    );
   }
 
   resolveHonk(honkId) {
@@ -360,10 +375,16 @@ export class LooperGestureApplier {
     if (!this.isPlayableHonkId(connectedHonkId)) return new Set();
     const revision = this.adapter.getPlaybackTargetsRevision?.();
     const cached = this.targetCache.get(track);
-    if (revision !== undefined && cached?.revision === revision && cached.connectedHonkId === connectedHonkId) {
+    if (
+      revision !== undefined &&
+      cached?.revision === revision &&
+      cached.connectedHonkId === connectedHonkId
+    ) {
       return new Set(cached.ids);
     }
-    const targetValues = this.adapter.getPlaybackTargetIds?.(track, connectedHonkId) || [connectedHonkId];
+    const targetValues = this.adapter.getPlaybackTargetIds?.(track, connectedHonkId) || [
+      connectedHonkId,
+    ];
 
     const targetIds = new Set();
     for (const targetId of targetValues) {
@@ -371,13 +392,16 @@ export class LooperGestureApplier {
         targetIds.add(targetId);
       }
     }
-    if (revision !== undefined) this.targetCache.set(track, { revision, connectedHonkId, ids: targetIds });
+    if (revision !== undefined)
+      this.targetCache.set(track, { revision, connectedHonkId, ids: targetIds });
     return new Set(targetIds);
   }
 
   getActionVoiceId(looperState, track, honkId) {
-    return this.adapter.getActionVoiceIdForHonkId?.(looperState, track, honkId) ||
-      `${this.getLayerId(looperState, track)}:instrument-${honkId}:action`;
+    return (
+      this.adapter.getActionVoiceIdForHonkId?.(looperState, track, honkId) ||
+      `${this.getLayerId(looperState, track)}:instrument-${honkId}:action`
+    );
   }
 
   setAutomationLayer(honkId, layerId, snapshot) {
@@ -439,23 +463,24 @@ export class LooperGestureApplier {
 
   getGenerationTargetIds(layerId, noteKey) {
     const targetIds = new Set();
-    for (const scheduled of this.generationsByNote.get(layerId)?.get(noteKey) || []) targetIds.add(scheduled.honkId);
+    for (const scheduled of this.generationsByNote.get(layerId)?.get(noteKey) || [])
+      targetIds.add(scheduled.honkId);
     return targetIds;
   }
 
   indexGeneration(scheduled) {
     let layer = this.generationsByLayer.get(scheduled.layerId);
-    if (!layer) this.generationsByLayer.set(scheduled.layerId, layer = new Set());
+    if (!layer) this.generationsByLayer.set(scheduled.layerId, (layer = new Set()));
     layer.add(scheduled);
     let targets = this.generationsByTarget.get(scheduled.layerId);
-    if (!targets) this.generationsByTarget.set(scheduled.layerId, targets = new Map());
+    if (!targets) this.generationsByTarget.set(scheduled.layerId, (targets = new Map()));
     let target = targets.get(scheduled.honkId);
-    if (!target) targets.set(scheduled.honkId, target = new Set());
+    if (!target) targets.set(scheduled.honkId, (target = new Set()));
     target.add(scheduled);
     let notes = this.generationsByNote.get(scheduled.layerId);
-    if (!notes) this.generationsByNote.set(scheduled.layerId, notes = new Map());
+    if (!notes) this.generationsByNote.set(scheduled.layerId, (notes = new Map()));
     let note = notes.get(scheduled.noteKey);
-    if (!note) notes.set(scheduled.noteKey, note = new Set());
+    if (!note) notes.set(scheduled.noteKey, (note = new Set()));
     note.add(scheduled);
   }
 
@@ -478,8 +503,12 @@ export class LooperGestureApplier {
   }
 
   cancelScheduledTarget(layerId, honkId) {
-    this.cancelRetiringGenerations(s => s.layerId === layerId && s.honkId === honkId);
-    this.cancelScheduledGenerations(() => true, {}, this.generationsByTarget.get(layerId)?.get(honkId) || []);
+    this.cancelRetiringGenerations((s) => s.layerId === layerId && s.honkId === honkId);
+    this.cancelScheduledGenerations(
+      () => true,
+      {},
+      this.generationsByTarget.get(layerId)?.get(honkId) || [],
+    );
   }
 
   getScheduledOwnershipKey(layerId, honkId, noteKey) {

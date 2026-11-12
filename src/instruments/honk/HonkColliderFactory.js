@@ -39,8 +39,10 @@ export class HonkColliderFactory {
       const collider = this.createInteractionTarget(parent, bendAlignedGroup, config);
       targets[roleForInteraction(config)] = collider;
     }
-    targets[HONK_INTERACTION_ROLES.squeeze].raycastLockedBounds =
-      this.createLockedBoundsRaycast(root, targets[HONK_INTERACTION_ROLES.squeeze]);
+    targets[HONK_INTERACTION_ROLES.squeeze].raycastLockedBounds = this.createLockedBoundsRaycast(
+      root,
+      targets[HONK_INTERACTION_ROLES.squeeze],
+    );
     targets[HONK_INTERACTION_ROLES.looperConnector] = this.createLooperConnector(root);
     return { targets, bendAlignedGroup };
   }
@@ -68,11 +70,7 @@ export class HonkColliderFactory {
     this.box.makeEmpty();
     root.updateMatrixWorld?.(true);
     root.traverse((object) => {
-      if (
-        object.isMesh &&
-        !object.userData?.isHitTarget &&
-        !object.userData?.interactionTarget
-      ) {
+      if (object.isMesh && !object.userData?.isHitTarget && !object.userData?.interactionTarget) {
         this.box.expandByObject(object);
       }
     });
@@ -140,7 +138,8 @@ export class HonkColliderFactory {
       target.getWorldScale(worldScale);
       return {
         center: worldCenter,
-        radius: radius * Math.max(Math.abs(worldScale.x), Math.abs(worldScale.y), Math.abs(worldScale.z)),
+        radius:
+          radius * Math.max(Math.abs(worldScale.x), Math.abs(worldScale.y), Math.abs(worldScale.z)),
       };
     };
     parent.add(target);
@@ -199,7 +198,9 @@ export class HonkColliderFactory {
 
 function roleForInteraction(config) {
   if (config.type === INTERACTION_TYPES.ear) {
-    return config.side === "left" ? HONK_INTERACTION_ROLES.leftEar : HONK_INTERACTION_ROLES.rightEar;
+    return config.side === "left"
+      ? HONK_INTERACTION_ROLES.leftEar
+      : HONK_INTERACTION_ROLES.rightEar;
   }
   if (config.type === INTERACTION_TYPES.nose) return HONK_INTERACTION_ROLES.nose;
   if (config.type === INTERACTION_TYPES.mouth) return HONK_INTERACTION_ROLES.mouth;
@@ -214,7 +215,9 @@ function getPositiveMorph(config) {
 
 function getNegativeMorph(config) {
   if (config.type !== INTERACTION_TYPES.ear) return null;
-  return config.side === "left" ? MORPH_TARGET_NAMES.ears.leftDown : MORPH_TARGET_NAMES.ears.rightDown;
+  return config.side === "left"
+    ? MORPH_TARGET_NAMES.ears.leftDown
+    : MORPH_TARGET_NAMES.ears.rightDown;
 }
 
 function markTarget(target, role, opacity) {

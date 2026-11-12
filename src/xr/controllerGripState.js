@@ -1,4 +1,8 @@
-export function setControllerGripTarget(controllerState, transformTarget, source = transformTarget) {
+export function setControllerGripTarget(
+  controllerState,
+  transformTarget,
+  source = transformTarget,
+) {
   if (!controllerState) {
     return null;
   }

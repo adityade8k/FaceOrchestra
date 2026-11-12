@@ -7,7 +7,10 @@ import { PercussionVoiceService } from "./percussion/PercussionVoiceService.js";
 import { METRONOME_SETTINGS } from "../config/metronome.js";
 
 export class AudioSystem {
-  constructor({ audioContextService = new AudioContextService(), masterBus = new MasterBus() } = {}) {
+  constructor({
+    audioContextService = new AudioContextService(),
+    masterBus = new MasterBus(),
+  } = {}) {
     this.audioContextService = audioContextService;
     this.masterBus = masterBus;
 
@@ -16,7 +19,11 @@ export class AudioSystem {
       getDestination: (context) => this.masterBus.input || context.destination,
     };
     this.honkVoices = new HonkVoiceService(dependencies);
-    this.percussionVoices = new PercussionVoiceService(dependencies);
+    this.percussionVoices = new PercussionVoiceService({
+      ...dependencies,
+      getDestination: (context) =>
+        this.masterBus.getInput?.("percussion") || this.masterBus.input || context.destination,
+    });
   }
 
   async ensureContext() {
@@ -45,20 +52,31 @@ export class AudioSystem {
     voiceId,
     performanceState = {},
     tuning = {},
-    { gain = HONK_MASTER_GAIN, scheduledTime = undefined, pitchBendRange, bendSnapped = false } = {},
+    {
+      gain = HONK_MASTER_GAIN,
+      scheduledTime = undefined,
+      pitchBendRange,
+      bendSnapped = false,
+    } = {},
   ) {
-    this.honkVoices.updateVoice(voiceId, {
-      hornAmount: performanceState.squeeze ?? 0,
-      masterGain: gain,
-      leftEar: performanceState.earLeft ?? tuning.pitchControl ?? 0,
-      rightEar: performanceState.earRight ?? tuning.octaveControl ?? 0,
-      noteGain: getHonkNoteGainFromNose(performanceState.nose ?? 0),
-      vowel: performanceState.vowel && performanceState.vowel !== "neutral"
-        ? performanceState.vowel
-        : "A",
-      pitchBendSemitones: (performanceState.bend ?? 0) * getHonkPitchBendRange({ pitchBendRange }),
-      pitchSnap: tuning.pitchSnap || null,
-    }, { scheduledTime, ...(bendSnapped ? { bendSnapped: true } : {}) });
+    this.honkVoices.updateVoice(
+      voiceId,
+      {
+        hornAmount: performanceState.squeeze ?? 0,
+        masterGain: gain,
+        leftEar: performanceState.earLeft ?? tuning.pitchControl ?? 0,
+        rightEar: performanceState.earRight ?? tuning.octaveControl ?? 0,
+        noteGain: getHonkNoteGainFromNose(performanceState.nose ?? 0),
+        vowel:
+          performanceState.vowel && performanceState.vowel !== "neutral"
+            ? performanceState.vowel
+            : "A",
+        pitchBendSemitones:
+          (performanceState.bend ?? 0) * getHonkPitchBendRange({ pitchBendRange }),
+        pitchSnap: tuning.pitchSnap || null,
+      },
+      { scheduledTime, ...(bendSnapped ? { bendSnapped: true } : {}) },
+    );
   }
 
   setVoiceVowel(voiceId, vowel) {
@@ -80,7 +98,8 @@ export class AudioSystem {
 
   suspend() {
     const context = this.audioContextService.context;
-    if (!context || context.state === "closed" || context.state === "suspended") return Promise.resolve();
+    if (!context || context.state === "closed" || context.state === "suspended")
+      return Promise.resolve();
     return context.suspend?.() || Promise.resolve();
   }
 
@@ -103,9 +122,13 @@ export class AudioSystem {
     gain.connect(this.masterBus.input || context.destination);
     oscillator.start(now);
     oscillator.stop(now + duration);
-    oscillator.addEventListener?.("ended", () => {
-      oscillator.disconnect();
-      gain.disconnect();
-    }, { once: true });
+    oscillator.addEventListener?.(
+      "ended",
+      () => {
+        oscillator.disconnect();
+        gain.disconnect();
+      },
+      { once: true },
+    );
   }
 }

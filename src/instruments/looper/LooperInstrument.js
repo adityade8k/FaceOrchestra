@@ -60,15 +60,15 @@ export class LooperInstrument extends InstrumentEntity {
 
   record(now = performance.now()) {
     this.initialize();
-    return this.looperController.startRecording(this, now);
+    return this.looperController.recording.startRecording(this, now);
   }
 
   finishRecording(now = performance.now()) {
-    return this.looperController.stopRecording(this, now);
+    return this.looperController.recording.stopRecording(this, now);
   }
 
   clearRecording() {
-    return this.looperController.clearRecording(this);
+    return this.looperController.recording.clearRecording(this);
   }
 
   play(now = performance.now(), options = {}) {
@@ -101,11 +101,11 @@ export class LooperInstrument extends InstrumentEntity {
 
   recordTrackDrumHit(trackIndexOrId, drumType, now = performance.now()) {
     const track = this.looperController.getTrack(this, trackIndexOrId);
-    return this.looperController.recordTrackDrumHit(this, track, drumType, now);
+    return this.looperController.recording.recordTrackDrumHit(this, track, drumType, now);
   }
 
   recordSelfDrumHit(drumType, now = performance.now()) {
-    return this.looperController.recordSelfDrumHit(this, drumType, now);
+    return this.looperController.recording.recordSelfDrumHit(this, drumType, now);
   }
 
   setControl(control, value) {
@@ -127,7 +127,7 @@ export class LooperInstrument extends InstrumentEntity {
   serialize() {
     this.initialize();
     const base = super.serialize();
-    const looper = this.looperController.serializeState(this);
+    const looper = this.looperController.stateCodec.serializeState(this);
     return {
       ...base,
       appearance: { locked: Boolean(this.locked) },
@@ -157,12 +157,16 @@ export class LooperInstrument extends InstrumentEntity {
 
   restoreTimeline(serialized = {}, options = {}) {
     this.initialize();
-    return this.looperController.restoreState(this, serialized.looper || serialized, options);
+    return this.looperController.stateCodec.restoreState(
+      this,
+      serialized.looper || serialized,
+      options,
+    );
   }
 
   restoreConnections(connections = []) {
     this.initialize();
-    return this.looperController.restoreConnections(this, connections);
+    return this.looperController.stateCodec.restoreConnections(this, connections);
   }
 
   dispose() {
@@ -189,11 +193,11 @@ function disposeOwnedLooperResources(root) {
   const disposedMaterials = new Set();
   root?.traverse?.((object) => {
     const isOwnedViewObject = Boolean(
-      object.userData?.isLooperCollider ||
-      object.name?.startsWith("DEBUG_"),
+      object.userData?.isLooperCollider || object.name?.startsWith("DEBUG_"),
     );
     const geometry = object.geometry;
-    const ownsGeometry = isOwnedViewObject ||
+    const ownsGeometry =
+      isOwnedViewObject ||
       geometry?.userData?.disposeWithOwner ||
       geometry?.userData?.disposeOnInstrumentDelete;
     if (geometry && ownsGeometry && !disposedGeometries.has(geometry)) {
@@ -203,7 +207,8 @@ function disposeOwnedLooperResources(root) {
 
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
-      const ownsMaterial = isOwnedViewObject ||
+      const ownsMaterial =
+        isOwnedViewObject ||
         material?.userData?.disposeWithOwner ||
         material?.userData?.disposeOnInstrumentDelete;
       if (material && ownsMaterial && !disposedMaterials.has(material)) {

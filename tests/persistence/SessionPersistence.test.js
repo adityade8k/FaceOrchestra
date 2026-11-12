@@ -1,3 +1,4 @@
+import { runtimeOwners } from "../helpers/runtimeOwners.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -8,20 +9,19 @@ import {
 import { SessionRuntimeMethods } from "../../src/app/runtime/SessionRuntime.js";
 import { PersistenceStore } from "../../src/persistence/PersistenceStore.js";
 import { ScenePersistence } from "../../src/persistence/ScenePersistence.js";
-import {
-  LEGACY_SCENE_STORAGE_KEYS,
-  SCENE_STORAGE_KEY,
-} from "../../src/persistence/schema.js";
+import { LEGACY_SCENE_STORAGE_KEYS, SCENE_STORAGE_KEY } from "../../src/persistence/schema.js";
 
 test("XR start always asks the default spawner to ensure a metronome exists", () => {
   let defaultSpawnRequests = 0;
-  const runtime = {
+  const runtime = runtimeOwners({
     xrSessionActive: false,
     hideInstructionPanel() {},
-    spawnDefaultInstrumentPreview() {
-      defaultSpawnRequests += 1;
+    spawn: {
+      spawnDefaultInstrumentPreview() {
+        defaultSpawnRequests += 1;
+      },
     },
-  };
+  });
 
   SessionRuntimeMethods.onXRSessionStart.call(runtime);
 
@@ -31,13 +31,15 @@ test("XR start always asks the default spawner to ensure a metronome exists", ()
 
 test("runtime initialization retries the default metronome spawn for an active XR session", () => {
   let defaultSpawnRequests = 0;
-  const runtime = {
+  const runtime = runtimeOwners({
     xrSessionActive: true,
     instructionPanelClosed: true,
-    spawnDefaultInstrumentPreview() {
-      defaultSpawnRequests += 1;
+    spawn: {
+      spawnDefaultInstrumentPreview() {
+        defaultSpawnRequests += 1;
+      },
     },
-  };
+  });
 
   SessionRuntimeMethods.onRuntimeInitialized.call(runtime);
 
@@ -46,11 +48,13 @@ test("runtime initialization retries the default metronome spawn for an active X
 
 test("runtime initialization does not spawn before XR starts or while instructions remain open", () => {
   let defaultSpawnRequests = 0;
-  const runtime = {
-    spawnDefaultInstrumentPreview() {
-      defaultSpawnRequests += 1;
+  const runtime = runtimeOwners({
+    spawn: {
+      spawnDefaultInstrumentPreview() {
+        defaultSpawnRequests += 1;
+      },
     },
-  };
+  });
 
   SessionRuntimeMethods.onRuntimeInitialized.call({
     ...runtime,
@@ -87,19 +91,15 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
       events.push("stop:paused-looper");
     },
   };
-  const runtime = {
+  const runtime = runtimeOwners({
     debugMode: false,
     xrSessionActive: true,
     pendingPanelPlacementFrames: 3,
     hideInstructionPanel() {
       events.push("hide-panel");
     },
-    deletePendingSpawnPlacement() {
-      events.push("delete-preview");
-    },
     instrumentRegistry: {
-      getByKind: (kind) =>
-        kind === "looper" ? [recordingLooper, pausedLooper] : [],
+      getByKind: (kind) => (kind === "looper" ? [recordingLooper, pausedLooper] : []),
     },
     savePersistedSceneOnXRExit() {
       events.push("save");
@@ -114,7 +114,12 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
         return Promise.resolve();
       },
     },
-  };
+    spawn: {
+      deletePendingSpawnPlacement() {
+        events.push("delete-preview");
+      },
+    },
+  });
 
   const didSave = SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234);
 
@@ -137,14 +142,11 @@ test("XR exit finalizes recordings and performs exactly one save before reset", 
 
 test("debug XR exit resets the session without invoking persistence saving", () => {
   const events = [];
-  const runtime = {
+  const runtime = runtimeOwners({
     debugMode: true,
     xrSessionActive: true,
     hideInstructionPanel() {
       events.push("hide-panel");
-    },
-    deletePendingSpawnPlacement() {
-      events.push("delete-preview");
     },
     instrumentRegistry: { getByKind: () => [] },
     savePersistedSceneOnXRExit() {
@@ -155,7 +157,12 @@ test("debug XR exit resets the session without invoking persistence saving", () 
       events.push("reset");
     },
     audioSystem: { suspend: () => Promise.resolve() },
-  };
+    spawn: {
+      deletePendingSpawnPlacement() {
+        events.push("delete-preview");
+      },
+    },
+  });
 
   assert.equal(SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234), false);
   assert.deepEqual(events, ["hide-panel", "delete-preview", "reset"]);
@@ -165,7 +172,7 @@ test("debug startup skips restoration and creates exactly one default metronome"
   const instruments = [];
   let persistedRestoreCalls = 0;
   let spawnRequests = 0;
-  const runtime = {
+  const runtime = runtimeOwners({
     debugMode: true,
     xrSessionActive: false,
     instructionPanelClosed: false,
@@ -177,32 +184,26 @@ test("debug startup skips restoration and creates exactly one default metronome"
     scenePersistence: {
       async restore() {
         persistedRestoreCalls += 1;
-        instruments.push(
-          { kind: "honk" },
-          { kind: "looper" },
-          { kind: "metronome" },
-        );
+        instruments.push({ kind: "honk" }, { kind: "looper" }, { kind: "metronome" });
       },
     },
     hideInstructionPanel() {},
-    spawnDefaultInstrumentPreview() {
-      spawnRequests += 1;
-      if (!instruments.some(({ kind }) => kind === "metronome")) {
-        instruments.push({ kind: "metronome" });
-      }
+    spawn: {
+      spawnDefaultInstrumentPreview() {
+        spawnRequests += 1;
+        if (!instruments.some(({ kind }) => kind === "metronome")) {
+          instruments.push({ kind: "metronome" });
+        }
+      },
     },
-  };
+  });
 
   await restorePersistedSceneForRuntime(runtime);
   SessionRuntimeMethods.onXRSessionStart.call(runtime);
   SessionRuntimeMethods.onRuntimeInitialized.call(runtime);
 
   assert.equal(persistedRestoreCalls, 0);
-  assert.equal(
-    spawnRequests,
-    2,
-    "both timing paths may request the guarded default flow",
-  );
+  assert.equal(spawnRequests, 2, "both timing paths may request the guarded default flow");
   assert.deepEqual(
     instruments.map(({ kind }) => kind),
     ["metronome"],
@@ -224,9 +225,7 @@ test("RuntimeHost persistence policy preserves production storage during debug s
       return storedValue;
     },
     setItem(key, value) {
-      assert.ok(
-        [SCENE_STORAGE_KEY, `${SCENE_STORAGE_KEY}:recovery`].includes(key),
-      );
+      assert.ok([SCENE_STORAGE_KEY, `${SCENE_STORAGE_KEY}:recovery`].includes(key));
       writes += 1;
       if (key === SCENE_STORAGE_KEY) storedValue = value;
     },
@@ -272,11 +271,10 @@ test("RuntimeHost persistence policy preserves production storage during debug s
 
 test("XR teardown still resets subsystems when persistence throws", () => {
   const events = [];
-  const runtime = {
+  const runtime = runtimeOwners({
     xrSessionActive: true,
     pendingPanelPlacementFrames: 0,
     hideInstructionPanel() {},
-    deletePendingSpawnPlacement() {},
     instrumentRegistry: { getByKind: () => [] },
     savePersistedSceneOnXRExit() {
       throw new Error("storage unavailable");
@@ -290,7 +288,8 @@ test("XR teardown still resets subsystems when persistence throws", () => {
         return Promise.resolve();
       },
     },
-  };
+    spawn: { deletePendingSpawnPlacement() {} },
+  });
 
   assert.throws(
     () => SessionRuntimeMethods.onXRSessionEnd.call(runtime, 1234),

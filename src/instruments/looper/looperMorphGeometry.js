@@ -1,19 +1,10 @@
 const EPSILON = 1e-7;
-const IDENTITY_MATRIX = Object.freeze([
-  1, 0, 0, 0,
-  0, 1, 0, 0,
-  0, 0, 1, 0,
-  0, 0, 0, 1,
-]);
+const IDENTITY_MATRIX = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 export function deriveLooperControlGeometry(
   root,
   morphTargets,
-  {
-    colliderPadding = 1,
-    motionSelectionRatio = 0,
-    useBoundsCenter = false,
-  } = {},
+  { colliderPadding = 1, motionSelectionRatio = 0, useBoundsCenter = false } = {},
 ) {
   const upName = morphTargets?.up;
   const downName = morphTargets?.down;
@@ -67,13 +58,18 @@ export function deriveMorphAnchorPath({
 } = {}) {
   const count = basePosition?.count;
   if (
-    !Number.isInteger(count) || count <= 0 ||
-    upPosition?.count !== count || downPosition?.count !== count ||
+    !Number.isInteger(count) ||
+    count <= 0 ||
+    upPosition?.count !== count ||
+    downPosition?.count !== count ||
     !isMatrix(meshToRootMatrixElements) ||
-    !Number.isFinite(colliderPadding) || colliderPadding <= 0 ||
+    !Number.isFinite(colliderPadding) ||
+    colliderPadding <= 0 ||
     !Number.isFinite(motionSelectionRatio) ||
-    motionSelectionRatio < 0 || motionSelectionRatio > 1
-  ) return null;
+    motionSelectionRatio < 0 ||
+    motionSelectionRatio > 1
+  )
+    return null;
 
   const affectedVertices = [];
 
@@ -108,9 +104,10 @@ export function deriveMorphAnchorPath({
     0,
   );
   const minimumMotionSpan = maximumMotionSpan * motionSelectionRatio;
-  const selectedVertices = motionSelectionRatio > 0 && maximumMotionSpan > EPSILON
-    ? affectedVertices.filter(({ motionSpan }) => motionSpan >= minimumMotionSpan)
-    : affectedVertices;
+  const selectedVertices =
+    motionSelectionRatio > 0 && maximumMotionSpan > EPSILON
+      ? affectedVertices.filter(({ motionSpan }) => motionSpan >= minimumMotionSpan)
+      : affectedVertices;
   if (selectedVertices.length === 0) return null;
 
   const neutralSum = point();
@@ -136,9 +133,7 @@ export function deriveMorphAnchorPath({
   const neutralAnchor = useBoundsCenter
     ? getBoundsCenter(neutralBounds)
     : divide(neutralSum, selectedVertexCount);
-  const upAnchor = useBoundsCenter
-    ? getBoundsCenter(upBounds)
-    : divide(upSum, selectedVertexCount);
+  const upAnchor = useBoundsCenter ? getBoundsCenter(upBounds) : divide(upSum, selectedVertexCount);
   const downAnchor = useBoundsCenter
     ? getBoundsCenter(downBounds)
     : divide(downSum, selectedVertexCount);
@@ -184,7 +179,8 @@ function readPoint(attribute, index) {
 }
 
 function applyMatrix(value, elements) {
-  const denominator = elements[3] * value.x + elements[7] * value.y + elements[11] * value.z + elements[15];
+  const denominator =
+    elements[3] * value.x + elements[7] * value.y + elements[11] * value.z + elements[15];
   const w = denominator ? 1 / denominator : 1;
   return {
     x: (elements[0] * value.x + elements[4] * value.y + elements[8] * value.z + elements[12]) * w,

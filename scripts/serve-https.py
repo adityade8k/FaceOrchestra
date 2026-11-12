@@ -23,7 +23,12 @@ class PublicFilesOnly(http.server.SimpleHTTPRequestHandler):
             self.send_error(404)
             return None
         allowed = {'src', 'model', 'vendor', 'capture'}
-        validation_script = len(relative.parts) == 2 and relative.parts[0] == 'scripts' and (relative.name.startswith('validate-') or relative.name == 'looper-playback-fixture.mjs') and relative.suffix == '.mjs'
+        validation_script = (
+            len(relative.parts) == 3
+            and relative.parts[:2] == ('tests', 'browser')
+            and relative.suffix == '.mjs'
+            and (relative.name.startswith('validate-') or relative.name == 'profile-tutorial-scenes.mjs')
+        )
         if relative.parts and relative.parts[0] not in allowed and str(relative) not in {'index.html', 'style.css'} and not validation_script:
             self.send_error(404)
             return None

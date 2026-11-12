@@ -15,7 +15,7 @@ import {
 } from "../../../src/instruments/looper/view/looperControlPresentation.js";
 
 test("Gap restores the bottom morph binding and defaults to the physical down endpoint", () => {
-  assert.deepEqual(LOOPER_CONTROL_DEFAULT_VALUES, { volume: 0, gap: -1, recordLength:1 });
+  assert.deepEqual(LOOPER_CONTROL_DEFAULT_VALUES, { volume: 0, gap: -1, recordLength: 1 });
   assert.deepEqual(Object.keys(LOOPER_CONTROL_COLLIDERS).sort(), ["gap", "recordLength", "volume"]);
   assert.deepEqual(LOOPER_CONTROL_MORPH_TARGETS.gap, {
     down: "bottom_handle_down",
@@ -27,16 +27,21 @@ test("Gap restores the bottom morph binding and defaults to the physical down en
     neutralAnchor: { x: 1, y: 0, z: 2 },
     upAnchor: { x: 4, y: 3, z: 5 },
   };
-  assert.deepEqual(getLooperControlColliderPosition({ looperControlPath: controlPath }, -1), controlPath.downAnchor);
+  assert.deepEqual(
+    getLooperControlColliderPosition({ looperControlPath: controlPath }, -1),
+    controlPath.downAnchor,
+  );
   assert.deepEqual(getLooperControlMorphWeights(-1), { up: 0, down: 1 });
 });
 
 test("geometry-derived collider positions interpolate the two exact morph segments", () => {
-  const userData = { looperControlPath: {
-    downAnchor: { x: -2, y: -4, z: -6 },
-    neutralAnchor: { x: 0, y: 0, z: 0 },
-    upAnchor: { x: 4, y: 8, z: 12 },
-  } };
+  const userData = {
+    looperControlPath: {
+      downAnchor: { x: -2, y: -4, z: -6 },
+      neutralAnchor: { x: 0, y: 0, z: 0 },
+      upAnchor: { x: 4, y: 8, z: 12 },
+    },
+  };
   const expected = new Map([
     [-1, { x: -2, y: -4, z: -6 }],
     [-0.25, { x: -0.5, y: -1, z: -1.5 }],
@@ -74,13 +79,26 @@ test("dragging applies root-local controller displacement without a trigger-pres
     0.5,
   );
   assert.equal(
-    getLooperControlValueFromDrag(path, startingController, startingCollider, { x: 8, y: 11, z: 10 }),
+    getLooperControlValueFromDrag(path, startingController, startingCollider, {
+      x: 8,
+      y: 11,
+      z: 10,
+    }),
     1,
   );
 });
 
 test("Looper control config contains no manual position, arc, or per-control radius", () => {
-  const forbidden = ["x", "y", "z", "rotationDegrees", "arc", "colliderRadius", "movementMode", "dragSensitivity"];
+  const forbidden = [
+    "x",
+    "y",
+    "z",
+    "rotationDegrees",
+    "arc",
+    "colliderRadius",
+    "movementMode",
+    "dragSensitivity",
+  ];
   for (const config of Object.values(LOOPER_CONTROL_COLLIDERS)) {
     for (const key of forbidden) assert.equal(key in config, false, key);
   }
@@ -93,7 +111,8 @@ test("Looper morph weights remain unchanged for endpoints and intermediate value
     [0, { up: 0, down: 0 }],
     [0.35, { up: 0.35, down: 0 }],
     [1, { up: 1, down: 0 }],
-  ]) assert.deepEqual(getLooperControlMorphWeights(value), expected);
+  ])
+    assert.deepEqual(getLooperControlMorphWeights(value), expected);
 });
 
 test("Looper durable state exposes Volume, Gap and recording length controls", () => {
@@ -103,15 +122,21 @@ test("Looper durable state exposes Volume, Gap and recording length controls", (
 
   assert.equal(looper.looperData.gapControlValue, -1);
   assert.deepEqual(
-    Object.keys(looper.looperData).filter((key) => key.endsWith("ControlValue")).sort(),
+    Object.keys(looper.looperData)
+      .filter((key) => key.endsWith("ControlValue"))
+      .sort(),
     ["gapControlValue", "recordLengthControlValue", "volumeControlValue"],
   );
   assert.equal(controller.setControlValue(looper, "tempo", 1), null);
 
-  controller.restoreState(looper, {
+  controller.stateCodec.restoreState(looper, {
     controls: { volume: 0.25, gap: 0.5 },
     timeline: {},
   });
   assert.equal(looper.looperData.gapControlValue, 0.5);
-  assert.deepEqual(controller.serializeState(looper).controls, { volume: 0.25, gap: 0.5, recordBeats:16 });
+  assert.deepEqual(controller.stateCodec.serializeState(looper).controls, {
+    volume: 0.25,
+    gap: 0.5,
+    recordBeats: 16,
+  });
 });

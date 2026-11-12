@@ -57,7 +57,8 @@ test("new transitive followers join a held note at the current phase exactly onc
   assert.ok(Math.abs(harness.startsFor("honk-b")[0].scheduledTime - 10.2) < 1e-10);
   assert.ok(Math.abs(harness.startsFor("honk-c")[0].scheduledTime - 10.2) < 1e-10);
   const joinedUpdate = harness.calls.find(
-    (call) => call.kind === "update" &&
+    (call) =>
+      call.kind === "update" &&
       call.voiceId === harness.startsFor("honk-b")[0].voiceId &&
       Math.abs(call.scheduledTime - 10.2) < 1e-10,
   );
@@ -117,12 +118,13 @@ test("departure during a release tail cancels retained generation ownership", ()
   harness.graph.setContact("honk-a", "honk-b", false);
   harness.advance(60);
 
-  assert.ok(harness.calls.some(
-    (call) => call.kind === "cancel" && call.voiceId === releasedVoiceId,
-  ));
+  assert.ok(
+    harness.calls.some((call) => call.kind === "cancel" && call.voiceId === releasedVoiceId),
+  );
   assert.equal(
-    [...harness.controller.applier.scheduledGenerations.values()]
-      .some(({ honkId }) => honkId === "honk-b"),
+    [...harness.controller.applier.scheduledGenerations.values()].some(
+      ({ honkId }) => honkId === "honk-b",
+    ),
     false,
   );
 });
@@ -142,9 +144,14 @@ test("rapid leave and rejoin creates a fresh generation immune to the old queued
   assert.equal(starts.length, 2);
   assert.notEqual(starts[0].voiceId, starts[1].voiceId);
   assert.ok(harness.calls.some((call) => call.kind === "cancel" && call.voiceId === oldVoiceId));
-  assert.ok(harness.releasesFor("honk-b").some(
-    (call) => call.voiceId === starts[1].voiceId && Math.abs(call.scheduledTime - 10.08) < 1e-10,
-  ));
+  assert.ok(
+    harness
+      .releasesFor("honk-b")
+      .some(
+        (call) =>
+          call.voiceId === starts[1].voiceId && Math.abs(call.scheduledTime - 10.08) < 1e-10,
+      ),
+  );
 });
 
 test("removing one graph edge preserves a follower reachable by an alternate path", () => {
@@ -164,7 +171,11 @@ test("removing one graph edge preserves a follower reachable by an alternate pat
 
 test("multiple short notes in one lookahead window retain distinct target generations", () => {
   const harness = createHarness({
-    notes: [[10, 20], [30, 40], [50, 60]],
+    notes: [
+      [10, 20],
+      [30, 40],
+      [50, 60],
+    ],
     durationMs: 200,
   });
   harness.graph.setContact("honk-a", "honk-b", true);
@@ -211,10 +222,20 @@ test("two loopers and a manual voice keep exact ownership when a contact splits"
 
   const cancelled = calls.filter(({ kind }) => kind === "cancel");
   assert.equal(cancelled.length, 2);
-  assert.ok(cancelled.some(({ voiceId, honkId }) => voiceId.includes("looper-one") && honkId === "honk-b"));
-  assert.ok(cancelled.some(({ voiceId, honkId }) => voiceId.includes("looper-two") && honkId === "honk-a"));
-  assert.equal(cancelled.some(({ voiceId }) => voiceId === "honk-a:manual"), false);
-  assert.equal(cancelled.some(({ voiceId }) => voiceId === "honk-b:manual"), false);
+  assert.ok(
+    cancelled.some(({ voiceId, honkId }) => voiceId.includes("looper-one") && honkId === "honk-b"),
+  );
+  assert.ok(
+    cancelled.some(({ voiceId, honkId }) => voiceId.includes("looper-two") && honkId === "honk-a"),
+  );
+  assert.equal(
+    cancelled.some(({ voiceId }) => voiceId === "honk-a:manual"),
+    false,
+  );
+  assert.equal(
+    cancelled.some(({ voiceId }) => voiceId === "honk-b:manual"),
+    false,
+  );
 });
 
 test("a scheduled-only target is reconciled even without a visual target entry", () => {
@@ -228,7 +249,7 @@ test("a scheduled-only target is reconciled even without a visual target entry",
   data.audioScheduling.includeStart = false;
   data.audioScheduling.lastRate = 1;
   harness.controller.applier.initializeAudioTargets(harness.looper, data.tracks[0]);
-  harness.controller.scheduleSourceRange(harness.looper, 0, 120, {
+  harness.controller.audioScheduler.scheduleSourceRange(harness.looper, 0, 120, {
     includeStart: true,
     sourceNow: 0,
     rate: 1,
@@ -241,8 +262,9 @@ test("a scheduled-only target is reconciled even without a visual target entry",
 
   assert.equal(harness.cancelledHonks().includes("honk-b"), true);
   assert.equal(
-    [...harness.controller.applier.scheduledGenerations.values()]
-      .some(({ honkId }) => honkId === "honk-b"),
+    [...harness.controller.applier.scheduledGenerations.values()].some(
+      ({ honkId }) => honkId === "honk-b",
+    ),
     false,
   );
 });
@@ -255,7 +277,10 @@ test("controller cancellation reaches the Honk voice service and invalidates asy
   let resolveFollowerAudio;
   let followerCreateCount = 0;
   const followerService = new HonkVoiceService({
-    ensureAudio: () => new Promise((resolve) => { resolveFollowerAudio = resolve; }),
+    ensureAudio: () =>
+      new Promise((resolve) => {
+        resolveFollowerAudio = resolve;
+      }),
     getDestination: () => null,
     createVoice: () => {
       followerCreateCount += 1;
@@ -263,12 +288,15 @@ test("controller cancellation reaches the Honk voice service and invalidates asy
     },
   });
   const instruments = new Map([
-    ["honk-a", createHonk("honk-a", {
-      startVoice() {},
-      updateVoice() {},
-      releaseVoice() {},
-      cancelVoice() {},
-    })],
+    [
+      "honk-a",
+      createHonk("honk-a", {
+        startVoice() {},
+        updateVoice() {},
+        releaseVoice() {},
+        cancelVoice() {},
+      }),
+    ],
     ["honk-b", createHonk("honk-b", followerService)],
   ]);
   let wallNow = 0;
@@ -311,18 +339,18 @@ test("controller cancellation reaches the Honk voice service and invalidates asy
   looper.looperData.timeline.durationMs = 1000;
   looper.looperData.hasRecording = true;
   audioNow -= 0.2;
-      controller.startPlayback(looper, wallNow - 200);
-      audioNow += 0.2;
-      controller.updateClockedTransports([looper], wallNow);
-      controller.schedulePlaybackAudioForLooper(looper, wallNow);
-  controller.stopAudioScheduler(looper, { release: false });
+  controller.startPlayback(looper, wallNow - 200);
+  audioNow += 0.2;
+  controller.updateClockedTransports([looper], wallNow);
+  controller.audioScheduler.schedulePlaybackAudioForLooper(looper, wallNow);
+  controller.audioScheduler.stopAudioScheduler(looper, { release: false });
   assert.equal(followerService.startingVoices.size, 1);
 
   graph.setContact("honk-a", "honk-b", false);
   wallNow = 50;
   audioNow = 10.05;
   controller.updatePlaybackForLooper(looper, wallNow);
-  controller.schedulePlaybackAudioForLooper(looper, wallNow);
+  controller.audioScheduler.schedulePlaybackAudioForLooper(looper, wallNow);
   resolveFollowerAudio({});
   await Promise.resolve();
   await Promise.resolve();
@@ -355,7 +383,7 @@ test("mid-note join reconstructs remaining work at the changed playback rate", (
   harness.looper.looperData.audioScheduling.scheduledThroughSourceMs = 600;
   harness.graph.setContact("honk-a", "honk-b", true);
 
-  harness.controller.reconcilePlaybackAudioTargets(harness.looper, 200, {
+  harness.controller.audioScheduler.reconcilePlaybackAudioTargets(harness.looper, 200, {
     sourceNow: 200,
     audioNow: 10.2,
     rate: 2,
@@ -459,19 +487,20 @@ function createHarness({
       controller.startPlayback(looper, wallNow - 200);
       audioNow += 0.2;
       controller.updateClockedTransports([looper], wallNow);
-      controller.schedulePlaybackAudioForLooper(looper, wallNow);
-      controller.stopAudioScheduler(looper, { release: false });
+      controller.audioScheduler.schedulePlaybackAudioForLooper(looper, wallNow);
+      controller.audioScheduler.stopAudioScheduler(looper, { release: false });
     },
     advance(nextWallMs) {
       wallNow = nextWallMs;
       audioNow = 10 + wallNow / 1000;
       controller.updatePlaybackForLooper(looper, wallNow);
-      controller.schedulePlaybackAudioForLooper(looper, wallNow);
+      controller.audioScheduler.schedulePlaybackAudioForLooper(looper, wallNow);
     },
     startedHonks: () => calls.filter(({ kind }) => kind === "start").map(({ honkId }) => honkId),
     cancelledHonks: () => calls.filter(({ kind }) => kind === "cancel").map(({ honkId }) => honkId),
     startsFor: (honkId) => calls.filter((call) => call.kind === "start" && call.honkId === honkId),
-    releasesFor: (honkId) => calls.filter((call) => call.kind === "release" && call.honkId === honkId),
+    releasesFor: (honkId) =>
+      calls.filter((call) => call.kind === "release" && call.honkId === honkId),
   };
 }
 

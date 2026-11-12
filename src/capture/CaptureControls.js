@@ -27,9 +27,7 @@ export function bindCaptureStatusVisibility({
       : null;
     if (controller && mesh.parent !== controller) controller.add(mesh);
     if (!controller) mesh.removeFromParent();
-    mesh.visible = Boolean(
-      active && controller && menu?.visible && isApplicable(controller),
-    );
+    mesh.visible = Boolean(active && controller && menu?.visible && isApplicable(controller));
   };
   const changed = () => {
     onRefresh();
@@ -39,9 +37,7 @@ export function bindCaptureStatusVisibility({
     target?.addEventListener(event, fn);
     listeners.push(() => target?.removeEventListener(event, fn));
   };
-  for (const controller of runtime.controllers.filter(
-    (c) => !c.userData.virtualTutorial,
-  )) {
+  for (const controller of runtime.controllers.filter((c) => !c.userData.virtualTutorial)) {
     listen(controller, "connected", () => {
       disconnected.delete(controller);
       changed();
@@ -124,15 +120,9 @@ export function installCaptureControls(recorder) {
       "preparing",
       "stopping",
     ].includes(recorder.state);
-    for (const selector of [
-      '[name="rate"]',
-      '[name="ui"]',
-      '[data-command="recover"]',
-    ])
+    for (const selector of ['[name="rate"]', '[name="ui"]', '[data-command="recover"]'])
       panel.querySelector(selector).disabled =
-        Boolean(recorder.owner) ||
-        active ||
-        ["preparing", "stopping"].includes(recorder.state);
+        Boolean(recorder.owner) || active || ["preparing", "stopping"].includes(recorder.state);
     for (const id of ["capture-sync", "capture-pose"])
       panel.querySelector(`[data-command="${id}"]`).disabled =
         !active || Boolean(recorder.owner && id === "capture-sync");
@@ -156,13 +146,9 @@ export function installCaptureControls(recorder) {
     }
     badge?.refresh();
     for (const c of recorder.runtime.controllers) {
-      const ring =
-        c.userData.radialMenu?.userData.childRings?.get("category-capture");
+      const ring = c.userData.radialMenu?.userData.childRings?.get("category-capture");
       if (ring) {
-        recorder.runtime.radialSpawnMenu.setLabelText(
-          ring.userData.labels[0],
-          label,
-        );
+        recorder.runtime.spawn.radialSpawnMenu.setLabelText(ring.userData.labels[0], label);
       }
     }
   };
@@ -170,8 +156,7 @@ export function installCaptureControls(recorder) {
     const command = event.target.dataset.command;
     if (!command) return;
     try {
-      if (command === "pair")
-        await recorder.pair(panel.querySelector('[name="code"]').value);
+      if (command === "pair") await recorder.pair(panel.querySelector('[name="code"]').value);
       else if (command === "recover") {
         const worker = new Worker("/src/capture/stream-worker.js", {
           type: "module",
@@ -212,12 +197,11 @@ export function installCaptureControls(recorder) {
   recorder.addEventListener("change", refresh);
   const badge = bindCaptureStatusVisibility({
     runtime: recorder.runtime,
-    menu: recorder.runtime.tutorial?.menu,
+    menu: recorder.runtime.tutorial?.navigation.menu,
     mesh: statusMesh,
     onRefresh: refresh,
     isApplicable: (controller) =>
-      recorder.state !== "idle" ||
-      Boolean(controller.userData.radialMenu?.visible),
+      recorder.state !== "idle" || Boolean(controller.userData.radialMenu?.visible),
   });
   const timer = setInterval(refresh, 500);
   recorder.readiness();

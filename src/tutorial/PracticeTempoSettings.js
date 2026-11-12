@@ -6,7 +6,4 @@ export const PRACTICE_MIN_BPM = 40;
 export const PRACTICE_DEFAULT_BPM = 60;
 export const PRACTICE_TEMPOS = Object.freeze([40, 50, 60, 70, 80, BPM]);
 export const practiceBpm = (value) =>
-  Math.max(
-    PRACTICE_MIN_BPM,
-    Math.min(BPM, Math.round(Number(value) || PRACTICE_DEFAULT_BPM)),
-  );
+  Math.max(PRACTICE_MIN_BPM, Math.min(BPM, Math.round(Number(value) || PRACTICE_DEFAULT_BPM)));

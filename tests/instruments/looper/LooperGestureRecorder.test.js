@@ -26,21 +26,33 @@ test("finalizing an active recording preserves its last sample and neutral relea
   assert.equal(hasRecording, true);
   assert.equal(timeline.recording, false);
   assert.equal(timeline.durationMs, 100);
-  assert.equal(events.some(({ type, timeMs, value }) => (
-    type === LooperActionEventType.SqueezeStart && timeMs === 0 && value === 1
-  )), true);
-  assert.equal(events.some(({ type, timeMs, value }) => (
-    type === LooperActionEventType.SqueezeEnd && timeMs === 100 && value === 0
-  )), true);
-  const finalGesture = events.find(({ type, timeMs }) => (
-    type === LooperActionEventType.GestureSnapshot && timeMs === 100
-  ));
+  assert.equal(
+    events.some(
+      ({ type, timeMs, value }) =>
+        type === LooperActionEventType.SqueezeStart && timeMs === 0 && value === 1,
+    ),
+    true,
+  );
+  assert.equal(
+    events.some(
+      ({ type, timeMs, value }) =>
+        type === LooperActionEventType.SqueezeEnd && timeMs === 100 && value === 0,
+    ),
+    true,
+  );
+  const finalGesture = events.find(
+    ({ type, timeMs }) => type === LooperActionEventType.GestureSnapshot && timeMs === 100,
+  );
   assert.equal(getEventFieldValue(finalGesture, "bend"), 0.5);
   assert.equal(getEventFieldValue(finalGesture, "earLeft"), 0.75);
   assert.equal(getEventFieldValue(finalGesture, "nose"), 0.4);
-  assert.equal(events.some(({ type, timeMs, value }) => (
-    type === LooperActionEventType.Vowel && timeMs === 100 && value === "E"
-  )), true);
+  assert.equal(
+    events.some(
+      ({ type, timeMs, value }) =>
+        type === LooperActionEventType.Vowel && timeMs === 100 && value === "E",
+    ),
+    true,
+  );
 
   const serialized = timeline.toJSON();
   assert.equal(Object.hasOwn(serialized, "recording"), false);
@@ -69,11 +81,15 @@ test("sub-gate squeeze noise creates no attack, release, or musical onset", () =
     recorder.updateTrack(timeline, track, 1000 + elapsedMs, capture);
   }
 
-  const squeezeEvents = timeline.getTrack(track.trackId).events.filter(({ type }) => [
-    LooperActionEventType.Squeeze,
-    LooperActionEventType.SqueezeStart,
-    LooperActionEventType.SqueezeEnd,
-  ].includes(type));
+  const squeezeEvents = timeline
+    .getTrack(track.trackId)
+    .events.filter(({ type }) =>
+      [
+        LooperActionEventType.Squeeze,
+        LooperActionEventType.SqueezeStart,
+        LooperActionEventType.SqueezeEnd,
+      ].includes(type),
+    );
   assert.deepEqual(squeezeEvents, []);
   assert.deepEqual(timeline.getMusicalOnsetTimes(), []);
   assert.equal(recorder.isMusicalOnset({ squeeze: 0.025 }), false);
@@ -95,14 +111,18 @@ test("a real squeeze gate crossing is captured inside the sample interval", () =
   action = { squeeze: 0.014, bend: 0.5 };
   recorder.updateTrack(timeline, track, 1015, capture);
 
-  const squeezeEvents = timeline.getTrack(track.trackId).events.filter(({ type }) => [
-    LooperActionEventType.SqueezeStart,
-    LooperActionEventType.SqueezeEnd,
-  ].includes(type));
-  assert.deepEqual(squeezeEvents.map(({ type, timeMs, value }) => [type, timeMs, value]), [
-    [LooperActionEventType.SqueezeStart, 10, 0.6],
-    [LooperActionEventType.SqueezeEnd, 15, 0],
-  ]);
+  const squeezeEvents = timeline
+    .getTrack(track.trackId)
+    .events.filter(({ type }) =>
+      [LooperActionEventType.SqueezeStart, LooperActionEventType.SqueezeEnd].includes(type),
+    );
+  assert.deepEqual(
+    squeezeEvents.map(({ type, timeMs, value }) => [type, timeMs, value]),
+    [
+      [LooperActionEventType.SqueezeStart, 10, 0.6],
+      [LooperActionEventType.SqueezeEnd, 15, 0],
+    ],
+  );
   assert.deepEqual(timeline.getMusicalOnsetTimes(), [10]);
 });
 
@@ -125,13 +145,19 @@ test("squeeze gate hysteresis ignores noise around the onset threshold", () => {
     recorder.updateTrack(timeline, track, timeMs, capture);
   }
 
-  const gates = timeline.getTrack(track.trackId).events.filter(({ type }) => (
-    type === LooperActionEventType.SqueezeStart || type === LooperActionEventType.SqueezeEnd
-  ));
-  assert.deepEqual(gates.map(({ type, timeMs }) => [type, timeMs]), [
-    [LooperActionEventType.SqueezeStart, 10],
-    [LooperActionEventType.SqueezeEnd, 50],
-  ]);
+  const gates = timeline
+    .getTrack(track.trackId)
+    .events.filter(
+      ({ type }) =>
+        type === LooperActionEventType.SqueezeStart || type === LooperActionEventType.SqueezeEnd,
+    );
+  assert.deepEqual(
+    gates.map(({ type, timeMs }) => [type, timeMs]),
+    [
+      [LooperActionEventType.SqueezeStart, 10],
+      [LooperActionEventType.SqueezeEnd, 50],
+    ],
+  );
 });
 
 test("a smooth noisy gesture produces a bounded automation timeline", () => {
@@ -176,8 +202,11 @@ function recordRepresentativeSmoothGesture(noiseAmplitude) {
   }
 
   const events = timeline.getTrack(track.trackId).events;
-  assert.equal(events.every(({ interpolation, gateOnly }) => (
-    gateOnly ? interpolation === "step" : interpolation === "linear"
-  )), true);
+  assert.equal(
+    events.every(({ interpolation, gateOnly }) =>
+      gateOnly ? interpolation === "step" : interpolation === "linear",
+    ),
+    true,
+  );
   return events.length;
 }

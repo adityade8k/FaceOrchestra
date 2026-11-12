@@ -5,13 +5,24 @@ export function clampGuidedPlayOffset(value) {
 }
 export class GuidedPlayOffset {
   constructor(storage) {
-    try { this.storage = storage ?? globalThis.localStorage; } catch { /* unavailable storage */ }
-    try { this.milliseconds = clampGuidedPlayOffset(this.storage?.getItem(KEY) ?? 0); }
-    catch { this.milliseconds = 0; }
+    try {
+      this.storage = storage ?? globalThis.localStorage;
+    } catch {
+      /* unavailable storage */
+    }
+    try {
+      this.milliseconds = clampGuidedPlayOffset(this.storage?.getItem(KEY) ?? 0);
+    } catch {
+      this.milliseconds = 0;
+    }
   }
   set(value) {
     this.milliseconds = clampGuidedPlayOffset(value);
-    try { this.storage?.setItem(KEY, String(this.milliseconds)); } catch { /* still works for this visit */ }
+    try {
+      this.storage?.setItem(KEY, String(this.milliseconds));
+    } catch {
+      /* still works for this visit */
+    }
     return this.milliseconds;
   }
 }

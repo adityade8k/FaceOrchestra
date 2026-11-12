@@ -1,4 +1,4 @@
-import { validateComposition } from "./CompositionDefinition.js";
+import { validateComposition, freezeComposition } from "./CompositionDefinition.js";
 export { validateComposition } from "./CompositionDefinition.js";
 
 // Metadata is cheap. Loading imports only the chosen composition and adapter.
@@ -34,13 +34,8 @@ export class CompositionRegistry {
           .then(async (module) => {
             validateComposition(module.definition);
             if (!module.definition.contentHash) {
-              const bytes = new TextEncoder().encode(
-                JSON.stringify(module.definition),
-              );
-              const hash = await globalThis.crypto.subtle.digest(
-                "SHA-256",
-                bytes,
-              );
+              const bytes = new TextEncoder().encode(JSON.stringify(module.definition));
+              const hash = await globalThis.crypto.subtle.digest("SHA-256", bytes);
               module.definition.contentHash = [...new Uint8Array(hash)]
                 .map((b) => b.toString(16).padStart(2, "0"))
                 .join("");
@@ -51,6 +46,7 @@ export class CompositionRegistry {
               module.definition.contentVersion !== entry.metadata.version
             )
               throw new Error("Catalog and definition disagree");
+            freezeComposition(module.definition);
             return module;
           })
           .catch((error) => {
@@ -68,31 +64,37 @@ export const compositionRegistry = new CompositionRegistry([
     id: "virag-2-jog-study",
     title: "Raag Jog",
     version: 3,
-    load: () => import("./jog.js"),
+    load: () => import("./songs/jog/index.js"),
   },
   {
     id: "kuch-to-hua-hai",
     title: "Kuch To Hua Hai",
     version: 7,
-    load: () => import("./kuch.js"),
+    load: () => import("./songs/kuch-to-hua-hai/index.js"),
   },
   {
     id: "rishte-naate",
     title: "rishte naate.mid",
     version: 3,
-    load: () => import("./rishte.js"),
+    load: () => import("./songs/rishte-naate/index.js"),
   },
   {
     id: "tu-kisi-rail-si",
     title: "Tu Kisi Rail Si",
     version: 2,
-    load: () => import("./tu-kisi-rail-si.js"),
+    load: () => import("./songs/tu-kisi-rail-si/index.js"),
   },
   {
     id: "nazariya-honk-bends",
     title: "Nazariya Ki Maari",
     version: 5,
-    load: () => import("./nazariya-honk-bends.js"),
+    load: () => import("./songs/nazariya-ki-maari/index.js"),
+  },
+  {
+    id: "alfaaz",
+    title: "Alfaaz",
+    version: 3,
+    load: () => import("./songs/alfaaz/index.js"),
   },
 ]);
 export function libraryPage(registry, mode, page = 0, size = 2) {

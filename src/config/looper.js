@@ -121,7 +121,7 @@ export const LOOPER_CONTROL_DEFAULT_VALUES = Object.freeze({
   recordLength: 1,
 });
 
-export const LOOPER_RECORD_BEATS = Object.freeze([2, 4, 8, 16]);
+export const LOOPER_RECORD_BEATS = Object.freeze([0, 2, 4, 8, 16]);
 
 export const LOOPER_MORPH_SETTINGS = {
   buttonPressDurationMs: 140,

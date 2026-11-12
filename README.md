@@ -4,8 +4,6 @@ Honk Orchestra (previously FaceOrchestra) is a browser-based WebXR instrument fo
 
 This page covers setup. Use the topic guides below for controls, musical work and development.
 
-For fixed-phone video compositing, follow [Capture, replay and export](docs/mixed-reality-capture.md).
-
 ## What you need
 
 - A Quest-style headset and controllers for the full experience. The controller map is designed around Meta Quest button names and handedness.
@@ -50,15 +48,13 @@ Open `https://YOUR_LAN_IP:8443` in the headset browser. The headset and computer
 
 The main menu contains **Play**, **Tutorials**, and **Record Songs**. Play restores the saved workspace. Tutorials starts with Basics, followed by Raag Jog, Kuch To Hua Hai, Rishte Naate, Tu Kisi Rail Si, and Nazariya Ki Maari. Record Songs uses the same compositions and musical definitions.
 
+Free Play shows model-attached 3D note labels, gap/beat counts above Loopers, and BPM above the Metronome. Bend dials stay hidden; semitone haptics remain active. Basics uses three rounds of expression practice, seven size pushes in each direction, free movement followed by nearby percussion, and consistent source/destination socket cues. Its first two recording exercises use the physical Record and Stop buttons with the Manual length setting, so the player chooses the duration. Looper labels show the beat count even for open recordings. Duplicate waits for Continue; movement, rotation, scale, freeze and delete have no target overlays.
+
+Basics ends with a guided Jog composition: record a 16-beat chord loop, record percussion over it, practice the descending Eb-to-C bend, then play the complete melody over both of your takes. Each part offers Demonstrate and Practice. Demonstrations preserve your recordings; completing Practice unlocks the next part. Restart finale repeats the composition section, and Exit restores your saved Play workspace. The last exercise teaches hiding and showing the menu with a left-joystick click.
+
 ## Documentation
 
 - [Controls and behavior](docs/controls.md).
-- [Basics, tutorials and guided play](docs/tutorial.md).
-- [Composition authoring and MIDI import](docs/midi-import.md).
-- [Current compositions and provenance](docs/compositions.md).
-- [Architecture and ownership](docs/architecture.md).
-- [Capture, replay and export](docs/mixed-reality-capture.md).
-- [Automated validation](docs/validation.md) and [headset checks](docs/manual-xr-regression.md).
 
 Run `npm run verify` for source checks and unit tests. Run `npm run test:compositions:browser -- --full` for isolated browser checks with temporary recording storage. No dependency upgrades or performance optimization are part of this cleanup.
 
@@ -71,7 +67,7 @@ Run `npm run verify` for source checks and unit tests. Run `npm run test:composi
 - **A opens no menu:** release Grip, finish or cancel any active placement, and remember the menu is bound to the right-hand primary button. Pull toward the headset while holding A to enter the item ring.
 - **A preview will not place:** use Trigger; Grip cancels it. The right thumbstick changes preview scale.
 - **Cannot transform an object:** aim at its body transform target and hold Grip. If no target is selected, Grip intentionally equips the Stick.
-- **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Completed automatic takes retain all selected beats; manual Stop before the endpoint trims idle waiting.
+- **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Manual length records until Stop and preserves the chosen duration, including rests. The 2/4/8/16-beat settings still stop automatically; stopping those settings early trims idle waiting.
 - **Looper is disconnected:** it uses the stable internal 70 BPM grid. Reconnect its Metronome cable to follow the lesson’s 80 BPM clock.
 - **Saved scene did not update:** allow the debounced checkpoint to finish and check the storage feedback. Inspect IndexedDB `honk-orchestra-workspaces`; quota, unsupported data, or partial recovery can pause writes. The legacy localStorage key is retained as a recovery source.
 - **Metronome appearance changes after Right B:** that is a regression. Its map identity should remain authored through repeated lock/unlock; follow the Metronome section of the XR checklist.

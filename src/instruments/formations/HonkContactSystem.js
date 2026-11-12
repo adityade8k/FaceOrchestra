@@ -44,15 +44,11 @@ export class HonkContactSystem {
     // Resolvers may reuse a mutable sphere and center between calls.
     const spheres = candidates.map((honk) => {
       const sphere = this.getColliderSphere(honk);
-      return sphere
-        ? { radius: sphere.radius, center: readPoint(sphere.center) }
-        : null;
+      return sphere ? { radius: sphere.radius, center: readPoint(sphere.center) } : null;
     });
     const indices = new Map(candidates.map((h, i) => [h.id, i]));
     const observedPairs = new Set();
-    const pairs = this.broadPhase
-      ? contactCandidates(spheres)
-      : allPairs(candidates.length);
+    const pairs = this.broadPhase ? contactCandidates(spheres) : allPairs(candidates.length);
     this.measurements = 0;
     const observe = (i, j) => {
       const first = candidates[i],
@@ -96,36 +92,26 @@ export class HonkContactSystem {
 
     if (!state.touching) {
       const qualifies =
-        measurement.touching &&
-        measurement.overlapRatio >= this.settings.entryOverlapRatio;
+        measurement.touching && measurement.overlapRatio >= this.settings.entryOverlapRatio;
       state.contactFrames = qualifies ? state.contactFrames + 1 : 0;
       state.separationFrames = 0;
-      if (
-        state.contactFrames >= Math.max(this.settings.consecutiveEntryFrames, 1)
-      ) {
+      if (state.contactFrames >= Math.max(this.settings.consecutiveEntryFrames, 1)) {
         state.touching = true;
         state.contactFrames = 0;
         this.graph.setContact(first.id, second.id, true);
       }
     } else {
       const remainsInContact =
-        measurement.touching &&
-        measurement.overlapRatio >= this.settings.exitOverlapRatio;
-      state.separationFrames = remainsInContact
-        ? 0
-        : state.separationFrames + 1;
+        measurement.touching && measurement.overlapRatio >= this.settings.exitOverlapRatio;
+      state.separationFrames = remainsInContact ? 0 : state.separationFrames + 1;
       state.contactFrames = 0;
-      if (
-        state.separationFrames >=
-        Math.max(this.settings.consecutiveExitFrames, 1)
-      ) {
+      if (state.separationFrames >= Math.max(this.settings.consecutiveExitFrames, 1)) {
         state.touching = false;
         state.separationFrames = 0;
         this.graph.setContact(first.id, second.id, false);
       }
     }
-    if (state.touching || state.contactFrames)
-      this.pairStates.set(pairKey, state);
+    if (state.touching || state.contactFrames) this.pairStates.set(pairKey, state);
     else this.pairStates.delete(pairKey);
     return state;
   }
@@ -145,12 +131,7 @@ export class HonkContactSystem {
   }
 }
 
-export function measureSphereOverlap(
-  _first,
-  _second,
-  firstSphere,
-  secondSphere,
-) {
+export function measureSphereOverlap(_first, _second, firstSphere, secondSphere) {
   if (!firstSphere || !secondSphere) {
     return { touching: false, overlapRatio: 0 };
   }
@@ -170,8 +151,7 @@ export function measureSphereOverlap(
     firstCenter[2] - secondCenter[2],
   );
   const overlapDepth = firstRadius + secondRadius - distance;
-  const overlapRatio =
-    overlapDepth / Math.max(Math.min(firstRadius, secondRadius) * 2, 0.0001);
+  const overlapRatio = overlapDepth / Math.max(Math.min(firstRadius, secondRadius) * 2, 0.0001);
   return {
     touching: overlapDepth > 0,
     overlapRatio: Math.max(overlapRatio, 0),
@@ -181,9 +161,7 @@ export function measureSphereOverlap(
 }
 
 function defaultColliderSphereResolver(honk) {
-  return (
-    honk?.getSqueezeColliderSphere?.() || honk?.squeezeColliderSphere || null
-  );
+  return honk?.getSqueezeColliderSphere?.() || honk?.squeezeColliderSphere || null;
 }
 
 function normalizeMeasurement(measurement) {
@@ -198,9 +176,7 @@ function normalizeMeasurement(measurement) {
   }
   return {
     touching: Boolean(measurement?.touching),
-    overlapRatio: Number.isFinite(measurement?.overlapRatio)
-      ? measurement.overlapRatio
-      : 0,
+    overlapRatio: Number.isFinite(measurement?.overlapRatio) ? measurement.overlapRatio : 0,
   };
 }
 
@@ -211,21 +187,15 @@ function readPoint(point) {
   if (typeof point?.toArray === "function") {
     return point.toArray();
   }
-  return [point?.x, point?.y, point?.z].every(Number.isFinite)
-    ? [point.x, point.y, point.z]
-    : null;
+  return [point?.x, point?.y, point?.z].every(Number.isFinite) ? [point.x, point.y, point.z] : null;
 }
 
 function isContactCandidate(honk) {
   return Boolean(
-    honk?.id &&
-      honk.kind === INSTRUMENT_KINDS.honk &&
-      !honk.disposed &&
-      honk.visible !== false,
+    honk?.id && honk.kind === INSTRUMENT_KINDS.honk && !honk.disposed && honk.visible !== false,
   );
 }
 
 function* allPairs(count) {
-  for (let i = 0; i < count; i++)
-    for (let j = i + 1; j < count; j++) yield [i, j];
+  for (let i = 0; i < count; i++) for (let j = i + 1; j < count; j++) yield [i, j];
 }

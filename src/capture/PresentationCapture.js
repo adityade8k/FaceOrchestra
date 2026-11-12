@@ -11,15 +11,11 @@ const textureSlots = [
   "emissiveMap",
   "alphaMap",
   "aoMap",
+  "honkPitchMask",
 ];
-const layers = (node, inherited) =>
-  /label/i.test(node.name) ? "labels" : inherited;
+const layers = (node, inherited) => (/label/i.test(node.name) ? "labels" : inherited);
 const materialList = (node) =>
-  node.material
-    ? Array.isArray(node.material)
-      ? node.material
-      : [node.material]
-    : [];
+  node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : [];
 
 /** Cached presentation bindings, not a persistence serializer or a second simulation.
  * Node IDs are take-scoped paths assigned at first bind; no reload UUID assumptions.
@@ -105,27 +101,14 @@ export class PresentationCapture {
         candidates.push([`guidance-${node.id}`, node, "tutorial", null]);
       for (const [index, c] of this.runtime.controllers.entries()) {
         if (c.userData.radialMenu)
-          candidates.push([
-            `menu-${index}`,
-            c.userData.radialMenu,
-            "tutorial",
-            null,
-          ]);
-        if (c.userData.rayLine)
-          candidates.push([`ray-${index}`, c.userData.rayLine, "rays", null]);
+          candidates.push([`menu-${index}`, c.userData.radialMenu, "tutorial", null]);
+        if (c.userData.rayLine) candidates.push([`ray-${index}`, c.userData.rayLine, "rays", null]);
       }
-      for (const node of [
-        this.runtime.instructionPanel,
-        this.runtime.tutorial?.panel?.group,
-      ])
+      for (const node of [this.runtime.instructionPanel, this.runtime.tutorial?.panel?.group])
         if (node) candidates.push([`ui-${node.id}`, node, "tutorial", null]);
       const adapter = this.runtime.tutorial?.adapter;
-      for (const node of [
-        ...(adapter?.labels?.values?.() || []),
-        adapter?.focusRing,
-      ])
-        if (node)
-          candidates.push([`tutorial-${node.id}`, node, "tutorial", null]);
+      for (const node of [...(adapter?.labels?.values?.() || []), adapter?.focusRing])
+        if (node) candidates.push([`tutorial-${node.id}`, node, "tutorial", null]);
     }
     const active = new Set(candidates.map((c) => c[0]));
     for (const [owner, entry] of this.roots)
@@ -152,8 +135,7 @@ export class PresentationCapture {
     this.bindings = this.bindings.filter((b) => {
       const keep =
         this.roots.has(b.owner) &&
-        (!b.parent ||
-          (this.ids.get(b.node.parent) === b.parent && !removed.has(b.parent)));
+        (!b.parent || (this.ids.get(b.node.parent) === b.parent && !removed.has(b.parent)));
       if (!keep) {
         removed.add(b.id);
         this.ids.delete(b.node);
@@ -172,20 +154,16 @@ export class PresentationCapture {
         children.some((c, i) => c !== binding.children[i])
       ) {
         binding.children = children.slice();
-        for (const child of children)
-          this.bind(child, binding.id, binding.owner, binding.layer, t);
+        for (const child of children) this.bind(child, binding.id, binding.owner, binding.layer, t);
       }
     }
     let floats = 0;
     for (const b of this.bindings)
       if (this.roots.has(b.owner))
         floats +=
-          11 +
-          (b.node.morphTargetInfluences?.length || 0) +
-          materialList(b.node).length * 8;
+          11 + (b.node.morphTargetInfluences?.length || 0) + materialList(b.node).length * 8;
     let buffer = this.buffers.pop();
-    if (!buffer || buffer.byteLength < floats * 4)
-      buffer = new ArrayBuffer(floats * 4);
+    if (!buffer || buffer.byteLength < floats * 4) buffer = new ArrayBuffer(floats * 4);
     const data = new Float32Array(buffer);
     const nodes = [];
     let at = 0;
@@ -238,14 +216,10 @@ export class PresentationCapture {
       const geometry = wire ? null : this.resource(n.geometry, "geometry");
       const mats = materials.map((m) => {
         const maps = textureSlots.map((slot) =>
-          this.resource(
-            m[slot],
-            "texture",
-            m[slot]?.isCanvasTexture ? m[slot].version : 0,
-          ),
+          this.resource(m[slot], "texture", m[slot]?.isCanvasTexture ? m[slot].version : 0),
         );
         // Material settings are recorded discretely; colors/opacity are in the sample.
-        const key = `${maps.join(",")}/${m.visible}/${m.transparent}/${m.depthWrite}/${m.depthTest}/${m.side}/${m.wireframe}/${m.roughness}/${m.metalness}`;
+        const key = `${maps.join(",")}/${m.visible}/${m.transparent}/${m.depthWrite}/${m.depthTest}/${m.side}/${m.wireframe}/${m.roughness}/${m.metalness}/${m.userData.honkPitchColorMode || ""}`;
         let cache = this.resources.get(m);
         if (!cache) {
           cache = { versions: new Map() };
@@ -258,9 +232,7 @@ export class PresentationCapture {
             id,
             kind: "material",
             value: m,
-            maps: Object.fromEntries(
-              textureSlots.map((slot, i) => [slot, maps[i]]),
-            ),
+            maps: Object.fromEntries(textureSlots.map((slot, i) => [slot, maps[i]])),
           });
         }
         return cache.versions.get(key);
@@ -308,10 +280,8 @@ export class PresentationCapture {
                 playArmed: Boolean(e.transport.playArmed),
                 recordArmed: Boolean(e.transport.recordArmed),
                 pauseArmed: Boolean(e.looperData?.pauseArmed),
-                pendingLaunchBeat:
-                  e.looperData?.pendingLaunch?.targetBeat ?? null,
-                queuedLooperId:
-                  e.looperData?.portGroup?.pending?.looper?.id ?? null,
+                pendingLaunchBeat: e.looperData?.pendingLaunch?.targetBeat ?? null,
+                queuedLooperId: e.looperData?.portGroup?.pending?.looper?.id ?? null,
               }
             : null,
           connections: (e.getTracks?.() || []).map((track) => ({
@@ -322,94 +292,99 @@ export class PresentationCapture {
           volume: e.volume,
         });
     semantic.push({
-      metronomeConnections:
-        this.runtime.metronomeConnectionManager?.getConnections?.() || [],
+      metronomeConnections: this.runtime.metronomeConnectionManager?.getConnections?.() || [],
     });
     return { buffer, nodes, semantic };
   }
-  flushResources(t, { budgetMs = Infinity, maxItems = Infinity } = {}) {
+  flushResources(t, { budgetMs = Infinity, maxItems = Infinity, maxBytes = Infinity } = {}) {
     const began = performance.now();
-    let emitted = 0;
+    let emitted = 0,
+      bytes = 0;
     while (this.pending.length) {
       if (emitted >= maxItems || performance.now() - began >= budgetMs) break;
+      const item = this.pending[0];
+      // Retain one encoded item if it does not fit this batch; never encode a
+      // large geometry twice or combine it with an already-full send queue.
+      const data = item.encoded || this.encodeResource(item);
+      const size = Number.isFinite(maxBytes) ? JSON.stringify(data).length * 2 : 0;
+      if (emitted && bytes + size > maxBytes) {
+        item.encoded = data;
+        break;
+      }
+      this.pending.shift();
+      this.emit("resource", data, t);
+      bytes += size;
       emitted++;
-      const item = this.pending.shift();
-      let data;
-      if (item.kind === "geometry") {
-        if (item.value.userData.captureAsset) {
-          this.emit(
-            "resource",
-            {
-              id: item.id,
-              kind: "asset-geometry",
-              data: item.value.userData.captureAsset,
-            },
-            t,
-          );
-          continue;
-        }
-        // Serialize the actual buffers even for procedural Text/ShapeGeometry.
-        const proxy = new THREE.BufferGeometry();
-        proxy.copy(item.value);
-        data = proxy.toJSON();
-        proxy.dispose();
-      } else if (item.kind === "texture") {
-        if (item.value.userData.captureAsset) {
-          const tex = item.value;
-          this.emit(
-            "resource",
-            {
-              id: item.id,
-              kind: "asset-texture",
-              data: {
-                ...tex.userData.captureAsset,
-                offset: tex.offset.toArray(),
-                repeat: tex.repeat.toArray(),
-                rotation: tex.rotation,
-                flipY: tex.flipY,
-                colorSpace: tex.colorSpace,
-                wrapS: tex.wrapS,
-                wrapT: tex.wrapT,
-              },
-            },
-            t,
-          );
-          continue;
-        }
-        const tex = item.value,
-          meta = { textures: {}, images: {} };
-        const source = tex.source?.data;
-        let url = source?.currentSrc || source?.src;
-        if (url) {
-          const parsed = new URL(url, location.href);
-          if (parsed.origin === location.origin) url = parsed.pathname;
-          else if (!url.startsWith("data:"))
-            throw new Error("Remote capture texture is not supported.");
-        }
-        if (url) meta.images[tex.source.uuid] = { uuid: tex.source.uuid, url };
-        data = tex.toJSON(meta);
-        data = { ...data, images: Object.values(meta.images) };
-      } else {
-        const m = item.value;
-        data = {
-          type: m.type,
-          visible: m.visible,
-          side: m.side,
-          transparent: m.transparent,
-          depthTest: m.depthTest,
-          depthWrite: m.depthWrite,
-          wireframe: m.wireframe,
-          roughness: m.roughness,
-          metalness: m.metalness,
-          alphaTest: m.alphaTest,
-          blending: m.blending,
-          toneMapped: m.toneMapped,
-          normalScale: m.normalScale?.toArray(),
-          maps: item.maps,
+    }
+  }
+  encodeResource(item) {
+    let data;
+    if (item.kind === "geometry") {
+      if (item.value.userData.captureAsset) {
+        return {
+          id: item.id,
+          kind: "asset-geometry",
+          data: item.value.userData.captureAsset,
         };
       }
-      this.emit("resource", { id: item.id, kind: item.kind, data }, t);
+      // Serialize the actual buffers even for procedural Text/ShapeGeometry.
+      const proxy = new THREE.BufferGeometry();
+      proxy.copy(item.value);
+      data = proxy.toJSON();
+      proxy.dispose();
+    } else if (item.kind === "texture") {
+      if (item.value.userData.captureAsset) {
+        const tex = item.value;
+        return {
+          id: item.id,
+          kind: "asset-texture",
+          data: {
+            ...tex.userData.captureAsset,
+            offset: tex.offset.toArray(),
+            repeat: tex.repeat.toArray(),
+            rotation: tex.rotation,
+            flipY: tex.flipY,
+            colorSpace: tex.colorSpace,
+            wrapS: tex.wrapS,
+            wrapT: tex.wrapT,
+          },
+        };
+      }
+      const tex = item.value,
+        meta = { textures: {}, images: {} };
+      const source = tex.source?.data;
+      let url = source?.currentSrc || source?.src;
+      if (url) {
+        const parsed = new URL(url, location.href);
+        if (parsed.origin === location.origin) url = parsed.pathname;
+        else if (!url.startsWith("data:"))
+          throw new Error("Remote capture texture is not supported.");
+      }
+      if (url) meta.images[tex.source.uuid] = { uuid: tex.source.uuid, url };
+      data = tex.toJSON(meta);
+      data = { ...data, images: Object.values(meta.images) };
+    } else {
+      const m = item.value;
+      data = {
+        type: m.type,
+        visible: m.visible,
+        side: m.side,
+        transparent: m.transparent,
+        depthTest: m.depthTest,
+        depthWrite: m.depthWrite,
+        wireframe: m.wireframe,
+        roughness: m.roughness,
+        metalness: m.metalness,
+        alphaTest: m.alphaTest,
+        blending: m.blending,
+        toneMapped: m.toneMapped,
+        normalScale: m.normalScale?.toArray(),
+        maps: item.maps,
+        honkPitchBaseColor: m.honkPitchMask ? m.userData.honkPitchBaseColor : undefined,
+        honkPitchColorMode: m.honkPitchMask ? m.userData.honkPitchColorMode : undefined,
+      };
     }
+    return { id: item.id, kind: item.kind, data };
   }
   recycle(buffer) {
     if (this.buffers.length < 4) this.buffers.push(buffer);

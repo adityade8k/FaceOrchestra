@@ -21,10 +21,20 @@ test("registry is the source of truth for ID, kind, capability, and Object3D loo
 
 test("registry rejects duplicate stable IDs and disposes exactly once on removal", () => {
   const registry = new InstrumentRegistry();
-  const first = new InstrumentEntity({ id: "same-id", kind: INSTRUMENT_KINDS.honk, root: object3D() });
-  const duplicate = new InstrumentEntity({ id: "same-id", kind: INSTRUMENT_KINDS.honk, root: object3D() });
+  const first = new InstrumentEntity({
+    id: "same-id",
+    kind: INSTRUMENT_KINDS.honk,
+    root: object3D(),
+  });
+  const duplicate = new InstrumentEntity({
+    id: "same-id",
+    kind: INSTRUMENT_KINDS.honk,
+    root: object3D(),
+  });
   let disposalCount = 0;
-  first.addDisposeHandler(() => { disposalCount += 1; });
+  first.addDisposeHandler(() => {
+    disposalCount += 1;
+  });
   registry.add(first);
   assert.throws(() => registry.add(duplicate), /already registered/);
   registry.remove(first.id);
@@ -40,7 +50,11 @@ test("interaction targets store a small descriptor on meshes and resolve handler
     ownerId: "honk-1",
     role: "honk.mouth",
     object3D: mesh,
-    handlers: { trigger: () => { invoked = true; } },
+    handlers: {
+      trigger: () => {
+        invoked = true;
+      },
+    },
   });
   assert.deepEqual(mesh.userData.interactionTarget, {
     targetId: "target-1",
@@ -63,15 +77,25 @@ function object3D(parent = null) {
     quaternion: tuple(0, 0, 0, 1),
     rotation: tuple(0, 0, 0),
     scale: tuple(1, 1, 1),
-    removeFromParent() { this.parent = null; },
+    removeFromParent() {
+      this.parent = null;
+    },
   };
 }
 
 function tuple(...values) {
   const keys = values.length === 4 ? ["x", "y", "z", "w"] : ["x", "y", "z"];
   const result = {};
-  keys.forEach((key, index) => { result[key] = values[index]; });
-  result.set = (...next) => keys.forEach((key, index) => { result[key] = next[index]; });
-  result.setScalar = (next) => keys.slice(0, 3).forEach((key) => { result[key] = next; });
+  keys.forEach((key, index) => {
+    result[key] = values[index];
+  });
+  result.set = (...next) =>
+    keys.forEach((key, index) => {
+      result[key] = next[index];
+    });
+  result.setScalar = (next) =>
+    keys.slice(0, 3).forEach((key) => {
+      result[key] = next;
+    });
   return result;
 }

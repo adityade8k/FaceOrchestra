@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { ShakeDetector } from "../../xr/ShakeDetector.js";
-import { resolveShakeTarget, disconnectShakenTarget } from '../../xr/shakeDisconnect.js';
+import { resolveShakeTarget, disconnectShakenTarget } from "../../xr/shakeDisconnect.js";
 import { DEBUG_MODE } from "../../config/debug.js";
 import {
   HONK_CONNECTION_TARGET_NAME,
@@ -10,10 +10,7 @@ import {
   LOOPER_SHAKE_DISCONNECT_SETTINGS,
   LOOPER_WIRE_SETTINGS,
 } from "../../config/looper.js";
-import {
-  getLooperButtonName,
-  getLooperControlName,
-} from "../../instruments/looper/looperNames.js";
+import { getLooperButtonName, getLooperControlName } from "../../instruments/looper/looperNames.js";
 import {
   createWireMaterial,
   disposeWireMesh as disposeWireMeshUtility,
@@ -32,392 +29,407 @@ const tempWireEndTangent = new THREE.Vector3();
 const tempWireStart = new THREE.Vector3();
 const tempWireStartTangent = new THREE.Vector3();
 
+export class LooperConnectionRuntime {
+  constructor(host) {
+    this.host = host;
+  }
+  startLooperWireInteraction(controller, looperState, track) {
+    const wireColor = this.host.getLooperWireColor(track.index);
+    const wireMesh = new THREE.Mesh(
+      new THREE.BufferGeometry(),
+      this.createLooperWireMaterial(wireColor),
+    );
+    wireMesh.name = `LOOPER_wire_preview_${looperState.id}_${track.index}`;
+    wireMesh.renderOrder = 15;
+    this.host.scene.add(wireMesh);
 
-export const LooperConnectionRuntimeMethods = {
-    startLooperWireInteraction(controller, looperState, track) {
-      const wireColor = this.getLooperWireColor(track.index);
-      const wireMesh = new THREE.Mesh(
-        new THREE.BufferGeometry(),
-        this.createLooperWireMaterial(wireColor),
-      );
-      wireMesh.name = `LOOPER_wire_preview_${looperState.id}_${track.index}`;
-      wireMesh.renderOrder = 15;
-      this.scene.add(wireMesh);
-  
-      const interaction = {
-        type: "looperWire",
-        looperState,
-        track,
-        wireMesh,
-      };
-      this.updateActiveLooperWire(controller, interaction);
-      return interaction;
-    },
-    updateActiveLooperWire(controller, interaction) {
-      if (!interaction?.wireMesh || !interaction.track?.nodeTarget) {
-        return;
-      }
-  
-      interaction.track.nodeTarget.getWorldPosition(tempWireStart);
-      this.setRaycasterFromController(controller);
-  
-      const hit = this.getCurrentHit(controller);
-      if (hit?.object?.userData.isHonkConnectionTarget) {
-        tempWireEnd.copy(hit.point);
-        const honkState = this.instrumentRegistry?.getFromObject3D?.(hit.object) || null;
-        getWireSocketTangent(
-          hit.object,
-          honkState?.root,
-          tempWireEnd,
-          tempWireEndTangent,
-          true,
-        );
-      } else {
-        tempWireEnd.copy(this.raycaster.ray.origin).addScaledVector(this.raycaster.ray.direction, 0.85);
-        tempWireEndTangent.copy(tempWireEnd).sub(tempWireStart).normalize();
-      }
+    const interaction = {
+      type: "looperWire",
+      looperState,
+      track,
+      wireMesh,
+    };
+    this.updateActiveLooperWire(controller, interaction);
+    return interaction;
+  }
+  updateActiveLooperWire(controller, interaction) {
+    if (!interaction?.wireMesh || !interaction.track?.nodeTarget) {
+      return;
+    }
 
-      getWireSocketTangent(
-        interaction.track.nodeTarget,
-        interaction.looperState?.root,
-        tempWireStart,
-        tempWireStartTangent,
+    interaction.track.nodeTarget.getWorldPosition(tempWireStart);
+    this.host.setRaycasterFromController(controller);
+
+    const hit = this.host.getCurrentHit(controller);
+    if (hit?.object?.userData.isHonkConnectionTarget) {
+      tempWireEnd.copy(hit.point);
+      const honkState = this.host.instrumentRegistry?.getFromObject3D?.(hit.object) || null;
+      getWireSocketTangent(hit.object, honkState?.root, tempWireEnd, tempWireEndTangent, true);
+    } else {
+      tempWireEnd
+        .copy(this.host.raycaster.ray.origin)
+        .addScaledVector(this.host.raycaster.ray.direction, 0.85);
+      tempWireEndTangent.copy(tempWireEnd).sub(tempWireStart).normalize();
+    }
+
+    getWireSocketTangent(
+      interaction.track.nodeTarget,
+      interaction.looperState?.root,
+      tempWireStart,
+      tempWireStartTangent,
+    );
+    this.updateWireMeshGeometry(
+      interaction.wireMesh,
+      tempWireStart,
+      tempWireEnd,
+      tempWireStartTangent,
+      tempWireEndTangent,
+    );
+  }
+  finishLooperWireInteraction(controller, interaction) {
+    const hit = this.host.getCurrentHit(controller);
+    const target = hit?.object?.userData.isHonkConnectionTarget ? hit.object : null;
+    const honkState = target
+      ? this.host.instrumentRegistry?.getFromObject3D?.(target) || null
+      : null;
+    if (this.isLooperConnectableHonk(honkState)) {
+      this.host.connectLooperTrackToHonk(
+        interaction.looperState,
+        interaction.track.index,
+        honkState.id,
       );
-      this.updateWireMeshGeometry(
-        interaction.wireMesh,
-        tempWireStart,
-        tempWireEnd,
-        tempWireStartTangent,
-        tempWireEndTangent,
-      );
-    },
-    finishLooperWireInteraction(controller, interaction) {
-      const hit = this.getCurrentHit(controller);
-      const target = hit?.object?.userData.isHonkConnectionTarget ? hit.object : null;
-      const honkState = target
-        ? this.instrumentRegistry?.getFromObject3D?.(target) || null
-        : null;
-      if (this.isLooperConnectableHonk(honkState)) {
-        this.connectLooperTrackToHonk(interaction.looperState, interaction.track.index, honkState.id);
-      }
-  
-      this.disposeWireMesh(interaction.wireMesh);
-      interaction.wireMesh = null;
-    },
-    updateShakeDisconnect(now = performance.now()) {
-      const settings = LOOPER_SHAKE_DISCONNECT_SETTINGS;
-      for (const controller of this.controllers) {
-        const state = this.controllerStates.get(controller);
-        if (!state) continue;
-        const target = this.getShakeDisconnectTarget(state);
-        if (!settings.enabled || !target || this.pendingSpawnPlacement || state.shakeSessionMode !== this.sessionMode) {
-          this.resetShakeDisconnectTracking(state);
-          state.shakeSessionMode = this.sessionMode;
-          continue;
-        }
-        if (now < (state.shakeDisconnectCooldownUntilMs || 0)) continue;
-        const clock = target.kind === 'looper' && this.metronomeConnectionManager.getConnectionForTarget('looper', target.id);
-        const honkConnections = target.kind === 'honk' ? this.getLooperConnectionsForHonk(target) : [];
-        if (!clock && !honkConnections.length) { this.resetShakeDisconnectTracking(state); continue; }
-        if (state.shakeDisconnectTargetState !== target) {
-          this.resetShakeDisconnectTracking(state);
-          state.shakeDisconnectTargetState = target;
-        }
-        state.shakeDetector ||= new ShakeDetector(settings);
-        target.root.updateMatrixWorld(true);
-        target.root.getWorldPosition(tempShakePosition);
-        if (!state.shakeDetector.sample(tempShakePosition, now)) continue;
-        if (!disconnectShakenTarget(this, target)) continue;
-        this.showRuntimeFeedback?.(clock ? 'Clock disconnected. Recording retained · 70 BPM · Internal' : 'Honk disconnected from its looper tracks. Recordings retained.');
-        state.shakeDisconnectCooldownUntilMs = now + settings.cooldownMs;
-        this.resetShakeDisconnectTracking(state);
-      }
-    },
-    getShakeDisconnectTarget(state) {
-      return resolveShakeTarget(state);
-    },
-    getShakeDisconnectHonkState(state) {
+    }
+
+    this.disposeWireMesh(interaction.wireMesh);
+    interaction.wireMesh = null;
+  }
+  updateShakeDisconnect(now = performance.now()) {
+    const settings = LOOPER_SHAKE_DISCONNECT_SETTINGS;
+    for (const controller of this.host.controllers) {
+      const state = this.host.controllerStates.get(controller);
+      if (!state) continue;
       const target = this.getShakeDisconnectTarget(state);
-      return target?.kind === 'honk' ? target : null;
-    },
-    isLooperConnectableHonk(honkState) {
-      return Boolean(
-        honkState &&
-        honkState.kind === "honk" &&
-        !honkState.disposed &&
-        honkState.root?.visible,
+      if (
+        !settings.enabled ||
+        !target ||
+        this.host.spawn.pendingSpawnPlacement ||
+        state.shakeSessionMode !== this.host.sessionMode
+      ) {
+        this.resetShakeDisconnectTracking(state);
+        state.shakeSessionMode = this.host.sessionMode;
+        continue;
+      }
+      if (now < (state.shakeDisconnectCooldownUntilMs || 0)) continue;
+      const clock =
+        target.kind === "looper" &&
+        this.host.metronomeConnectionManager.getConnectionForTarget("looper", target.id);
+      const honkConnections =
+        target.kind === "honk" ? this.getLooperConnectionsForHonk(target) : [];
+      if (!clock && !honkConnections.length) {
+        this.resetShakeDisconnectTracking(state);
+        continue;
+      }
+      if (state.shakeDisconnectTargetState !== target) {
+        this.resetShakeDisconnectTracking(state);
+        state.shakeDisconnectTargetState = target;
+      }
+      state.shakeDetector ||= new ShakeDetector(settings);
+      target.root.updateMatrixWorld(true);
+      target.root.getWorldPosition(tempShakePosition);
+      if (!state.shakeDetector.sample(tempShakePosition, now)) continue;
+      if (!disconnectShakenTarget(this.host, target)) continue;
+      this.host.showRuntimeFeedback?.(
+        clock
+          ? "Clock disconnected. Recording retained · 70 BPM · Internal"
+          : "Honk disconnected from its looper tracks. Recordings retained.",
       );
-    },
-    getLooperConnectionsForHonk(honkState) {
-      const connections = [];
-      const honkId = this.getStableInstrumentId(honkState);
-      if (honkId === null || honkId === undefined) {
-        return connections;
-      }
-  
-      for (const looperState of this.instrumentStates) {
-        const data = this.getLooperData(looperState);
-        if (!data || !looperState.root?.visible) {
-          continue;
-        }
-  
-        for (const track of data.tracks) {
-          if (track.connectedHonkId === honkId) {
-            connections.push({ looperState, track });
-          }
-        }
-      }
+      state.shakeDisconnectCooldownUntilMs = now + settings.cooldownMs;
+      this.resetShakeDisconnectTracking(state);
+    }
+  }
+  getShakeDisconnectTarget(state) {
+    return resolveShakeTarget(state);
+  }
+  getShakeDisconnectHonkState(state) {
+    const target = this.getShakeDisconnectTarget(state);
+    return target?.kind === "honk" ? target : null;
+  }
+  isLooperConnectableHonk(honkState) {
+    return Boolean(
+      honkState && honkState.kind === "honk" && !honkState.disposed && honkState.root?.visible,
+    );
+  }
+  getLooperConnectionsForHonk(honkState) {
+    const connections = [];
+    const honkId = this.host.getStableInstrumentId(honkState);
+    if (honkId === null || honkId === undefined) {
       return connections;
-    },
-    resetShakeDisconnectTracking(state) {
-      if (!state) return;
-      state.shakeDisconnectTargetState = null;
-      state.shakeDetector?.reset();
-    },
-    updateLooperFollowerTransforms() {
-      for (const looperState of this.instrumentStates) {
-        const data = this.getLooperData(looperState);
-        if (!data || !looperState.root?.visible) {
-          continue;
-        }
-  
-        looperState.root.updateMatrixWorld(true);
-        looperState.root.getWorldPosition(tempLooperCurrentPosition);
-        looperState.root.getWorldQuaternion(tempLooperCurrentQuaternion);
-  
-        tempLooperPreviousPosition.copy(data.lastPosition);
-        tempLooperPreviousQuaternion.copy(data.lastQuaternion);
-        tempLooperDeltaQuaternion.copy(tempLooperCurrentQuaternion).multiply(tempLooperPreviousQuaternion.invert());
-  
-        const positionChanged = tempLooperCurrentPosition.distanceToSquared(tempLooperPreviousPosition) > 0.0000001;
-        const rotationChanged = Math.abs(tempLooperDeltaQuaternion.w) < 0.999999;
-        if (positionChanged || rotationChanged) {
-          const followerHonks = this.getLooperFollowerHonks(looperState);
-  
-          for (const honkState of followerHonks) {
-            if (this.isInstrumentStateCurrentlyGripped(honkState)) {
-              continue;
-            }
-  
-            honkState.root.position
-              .sub(tempLooperPreviousPosition)
-              .applyQuaternion(tempLooperDeltaQuaternion)
-              .add(tempLooperCurrentPosition);
-            honkState.root.quaternion.premultiply(tempLooperDeltaQuaternion);
-          }
-        }
-  
-        data.lastPosition.copy(tempLooperCurrentPosition);
-        data.lastQuaternion.copy(tempLooperCurrentQuaternion);
+    }
+
+    for (const looperState of this.host.instrumentStates) {
+      const data = this.host.getLooperData(looperState);
+      if (!data || !looperState.root?.visible) {
+        continue;
       }
-    },
-    getLooperFollowerHonks(looperState) {
-      const followerHonks = new Set();
-      for (const connection of this.getLooperData(looperState)?.tracks || []) {
-        const honkState = this.resolveHonkStateById(connection.connectedHonkId);
-        if (!this.isLooperConnectableHonk(honkState)) {
-          continue;
-        }
-        for (const followerHonk of this.getLooperFollowerHonkChain(honkState)) {
-          followerHonks.add(followerHonk);
+
+      for (const track of data.tracks) {
+        if (track.connectedHonkId === honkId) {
+          connections.push({ looperState, track });
         }
       }
-      return followerHonks;
-    },
-    getLooperFollowerHonkChain(honkState) {
-      if (!this.isLooperConnectableHonk(honkState)) {
-        return [];
+    }
+    return connections;
+  }
+  resetShakeDisconnectTracking(state) {
+    if (!state) return;
+    state.shakeDisconnectTargetState = null;
+    state.shakeDetector?.reset();
+  }
+  updateLooperFollowerTransforms() {
+    for (const looperState of this.host.instrumentStates) {
+      const data = this.host.getLooperData(looperState);
+      if (!data || !looperState.root?.visible) {
+        continue;
       }
-  
-      const chain = this.getTouchingInstrumentChain(honkState).filter((state) =>
-        this.isLooperConnectableHonk(state),
-      );
-      return chain.length > 0 ? chain : [honkState];
-    },
-    getLooperPlaybackHonkTargetIds(track, honkId = track?.connectedHonkId) {
-      const honkState = this.resolveHonkStateById(honkId);
-      return this.getLooperFollowerHonkChain(honkState)
-        .map((targetState) => targetState.id)
-        .filter((targetId) => targetId !== null && targetId !== undefined);
-    },
-    getLooperPlaybackHonkTargets(honkOrId) {
-      const honkId = this.getStableInstrumentId(honkOrId);
-      return this.getLooperFollowerHonkChain(this.resolveHonkStateById(honkId));
-    },
-    isInstrumentStateCurrentlyGripped(instrumentState) {
-      for (const controllerState of this.controllerStates.values()) {
-        if (controllerState.gripHeld && controllerState.gripInstrumentState === instrumentState) {
-          return true;
-        }
-      }
-      return false;
-    },
-    updateLooperWires() {
-      for (const looperState of this.instrumentStates) {
-        const data = this.getLooperData(looperState);
-        if (!data || !looperState.root?.visible) {
-          continue;
-        }
-  
-        for (const track of data.tracks) {
-          const honkState = this.resolveHonkStateById(track.connectedHonkId);
-          if (!this.isLooperConnectableHonk(honkState)) {
-            if (track.wireMesh) {
-              this.disposeWireMesh(track.wireMesh);
-              track.wireMesh = null;
-            }
+
+      looperState.root.updateMatrixWorld(true);
+      looperState.root.getWorldPosition(tempLooperCurrentPosition);
+      looperState.root.getWorldQuaternion(tempLooperCurrentQuaternion);
+
+      tempLooperPreviousPosition.copy(data.lastPosition);
+      tempLooperPreviousQuaternion.copy(data.lastQuaternion);
+      tempLooperDeltaQuaternion
+        .copy(tempLooperCurrentQuaternion)
+        .multiply(tempLooperPreviousQuaternion.invert());
+
+      const positionChanged =
+        tempLooperCurrentPosition.distanceToSquared(tempLooperPreviousPosition) > 0.0000001;
+      const rotationChanged = Math.abs(tempLooperDeltaQuaternion.w) < 0.999999;
+      if (positionChanged || rotationChanged) {
+        const followerHonks = this.getLooperFollowerHonks(looperState);
+
+        for (const honkState of followerHonks) {
+          if (this.isInstrumentStateCurrentlyGripped(honkState)) {
             continue;
           }
-          this.updateLooperWireForTrack(looperState, track);
-        }
-      }
-    },
-    updateLooperWireForTrack(looperState, track) {
-      const honkState = this.resolveHonkStateById(track?.connectedHonkId);
-      if (!track?.nodeTarget || !this.isLooperConnectableHonk(honkState)) {
-        return;
-      }
-  
-      const honkTarget =
-        honkState.hitTargets?.[HONK_CONNECTION_TARGET_NAME] ||
-        honkState.getTarget?.("honk.looper-connector");
-      if (!honkTarget) {
-        return;
-      }
-  
-      if (!track.wireMesh) {
-        const color = this.getLooperWireColor(track.index);
-        track.wireMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.createLooperWireMaterial(color));
-        track.wireMesh.name = `LOOPER_wire_${looperState.id}_${track.index}`;
-        track.wireMesh.renderOrder = 14;
-        this.scene.add(track.wireMesh);
-      }
-  
-      track.nodeTarget.getWorldPosition(tempWireStart);
-      honkTarget.getWorldPosition(tempWireEnd);
-      getWireSocketTangent(
-        track.nodeTarget,
-        looperState.root,
-        tempWireStart,
-        tempWireStartTangent,
-      );
-      getWireSocketTangent(
-        honkTarget,
-        honkState.root,
-        tempWireEnd,
-        tempWireEndTangent,
-        true,
-      );
-      this.updateWireMeshGeometry(
-        track.wireMesh,
-        tempWireStart,
-        tempWireEnd,
-        tempWireStartTangent,
-        tempWireEndTangent,
-      );
-    },
-    createLooperWireMaterial(color) {
-      return createWireMaterial(color, this.instrumentMaterialTextures);
-    },
-    updateWireMeshGeometry(wireMesh, start, end, startTangent, endTangent) {
-      updateWireMeshGeometryUtility(wireMesh, start, end, {
-        startTangent,
-        endTangent,
-        settings: LOOPER_WIRE_SETTINGS,
-      });
-    },
-    disposeWireMesh(wireMesh) {
-      disposeWireMeshUtility(wireMesh);
-    },
-    updateAllLooperVisuals() {
-      for (const state of this.instrumentStates) {
-        if (state.kind === "looper") {
-          this.updateLooperVisuals(state);
-        }
-      }
-    },
-    updateLooperVisuals(looperState) {
-      const data = this.getLooperData(looperState);
-      if (!data) {
-        return;
-      }
 
-      for (const [control, value] of [
-        ["volume", data.volumeControlValue],
-        ["gap", data.gapControlValue],
-        ["recordLength", data.recordLengthControlValue],
-      ]) {
-        this.applyLooperControlMorphValue(looperState, control, value);
-        const sphere = looperState.hitTargets[getLooperControlName(control)];
-        if (sphere?.userData.isLooperControl) {
-          this.positionControlColliderFromValue(sphere, value);
+          honkState.root.position
+            .sub(tempLooperPreviousPosition)
+            .applyQuaternion(tempLooperDeltaQuaternion)
+            .add(tempLooperCurrentPosition);
+          honkState.root.quaternion.premultiply(tempLooperDeltaQuaternion);
         }
       }
 
-      const playPressed =
-        (data.playing && !data.paused && !data.pauseArmed) ||
-        data.playArmed ||
-        data.buttonMorphReleaseTimes?.has("play");
-      this.setLooperButtonMorph(looperState, "record", data.recording || data.recordArmed ? 1 : 0);
-      this.setLooperButtonMorph(
-        looperState,
-        "play",
-        playPressed ? 1 : 0,
-      );
-  
-      for (const action of LOOPER_BUTTON_ACTIONS) {
-        const target = looperState.hitTargets[getLooperButtonName(action)];
-        const active =
-          (action === "record" && (data.recording || data.recordArmed)) ||
-          (action === "play" && playPressed) ||
-          (action === "pause" && (data.paused || data.pauseArmed)) ||
-          (action === "stop" && !data.playing && !data.paused && !data.recording && !data.armed);
-        this.setHitTargetDebugColor(
-          target,
-          action === "play" && data.queued ? 0xffd15a : active ? LOOPER_DEBUG_COLORS.buttonActive : LOOPER_DEBUG_COLORS.button[action],
-          active ? 0.48 : LOOPER_COLLIDER_OPACITY,
-        );
+      data.lastPosition.copy(tempLooperCurrentPosition);
+      data.lastQuaternion.copy(tempLooperCurrentQuaternion);
+    }
+  }
+  getLooperFollowerHonks(looperState) {
+    const followerHonks = new Set();
+    for (const connection of this.host.getLooperData(looperState)?.tracks || []) {
+      const honkState = this.host.resolveHonkStateById(connection.connectedHonkId);
+      if (!this.isLooperConnectableHonk(honkState)) {
+        continue;
       }
-  
+      for (const followerHonk of this.getLooperFollowerHonkChain(honkState)) {
+        followerHonks.add(followerHonk);
+      }
+    }
+    return followerHonks;
+  }
+  getLooperFollowerHonkChain(honkState) {
+    if (!this.isLooperConnectableHonk(honkState)) {
+      return [];
+    }
+
+    const chain = this.host
+      .getTouchingInstrumentChain(honkState)
+      .filter((state) => this.isLooperConnectableHonk(state));
+    return chain.length > 0 ? chain : [honkState];
+  }
+  getLooperPlaybackHonkTargetIds(track, honkId = track?.connectedHonkId) {
+    const honkState = this.host.resolveHonkStateById(honkId);
+    return this.getLooperFollowerHonkChain(honkState)
+      .map((targetState) => targetState.id)
+      .filter((targetId) => targetId !== null && targetId !== undefined);
+  }
+  getLooperPlaybackHonkTargets(honkOrId) {
+    const honkId = this.host.getStableInstrumentId(honkOrId);
+    return this.getLooperFollowerHonkChain(this.host.resolveHonkStateById(honkId));
+  }
+  isInstrumentStateCurrentlyGripped(instrumentState) {
+    for (const controllerState of this.host.controllerStates.values()) {
+      if (controllerState.gripHeld && controllerState.gripInstrumentState === instrumentState) {
+        return true;
+      }
+    }
+    return false;
+  }
+  updateLooperWires() {
+    for (const looperState of this.host.instrumentStates) {
+      const data = this.host.getLooperData(looperState);
+      if (!data || !looperState.root?.visible) {
+        continue;
+      }
+
       for (const track of data.tracks) {
-        const connected = track.connectedHonkId !== null && track.connectedHonkId !== undefined;
-        let nodeColor = connected ? this.getLooperWireColor(track.index) : LOOPER_DEBUG_COLORS.nodeOpen;
-        let opacity = connected ? 0.5 : LOOPER_COLLIDER_OPACITY;
-        if (track.isRecording) {
-          nodeColor = LOOPER_DEBUG_COLORS.recording;
-          opacity = 0.58;
-        } else if (track.isPlaying) {
-          nodeColor = LOOPER_DEBUG_COLORS.playing;
-          opacity = 0.58;
-        } else if (data.hasRecording && track.active) {
-          nodeColor = LOOPER_DEBUG_COLORS.recorded;
-          opacity = 0.5;
+        const honkState = this.host.resolveHonkStateById(track.connectedHonkId);
+        if (!this.isLooperConnectableHonk(honkState)) {
+          if (track.wireMesh) {
+            this.disposeWireMesh(track.wireMesh);
+            track.wireMesh = null;
+          }
+          continue;
         }
-        this.setHitTargetDebugColor(track.nodeTarget, nodeColor, opacity);
+        this.updateLooperWireForTrack(looperState, track);
       }
-  
-      this.setHitTargetDebugColor(
-        looperState.hitTargets[getLooperControlName("volume")],
-        LOOPER_DEBUG_COLORS.controlVolume,
-        LOOPER_COLLIDER_OPACITY,
+    }
+  }
+  updateLooperWireForTrack(looperState, track) {
+    const honkState = this.host.resolveHonkStateById(track?.connectedHonkId);
+    if (!track?.nodeTarget || !this.isLooperConnectableHonk(honkState)) {
+      return;
+    }
+
+    const honkTarget =
+      honkState.hitTargets?.[HONK_CONNECTION_TARGET_NAME] ||
+      honkState.getTarget?.("honk.looper-connector");
+    if (!honkTarget) {
+      return;
+    }
+
+    if (!track.wireMesh) {
+      const color = this.host.getLooperWireColor(track.index);
+      track.wireMesh = new THREE.Mesh(
+        new THREE.BufferGeometry(),
+        this.createLooperWireMaterial(color),
       );
+      track.wireMesh.name = `LOOPER_wire_${looperState.id}_${track.index}`;
+      track.wireMesh.renderOrder = 14;
+      this.host.scene.add(track.wireMesh);
+    }
+
+    track.nodeTarget.getWorldPosition(tempWireStart);
+    honkTarget.getWorldPosition(tempWireEnd);
+    getWireSocketTangent(track.nodeTarget, looperState.root, tempWireStart, tempWireStartTangent);
+    getWireSocketTangent(honkTarget, honkState.root, tempWireEnd, tempWireEndTangent, true);
+    this.updateWireMeshGeometry(
+      track.wireMesh,
+      tempWireStart,
+      tempWireEnd,
+      tempWireStartTangent,
+      tempWireEndTangent,
+    );
+  }
+  createLooperWireMaterial(color) {
+    return createWireMaterial(color, this.host.instrumentMaterialTextures);
+  }
+  updateWireMeshGeometry(wireMesh, start, end, startTangent, endTangent) {
+    updateWireMeshGeometryUtility(wireMesh, start, end, {
+      startTangent,
+      endTangent,
+      settings: LOOPER_WIRE_SETTINGS,
+    });
+  }
+  disposeWireMesh(wireMesh) {
+    disposeWireMeshUtility(wireMesh);
+  }
+  updateAllLooperVisuals() {
+    for (const state of this.host.instrumentStates) {
+      if (state.kind === "looper") {
+        this.updateLooperVisuals(state);
+      }
+    }
+  }
+  updateLooperVisuals(looperState) {
+    const data = this.host.getLooperData(looperState);
+    if (!data) {
+      return;
+    }
+
+    for (const [control, value] of [
+      ["volume", data.volumeControlValue],
+      ["gap", data.gapControlValue],
+      ["recordLength", data.recordLengthControlValue],
+    ]) {
+      this.host.applyLooperControlMorphValue(looperState, control, value);
+      const sphere = looperState.hitTargets[getLooperControlName(control)];
+      if (sphere?.userData.isLooperControl) {
+        this.host.positionControlColliderFromValue(sphere, value);
+      }
+    }
+
+    const playPressed =
+      (data.playing && !data.paused && !data.pauseArmed) ||
+      data.playArmed ||
+      data.buttonMorphReleaseTimes?.has("play");
+    this.host.setLooperButtonMorph(
+      looperState,
+      "record",
+      data.recording || data.recordArmed ? 1 : 0,
+    );
+    this.host.setLooperButtonMorph(looperState, "play", playPressed ? 1 : 0);
+
+    for (const action of LOOPER_BUTTON_ACTIONS) {
+      const target = looperState.hitTargets[getLooperButtonName(action)];
+      const active =
+        (action === "record" && (data.recording || data.recordArmed)) ||
+        (action === "play" && playPressed) ||
+        (action === "pause" && (data.paused || data.pauseArmed)) ||
+        (action === "stop" && !data.playing && !data.paused && !data.recording && !data.armed);
       this.setHitTargetDebugColor(
-        looperState.hitTargets[getLooperControlName("gap")],
-        LOOPER_DEBUG_COLORS.controlGap,
-        LOOPER_COLLIDER_OPACITY,
+        target,
+        action === "play" && data.queued
+          ? 0xffd15a
+          : active
+            ? LOOPER_DEBUG_COLORS.buttonActive
+            : LOOPER_DEBUG_COLORS.button[action],
+        active ? 0.48 : LOOPER_COLLIDER_OPACITY,
       );
-    },
-    setHitTargetDebugColor(target, color, opacity = null) {
-      if (!target?.material) {
-        return;
+    }
+
+    for (const track of data.tracks) {
+      const connected = track.connectedHonkId !== null && track.connectedHonkId !== undefined;
+      let nodeColor = connected
+        ? this.host.getLooperWireColor(track.index)
+        : LOOPER_DEBUG_COLORS.nodeOpen;
+      let opacity = connected ? 0.5 : LOOPER_COLLIDER_OPACITY;
+      if (track.isRecording) {
+        nodeColor = LOOPER_DEBUG_COLORS.recording;
+        opacity = 0.58;
+      } else if (track.isPlaying) {
+        nodeColor = LOOPER_DEBUG_COLORS.playing;
+        opacity = 0.58;
+      } else if (data.hasRecording && track.active) {
+        nodeColor = LOOPER_DEBUG_COLORS.recorded;
+        opacity = 0.5;
       }
-  
-      target.userData.currentHitColor = color;
-      target.material.color.setHex(color);
-      if (typeof opacity === "number") {
-        const visibleOpacity = DEBUG_MODE ? opacity : 0;
-        target.userData.baseHitOpacity = visibleOpacity;
-        target.material.opacity = visibleOpacity;
-      }
-    },
-};
+      this.setHitTargetDebugColor(track.nodeTarget, nodeColor, opacity);
+    }
+
+    this.setHitTargetDebugColor(
+      looperState.hitTargets[getLooperControlName("volume")],
+      LOOPER_DEBUG_COLORS.controlVolume,
+      LOOPER_COLLIDER_OPACITY,
+    );
+    this.setHitTargetDebugColor(
+      looperState.hitTargets[getLooperControlName("gap")],
+      LOOPER_DEBUG_COLORS.controlGap,
+      LOOPER_COLLIDER_OPACITY,
+    );
+  }
+  setHitTargetDebugColor(target, color, opacity = null) {
+    if (!target?.material) {
+      return;
+    }
+
+    target.userData.currentHitColor = color;
+    target.material.color.setHex(color);
+    if (typeof opacity === "number") {
+      const visibleOpacity = DEBUG_MODE ? opacity : 0;
+      target.userData.baseHitOpacity = visibleOpacity;
+      target.material.opacity = visibleOpacity;
+    }
+  }
+}

@@ -1,23 +1,18 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import { advanceHonkPresentation } from '../../src/app/runtime/HonkPerformanceSampling.js';
-import { HonkInstrument } from '../../src/instruments/honk/HonkInstrument.js';
-import { HonkPerformanceState } from '../../src/instruments/honk/HonkPerformanceState.js';
+import { runtimeOwners } from "../helpers/runtimeOwners.js";
+import test from "node:test";
+import assert from "node:assert/strict";
 
-const runtimeURL = new URL('../../src/app/runtime/HonkPerformanceRuntime.js', import.meta.url);
-let source = await readFile(runtimeURL, 'utf8');
-source = source.replace('import * as THREE from "three";', `const THREE = {
-  Quaternion: class {}, Euler: class {}, MathUtils: { clamp: (v, a, b) => Math.min(Math.max(v, a), b), degToRad: (v) => v * Math.PI / 180 }
-};`);
-source = source.replace(/from "(\.\.?\/[^\"]+)"/g, (_, path) => `from "${new URL(path, runtimeURL).href}"`);
-const { HonkPerformanceRuntimeMethods } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+import { advanceHonkPresentation } from "../../src/app/runtime/HonkPerformanceSampling.js";
+import { HonkInstrument } from "../../src/instruments/honk/HonkInstrument.js";
+import { HonkPerformanceState } from "../../src/instruments/honk/HonkPerformanceState.js";
+
+import { HonkPerformanceRuntimeMethods } from "../../src/app/runtime/HonkPerformanceRuntime.js";
 
 function settled() {
   return { squeeze: 1, bend: 0.5, targetSqueeze: 1, targetBend: 0.5, automationRevision: 1 };
 }
 
-test('visual release follows equal elapsed time at XR rates and through a dropped frame', () => {
+test("visual release follows equal elapsed time at XR rates and through a dropped frame", () => {
   for (const hz of [60, 72, 90, 120]) {
     let state = settled();
     const end = 100;
@@ -34,7 +29,7 @@ test('visual release follows equal elapsed time at XR rates and through a droppe
   assert.ok(Math.abs(dropped.squeeze - 0.82 ** 6) < 1e-12);
 });
 
-test('continuous recorded gestures and processed live input receive no second filter', () => {
+test("continuous recorded gestures and processed live input receive no second filter", () => {
   let state = settled();
   for (let i = 1; i <= 8; i += 1) {
     const target = { squeeze: 1 - i * 0.05, bend: 0.5 - i * 0.02 };
@@ -51,7 +46,7 @@ test('continuous recorded gestures and processed live input receive no second fi
   }
 });
 
-test('rapid attacks at loop seams remain distinct from the preceding eased release', () => {
+test("rapid attacks at loop seams remain distinct from the preceding eased release", () => {
   let state = advanceHonkPresentation(settled(), { squeeze: 0, bend: 0 }, {}, 1, 1000 / 60);
   assert.ok(Math.abs(state.squeeze - 0.82) < 1e-12);
   state = advanceHonkPresentation(state, { squeeze: 1, bend: -0.5 }, {}, 1, 1000 / 60);
@@ -59,23 +54,39 @@ test('rapid attacks at loop seams remain distinct from the preceding eased relea
   assert.equal(state.bend, -0.5);
 });
 
-test('actual runtime keeps automation release/removal separate from capture, collider bend and root pulse', () => {
+test("actual runtime keeps automation release/removal separate from capture, collider bend and root pulse", () => {
   const performance = new HonkPerformanceState();
   let morph;
   let pulse;
   const honk = {
-    kind: 'honk', performance, honkPresentation: settled(), hornSqueezeValue: 1, bendValue: 0.5,
-    processedLivePerformance: { squeeze: 0, bend: 0 }, lastHonkPerformanceUpdateMs: 0,
+    kind: "honk",
+    performance,
+    honkPresentation: settled(),
+    hornSqueezeValue: 1,
+    bendValue: 0.5,
+    processedLivePerformance: { squeeze: 0, bend: 0 },
+    lastHonkPerformanceUpdateMs: 0,
     getLivePerformanceState: () => performance.getLiveSnapshot(),
-    applyMorphPerformanceState: (state) => { morph = state; },
+    applyMorphPerformanceState: (state) => {
+      morph = state;
+    },
     bendAlignedColliderGroup: { rotation: { z: 0 } },
   };
-  performance.setAutomationLayer('loop', { squeeze: 1, bend: 0.5 });
+  performance.setAutomationLayer("loop", { squeeze: 1, bend: 0.5 });
   honk.honkPresentation.automationRevision = performance.automationRevision;
-  performance.clearAutomationLayer('loop');
-  const runtime = Object.assign({ instrumentStates: [honk], applyResolvedHonkMorphState() {},
-    applyInstrumentVisualScale(_honk, value) { pulse = value; },
-  }, HonkPerformanceRuntimeMethods);
+  performance.clearAutomationLayer("loop");
+  const runtime = runtimeOwners(
+    Object.assign(
+      {
+        instrumentStates: [honk],
+        applyResolvedHonkMorphState() {},
+        applyInstrumentVisualScale(_honk, value) {
+          pulse = value;
+        },
+      },
+      HonkPerformanceRuntimeMethods,
+    ),
+  );
   // Stub unrelated presentation work after assigning the runtime methods.
   runtime.applyResolvedHonkMorphState = () => {};
   runtime.applyResolvedHonkPerformanceStates(1000 / 60);
@@ -93,19 +104,38 @@ test('actual runtime keeps automation release/removal separate from capture, col
   assert.equal(performance.resolved.squeeze, honk.processedLivePerformance.squeeze);
 });
 
-test('interaction pose restores authored visual scale and morphs even if a raycast throws', () => {
+test("interaction pose restores authored visual scale and morphs even if a raycast throws", () => {
   const morph = { squeeze: 0.82, bend: 0.41 };
-  const scale = { x: 1.0287, setScalar(v) { this.x = v; } };
-  const honk = {
-    honkPresentation: { ...morph }, honkVisualRoot: { scale }, hornSqueezeValue: 0, bendValue: 0,
-    root: { updateMatrixWorld() {} },
-    morphs: { setSqueeze(v) { morph.squeeze = v; }, setBend(v) { morph.bend = v; } },
+  const scale = {
+    x: 1.0287,
+    setScalar(v) {
+      this.x = v;
+    },
   };
-  assert.throws(() => HonkInstrument.prototype.withInteractionPose.call(honk, () => {
-    assert.equal(scale.x, 1);
-    assert.deepEqual(morph, { squeeze: 0, bend: 0 });
-    throw Error('raycast');
-  }), /raycast/);
+  const honk = {
+    honkPresentation: { ...morph },
+    honkVisualRoot: { scale },
+    hornSqueezeValue: 0,
+    bendValue: 0,
+    root: { updateMatrixWorld() {} },
+    morphs: {
+      setSqueeze(v) {
+        morph.squeeze = v;
+      },
+      setBend(v) {
+        morph.bend = v;
+      },
+    },
+  };
+  assert.throws(
+    () =>
+      HonkInstrument.prototype.withInteractionPose.call(honk, () => {
+        assert.equal(scale.x, 1);
+        assert.deepEqual(morph, { squeeze: 0, bend: 0 });
+        throw Error("raycast");
+      }),
+    /raycast/,
+  );
   assert.equal(scale.x, 1.0287);
   assert.deepEqual(morph, honk.honkPresentation);
   assert.equal(honk.interactionPoseActive, false);

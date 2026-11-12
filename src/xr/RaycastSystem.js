@@ -38,15 +38,19 @@ export class RaycastSystem {
     this.allTargets.length = 0;
     this.fallbackTargets.length = 0;
     const closeButton = this.getCloseButton?.();
-    if (this.isPanelVisible?.() && closeButton)
-      this.allTargets.push(closeButton);
+    if (this.isPanelVisible?.() && closeButton) this.allTargets.push(closeButton);
     for (const instrument of this.getInstruments()) {
       if (!instrument?.root?.visible) continue;
       for (const target of this.getTargets(instrument)) {
         // Frozen morph controls are not editable. Their spheres must not mask
         // the locked Honk's larger squeeze volume.
-        if (instrument.kind === "honk" && instrument.locked &&
-            target.userData.isProceduralMorphTarget && target !== instrument.squeezeCollider) continue;
+        if (
+          instrument.kind === "honk" &&
+          instrument.locked &&
+          target.userData.isProceduralMorphTarget &&
+          target !== instrument.squeezeCollider
+        )
+          continue;
         this.allTargets.push(target);
       }
     }
@@ -63,9 +67,7 @@ export class RaycastSystem {
     let hit = this.selectCurrentHit();
     if (
       this.targets.length !== this.allTargets.length &&
-      (!hit ||
-        hit.object.userData.isBodyGripTarget ||
-        hit !== this.selectCurrentHit(false))
+      (!hit || hit.object.userData.isBodyGripTarget || hit !== this.selectCurrentHit(false))
     ) {
       // With no control hit, only the omitted bodies remain to be tested.
       // Otherwise bodies can change the nearest close/looper override: repeat
@@ -84,20 +86,13 @@ export class RaycastSystem {
     const nearest = this.intersections[0] || null;
     return (
       (nearestOverride &&
-      (nearest?.object.userData.isCloseButton ||
-        this.isLooperTarget(nearest?.object))
+      (nearest?.object.userData.isCloseButton || this.isLooperTarget(nearest?.object))
         ? nearest
         : null) ||
-      this.intersections.find(
-        ({ object }) => object.userData.isHonkConnectionTarget,
-      ) ||
+      this.intersections.find(({ object }) => object.userData.isHonkConnectionTarget) ||
       this.intersections.find(({ object }) => this.isLooperTarget(object)) ||
-      this.intersections.find(
-        ({ object }) => object.userData.isProceduralMorphTarget,
-      ) ||
-      this.intersections.find(
-        ({ object }) => !object.userData.isBodyGripTarget,
-      ) ||
+      this.intersections.find(({ object }) => object.userData.isProceduralMorphTarget) ||
+      this.intersections.find(({ object }) => !object.userData.isBodyGripTarget) ||
       nearest
     );
   }
@@ -112,14 +107,19 @@ export class RaycastSystem {
       this.isLooperTarget(target)
     )
       return false;
-    for (const child of target.children || [])
-      if (!this.isFallbackBody(child)) return false;
+    for (const child of target.children || []) if (!this.isFallbackBody(child)) return false;
     return true;
   }
 
   getHonkSqueezeHit(controller, instrument) {
-    if (!controller || instrument?.kind !== "honk" || !instrument.locked ||
-        !instrument.root?.visible || !instrument.squeezeCollider) return null;
+    if (
+      !controller ||
+      instrument?.kind !== "honk" ||
+      !instrument.locked ||
+      !instrument.root?.visible ||
+      !instrument.squeezeCollider
+    )
+      return null;
     this.setFromController(controller);
     this.targets.length = 0;
     this.targets.push(instrument.squeezeCollider);
@@ -134,21 +134,12 @@ export class RaycastSystem {
     this.targets.length = 0;
     const seen = new Set();
     for (const instrument of this.getInstruments()) {
-      if (
-        !instrument?.locked ||
-        !instrument.root?.visible ||
-        !this.canLock(instrument)
-      )
-        continue;
+      if (!instrument?.locked || !instrument.root?.visible || !this.canLock(instrument)) continue;
       for (const target of [
         instrument.hitTargets?.[INTERACTION_TARGET_NAMES.body],
         ...(instrument.gripTargetList || []),
       ]) {
-        if (
-          target?.visible !== false &&
-          target?.userData.isBodyGripTarget &&
-          !seen.has(target)
-        ) {
+        if (target?.visible !== false && target?.userData.isBodyGripTarget && !seen.has(target)) {
           seen.add(target);
           this.targets.push(target);
         }
@@ -171,11 +162,7 @@ export class RaycastSystem {
         instrument.hitTargets?.[INTERACTION_TARGET_NAMES.body],
         ...(instrument.gripTargetList || []),
       ]) {
-        if (
-          target?.visible !== false &&
-          target?.userData.isBodyGripTarget &&
-          !seen.has(target)
-        ) {
+        if (target?.visible !== false && target?.userData.isBodyGripTarget && !seen.has(target)) {
           seen.add(target);
           this.targets.push(target);
         }
@@ -184,9 +171,7 @@ export class RaycastSystem {
     this.intersections.length = 0;
     this.intersectTargets();
     return (
-      this.intersections.find(
-        ({ object }) => this.resolveOwner(object)?.root?.visible,
-      ) || null
+      this.intersections.find(({ object }) => this.resolveOwner(object)?.root?.visible) || null
     );
   }
 
@@ -213,8 +198,7 @@ export class RaycastSystem {
       // same frame. Refresh transforms; no frame-number geometry cache is used.
       if (owner) owner.root.updateWorldMatrix(true, true);
       else for (const target of targets) target.updateWorldMatrix(true, true);
-      const intersect = () =>
-        this.raycaster.intersectObjects(targets, true, this.intersections);
+      const intersect = () => this.raycaster.intersectObjects(targets, true, this.intersections);
       if (owner?.withInteractionPose) owner.withInteractionPose(intersect);
       else intersect();
     }

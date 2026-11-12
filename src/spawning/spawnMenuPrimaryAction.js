@@ -8,9 +8,7 @@ export function resolveSpawnMenuPrimaryAction({
   controllerState = null,
   gripPressed = false,
 } = {}) {
-  const gripActive = Boolean(
-    gripPressed || controllerState?.grip || controllerState?.gripHeld,
-  );
+  const gripActive = Boolean(gripPressed || controllerState?.grip || controllerState?.gripHeld);
   if (!gripActive) {
     return { type: SpawnMenuPrimaryAction.open, source: null };
   }
@@ -50,6 +48,6 @@ function isDuplicableInstrument(source) {
     source?.root?.visible &&
     !source.disposed &&
     !source.pendingPlacement &&
-    (source.kind === "honk" || source.kind === "looper" || source.kind === "metronome")
+    (source.kind === "honk" || source.kind === "looper" || source.kind === "metronome"),
   );
 }

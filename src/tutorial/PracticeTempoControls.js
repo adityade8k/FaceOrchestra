@@ -12,11 +12,8 @@ const W = 1072,
   LEFT = 80,
   RIGHT = 992;
 export const tempoFromSliderX = (x) =>
-  practiceBpm(
-    PRACTICE_MIN_BPM + Math.max(0, Math.min(1, x)) * (BPM - PRACTICE_MIN_BPM),
-  );
-const sliderXFromTempo = (bpm) =>
-  (bpm - PRACTICE_MIN_BPM) / (BPM - PRACTICE_MIN_BPM);
+  practiceBpm(PRACTICE_MIN_BPM + Math.max(0, Math.min(1, x)) * (BPM - PRACTICE_MIN_BPM));
+const sliderXFromTempo = (bpm) => (bpm - PRACTICE_MIN_BPM) / (BPM - PRACTICE_MIN_BPM);
 export class PracticeTempoControls {
   constructor(panel) {
     this.panel = panel;
@@ -41,11 +38,7 @@ export class PracticeTempoControls {
           depthWrite: false,
         }),
       );
-      mesh.position.set(
-        (x + w / 2 - W / 2) * sx,
-        (H / 2 - y - h / 2) * sy,
-        map ? 0 : 0.002,
-      );
+      mesh.position.set((x + w / 2 - W / 2) * sx, (H / 2 - y - h / 2) * sy, map ? 0 : 0.002);
       Object.assign(mesh.userData, { tutorialPanel: true }, data);
       this.group.add(mesh);
       return mesh;
@@ -94,9 +87,7 @@ export class PracticeTempoControls {
     const progressive = document.createElement("label");
     this.checkbox = document.createElement("input");
     this.checkbox.type = "checkbox";
-    this.checkbox.addEventListener("change", () =>
-      panel.onAction("progressive-practice"),
-    );
+    this.checkbox.addEventListener("change", () => panel.onAction("progressive-practice"));
     progressive.append(this.checkbox, " Progressive practice");
     this.dom.append(label, this.input, presets, progressive);
     panel.dom.insertBefore(this.dom, panel.nodes.actions);
@@ -112,8 +103,7 @@ export class PracticeTempoControls {
     this.group.visible = Boolean(model);
     this.dom.hidden = !model;
     this.dom.disabled = Boolean(model?.disabled);
-    for (const target of this.targets)
-      target.userData.disabled = Boolean(model?.disabled);
+    for (const target of this.targets) target.userData.disabled = Boolean(model?.disabled);
     if (model) {
       this.checkbox.checked = model.progressive;
       this.draw();
@@ -135,22 +125,12 @@ export class PracticeTempoControls {
     ctx.fillStyle = "#fff4dd";
     ctx.fillText(`Practice BPM: ${bpm}`, 0, 34);
     ctx.font = "28px sans-serif";
-    ctx.fillText(
-      `${this.model.progressive ? "☑" : "☐"} Progressive practice`,
-      735,
-      34,
-    );
+    ctx.fillText(`${this.model.progressive ? "☑" : "☐"} Progressive practice`, 735, 34);
     ctx.fillStyle = "#849b95";
     ctx.fillRect(LEFT, 86, RIGHT - LEFT, 7);
     ctx.fillStyle = "#83dfbd";
     ctx.beginPath();
-    ctx.arc(
-      LEFT + sliderXFromTempo(bpm) * (RIGHT - LEFT),
-      90,
-      18,
-      0,
-      Math.PI * 2,
-    );
+    ctx.arc(LEFT + sliderXFromTempo(bpm) * (RIGHT - LEFT), 90, 18, 0, Math.PI * 2);
     ctx.fill();
     ctx.textAlign = "center";
     PRACTICE_TEMPOS.forEach((b) => {
@@ -167,9 +147,7 @@ export class PracticeTempoControls {
     this.group.updateWorldMatrix(true, false);
     this.point.copy(point);
     this.group.worldToLocal(this.point);
-    this.preview = tempoFromSliderX(
-      (this.point.x / this.scaleX + W / 2 - LEFT) / (RIGHT - LEFT),
-    );
+    this.preview = tempoFromSliderX((this.point.x / this.scaleX + W / 2 - LEFT) / (RIGHT - LEFT));
     this.draw();
   }
   begin(hit) {
@@ -187,16 +165,14 @@ export class PracticeTempoControls {
     controller.getWorldPosition(this.ray.origin);
     controller.getWorldQuaternion(this.rotation);
     this.ray.direction.set(0, 0, -1).applyQuaternion(this.rotation);
-    if (this.ray.intersectPlane(this.plane, this.point))
-      this.fromPoint(this.point);
+    if (this.ray.intersectPlane(this.plane, this.point)) this.fromPoint(this.point);
   }
   commit() {
     const value = this.preview;
     this.dragging = false;
     this.preview = null;
     this.draw();
-    if (value !== null && value !== undefined)
-      this.panel.onAction(`practice-bpm:${value}`);
+    if (value !== null && value !== undefined) this.panel.onAction(`practice-bpm:${value}`);
   }
   cancel() {
     this.dragging = false;

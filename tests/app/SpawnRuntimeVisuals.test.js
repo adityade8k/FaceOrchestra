@@ -32,7 +32,8 @@ test("procedural targets and debug interaction geometry are hidden from the prev
 });
 
 test("placement restores exact material, visibility, shadows, and render order", () => {
-  const { state, presentation, originalMaterial, proceduralTarget } = createPreviewState("metronome");
+  const { state, presentation, originalMaterial, proceduralTarget } =
+    createPreviewState("metronome");
   presentation.castShadow = true;
   presentation.receiveShadow = true;
   presentation.renderOrder = 7;

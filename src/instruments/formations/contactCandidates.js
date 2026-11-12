@@ -5,11 +5,7 @@ export function* contactCandidates(spheres) {
   const entries = [];
   for (let i = 0; i < spheres.length; i++) {
     const s = spheres[i];
-    if (
-      s?.center?.every(Number.isFinite) &&
-      Number.isFinite(s.radius) &&
-      s.radius > 0
-    )
+    if (s?.center?.every(Number.isFinite) && Number.isFinite(s.radius) && s.radius > 0)
       entries.push({
         i,
         min: s.center[0] - s.radius,
@@ -20,11 +16,7 @@ export function* contactCandidates(spheres) {
   entries.sort((a, b) => a.min - b.min || a.i - b.i);
   for (let a = 0; a < entries.length; a++) {
     const first = entries[a];
-    for (
-      let b = a + 1;
-      b < entries.length && entries[b].min <= first.max;
-      b++
-    ) {
+    for (let b = a + 1; b < entries.length && entries[b].min <= first.max; b++) {
       const second = entries[b],
         sum = first.s.radius + second.s.radius;
       if (

@@ -54,8 +54,10 @@ export function isDrumHitEvent(event) {
 }
 
 export function isHonkGateEvent(event) {
-  return event?.type === LooperActionEventType.SqueezeStart ||
-    event?.type === LooperActionEventType.SqueezeEnd;
+  return (
+    event?.type === LooperActionEventType.SqueezeStart ||
+    event?.type === LooperActionEventType.SqueezeEnd
+  );
 }
 
 export class LooperActionEvent {
@@ -72,6 +74,7 @@ export class LooperActionEvent {
     preserveDuration = false,
     releaseOrigin = null,
     durationMs = null,
+    gain = undefined,
   } = {}) {
     this.id = id;
     this.timeMs = Math.max(Number.isFinite(timeMs) ? timeMs : 0, 0);
@@ -84,7 +87,10 @@ export class LooperActionEvent {
     this.support = Boolean(support);
     this.preserveDuration = Boolean(preserveDuration);
     this.releaseOrigin = releaseOrigin || null;
-    if (isDrumHitEvent(this)) this.durationMs = Number.isFinite(durationMs) && durationMs > 0 ? durationMs : getPercussionDurationMs(value);
+    if (isDrumHitEvent(this) && Number.isFinite(gain)) this.gain = Math.max(0, Math.min(1, gain));
+    if (isDrumHitEvent(this))
+      this.durationMs =
+        Number.isFinite(durationMs) && durationMs > 0 ? durationMs : getPercussionDurationMs(value);
   }
 
   clone() {
@@ -112,6 +118,7 @@ export class LooperActionEvent {
     if (this.preserveDuration) serialized.preserveDuration = true;
     if (this.releaseOrigin) serialized.releaseOrigin = this.releaseOrigin;
     if (this.durationMs > 0) serialized.durationMs = this.durationMs;
+    if (this.gain !== undefined) serialized.gain = this.gain;
     return serialized;
   }
 
@@ -129,6 +136,7 @@ export class LooperActionEvent {
       preserveDuration: serialized.preserveDuration,
       releaseOrigin: serialized.releaseOrigin,
       durationMs: serialized.durationMs,
+      gain: serialized.gain,
     });
   }
 }

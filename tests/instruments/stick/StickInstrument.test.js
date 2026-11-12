@@ -14,7 +14,15 @@ test("stick emits one semantic strike per contact and can retrigger after separa
   stick.equip("right");
   const first = stick.beginContact(target, { velocity: 2.5, timestamp: 10 });
   assert.deepEqual(
-    pick(first, ["type", "stickId", "controllerId", "targetId", "percussionType", "velocity", "timestamp"]),
+    pick(first, [
+      "type",
+      "stickId",
+      "controllerId",
+      "targetId",
+      "percussionType",
+      "velocity",
+      "timestamp",
+    ]),
     {
       type: "stick.strike",
       stickId: "stick-1",
@@ -135,16 +143,41 @@ function object3D() {
     quaternion: tuple4(0, 0, 0, 1),
     rotation: tuple3(0, 0, 0),
     scale: tuple3(1, 1, 1),
-    removeFromParent() { this.parent = null; },
+    removeFromParent() {
+      this.parent = null;
+    },
   };
 }
 
 function tuple3(x, y, z) {
-  return { x, y, z, set(a, b, c) { this.x = a; this.y = b; this.z = c; }, setScalar(v) { this.set(v, v, v); } };
+  return {
+    x,
+    y,
+    z,
+    set(a, b, c) {
+      this.x = a;
+      this.y = b;
+      this.z = c;
+    },
+    setScalar(v) {
+      this.set(v, v, v);
+    },
+  };
 }
 
 function tuple4(x, y, z, w) {
-  return { x, y, z, w, set(a, b, c, d) { this.x = a; this.y = b; this.z = c; this.w = d; } };
+  return {
+    x,
+    y,
+    z,
+    w,
+    set(a, b, c, d) {
+      this.x = a;
+      this.y = b;
+      this.z = c;
+      this.w = d;
+    },
+  };
 }
 
 function pick(value, fields) {

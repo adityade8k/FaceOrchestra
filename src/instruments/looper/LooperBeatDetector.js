@@ -51,7 +51,10 @@ export class LooperBeatDetector {
       for (const event of track.events) {
         const relativeMs = event.timeMs - originMs;
         event.timeMs = isRhythmicGate(event)
-          ? Math.max(originMs + snapWithLimit(relativeMs, subdivisionMs, this.settings.maxSnapMs), 0)
+          ? Math.max(
+              originMs + snapWithLimit(relativeMs, subdivisionMs, this.settings.maxSnapMs),
+              0,
+            )
           : event.timeMs;
       }
       track.sorted = false;
@@ -85,16 +88,16 @@ export class LooperBeatDetector {
     if (!folded.length) return 0;
     folded.sort((first, second) => first - second);
     const middle = Math.floor(folded.length / 2);
-    return folded.length % 2
-      ? folded[middle]
-      : (folded[middle - 1] + folded[middle]) * 0.5;
+    return folded.length % 2 ? folded[middle] : (folded[middle - 1] + folded[middle]) * 0.5;
   }
 }
 
 function isRhythmicGate(event) {
-  return isDrumHitEvent(event) ||
+  return (
+    isDrumHitEvent(event) ||
     event?.type === LooperActionEventType.SqueezeStart ||
-    event?.type === LooperActionEventType.SqueezeEnd;
+    event?.type === LooperActionEventType.SqueezeEnd
+  );
 }
 
 function clusterTimes(times, toleranceMs) {

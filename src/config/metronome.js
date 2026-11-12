@@ -1,3 +1,5 @@
+import { MODEL_LABEL_SETTINGS } from "./ui.js";
+
 export const METRONOME_COMPONENT_ID = "metronome";
 
 export const METRONOME_SETTINGS = Object.freeze({
@@ -95,7 +97,7 @@ export const METRONOME_EYE_CONTROLS = Object.freeze([
     nodeName: "L_button_geo",
     action: METRONOME_BUTTON_ACTIONS.play,
     latching: true,
-    pressedOffset: Object.freeze({ x: 0, y: 0, z: -0.012 }),
+    pressedOffset: Object.freeze({ x: 0, y: 0, z: -0.003 }),
     releaseDelayMs: null,
     colliderScale: 1.08,
     colliderColor: 0x72d572,
@@ -104,7 +106,7 @@ export const METRONOME_EYE_CONTROLS = Object.freeze([
     nodeName: "R_button_geo",
     action: METRONOME_BUTTON_ACTIONS.pause,
     latching: false,
-    pressedOffset: Object.freeze({ x: 0, y: 0, z: -0.012 }),
+    pressedOffset: Object.freeze({ x: 0, y: 0, z: -0.003 }),
     releaseDelayMs: 140,
     colliderScale: 1.08,
     colliderColor: 0xff8c42,
@@ -120,8 +122,8 @@ export const METRONOME_PENDULUM_SETTINGS = Object.freeze({
   swingDegrees: 5,
 });
 
-// The outlets asset bakes both handle positions into geometry, so each control
-// reconstructs its Ver-8 hinge in group1-local space. group1 maps local Y to
+// The eye-fix asset bakes both handle positions into geometry, so each control
+// reconstructs its Ver-8 hinge in the imported group frame. That group maps local Y to
 // the Metronome root's Z axis. Default values are the parameter midpoints, so
 // both generated pivots initialize at the midpoint of their configured arcs.
 export const METRONOME_HANDLE_CONTROLS = Object.freeze([
@@ -160,15 +162,7 @@ export const METRONOME_HANDLE_CONTROLS = Object.freeze([
 ]);
 
 export const METRONOME_LABEL_SETTINGS = Object.freeze({
-  color: 0xf7efe2,
-  size: 0.055,
-  depth: 0.008,
-  curveSegments: 4,
+  ...MODEL_LABEL_SETTINGS,
   position: Object.freeze({ x: 0, y: 0.25, z: 0 }),
   rotationDegrees: Object.freeze({ x: -18, y: 0, z: 0 }),
-  canvasWidth: 512,
-  canvasHeight: 128,
-  spriteWidth: 0.34,
-  spriteHeight: 0.085,
-  font: "700 72px Arial",
 });

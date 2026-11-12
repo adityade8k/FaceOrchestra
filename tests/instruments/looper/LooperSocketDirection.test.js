@@ -10,9 +10,7 @@ import {
 
 test("bank metadata preserves outward tangents through parent rotation/scale, duplication and restore", () => {
   const root = new THREE.Group();
-  root.add(
-    new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial()),
-  );
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial()));
   const targets = new LooperColliderFactory({
     makeHitTargetMaterial: () => new THREE.MeshBasicMaterial(),
   }).create(root);
@@ -28,28 +26,17 @@ test("bank metadata preserves outward tangents through parent rotation/scale, du
   parent.updateMatrixWorld(true);
   for (const socket of sockets) {
     const side = socket.userData.looperBank === "left" ? -1 : 1;
-    const expected = new THREE.Vector3(side, 0, 0).transformDirection(
-      root.matrixWorld,
-    );
+    const expected = new THREE.Vector3(side, 0, 0).transformDirection(root.matrixWorld);
     const endpoint = socket.getWorldPosition(new THREE.Vector3());
+    assert.ok(getWireSocketTangent(socket, root, endpoint).distanceTo(expected) < 1e-12);
     assert.ok(
-      getWireSocketTangent(socket, root, endpoint).distanceTo(expected) < 1e-12,
-    );
-    assert.ok(
-      getWireSocketTangent(
-        socket,
-        root,
-        endpoint,
-        new THREE.Vector3(),
-        true,
-      ).distanceTo(expected.clone().negate()) < 1e-12,
+      getWireSocketTangent(socket, root, endpoint, new THREE.Vector3(), true).distanceTo(
+        expected.clone().negate(),
+      ) < 1e-12,
     );
     const duplicate = socket.clone();
     root.add(duplicate);
-    assert.deepEqual(
-      duplicate.userData.wireSocketOutward,
-      socket.userData.wireSocketOutward,
-    );
+    assert.deepEqual(duplicate.userData.wireSocketOutward, socket.userData.wireSocketOutward);
     const end = new THREE.Object3D();
     end.position.set(4, 2, 2);
     parent.add(end);
@@ -83,10 +70,6 @@ test("bank metadata preserves outward tangents through parent rotation/scale, du
       endTarget: end,
       endOwnerRoot: parent,
     });
-    assert.equal(
-      completed.geometry,
-      geometry,
-      "unchanged paths retain geometry cache",
-    );
+    assert.equal(completed.geometry, geometry, "unchanged paths retain geometry cache");
   }
 });

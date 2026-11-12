@@ -14,9 +14,8 @@ export class CaptureRecorder extends EventTarget {
     this.includeUI = false;
     this.segment = 0;
     this.inflight = 0;
-    this.audio = new AudioCapture(runtime.audioSystem, (kind, data) =>
-      this.onAudio(kind, data),
-    );
+    this.inflightBytes = 0;
+    this.audio = new AudioCapture(runtime.audioSystem, (kind, data) => this.onAudio(kind, data));
     this.hidden = () => {
       if (document.hidden) this.stop("visibility-interruption", { tailMs: 0 });
     };
@@ -27,9 +26,7 @@ export class CaptureRecorder extends EventTarget {
   }
   get elapsed() {
     return this.origin
-      ? ((this.active ? performance.now() : this.ended || performance.now()) -
-          this.origin) /
-          1000
+      ? ((this.active ? performance.now() : this.ended || performance.now()) - this.origin) / 1000
       : 0;
   }
   async readiness() {
@@ -40,9 +37,7 @@ export class CaptureRecorder extends EventTarget {
       if (!response.ok) throw new Error("Start npm run capture:serve");
       const status = await response.json();
       this.connected = status.paired;
-      this.message = status.paired
-        ? "Receiver ready"
-        : "Enter the receiver pairing code before XR";
+      this.message = status.paired ? "Receiver ready" : "Enter the receiver pairing code before XR";
       this.build = status.build;
       this.notify();
       return status;
@@ -68,9 +63,7 @@ export class CaptureRecorder extends EventTarget {
       (this.owner && this.owner !== owner) ||
       !["idle", "complete", "incomplete", "error"].includes(this.state)
     )
-      throw new Error(
-        "Finish the current mixed reality take before entering this mode.",
-      );
+      throw new Error("Finish the current mixed reality take before entering this mode.");
     this.owner = owner;
     this.notify();
   }
@@ -81,10 +74,8 @@ export class CaptureRecorder extends EventTarget {
     }
   }
   command(id) {
-    if (this.owner && id !== "capture-status")
-      return this.owner.captureCommand(id);
-    if (id === "capture-toggle")
-      return this.active ? this.stop() : this.start();
+    if (this.owner && id !== "capture-status") return this.owner.captureCommand(id);
+    if (id === "capture-toggle") return this.active ? this.stop() : this.start();
     if (id === "capture-sync") return this.markSync();
     if (id === "capture-pose") return this.markPose();
     if (id === "capture-status") {
@@ -94,9 +85,9 @@ export class CaptureRecorder extends EventTarget {
   }
   start(options = {}) {
     if (this.owner && options.owner !== this.owner) return Promise.resolve();
-    if (!["idle", "complete", "incomplete", "error"].includes(this.state))
-      return Promise.resolve();
+    if (!["idle", "complete", "incomplete", "error"].includes(this.state)) return Promise.resolve();
     this.startCancelled = null;
+    this.startFailure = null;
     this.stopTask = null;
     this.saved = null;
     this.startTask = this.prepareTake(options);
@@ -105,42 +96,50 @@ export class CaptureRecorder extends EventTarget {
   async startReady(options = {}) {
     const result = await this.start(options);
     if (!result || this.state !== "recording" || !this.active)
-      throw new Error(this.message || "Capture was not ready.");
+      throw this.startFailure || new Error(this.message || "Capture was not ready.");
     return result;
   }
   async prepareResources() {
-    // A fixed backing setup can exceed the existing send queue in aggregate.
-    // Drain each complete resource before emitting the next; retain every byte
-    // and the same queue limit. Audio has not started at this point.
+    // Batch small resources instead of waiting one receiver round trip per
+    // material. Large resources still drain alone; queue limits are unchanged.
+    const total = this.presentation.pending.length;
+    const progress = () => {
+      const done = total - this.presentation.pending.length;
+      this.message = `Preparing recording: ${Math.round((done / Math.max(total, 1)) * 100)}%. The count-in starts when ready.`;
+      this.notify();
+    };
+    progress();
     do {
       if (this.startCancelled) throw new Error(this.startCancelled);
-      this.presentation.flushResources(0, { maxItems: 1 });
+      this.presentation.flushResources(0, { maxItems: 32, maxBytes: 1024 * 1024, budgetMs: 4 });
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           this.drainReady = null;
           reject(new Error("Scene capture preparation is still pending. Reconnect the receiver."));
         }, 20000);
         this.drainReady = () => {
-          clearTimeout(timeout); this.drainReady = null; resolve();
+          clearTimeout(timeout);
+          this.drainReady = null;
+          resolve();
         };
         this.worker.postMessage({ type: "barrier" });
       });
+      progress();
     } while (this.presentation.pending.length);
     if (this.startCancelled) throw new Error(this.startCancelled);
   }
   async prepareTake({
     synthetic = false,
     performance: performanceMetadata = null,
+    includeUI = this.includeUI,
   } = {}) {
-    if (!["idle", "complete", "incomplete", "error"].includes(this.state))
-      return;
+    if (!["idle", "complete", "incomplete", "error"].includes(this.state)) return;
     this.state = "preparing";
     this.message = "Preparing receiver and audio";
     this.notify();
     try {
       const status = await this.readiness();
-      if (!status.paired)
-        throw new Error("Pair with the receiver before recording.");
+      if (!status.paired) throw new Error("Pair with the receiver before recording.");
       if (!synthetic && !this.runtime.renderer.xr.getSession())
         throw new Error("Enter XR before starting a take.");
       const audio = await this.audio.prepare();
@@ -152,6 +151,7 @@ export class CaptureRecorder extends EventTarget {
       this.gaps = [];
       this.metrics = { frames: 0, totalMs: 0, maxMs: 0 };
       this.inflight = 0;
+      this.inflightBytes = 0;
       this.metadata = {
         ...(performanceMetadata ? { performance: performanceMetadata } : {}),
         id: crypto.randomUUID(),
@@ -176,9 +176,9 @@ export class CaptureRecorder extends EventTarget {
           samplingHz: this.maxHz || "native",
         },
         initialSnapshot: this.runtime.sceneSerializer?.serialize?.() || null,
-        controllerProfiles: [
-          ...(this.runtime.renderer.xr.getSession()?.inputSources || []),
-        ].map((s) => ({ handedness: s.handedness, profiles: [...s.profiles] })),
+        controllerProfiles: [...(this.runtime.renderer.xr.getSession()?.inputSources || [])].map(
+          (s) => ({ handedness: s.handedness, profiles: [...s.profiles] }),
+        ),
       };
       if (this.startCancelled) throw new Error(this.startCancelled);
       this.worker?.terminate();
@@ -189,17 +189,12 @@ export class CaptureRecorder extends EventTarget {
       this.presentation = new PresentationCapture(
         this.runtime,
         (kind, data, t) => this.event(kind, data, t),
-        { includeUI: this.includeUI },
+        { includeUI },
       );
       const worker = this.worker;
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(
-          () =>
-            reject(
-              new Error(
-                "Receiver start timed out. Check pairing and connection.",
-              ),
-            ),
+          () => reject(new Error("Receiver start timed out. Check pairing and connection.")),
           12000,
         );
         this.worker.onmessage = ({ data }) => {
@@ -231,10 +226,7 @@ export class CaptureRecorder extends EventTarget {
         });
       });
       if (this.startCancelled) throw new Error(this.startCancelled);
-      if (
-        !synthetic &&
-        (!this.runtime.renderer.xr.getSession() || document.hidden)
-      )
+      if (!synthetic && (!this.runtime.renderer.xr.getSession() || document.hidden))
         throw new Error(
           "XR ended or the page was hidden before recording became ready. Start a new take when visible.",
         );
@@ -247,27 +239,25 @@ export class CaptureRecorder extends EventTarget {
       }
       this.active = true;
       this.synthetic = synthetic;
-      this.unsubscribeLifecycle = this.runtime.instrumentLifecycle?.subscribe?.(
-        (event) =>
-          this.event("lifecycle", {
-            type: event.type,
-            instrumentId: event.instrumentId,
-            reason: event.reason,
-          }),
+      this.unsubscribeLifecycle = this.runtime.instrumentLifecycle?.subscribe?.((event) =>
+        this.event("lifecycle", {
+          type: event.type,
+          instrumentId: event.instrumentId,
+          reason: event.reason,
+        }),
       );
       this.audio.start(this.origin, {
         poolBlocks: performanceMetadata ? 64 : 8,
       });
       await this.audio.ready;
       if (this.startCancelled || this.audio.context.state !== "running")
-        throw new Error(
-          this.startCancelled || "Audio suspended before capture became ready.",
-        );
+        throw new Error(this.startCancelled || "Audio suspended before capture became ready.");
       this.state = "recording";
       this.message = "Recording";
       this.notify();
       return this.metadata;
     } catch (error) {
+      this.startFailure = error;
       this.message = error.message;
       if (this.pendingFinalization) {
         // The receiver may already have created the take. Retain its worker and spool.
@@ -289,11 +279,11 @@ export class CaptureRecorder extends EventTarget {
     }
     if (data.type === "ready") {
       this.connected = true;
-      this.message =
-        this.state === "recording" ? "Recording" : "Receiver ready";
+      this.message = this.state === "recording" ? "Recording" : "Receiver ready";
     }
     if (data.type === "recycle") {
       this.inflight--;
+      this.inflightBytes -= data.buffer.byteLength;
       this.presentation?.recycle(data.buffer);
       return;
     }
@@ -303,8 +293,7 @@ export class CaptureRecorder extends EventTarget {
     }
     if (data.type === "stats") {
       this.queuedBytes = data.queuedBytes;
-      if (!["complete", "incomplete"].includes(this.state))
-        this.connected = data.connected;
+      if (!["complete", "incomplete"].includes(this.state)) this.connected = data.connected;
     }
     if (data.type === "connection") {
       this.connected = false;
@@ -341,7 +330,7 @@ export class CaptureRecorder extends EventTarget {
       t = Math.max(0, (now - this.origin) / 1000);
     this.last = now;
     try {
-      if (this.inflight >= 4) {
+      if (this.inflight >= 32) {
         this.gaps.push({
           stream: "samples",
           start: t,
@@ -351,8 +340,16 @@ export class CaptureRecorder extends EventTarget {
         this.stop("capture-error", { tailMs: 0 });
         return;
       }
+      // Four frames allowed only 33 ms at 120 Hz. Retain short worker bursts
+      // without dropping samples, with independent count and memory bounds.
       const sample = this.presentation.sample(t),
         reference = this.runtime.renderer.xr.getReferenceSpace();
+      if (this.inflightBytes + sample.buffer.byteLength > 8 * 1024 * 1024) {
+        this.presentation.recycle(sample.buffer);
+        this.gaps.push({ stream: "samples", start: t, end: t, reason: "sample-memory-limit" });
+        this.stop("capture-error", { tailMs: 0 });
+        return;
+      }
       let xr = { viewer: null, controllers: [] };
       if (xrFrame && reference) {
         xr.viewer = poseData(xrFrame.getViewerPose(reference));
@@ -360,9 +357,7 @@ export class CaptureRecorder extends EventTarget {
           xr.controllers.push({
             handedness: source.handedness,
             profiles: [...source.profiles],
-            grip: source.gripSpace
-              ? poseData(xrFrame.getPose(source.gripSpace, reference))
-              : null,
+            grip: source.gripSpace ? poseData(xrFrame.getPose(source.gripSpace, reference)) : null,
             ray: poseData(xrFrame.getPose(source.targetRaySpace, reference)),
             buttons: [...(source.gamepad?.buttons || [])].map((b) => [
               b.value,
@@ -373,6 +368,8 @@ export class CaptureRecorder extends EventTarget {
           });
       } else if (this.syntheticXR) xr = this.syntheticXR;
       this.inflight++;
+      this.inflightBytes += sample.buffer.byteLength;
+      this.metrics.maxInflight = Math.max(this.metrics.maxInflight || 0, this.inflight);
       this.worker.postMessage(
         {
           type: "sample",
@@ -398,10 +395,7 @@ export class CaptureRecorder extends EventTarget {
           } finally {
             const elapsed = performance.now() - deferredStart;
             this.metrics.deferredMs = (this.metrics.deferredMs || 0) + elapsed;
-            this.metrics.deferredMaxMs = Math.max(
-              this.metrics.deferredMaxMs || 0,
-              elapsed,
-            );
+            this.metrics.deferredMaxMs = Math.max(this.metrics.deferredMaxMs || 0, elapsed);
           }
         }, 0);
       }
@@ -416,13 +410,11 @@ export class CaptureRecorder extends EventTarget {
   }
   onAudio(kind, data) {
     if (kind === "pcm") {
-      this.lastAudioEnd =
-        data.sceneTime + data.frames / this.audio.context.sampleRate;
+      this.lastAudioEnd = data.sceneTime + data.frames / this.audio.context.sampleRate;
       this.worker?.postMessage({ type: "audio", ...data }, [data.buffer]);
       return;
     }
-    if (kind === "anchor" && !this.lastAudioEnd)
-      this.lastAudioEnd = data.sceneTime;
+    if (kind === "anchor" && !this.lastAudioEnd) this.lastAudioEnd = data.sceneTime;
     this.event(`audio-${kind}`, data);
     if (kind === "gap") {
       this.gaps.push({
@@ -444,16 +436,10 @@ export class CaptureRecorder extends EventTarget {
     }
   }
   markSync(owner = null) {
-    if (
-      (this.owner && owner !== this.owner) ||
-      !this.active ||
-      this.state !== "recording"
-    )
-      return;
+    if ((this.owner && owner !== this.owner) || !this.active || this.state !== "recording") return;
     const cue = this.audio.sync();
     this.event("sync", cue, cue.sceneTime);
-    this.message =
-      "Sync cue recorded — phone microphone must hear headset speakers";
+    this.message = "Sync cue recorded — phone microphone must hear headset speakers";
     this.notify();
     return cue;
   }
@@ -488,9 +474,7 @@ export class CaptureRecorder extends EventTarget {
     if (!this.active) return;
     if (this.state === "stopping" && tailMs) return;
     this.state = "stopping";
-    this.message = tailMs
-      ? "Recording 0.5 s of release tails"
-      : "Flushing take";
+    this.message = tailMs ? "Recording 0.5 s of release tails" : "Flushing take";
     this.notify();
     // Keep sampling the real performance during the short tail; do not release voices.
     if (tailMs)
@@ -512,12 +496,18 @@ export class CaptureRecorder extends EventTarget {
     this.active = false;
     this.unsubscribeLifecycle?.();
     this.ended = performance.now();
+    // Verify the input sample clock through Stop. Comparing PCM with wall time
+    // reports false missing tails when the device clock drifts during long takes.
+    const mapping = this.audio.mapping;
+    const audioEnd = mapping
+      ? mapping.sceneTime + this.audio.context.currentTime - mapping.contextTime
+      : this.elapsed;
     await this.audio.stop();
-    if (this.lastAudioEnd < this.elapsed - 256 / this.audio.context.sampleRate)
+    if (this.lastAudioEnd < audioEnd - 256 / this.audio.context.sampleRate)
       this.gaps.push({
         stream: "audio",
         start: this.lastAudioEnd,
-        end: this.elapsed,
+        end: audioEnd,
         reason: "audio-final-flush-unavailable",
       });
     try {

@@ -1,9 +1,10 @@
+import { runtimeOwners } from "../helpers/runtimeOwners.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { TutorialLessonFlow } from "../../src/tutorial/TutorialLessonFlow.js";
 import { TutorialSession } from "../../src/tutorial/TutorialSession.js";
-import { COMPOSITION as C } from "../../src/compositions/jog/definition.js";
-import { LESSON_STEPS } from "../../src/compositions/jog/definition.js";
+import { COMPOSITION as C } from "../../src/compositions/songs/jog/definition.js";
+import { LESSON_STEPS } from "../../src/compositions/songs/jog/definition.js";
 import { validateTake } from "../../src/tutorial/validation.js";
 import { createHarness, setHonk } from "../helpers/looperCaptureHarness.js";
 
@@ -59,17 +60,14 @@ function fixture() {
       ),
     }),
     command(action, now) {
-      const role = action.endsWith("chordLooper")
-          ? "chordLooper"
-          : "percussionLooper",
+      const role = action.endsWith("chordLooper") ? "chordLooper" : "percussionLooper",
         h = captures[role];
       if (action.startsWith("stop-record")) {
         if (h.looper.transport.recording || h.looper.transport.recordArmed) {
-          h.controller.stopRecording(h.looper, now);
+          h.controller.recording.stopRecording(h.looper, now);
           h.looper.stop();
         }
-      } else if (action.startsWith("record-"))
-        h.controller.startRecording(h.looper, now);
+      } else if (action.startsWith("record-")) h.controller.recording.startRecording(h.looper, now);
       t.flow.rememberDemoCommand(role);
     },
     releaseAll() {},
@@ -83,15 +81,15 @@ function fixture() {
     adapter: a,
     cues: { reset() {} },
     panel: { completeEffect() {} },
-    render() {},
-    r: {
+    panels: { render() {} },
+    r: runtimeOwners({
       audioSystem: {
         ensureAudio: async () => {},
         audioContextService: { context: { currentTime: 10 } },
       },
-      deletePendingSpawnPlacement() {},
       instrumentRegistry: { getByKind: () => [], get: () => null },
-    },
+      spawn: { deletePendingSpawnPlacement() {} },
+    }),
   };
   t.flow = new TutorialLessonFlow(t);
   // Avoid clock construction in this isolated ownership fixture.
@@ -108,9 +106,9 @@ function perform(h, at = 100, duration = 280) {
   setHonk(h, 0, at + duration, 0);
 }
 function prior(h) {
-  h.controller.startRecording(h.looper, 0);
+  h.controller.recording.startRecording(h.looper, 0);
   perform(h, 1, 77);
-  h.controller.stopRecording(h.looper, 90);
+  h.controller.recording.stopRecording(h.looper, 90);
 }
 
 for (const withPrior of [false, true])
@@ -143,7 +141,7 @@ for (const withPrior of [false, true])
     // The retained real timeline reaches the normal audio scheduler after Play.
     h.calls.length = 0;
     assert.equal(h.controller.startPlayback(h.looper, start + 500), true);
-    h.controller.scheduleSourceRange(h.looper, 0, 279, {
+    h.controller.audioScheduler.scheduleSourceRange(h.looper, 0, 279, {
       includeStart: true,
       sourceNow: 0,
       rate: 1,
@@ -151,10 +149,7 @@ for (const withPrior of [false, true])
     });
     assert.equal(h.calls.filter((e) => e.kind === "start").length, 1);
     assert.ok(
-      h.calls.some(
-        (e) =>
-          e.kind === "expression" && Math.abs(e.snapshot.bend - 0.65) < 1e-8,
-      ),
+      h.calls.some((e) => e.kind === "expression" && Math.abs(e.snapshot.bend - 0.65) < 1e-8),
     );
     h.looper.stop();
   });
@@ -190,20 +185,19 @@ test("manual recording outside Practice survives navigation and result cleanup",
 test("outgoing navigation stops a manually held capture before releasing its input", () => {
   const { flow, captures, t } = fixture(),
     h = captures.chordLooper;
-  t.r.instrumentRegistry.getByKind = (kind) =>
-    kind === "looper" ? [h.looper] : [];
+  t.r.instrumentRegistry.getByKind = (kind) => (kind === "looper" ? [h.looper] : []);
   const order = [];
   t.r.pressLooperButton = (looper, action, _morph, now) => {
     assert.equal(action, "stop");
     order.push("stop");
-    h.controller.stopRecording(looper, now);
+    h.controller.recording.stopRecording(looper, now);
     looper.stop();
   };
   t.adapter.releaseAll = () => {
     order.push("release");
     h.inputs[0].squeeze = 0;
   };
-  h.controller.startRecording(h.looper, 0);
+  h.controller.recording.startRecording(h.looper, 0);
   setHonk(h, 0, performance.now() - 40, 1);
   h.inputs[0].bend = 0.75;
   flow.navigate(1);
@@ -211,9 +205,7 @@ test("outgoing navigation stops a manually held capture before releasing its inp
   assert.equal(h.looper.transport.recording, false);
   assert.ok(h.timeline.durationMs >= 40);
   assert.equal(
-    h.timeline
-      .getTrack("track-0")
-      .sampleNumericField("bend", h.timeline.durationMs),
+    h.timeline.getTrack("track-0").sampleNumericField("bend", h.timeline.durationMs),
     0.75,
   );
 });
@@ -235,14 +227,14 @@ test("demo restores its temporary take but never restores over newer manual acti
       conductor: { stop() {} },
     });
     for (const role of Object.keys(savedTakes)) flow.rememberDemoCommand(role);
-    h.controller.startRecording(h.looper, 100);
+    h.controller.recording.startRecording(h.looper, 100);
     perform(h, 200, 500);
-    h.controller.stopRecording(h.looper, 800);
+    h.controller.recording.stopRecording(h.looper, 800);
     flow.rememberDemoCommand("chordLooper");
     if (learnerChanged) {
-      h.controller.startRecording(h.looper, 1000);
+      h.controller.recording.startRecording(h.looper, 1000);
       perform(h, 1100, 130);
-      h.controller.stopRecording(h.looper, 1300);
+      h.controller.recording.stopRecording(h.looper, 1300);
     }
     const latest = h.timeline.toJSON();
     flow.stopDemo();
@@ -254,9 +246,7 @@ test("demo restores its temporary take but never restores over newer manual acti
 
 test("normalization preserves first-note timing errors while the score window permits trimmed chord duration", () => {
   const routes = {
-    chords: Object.fromEntries(
-      C.backing.map((g, i) => [g.role, { trackId: `track-${i}` }]),
-    ),
+    chords: Object.fromEntries(C.backing.map((g, i) => [g.role, { trackId: `track-${i}` }])),
   };
   const evidence = (offset) =>
     C.backing.map((g) => ({
@@ -286,15 +276,9 @@ test("normalization preserves first-note timing errors while the score window pe
       ],
     })),
   };
-  assert.equal(
-    validateTake(timeline, evidence(0.08), "chordLooper", routes).ok,
-    true,
-  );
+  assert.equal(validateTake(timeline, evidence(0.08), "chordLooper", routes).ok, true);
   for (const offset of [-1, 1])
-    assert.equal(
-      validateTake(timeline, evidence(offset), "chordLooper", routes).ok,
-      false,
-    );
+    assert.equal(validateTake(timeline, evidence(offset), "chordLooper", routes).ok, false);
 });
 test("audio readiness from a cancelled demo cannot create or restore a stale operation", async () => {
   const { t, flow, captures } = fixture();

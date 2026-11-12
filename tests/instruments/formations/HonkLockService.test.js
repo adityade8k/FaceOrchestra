@@ -145,11 +145,31 @@ function instrument(id, x) {
 }
 
 function tuple3(x, y, z) {
-  return { x, y, z, set(a, b, c) { this.x = a; this.y = b; this.z = c; } };
+  return {
+    x,
+    y,
+    z,
+    set(a, b, c) {
+      this.x = a;
+      this.y = b;
+      this.z = c;
+    },
+  };
 }
 
 function tuple4(x, y, z, w) {
-  return { x, y, z, w, set(a, b, c, d) { this.x = a; this.y = b; this.z = c; this.w = d; } };
+  return {
+    x,
+    y,
+    z,
+    w,
+    set(a, b, c, d) {
+      this.x = a;
+      this.y = b;
+      this.z = c;
+      this.w = d;
+    },
+  };
 }
 
 function transformSnapshot(entry) {

@@ -5,10 +5,7 @@ export function bendGaugeState(event, fraction, observed = null) {
   const preview = fraction < 0;
   const target = bendCueState(event.bend, Math.max(0, fraction), event);
   if (!target) return null;
-  const actual =
-    !preview && Number.isFinite(observed?.semitones)
-      ? observed.semitones
-      : null;
+  const actual = !preview && Number.isFinite(observed?.semitones) ? observed.semitones : null;
   const destination = target.destinationSemitones ?? event.bend.at(-1).semitones;
   const tolerance = (event.assessment?.pitchCents ?? 35) / 100;
   const start = target.startSemitones ?? event.bend[0].semitones;
@@ -17,7 +14,7 @@ export function bendGaugeState(event, fraction, observed = null) {
     ? "Prepare · press Trigger when the square highlights"
     : actual === null
       ? "Waiting for hold"
-        : (actual - start) * direction < -tolerance
+      : (actual - start) * direction < -tolerance
         ? "Wrong direction"
         : (actual - destination) * direction > tolerance
           ? "Overshoot"

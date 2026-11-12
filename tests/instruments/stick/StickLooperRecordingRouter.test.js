@@ -5,10 +5,7 @@ import { routeStickStrikeToLooperRecordings } from "../../../src/instruments/sti
 
 test("a Metronome strike records its wooden hit in every connected Looper track", () => {
   const calls = [];
-  const loopers = [
-    createLooper("looper-a", calls),
-    createLooper("looper-b", calls),
-  ];
+  const loopers = [createLooper("looper-a", calls), createLooper("looper-b", calls)];
   const connections = [
     { targetKind: "looper", targetId: "looper-a", targetPortId: "track-2" },
     { targetKind: "honk", targetId: "honk-a", targetPortId: "honk.looper-connector" },
@@ -20,7 +17,7 @@ test("a Metronome strike records its wooden hit in every connected Looper track"
     target: { id: "metronome-a", kind: "metronome" },
     loopers,
     metronomeConnectionManager: {
-      getConnectionsForMetronome: (id) => id === "metronome-a" ? connections : [],
+      getConnectionsForMetronome: (id) => (id === "metronome-a" ? connections : []),
     },
     resolveInstrument: (id) => loopers.find((looper) => looper.id === id),
   });

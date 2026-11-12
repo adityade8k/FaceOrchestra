@@ -7,13 +7,14 @@ import * as THREE from "three";
 import { scoreForStep } from "./scoring.js";
 import { timingCueState } from "./timingCueState.js";
 import { attackCueState } from "./attackCueState.js";
-import { createNoteSquare, disposeNoteSquare, setNoteSquare, noteSquareScale,
-  NOTE_SQUARE_REST_SCALE } from "./NoteSquare.js";
 import {
-  bendCueState,
-  bendCueDisplacement,
-  BEND_PRACTICE_DURATION_MS,
-} from "./bendCueState.js";
+  createNoteSquare,
+  disposeNoteSquare,
+  setNoteSquare,
+  noteSquareScale,
+  NOTE_SQUARE_REST_SCALE,
+} from "./NoteSquare.js";
+import { bendCueState, bendCueDisplacement, BEND_PRACTICE_DURATION_MS } from "./bendCueState.js";
 
 // Musical phases are derived from the attempt clock, with no timers or UI cadence.
 export class TutorialTimingCues {
@@ -25,11 +26,17 @@ export class TutorialTimingCues {
     // At full sustain the yellow outer edge meets the white circle's inner edge.
     this.sustainGeometry = new THREE.RingGeometry(0.94, 1, 48);
     const square = new THREE.Shape();
-    square.moveTo(-1.06, -1.06); square.lineTo(1.06, -1.06);
-    square.lineTo(1.06, 1.06); square.lineTo(-1.06, 1.06); square.closePath();
+    square.moveTo(-1.06, -1.06);
+    square.lineTo(1.06, -1.06);
+    square.lineTo(1.06, 1.06);
+    square.lineTo(-1.06, 1.06);
+    square.closePath();
     const hole = new THREE.Path();
-    hole.moveTo(-1, -1); hole.lineTo(-1, 1);
-    hole.lineTo(1, 1); hole.lineTo(1, -1); hole.closePath();
+    hole.moveTo(-1, -1);
+    hole.lineTo(-1, 1);
+    hole.lineTo(1, 1);
+    hole.lineTo(1, -1);
+    hole.closePath();
     square.holes.push(hole);
     this.squareGeometry = new THREE.ShapeGeometry(square);
     this.quaternion = new THREE.Quaternion();
@@ -59,7 +66,10 @@ export class TutorialTimingCues {
           }),
         );
         // Headset guidance stays outside instrument/UI capture roots.
-        mesh.name = geometry === this.squareGeometry ? "Tutorial current-note square" : "Tutorial timing ring";
+        mesh.name =
+          geometry === this.squareGeometry
+            ? "Tutorial current-note square"
+            : "Tutorial timing ring";
         mesh.raycast = () => {};
         mesh.renderOrder = 100;
         mesh.visible = false;
@@ -76,7 +86,9 @@ export class TutorialTimingCues {
       yellow.name = "Tutorial sustain progress";
       const hand = createNoteSquare("Tutorial active-note square");
       setNoteSquare(hand, true);
-      hand.visible = false; hand.raycast = () => {}; hand.renderOrder = 101;
+      hand.visible = false;
+      hand.raycast = () => {};
+      hand.renderOrder = 101;
       adapter.r.scene.add(hand);
       return {
         hand,
@@ -94,8 +106,7 @@ export class TutorialTimingCues {
   reset() {
     this.bendHaptics.reset();
     this.gauge.reset();
-    for (const pair of this.pool)
-      for (const mesh of Object.values(pair)) mesh.visible = false;
+    for (const pair of this.pool) for (const mesh of Object.values(pair)) mesh.visible = false;
     for (const outline of this.noteOutlines.values()) outline.visible = false;
     this.step = null;
     this.bendInstruction = "";
@@ -105,7 +116,12 @@ export class TutorialTimingCues {
   }
   update(session, now, { active = true } = {}) {
     this.updateCues(session, now, { active });
-    if (active && session?.step && session.mode !== "demonstration" && session.mode !== "simulation") {
+    if (
+      active &&
+      session?.step &&
+      session.mode !== "demonstration" &&
+      session.mode !== "simulation"
+    ) {
       this.bendHaptics.update(this.bendEvents);
     } else this.bendHaptics.reset();
   }
@@ -115,8 +131,7 @@ export class TutorialTimingCues {
     this.now = now;
     this.cueBeat = null;
     this.beatMs = session?.beatMs;
-    for (const pair of this.pool)
-      for (const mesh of Object.values(pair)) mesh.visible = false;
+    for (const pair of this.pool) for (const mesh of Object.values(pair)) mesh.visible = false;
     for (const outline of this.noteOutlines.values()) outline.visible = false;
     this.bendInstruction = "";
     if (!session?.step || !active) return;
@@ -124,7 +139,7 @@ export class TutorialTimingCues {
     if (this.step !== step) {
       this.step = step;
       this.events = step.events || scoreForStep(step);
-      this.bendEvents = this.events.filter(event => event.bend?.length);
+      this.bendEvents = this.events.filter((event) => event.bend?.length);
       this.releasedGuide = null;
     }
     this.adapter.r.getUserCamera().getWorldQuaternion(this.quaternion);
@@ -134,11 +149,15 @@ export class TutorialTimingCues {
       const gate = session.practiceGate;
       gate.update(now, this.adapter.gestures.values());
       const event = gate.current;
-      if (!event) { this.adapter.handIndicators?.update([]); return; }
+      if (!event) {
+        this.adapter.handIndicators?.update([]);
+        return;
+      }
       const countIn = now < gate.anchorMs;
       const state = {
         phase: countIn ? "prepare" : gate.isStrike(event) ? "strike" : "hold",
-        isNext: countIn, event,
+        isNext: countIn,
+        event,
         fraction: gate.active ? gate.fraction : -1,
         sustainGesture: gate.active,
         sustainFraction: gate.active ? gate.fraction : -1,
@@ -146,17 +165,29 @@ export class TutorialTimingCues {
       };
       const pair = this.pool[0];
       this.show(pair, event.role, state, gate.isStrike(event));
-      for (const mesh of Object.values(pair)) Object.assign(mesh.userData, {
-        eventId: event.id, role: event.role, phase: state.phase,
-        sustainFraction: gate.fraction, readyToRelease: gate.readyToRelease,
-      });
+      for (const mesh of Object.values(pair))
+        Object.assign(mesh.userData, {
+          eventId: event.id,
+          role: event.role,
+          phase: state.phase,
+          sustainFraction: gate.fraction,
+          readyToRelease: gate.readyToRelease,
+        });
       const next = !countIn && gate.events[gate.index + 1];
       if (next) {
         const preview = this.pool[1];
-        this.show(preview, next.role, { phase: "next", isNext: true, event: next, fraction: -1 }, gate.isStrike(next));
-        for (const mesh of Object.values(preview)) Object.assign(mesh.userData, {
-          eventId: next.id, role: next.role, phase: "next",
-        });
+        this.show(
+          preview,
+          next.role,
+          { phase: "next", isNext: true, event: next, fraction: -1 },
+          gate.isStrike(next),
+        );
+        for (const mesh of Object.values(preview))
+          Object.assign(mesh.userData, {
+            eventId: next.id,
+            role: next.role,
+            phase: "next",
+          });
       }
       // Existing note squares are highlighted from this cursor, never time.
       this.adapter.handIndicators?.update(countIn ? [] : [event], event.beat ?? 0, session.beatMs);
@@ -179,20 +210,14 @@ export class TutorialTimingCues {
         }
       const strike = this.adapter.lastStrikes.get(role);
       const cue =
-        percussion &&
-        session.mode === "demonstration" &&
-        session.cueAnchorMs !== undefined
+        percussion && session.mode === "demonstration" && session.cueAnchorMs !== undefined
           ? timingCueState(
               (now - session.cueAnchorMs) / session.beatMs,
               { beat: 1 },
               { percussion: true },
             )
           : percussion && strike !== undefined
-            ? timingCueState(
-                (now - strike) / session.beatMs,
-                { beat: 0 },
-                { percussion: true },
-              )
+            ? timingCueState((now - strike) / session.beatMs, { beat: 0 }, { percussion: true })
             : null;
       // Waiting consumes no hold time. A completed/withdrawn strike has no
       // lingering ring.
@@ -219,8 +244,10 @@ export class TutorialTimingCues {
         );
         if (this.isVoicedGesture(gesture)) {
           state.sustainGesture = gesture;
-          state.sustainFraction = this.sustainFraction(gesture,
-            this.adapter.sustainTimings?.get(gesture)?.durationMs ?? step.minimumMs ?? duration);
+          state.sustainFraction = this.sustainFraction(
+            gesture,
+            this.adapter.sustainTimings?.get(gesture)?.durationMs ?? step.minimumMs ?? duration,
+          );
         }
       } else if (step.bend) {
         state = { phase: "prepare", yellow: 0, green: 1.35 };
@@ -238,7 +265,7 @@ export class TutorialTimingCues {
     this.cueBeat = beat;
     this.adapter.handIndicators?.update?.(this.events, beat, session.beatMs);
     const attackNext = step.cueStyle === "attack-next";
-    const nextBeat = this.events.find(e => e.role && e.beat > beat)?.beat;
+    const nextBeat = this.events.find((e) => e.role && e.beat > beat)?.beat;
     const candidates = this.candidates;
     candidates.length = 0;
     for (const event of this.events) {
@@ -251,19 +278,24 @@ export class TutorialTimingCues {
       if (attackNext && event.beat === nextBeat) {
         // One yellow motion per Honk: a repeat counts down in the available
         // gap after the previous hold, without covering its release guidance.
-        const previous = this.events.findLast(e => e.role === event.role && e.beat < event.beat);
-        options.prepareStartBeat = Math.max(event.beat - 1, previous ? previous.beat + previous.beats : -Infinity);
+        const previous = this.events.findLast((e) => e.role === event.role && e.beat < event.beat);
+        options.prepareStartBeat = Math.max(
+          event.beat - 1,
+          previous ? previous.beat + previous.beats : -Infinity,
+        );
       }
-      const state = (attackNext ? attackCueState(beat, event, options) : timingCueState(beat, event, options)) ||
+      const state =
+        (attackNext
+          ? attackCueState(beat, event, options)
+          : timingCueState(beat, event, options)) ||
         (event.beat === nextBeat ? { phase: "next" } : null);
       if (!state) continue;
       state.isNext = event.beat === nextBeat;
-      const priority =
-        ["prepare", "next"].includes(state.phase)
-          ? 1
-          : ["release", "withdraw"].includes(state.phase)
-            ? 2
-            : 0;
+      const priority = ["prepare", "next"].includes(state.phase)
+        ? 1
+        : ["release", "withdraw"].includes(state.phase)
+          ? 2
+          : 0;
       const distance = Math.abs(beat - event.beat);
       // One countdown per physical target: a more distant repeated attack must
       // not overlap its nearer countdown. Current hold + next attack may coexist.
@@ -276,9 +308,7 @@ export class TutorialTimingCues {
       }
       const candidate = { event, state, priority, distance };
       let at = candidates.findIndex(
-        (c) =>
-          priority < c.priority ||
-          (priority === c.priority && distance < c.distance),
+        (c) => priority < c.priority || (priority === c.priority && distance < c.distance),
       );
       if (at < 0) at = candidates.length;
       if (at < this.pool.length) {
@@ -292,21 +322,23 @@ export class TutorialTimingCues {
       if (priority === 2 && this.drawnRoles.has(event.role)) continue;
       const repeat = this.drawnRoles.has(event.role);
       if (repeat) state.yellow = 0;
-      state.bend = bendCueState(
-        event.bend,
-        (beat - event.beat) / event.beats,
-        event,
-      );
+      state.bend = bendCueState(event.bend, (beat - event.beat) / event.beats, event);
       state.event = event;
       state.fraction = (beat - event.beat) / event.beats;
       if (!percussion && state.phase === "hold") {
         for (const gesture of this.adapter.gestures.values()) {
           if (gesture.role !== event.role || !this.isVoicedGesture(gesture)) continue;
           state.sustainGesture = gesture;
-          state.sustainFraction = this.sustainFraction(gesture,
-            this.adapter.sustainTimings?.get(gesture)?.durationMs ?? event.minimumMs ?? (Number.isFinite(event.beats)
-              ? event.beats * session.beatMs : event.durationSeconds !== undefined
-              ? event.durationSeconds * 1000 : event.beats * session.beatMs));
+          state.sustainFraction = this.sustainFraction(
+            gesture,
+            this.adapter.sustainTimings?.get(gesture)?.durationMs ??
+              event.minimumMs ??
+              (Number.isFinite(event.beats)
+                ? event.beats * session.beatMs
+                : event.durationSeconds !== undefined
+                  ? event.durationSeconds * 1000
+                  : event.beats * session.beatMs),
+          );
           break;
         }
       }
@@ -325,9 +357,10 @@ export class TutorialTimingCues {
     return gesture.voiced && !gesture.invalidMembers && !gesture.voiceInterrupted;
   }
   updateNoteOutlines(step) {
-    const percussion = ["drums", "strike"].includes(step.type) ||
+    const percussion =
+      ["drums", "strike"].includes(step.type) ||
       (step.type === "record" && step.looperRole === "percussionLooper");
-    const roles = new Set(this.events.map(e => e.role).filter(Boolean));
+    const roles = new Set(this.events.map((e) => e.role).filter(Boolean));
     if (step.role) roles.add(step.role);
     for (const role of roles) {
       if (this.adapter.handIndicators?.labels.has(role)) continue;
@@ -342,20 +375,25 @@ export class TutorialTimingCues {
       const sphere = !percussion && h.getSqueezeColliderSphere?.();
       let point = sphere?.center || h.root.getWorldPosition(this.position);
       if (percussion) {
-        try { point = this.adapter.cacheStrikeTarget(role) || point; }
-        catch { continue; }
+        try {
+          point = this.adapter.cacheStrikeTarget(role) || point;
+        } catch {
+          continue;
+        }
       }
-      square.position.copy(point)
-        .addScaledVector(this.right, (sphere?.radius || .065) * 1.4);
+      square.position.copy(point).addScaledVector(this.right, (sphere?.radius || 0.065) * 1.4);
       square.quaternion.copy(this.quaternion);
-      square.scale.setScalar((sphere?.radius || .065) * .9 * NOTE_SQUARE_REST_SCALE);
+      square.scale.setScalar((sphere?.radius || 0.065) * 0.9 * NOTE_SQUARE_REST_SCALE);
       square.visible = true;
     }
   }
   sustainFraction(gesture, durationMs) {
     if (!(durationMs > 0)) return -1;
     return THREE.MathUtils.clamp(
-      (this.now - (gesture.voicedStartMs ?? gesture.startMs)) / durationMs, 0, 1);
+      (this.now - (gesture.voicedStartMs ?? gesture.startMs)) / durationMs,
+      0,
+      1,
+    );
   }
   showSustain(pair, target, state) {
     const fraction = state.sustainFraction;
@@ -402,7 +440,8 @@ export class TutorialTimingCues {
     pair.reference.position.copy(point);
     pair.reference.quaternion.copy(this.quaternion);
     const current = state.phase === "hold" || state.phase === "strike";
-    const referenceScale = (state.isNext ?? !current) && !["release", "withdraw"].includes(state.phase) ? 1.35 : 0;
+    const referenceScale =
+      (state.isNext ?? !current) && !["release", "withdraw"].includes(state.phase) ? 1.35 : 0;
     pair.reference.scale.setScalar(radius * 1.12 * referenceScale);
     pair.reference.visible = referenceScale > 0;
     if (current && !this.adapter.handIndicators?.labels.has(role)) {
@@ -410,7 +449,9 @@ export class TutorialTimingCues {
       if (outline) outline.visible = false;
       pair.hand.position.copy(point).addScaledVector(this.right, radius * 1.4);
       pair.hand.quaternion.copy(this.quaternion);
-      pair.hand.scale.setScalar(radius * .9 * noteSquareScale(state.event, this.cueBeat, this.beatMs));
+      pair.hand.scale.setScalar(
+        radius * 0.9 * noteSquareScale(state.event, this.cueBeat, this.beatMs),
+      );
       pair.hand.visible = true;
     }
     if (percussion) return;
@@ -440,9 +481,7 @@ export class TutorialTimingCues {
       this.localUp.dot(this.right),
     );
     const marker = pair.bend;
-    marker.position
-      .copy(point)
-      .addScaledVector(this.right, displacement * radius);
+    marker.position.copy(point).addScaledVector(this.right, displacement * radius);
     marker.quaternion.copy(this.quaternion);
     marker.scale.setScalar(radius * 0.24);
     marker.visible = false;
@@ -457,11 +496,8 @@ export class TutorialTimingCues {
         if (!this.bendInstruction) this.bendInstruction = gauge.instruction;
         // A small positive local wrist roll projects to this screen direction.
         const orientation =
-          bendCueDisplacement(
-            0.1,
-            this.localRight.dot(this.right),
-            this.localUp.dot(this.right),
-          ) >= 0
+          bendCueDisplacement(0.1, this.localRight.dot(this.right), this.localUp.dot(this.right)) >=
+          0
             ? 1
             : -1;
         this.gauge.update(
@@ -476,8 +512,7 @@ export class TutorialTimingCues {
       }
       marker.visible = false;
     }
-    if (state.bend && !this.bendInstruction)
-      this.bendInstruction = state.bend.instruction;
+    if (state.bend && !this.bendInstruction) this.bendInstruction = state.bend.instruction;
   }
   captureRoots() {
     return [
@@ -492,7 +527,10 @@ export class TutorialTimingCues {
     for (const pair of this.pool)
       for (const mesh of Object.values(pair)) {
         if (mesh === pair.hand) disposeNoteSquare(mesh);
-        else { mesh.removeFromParent(); mesh.material.dispose(); }
+        else {
+          mesh.removeFromParent();
+          mesh.material.dispose();
+        }
       }
     for (const square of this.noteOutlines.values()) disposeNoteSquare(square);
     this.noteOutlines.clear();

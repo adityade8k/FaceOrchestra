@@ -15,9 +15,13 @@ const regions = {
   instruction: { x: 40, y: 490, w: 1072, h: 226, font: 38 },
   feedback: { x: 40, y: 854, w: 1072, h: 546, font: 36 },
 };
-const compactHeight = 0.66, compactCanvasHeight = 720;
+const compactHeight = 0.66,
+  compactCanvasHeight = 720;
 const compactRects = Array.from({ length: 8 }, (_, i) => ({
-  x: 32 + (i % 4) * 276, y: 518 + Math.floor(i / 4) * 96, w: 260, h: 76,
+  x: 32 + (i % 4) * 276,
+  y: 518 + Math.floor(i / 4) * 96,
+  w: 260,
+  h: 76,
 }));
 const compactRegions = {
   title: { x: 40, y: 86, w: 1072, h: 52, font: 38 },
@@ -123,14 +127,7 @@ export class TutorialPanel {
     this.dom.innerHTML =
       '<p class="tutorial-eyebrow"></p><nav class="tutorial-navigation" aria-label="Lesson controls"></nav><div class="tutorial-copy"><h1></h1><p class="tutorial-instruction"></p><p class="tutorial-target"></p><p class="tutorial-feedback" role="status" aria-live="polite"></p></div><div class="tutorial-actions" aria-label="Session controls"></div>';
     this.nodes = {};
-    for (const key of [
-      "eyebrow",
-      "instruction",
-      "target",
-      "feedback",
-      "navigation",
-      "actions",
-    ])
+    for (const key of ["eyebrow", "instruction", "target", "feedback", "navigation", "actions"])
       this.nodes[key] = this.dom.querySelector(".tutorial-" + key);
     this.nodes.title = this.dom.querySelector("h1");
     document.body.appendChild(this.dom);
@@ -184,17 +181,11 @@ export class TutorialPanel {
     this.dom.dataset.result = model.result || "";
     const actions = [...(model.navigation || []), ...(model.actions || [])],
       ids = new Set(actions.map((a) => a.id));
-    const extended = !this.compact && Boolean(
-      model.navigation?.length === 4 && actions.length > 6,
-    );
+    const extended = !this.compact && Boolean(model.navigation?.length === 4 && actions.length > 6);
     // Keep Recenter/Exit at their established XR locations; contextual pattern
     // buttons get their own row instead of displacing those two controls.
     const xrActions = extended
-      ? [
-          ...model.navigation,
-          ...model.actions.slice(-2),
-          ...model.actions.slice(0, -2),
-        ]
+      ? [...model.navigation, ...model.actions.slice(-2), ...model.actions.slice(0, -2)]
       : actions;
     for (const [id, node] of this.buttonNodes)
       if (!ids.has(id)) {
@@ -216,8 +207,7 @@ export class TutorialPanel {
         if (container.children[i] !== node)
           container.insertBefore(node, container.children[i] || null);
         this.setText(node, a.label);
-        if (node.disabled !== Boolean(a.disabled))
-          node.disabled = Boolean(a.disabled);
+        if (node.disabled !== Boolean(a.disabled)) node.disabled = Boolean(a.disabled);
         if (node.title !== (a.reason || "")) node.title = a.reason || "";
         for (const name of ["primary", "active"])
           if (node.dataset[name] !== String(Boolean(a[name])))
@@ -230,11 +220,7 @@ export class TutorialPanel {
     ctx.fillRect(0, 0, CW, this.canvas.height);
     ctx.fillStyle = "#83dfbd";
     ctx.font = "600 32px sans-serif";
-    ctx.fillText(
-      model.progress || "HONK ORCHESTRA · GRIP HEADER TO MOVE",
-      40,
-      66,
-    );
+    ctx.fillText(model.progress || "HONK ORCHESTRA · GRIP HEADER TO MOVE", 40, 66);
     this.layout = [];
     for (const [name, originalRegion] of Object.entries(this.compact ? compactRegions : regions)) {
       const region =
@@ -261,11 +247,7 @@ export class TutorialPanel {
     this.buttons.forEach((b, i) => {
       // Launch screens use the footer and second navigation row; lessons always
       // use the same four navigation and two session control positions.
-      const a = model.navigation
-        ? xrActions[i]
-        : i < 6
-          ? model.actions?.[i - 2]
-          : null;
+      const a = model.navigation ? xrActions[i] : i < 6 ? model.actions?.[i - 2] : null;
       b.visible = Boolean(a) && (!this.compact || i < compactRects.length);
       b.userData.action = a?.id;
       b.userData.disabled = Boolean(a?.disabled);
@@ -303,11 +285,19 @@ export class TutorialPanel {
   setCompact(compact) {
     if (this.compact === compact) return;
     this.compact = compact;
-    this.key = '';
+    this.key = "";
     const height = compact ? compactHeight : HEIGHT;
     const ch = compact ? compactCanvasHeight : CH;
     this.group.scale.setScalar(compact ? 0.8 : 1);
-    this.canvas.height = ch;
+    if (this.canvas.height !== ch) {
+      // WebGL texture storage keeps its original dimensions after upload.
+      // Recreate it when switching layouts so the new canvas fills the panel.
+      this.texture.dispose();
+      this.canvas.height = ch;
+      this.texture = new THREE.CanvasTexture(this.canvas);
+      this.texture.colorSpace = THREE.SRGBColorSpace;
+      this.surface.material.map = this.texture;
+    }
     this.surface.scale.y = height / HEIGHT;
     this.effect.scale.y = height / HEIGHT;
     this.statusPlane.visible = !compact;
@@ -315,9 +305,16 @@ export class TutorialPanel {
     this.handle.scale.y = compact ? 0.45 : 1;
     this.buttons.forEach((b, i) => {
       const rect = (compact ? compactRects[i] : buttonRects[i]) || buttonRects[i];
-      b.scale.set(rect.w / buttonRects[i].w, (rect.h / ch * height) / (buttonRects[i].h / CH * HEIGHT), 1);
-      b.position.set(((rect.x + rect.w / 2) / CW - 0.5) * WIDTH,
-        (0.5 - (rect.y + rect.h / 2) / ch) * height, 0.003);
+      b.scale.set(
+        rect.w / buttonRects[i].w,
+        ((rect.h / ch) * height) / ((buttonRects[i].h / CH) * HEIGHT),
+        1,
+      );
+      b.position.set(
+        ((rect.x + rect.w / 2) / CW - 0.5) * WIDTH,
+        (0.5 - (rect.y + rect.h / 2) / ch) * height,
+        0.003,
+      );
     });
     this.texture.needsUpdate = true;
   }
@@ -342,8 +339,7 @@ export class TutorialPanel {
   }
   animate(now) {
     const phase = (now - (this.effectAt ?? -Infinity)) / 850;
-    this.effect.material.opacity =
-      phase < 1 ? Math.sin(Math.max(phase, 0) * Math.PI) * 0.95 : 0;
+    this.effect.material.opacity = phase < 1 ? Math.sin(Math.max(phase, 0) * Math.PI) * 0.95 : 0;
   }
   setVisible(visible) {
     if (!visible) this.tempoControls.cancel();
@@ -380,17 +376,14 @@ export class TutorialPanel {
   }
   hit(ray) {
     if (!this.group.visible) return null;
-    return (
-      ray.intersectObjects(this.hitTargets || [this.surface], false)[0] || null
-    );
+    return ray.intersectObjects(this.hitTargets || [this.surface], false)[0] || null;
   }
   hover(object) {
     for (const b of this.buttons)
       b.material.opacity = b === object && !b.userData.disabled ? 0.16 : 0;
   }
   activate(object) {
-    if (object?.userData.action && !object.userData.disabled)
-      this.onAction(object.userData.action);
+    if (object?.userData.action && !object.userData.disabled) this.onAction(object.userData.action);
   }
   dispose() {
     this.tempoControls.dispose();
@@ -433,9 +426,7 @@ function drawText(ctx, text, region, { color = "#fff4dd", weight = 400 } = {}) {
   } while (font > 12);
   ctx.fillStyle = color;
   ctx.textBaseline = "alphabetic";
-  lines.forEach((line, i) =>
-    ctx.fillText(line, region.x, region.y + font + i * lineHeight),
-  );
+  lines.forEach((line, i) => ctx.fillText(line, region.x, region.y + font + i * lineHeight));
   return {
     font,
     lines: lines.length,

@@ -48,9 +48,7 @@ export class XRIntentMapper {
 
     const { button, pressed, handedness } = inputEvent;
     if (button === "thumbstick")
-      return pressed && handedness === "left"
-        ? [{ ...base, type: XRIntentType.MenuToggle }]
-        : [];
+      return pressed && handedness === "left" ? [{ ...base, type: XRIntentType.MenuToggle }] : [];
     if (button === "trigger") {
       return [
         {
@@ -76,9 +74,7 @@ export class XRIntentMapper {
       return [
         {
           ...base,
-          type: pressed
-            ? XRIntentType.SpawnMenuOpen
-            : XRIntentType.SpawnMenuConfirm,
+          type: pressed ? XRIntentType.SpawnMenuOpen : XRIntentType.SpawnMenuConfirm,
         },
       ];
     }

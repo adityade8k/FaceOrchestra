@@ -12,14 +12,6 @@ export const COLLIDER_DEBUG_VISUAL_SETTINGS = {
   arcMidpointT: 0.5,
   arcOpacity: 0.9,
   arcRenderOrder: 26,
-  axisPositions: [
-    0, 0, 0, 1, 0, 0,
-    0, 0, 0, 0, 1, 0,
-    0, 0, 0, 0, 0, 1,
-  ],
-  axisColors: [
-    1, 0.1, 0.1, 1, 0.1, 0.1,
-    0.2, 1, 0.2, 0.2, 1, 0.2,
-    0.2, 0.45, 1, 0.2, 0.45, 1,
-  ],
+  axisPositions: [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+  axisColors: [1, 0.1, 0.1, 1, 0.1, 0.1, 0.2, 1, 0.2, 0.2, 1, 0.2, 0.2, 0.45, 1, 0.2, 0.45, 1],
 };

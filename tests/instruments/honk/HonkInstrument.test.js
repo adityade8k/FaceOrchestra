@@ -23,14 +23,18 @@ test("honk owns stable live and automation audio voice routing", () => {
   const voiceId = "right:instrument-honk-audio";
 
   honk.startAudioVoice(voiceId);
-  honk.updateAudioVoice(voiceId, {
-    squeeze: 0.8,
-    bend: -0.25,
-    earLeft: 0.2,
-    earRight: -0.1,
-    nose: 0.4,
-    vowel: "O",
-  }, { gain: 0.5 });
+  honk.updateAudioVoice(
+    voiceId,
+    {
+      squeeze: 0.8,
+      bend: -0.25,
+      earLeft: 0.2,
+      earRight: -0.1,
+      nose: 0.4,
+      vowel: "O",
+    },
+    { gain: 0.5 },
+  );
   honk.setAudioVowel("I");
   const releaseOptions = { origin: HONK_RELEASE_ORIGINS.controller };
   honk.releaseAudioVoice(voiceId, releaseOptions);
@@ -63,14 +67,16 @@ test("honk cancellation removes only the exact owned voice and forwards fade opt
 
   honk.cancelAudioVoice("looper-one:scheduled-1", { fadeSeconds: 0.035 });
 
-  assert.deepEqual(calls, [{
-    voiceId: "looper-one:scheduled-1",
-    options: { fadeSeconds: 0.035 },
-  }]);
-  assert.deepEqual([...honk.activeVoiceIds], [
-    "looper-two:scheduled-1",
-    "honk-audio:source-manual",
+  assert.deepEqual(calls, [
+    {
+      voiceId: "looper-one:scheduled-1",
+      options: { fadeSeconds: 0.035 },
+    },
   ]);
+  assert.deepEqual(
+    [...honk.activeVoiceIds],
+    ["looper-two:scheduled-1", "honk-audio:source-manual"],
+  );
 });
 
 function morphController() {
@@ -95,17 +101,32 @@ function object3D() {
 function tuple(...values) {
   const keys = values.length === 4 ? ["x", "y", "z", "w"] : ["x", "y", "z"];
   const result = {};
-  keys.forEach((key, index) => { result[key] = values[index]; });
-  result.set = (...next) => keys.forEach((key, index) => { result[key] = next[index]; });
-  result.setScalar = (next) => keys.slice(0, 3).forEach((key) => { result[key] = next; });
+  keys.forEach((key, index) => {
+    result[key] = values[index];
+  });
+  result.set = (...next) =>
+    keys.forEach((key, index) => {
+      result[key] = next[index];
+    });
+  result.setScalar = (next) =>
+    keys.slice(0, 3).forEach((key) => {
+      result[key] = next;
+    });
   return result;
 }
 
-
 test("authored extended bend range survives save/restore and old scenes retain the default", () => {
   const calls = [];
-  const make = () => new HonkInstrument({id:"saved-honk",root:object3D(),morphController:morphController(),
-    voiceService:{startVoice(){},updateVoice:(_id,_state,_tuning,options)=>calls.push(options)}});
+  const make = () =>
+    new HonkInstrument({
+      id: "saved-honk",
+      root: object3D(),
+      morphController: morphController(),
+      voiceService: {
+        startVoice() {},
+        updateVoice: (_id, _state, _tuning, options) => calls.push(options),
+      },
+    });
   const honk = make();
   assert.equal(honk.pitchBendRange, 4);
   const ordinary = honk.serialize();
@@ -114,12 +135,13 @@ test("authored extended bend range survives save/restore and old scenes retain t
   const saved = JSON.parse(JSON.stringify(honk.serialize()));
   assert.equal(saved.pitchBendRange, 5);
   const restored = make().restore(saved);
-  restored.startAudioVoice("take"); restored.updateAudioVoice("take", {squeeze:1,bend:-1});
+  restored.startAudioVoice("take");
+  restored.updateAudioVoice("take", { squeeze: 1, bend: -1 });
   assert.equal(calls.at(-1).pitchBendRange, 5);
   restored.restore(ordinary);
   assert.equal(restored.pitchBendRange, 4);
-  restored.updateAudioVoice("take", {squeeze:1,bend:-1});
+  restored.updateAudioVoice("take", { squeeze: 1, bend: -1 });
   assert.equal(calls.at(-1).pitchBendRange, undefined);
-  restored.restore({...saved,pitchBendRange:99});
+  restored.restore({ ...saved, pitchBendRange: 99 });
   assert.equal(restored.pitchBendRange, 4);
 });

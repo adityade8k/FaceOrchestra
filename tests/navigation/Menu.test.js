@@ -1,3 +1,4 @@
+import { tutorialOwners } from "../helpers/runtimeOwners.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as THREE from "three";
@@ -156,41 +157,32 @@ test("drag retains controller offset, captures both bindings, and hide requires 
   const menu = new MenuController({
     panel,
     states,
-    hit: () =>
-      panel.group.visible
-        ? { object: { userData: { menuHandle: true } } }
-        : null,
+    hit: () => (panel.group.visible ? { object: { userData: { menuHandle: true } } } : null),
   });
-  assert.equal(
-    menu.capture({ type: "interaction.grip.begin", controller: c }, state),
-    true,
-  );
+  assert.equal(menu.capture({ type: "interaction.grip.begin", controller: c }, state), true);
   c.position.x = 2;
   menu.update();
   assert.deepEqual(panel.group.position.toArray(), [3, 2, -1]);
-  assert.equal(
-    menu.capture({ type: "instrument.delete", controller: c }, state),
-    true,
-  );
+  assert.equal(menu.capture({ type: "instrument.delete", controller: c }, state), true);
   menu.toggle();
   state.trigger = true;
+  assert.equal(menu.capture({ type: "interaction.trigger.begin", controller: c }, state), true);
   assert.equal(
-    menu.capture({ type: "interaction.trigger.begin", controller: c }, state),
-    true,
-  );
-  assert.equal(
-    TutorialRuntime.prototype.blocksController.call({ menu }, c),
+    TutorialRuntime.prototype.blocksController.call(
+      tutorialOwners({ navigation: { menu }, layoutFrames: () => [] }),
+      c,
+    ),
     true,
     "Continuous squeeze remains blocked after hiding",
   );
   state.grip = state.trigger = false;
   menu.capture({ type: "interaction.grip.end", controller: c }, state);
+  assert.equal(menu.capture({ type: "interaction.trigger.begin", controller: c }, state), false);
   assert.equal(
-    menu.capture({ type: "interaction.trigger.begin", controller: c }, state),
-    false,
-  );
-  assert.equal(
-    TutorialRuntime.prototype.blocksController.call({ menu }, c),
+    TutorialRuntime.prototype.blocksController.call(
+      tutorialOwners({ navigation: { menu }, layoutFrames: () => [] }),
+      c,
+    ),
     false,
     "Release restores musical input",
   );
@@ -201,10 +193,7 @@ test("both libraries share all metadata, paginate 50 entries, and incomplete les
   for (const entry of compositionRegistry.list()) {
     const { definition } = await compositionRegistry.load(entry.id);
     assert.equal(definition.title, entry.title);
-    assert.throws(
-      () => validateComposition({ ...definition, lessons: [] }),
-      /guided/,
-    );
+    assert.throws(() => validateComposition({ ...definition, lessons: [] }), /guided/);
   }
   const registry = new CompositionRegistry(
     Array.from({ length: 50 }, (_, i) => ({
@@ -278,4 +267,23 @@ test("cancelled preparation preserves an outgoing lesson and its takes before an
   assert.deepEqual(calls, []);
   assert.equal(router.identity, "tutorials:kuch");
   assert.deepEqual(states.at(-1), { state: "ready", id: "tutorials:kuch" });
+});
+
+test("menu visibility evidence carries the actual controller intent only for a physical toggle", () => {
+  const events = [],
+    panel = { setVisible() {} };
+  const menu = new MenuController({
+    panel,
+    onEvent: (...args) => events.push(args),
+  });
+  const intent = {
+    type: "menu.toggle",
+    handedness: "left",
+    timestamp: 200,
+    controller: new THREE.Group(),
+  };
+  assert.equal(menu.capture(intent, {}), true);
+  assert.deepEqual(events[0], ["menu.hide", intent]);
+  menu.setVisible(true);
+  assert.deepEqual(events[1], ["menu.show", null]);
 });

@@ -17,7 +17,8 @@ export class SpawnPlacementController {
   }
 
   scale(controller, direction, applyStep) {
-    if (this.preview?.controller === controller) this.preview.setScaleDirection(direction, applyStep);
+    if (this.preview?.controller === controller)
+      this.preview.setScaleDirection(direction, applyStep);
   }
 
   distance(controller, direction) {

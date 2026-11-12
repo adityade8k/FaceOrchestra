@@ -6,17 +6,18 @@ export const HONK_NOTE_GAIN_SETTINGS = Object.freeze({
 
 export function getHonkNoteGainFromNose(nose = 0) {
   const normalized = Math.min(Math.max(Number.isFinite(nose) ? nose : 0, 0), 1);
-  return HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose +
-    (1 - normalized) * (1 - HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose);
+  return (
+    HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose +
+    (1 - normalized) * (1 - HONK_NOTE_GAIN_SETTINGS.minimumAtMaxNose)
+  );
 }
 export const HONK_RELEASE_SETTINGS = Object.freeze({
-  liveFadeSeconds: 0.12,
+  liveFadeSeconds: 0.18,
   looperActionFadeSeconds: 0.035,
   minimumFadeSeconds: 0.01,
   stopPaddingSeconds: 0.008,
 });
-export const LOOPER_ACTION_RELEASE_FADE_SECONDS =
-  HONK_RELEASE_SETTINGS.looperActionFadeSeconds;
+export const LOOPER_ACTION_RELEASE_FADE_SECONDS = HONK_RELEASE_SETTINGS.looperActionFadeSeconds;
 
 export const AUDIO_MASTER_BUS_SETTINGS = {
   inputGain: 0.9,
@@ -41,6 +42,16 @@ export const AUDIO_MASTER_BUS_SETTINGS = {
   },
   outputGain: 0.94,
 };
+
+// Restore Ver-7's percussion balance without changing the Honk melody mix.
+// Fold its percussion trim (0.48) and master input (0.78) into one gain.
+export const PERCUSSION_BUS_SETTINGS = Object.freeze({
+  inputGain: 0.48 * 0.78,
+  highpassFrequency: 18,
+  lowpassFrequency: 15500,
+  compressor: Object.freeze({ threshold: -12, knee: 12, ratio: 2.5, attack: 0.012, release: 0.16 }),
+  saturationDrive: 1.15,
+});
 
 export const VOICE_GAIN_SETTINGS = {
   baseGain: 0.42,

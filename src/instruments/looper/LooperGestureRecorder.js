@@ -49,10 +49,12 @@ export class LooperGestureRecorder {
       const captured = this.captureTrackAction(track, captureActionByHonkId);
       const baseline = normalizeActionState(captured);
       track.recorderState = this.createRecorderState(baseline, Boolean(captured));
-      timeline.ensureTrack(track.trackId, {
-        nodeId: track.nodeId,
-        trackIndex: track.index,
-      })?.setBaseline(baseline);
+      timeline
+        .ensureTrack(track.trackId, {
+          nodeId: track.nodeId,
+          trackIndex: track.index,
+        })
+        ?.setBaseline(baseline);
     }
   }
 
@@ -80,25 +82,33 @@ export class LooperGestureRecorder {
     const action = normalizeActionState(captured);
     if (!track.recorderState) {
       track.recorderState = this.createRecorderState(action, true);
-      timeline.ensureTrack(track.trackId, {
-        nodeId: track.nodeId,
-        trackIndex: track.index,
-      })?.setBaseline(action);
+      timeline
+        .ensureTrack(track.trackId, {
+          nodeId: track.nodeId,
+          trackIndex: track.index,
+        })
+        ?.setBaseline(action);
     }
     const state = track.recorderState;
     if (!state.hasBaseline) {
       state.baseline = cloneActionState(action);
       state.lastObserved = cloneActionState(action);
       state.hasBaseline = true;
-      timeline.ensureTrack(track.trackId, {
-        nodeId: track.nodeId,
-        trackIndex: track.index,
-      })?.setBaseline(action);
+      timeline
+        .ensureTrack(track.trackId, {
+          nodeId: track.nodeId,
+          trackIndex: track.index,
+        })
+        ?.setBaseline(action);
     }
 
     const nextGateActive = this.resolveGateState(state, captured, action);
-    if (state.lastObservedAtMs === elapsedMs && nextGateActive === state.squeezeGateActive &&
-      ALL_FIELDS.every(field => action[field] === state.lastObserved[field])) return;
+    if (
+      state.lastObservedAtMs === elapsedMs &&
+      nextGateActive === state.squeezeGateActive &&
+      ALL_FIELDS.every((field) => action[field] === state.lastObserved[field])
+    )
+      return;
     let wroteEvent = false;
     if (nextGateActive !== state.squeezeGateActive) {
       const type = nextGateActive
@@ -112,7 +122,7 @@ export class LooperGestureRecorder {
         value: nextGateActive ? (action.squeeze ?? 1) : 0,
         interpolation: "step",
         gateOnly: true,
-        releaseOrigin: nextGateActive ? null : (captured.releaseOrigin || "controller"),
+        releaseOrigin: nextGateActive ? null : captured.releaseOrigin || "controller",
       });
       if (nextGateActive) timeline.markMusicalOnset(elapsedMs);
       // Arming begins on sound, so an already bent first note can also be the
@@ -143,13 +153,17 @@ export class LooperGestureRecorder {
       hasContinuousValues = true;
       if (action[field] !== state.lastObserved[field]) continuousChanged = true;
     }
-    const hasSustainedGesture = NUMERIC_FIELDS.some((field) => (
-      field !== "squeeze" &&
-      state.activeFields.has(field) &&
-      action[field] !== undefined &&
-      action[field] !== state.baseline[field]
-    ));
-    if (hasContinuousValues && (state.squeezeGateActive || continuousChanged || hasSustainedGesture)) {
+    const hasSustainedGesture = NUMERIC_FIELDS.some(
+      (field) =>
+        field !== "squeeze" &&
+        state.activeFields.has(field) &&
+        action[field] !== undefined &&
+        action[field] !== state.baseline[field],
+    );
+    if (
+      hasContinuousValues &&
+      (state.squeezeGateActive || continuousChanged || hasSustainedGesture)
+    ) {
       timeline.addActionEvent(track.trackId, {
         nodeId: track.nodeId,
         trackIndex: track.index,
@@ -201,7 +215,15 @@ export class LooperGestureRecorder {
       : value > LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD;
   }
 
-  stop(timeline, tracks, now, minDurationMs, captureActionByHonkId = null, timing = null, { endpointMs = null } = {}) {
+  stop(
+    timeline,
+    tracks,
+    now,
+    minDurationMs,
+    captureActionByHonkId = null,
+    timing = null,
+    { endpointMs = null } = {},
+  ) {
     if (!timeline?.recording) return timeline?.hasRecording?.() || false;
     if (typeof captureActionByHonkId === "function") {
       for (const track of tracks) {
@@ -230,7 +252,11 @@ export class LooperGestureRecorder {
     const captured = this.captureTrackAction(track, captureActionByHonkId);
     const action = normalizeActionState(captured);
     const observedMs = timeline.getElapsedMs(now);
-    const fraction = clamp((endpointMs - state.lastObservedAtMs) / Math.max(observedMs - state.lastObservedAtMs, 1e-9), 0, 1);
+    const fraction = clamp(
+      (endpointMs - state.lastObservedAtMs) / Math.max(observedMs - state.lastObservedAtMs, 1e-9),
+      0,
+      1,
+    );
     const values = createActionState();
     for (const field of NUMERIC_FIELDS) {
       if (!state.activeFields.has(field)) continue;
@@ -238,11 +264,20 @@ export class LooperGestureRecorder {
       if (previous === undefined) continue;
       // A released live voice can already have reset its bend; retain the last
       // held expression in that case. Otherwise interpolate to the boundary.
-      const next = captured && this.resolveGateState(state, captured, action) ? action[field] ?? previous : previous;
+      const next =
+        captured && this.resolveGateState(state, captured, action)
+          ? (action[field] ?? previous)
+          : previous;
       values[field] = previous + (next - previous) * fraction;
     }
-    timeline.addActionEvent(track.trackId, {nodeId:track.nodeId, trackIndex:track.index,
-      type:LooperActionEventType.GestureSnapshot, timeMs:endpointMs, values, interpolation:'linear'});
+    timeline.addActionEvent(track.trackId, {
+      nodeId: track.nodeId,
+      trackIndex: track.index,
+      type: LooperActionEventType.GestureSnapshot,
+      timeMs: endpointMs,
+      values,
+      interpolation: "linear",
+    });
   }
 
   releaseTrackActions(
@@ -275,7 +310,8 @@ export class LooperGestureRecorder {
       track?.connectedHonkId === null ||
       track?.connectedHonkId === undefined ||
       typeof captureActionByHonkId !== "function"
-    ) return null;
+    )
+      return null;
     return captureActionByHonkId(track.connectedHonkId) || null;
   }
 }

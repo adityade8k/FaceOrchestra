@@ -28,9 +28,8 @@ export class InstrumentEntity {
     }
 
     this.root = root;
-    this.capabilities = capabilities === null
-      ? getDefaultCapabilities(this.kind)
-      : createCapabilitySet(capabilities);
+    this.capabilities =
+      capabilities === null ? getDefaultCapabilities(this.kind) : createCapabilitySet(capabilities);
     this.persistable = this.capabilities.has(INSTRUMENT_CAPABILITIES.persistable);
     this.interactionTargetRegistry = interactionTargetRegistry;
     this.interactionTargetIds = new Set();

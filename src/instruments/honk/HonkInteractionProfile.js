@@ -34,13 +34,27 @@ export const VOWEL_MORPHS = HONK_INTERACTION_PROFILE[INTERACTION_TARGET_NAMES.mo
 // identity. Its raycast uses a sphere when editable and model bounds when
 // locked; arbitrary body/grip geometry never grants voice ownership.
 export function isHonkSqueezeTarget(honk, target) {
-  if (honk?.kind !== "honk" || honk.disposed || honk.pendingPlacement ||
-      !honk.root?.parent || !target || target.name !== INTERACTION_TARGET_NAMES.horn ||
-      HONK_INTERACTION_PROFILE[target.name]?.type !== "holdSqueeze" ||
-      honk.getTarget?.(HONK_INTERACTION_ROLES.squeeze) !== target) return false;
-  const record = honk.interactionTargetRegistry?.resolveFromObject3D(target, { walkParents: false });
-  if (!record || record.object3D !== target || record.ownerId !== honk.id ||
-      record.role !== HONK_INTERACTION_ROLES.squeeze) return false;
+  if (
+    honk?.kind !== "honk" ||
+    honk.disposed ||
+    honk.pendingPlacement ||
+    !honk.root?.parent ||
+    !target ||
+    target.name !== INTERACTION_TARGET_NAMES.horn ||
+    HONK_INTERACTION_PROFILE[target.name]?.type !== "holdSqueeze" ||
+    honk.getTarget?.(HONK_INTERACTION_ROLES.squeeze) !== target
+  )
+    return false;
+  const record = honk.interactionTargetRegistry?.resolveFromObject3D(target, {
+    walkParents: false,
+  });
+  if (
+    !record ||
+    record.object3D !== target ||
+    record.ownerId !== honk.id ||
+    record.role !== HONK_INTERACTION_ROLES.squeeze
+  )
+    return false;
   let attachedToHonk = false;
   for (let object = target; object; object = object.parent) {
     if (object.visible === false) return false;
@@ -50,5 +64,7 @@ export function isHonkSqueezeTarget(honk, target) {
 }
 
 export const VOWEL_LETTERS_BY_MORPH = Object.freeze(
-  Object.fromEntries(Object.entries(MORPH_TARGET_NAMES.vowels).map(([letter, morph]) => [morph, letter])),
+  Object.fromEntries(
+    Object.entries(MORPH_TARGET_NAMES.vowels).map(([letter, morph]) => [morph, letter]),
+  ),
 );

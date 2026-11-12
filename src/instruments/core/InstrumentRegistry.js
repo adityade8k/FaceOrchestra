@@ -7,6 +7,7 @@ export class InstrumentRegistry {
     this.instruments = new Map();
     this.idsByKind = new Map();
     this.kindViews = new Map();
+    this.instrumentView = null;
     this.idByRoot = new WeakMap();
     this.listeners = new Set();
     this.admission = new InstrumentAdmissionPolicy(this);
@@ -39,6 +40,7 @@ export class InstrumentRegistry {
     }
     kindIds.add(instrument.id);
     this.kindViews.delete(instrument.kind);
+    this.instrumentView = null;
 
     if (initialize && instrument.lifecycle === INSTRUMENT_LIFECYCLE.created) {
       instrument.initialize?.();
@@ -52,8 +54,7 @@ export class InstrumentRegistry {
   }
 
   remove(instrumentOrId, { dispose = true } = {}) {
-    const instrumentId =
-      typeof instrumentOrId === "string" ? instrumentOrId : instrumentOrId?.id;
+    const instrumentId = typeof instrumentOrId === "string" ? instrumentOrId : instrumentOrId?.id;
     const instrument = this.instruments.get(instrumentId);
     if (!instrument) {
       return null;
@@ -64,6 +65,7 @@ export class InstrumentRegistry {
     const kindIds = this.idsByKind.get(instrument.kind);
     kindIds?.delete(instrument.id);
     this.kindViews.delete(instrument.kind);
+    this.instrumentView = null;
     if (kindIds?.size === 0) {
       this.idsByKind.delete(instrument.kind);
     }
@@ -92,13 +94,17 @@ export class InstrumentRegistry {
     if (!this.kindViews.has(kind))
       this.kindViews.set(
         kind,
-        Object.freeze(
-          [...(this.idsByKind.get(kind) || [])].map((id) =>
-            this.instruments.get(id),
-          ),
-        ),
+        Object.freeze([...(this.idsByKind.get(kind) || [])].map((id) => this.instruments.get(id))),
       );
     return this.kindViews.get(kind);
+  }
+
+  getInstrumentStates() {
+    return (this.instrumentView ??= Object.freeze(
+      [...this.instruments.values()].filter((instrument) =>
+        ["honk", "looper", "metronome"].includes(instrument.kind),
+      ),
+    ));
   }
 
   getByCapability(capability) {
@@ -119,8 +125,7 @@ export class InstrumentRegistry {
     let current = object3D;
     while (current) {
       const descriptorId =
-        current.userData?.interactionTarget?.ownerId ||
-        current.userData?.instrument?.id;
+        current.userData?.interactionTarget?.ownerId || current.userData?.instrument?.id;
       const instrumentId = descriptorId || this.idByRoot.get(current);
       if (instrumentId && this.instruments.has(instrumentId)) {
         return this.instruments.get(instrumentId);

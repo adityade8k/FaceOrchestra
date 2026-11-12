@@ -1,0 +1,6255 @@
+{
+  "schemaVersion": 1,
+  "id": "alfaaz",
+  "title": "Alfaaz",
+  "contentVersion": 3,
+  "playback": "honk-percussion-backing-v1",
+  "bpm": 68,
+  "sourceBpm": 68,
+  "maxBpm": 68,
+  "practiceBpm": 68,
+  "pitchBendRange": 4,
+  "liveRole": "melody",
+  "source": {
+    "sha256": "09f6b3305104a0fe973780234ce282cd6d7190efe0945008212f1d575f68c1bd",
+    "rendition": 4
+  },
+  "requirements": {
+    "maxLiveVoices": 1,
+    "maxHonks": 13,
+    "maxLoopers": 12,
+    "maxMetronomes": 1
+  },
+  "recording": {
+    "bpm": 68,
+    "countIn": 4,
+    "tailMs": 500,
+    "end": "manual",
+    "synchronization": "captured-noise-once",
+    "instructions": "Play the melody Honks. Keep Trigger held through the connected lower phrases and sustained bends. Release and press for each new indicated note. The Loopers play the tabla-inspired percussion backing. Either hand works."
+  },
+  "arrangement": {
+    "id": "tabla-inspired",
+    "title": "Honk with tabla-inspired backing",
+    "version": 2,
+    "provenance": "Sequence 01 harmonium reference, rendition 5: original timing at a 68 BPM editing grid, 150 melodic pitch targets in 59 holds, connected lower phrases from 29.211 to 41.204 seconds, expressive closing bends, and 225 native Boink/wood strokes. Approved revision: the 70 ms D3 at 46.933 seconds becomes a three-semitone downward-and-back ornament inside one D4 hold (h045\u2013h047).",
+    "recipes": [
+      {
+        "kind": "honk",
+        "role": "lead-50",
+        "midi": 50,
+        "part": "melody",
+        "position": [-0.475, 0.19, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-52",
+        "midi": 52,
+        "part": "melody",
+        "position": [-0.285, 0.19, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-54",
+        "midi": 54,
+        "part": "melody",
+        "position": [-0.095, 0.19, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-56",
+        "midi": 56,
+        "part": "melody",
+        "position": [0.095, 0.19, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-57",
+        "midi": 57,
+        "part": "melody",
+        "position": [0.285, 0.19, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-59",
+        "midi": 59,
+        "part": "melody",
+        "position": [0.475, 0.19, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-61",
+        "midi": 61,
+        "part": "melody",
+        "position": [-0.38, 0.48, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-62",
+        "midi": 62,
+        "part": "melody",
+        "position": [-0.19, 0.48, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-64",
+        "midi": 64,
+        "part": "melody",
+        "position": [0.0, 0.48, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-66",
+        "midi": 66,
+        "part": "melody",
+        "position": [0.19, 0.48, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "lead-69",
+        "midi": 69,
+        "part": "melody",
+        "position": [0.38, 0.48, 0.4],
+        "scale": 1.05
+      },
+      {
+        "kind": "honk",
+        "role": "tabla-bass",
+        "midi": 48,
+        "part": "percussion",
+        "position": [-0.5, 0.2, -1.3],
+        "scale": 0.65
+      },
+      {
+        "kind": "honk",
+        "role": "tabla-treble",
+        "midi": 76,
+        "part": "percussion",
+        "position": [0.5, 0.2, -1.3],
+        "scale": 0.65
+      },
+      {
+        "kind": "metronome",
+        "role": "metronome",
+        "position": [-0.85, -0.6, 0.05],
+        "scale": 0.65
+      }
+    ],
+    "backing": [
+      {
+        "id": "percussion-001",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 0.4352,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.09796699029126213
+      },
+      {
+        "id": "percussion-002",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 0.4454,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21490873786407766
+      },
+      {
+        "id": "percussion-003",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 1.4388006666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.18304271844660194
+      },
+      {
+        "id": "percussion-004",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 1.9326846666666668,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.13716893203883493
+      },
+      {
+        "id": "percussion-005",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 2.4330399999999996,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1918407766990291
+      },
+      {
+        "id": "percussion-006",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 3.4295346666666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.0809747572815534
+      },
+      {
+        "id": "percussion-007",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 3.4386013333333336,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.18190679611650484
+      },
+      {
+        "id": "percussion-008",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 3.930264,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1744504854368932
+      },
+      {
+        "id": "percussion-009",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 4.43088,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10499417475728155
+      },
+      {
+        "id": "percussion-010",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 4.44108,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20428349514563104
+      },
+      {
+        "id": "percussion-011",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 4.9264866666666665,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06983689320388349
+      },
+      {
+        "id": "percussion-012",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 5.430774666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19446990291262137
+      },
+      {
+        "id": "percussion-013",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 5.934994666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.12783883495145631
+      },
+      {
+        "id": "percussion-014",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 6.428719999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20575728155339806
+      },
+      {
+        "id": "percussion-015",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 6.936249333333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.052027184466019415
+      },
+      {
+        "id": "percussion-016",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 7.431085333333334,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08681941747572816
+      },
+      {
+        "id": "percussion-017",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 7.440152,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.18406796116504856
+      },
+      {
+        "id": "percussion-018",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 7.929264666666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.15991844660194174
+      },
+      {
+        "id": "percussion-019",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 8.42656,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1328252427184466
+      },
+      {
+        "id": "percussion-020",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 8.43676,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.250831067961165
+      },
+      {
+        "id": "percussion-021",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 8.92194,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.09066019417475728
+      },
+      {
+        "id": "percussion-022",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 9.420470666666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22949514563106796
+      },
+      {
+        "id": "percussion-023",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 9.931298,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.17413203883495143
+      },
+      {
+        "id": "percussion-024",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 10.4244,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26103689320388346
+      },
+      {
+        "id": "percussion-025",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 10.932745333333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.05974368932038835
+      },
+      {
+        "id": "percussion-026",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 11.425156,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10440776699029125
+      },
+      {
+        "id": "percussion-027",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 11.434222666666665,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2139495145631068
+      },
+      {
+        "id": "percussion-028",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 11.927483333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2074990291262136
+      },
+      {
+        "id": "percussion-029",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 12.172509999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.09227184466019417
+      },
+      {
+        "id": "percussion-030",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 12.42224,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.12517281553398057
+      },
+      {
+        "id": "percussion-031",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 12.43244,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2498990291262136
+      },
+      {
+        "id": "percussion-032",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 12.91728,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08339029126213592
+      },
+      {
+        "id": "percussion-033",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 13.417034666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.23206796116504852
+      },
+      {
+        "id": "percussion-034",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 13.914828666666665,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.16896893203883495
+      },
+      {
+        "id": "percussion-035",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 14.166666666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1584466019417476
+      },
+      {
+        "id": "percussion-036",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 14.416,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06058252427184466
+      },
+      {
+        "id": "percussion-037",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 14.420079999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2616330097087379
+      },
+      {
+        "id": "percussion-038",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 14.665333333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19106796116504854
+      },
+      {
+        "id": "percussion-039",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 14.790000000000001,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.13514563106796115
+      },
+      {
+        "id": "percussion-040",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 14.914077333333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06145825242718446
+      },
+      {
+        "id": "percussion-041",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 15.418864,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10860194174757282
+      },
+      {
+        "id": "percussion-042",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 15.427930666666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2138368932038835
+      },
+      {
+        "id": "percussion-043",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 15.920658666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20800388349514562
+      },
+      {
+        "id": "percussion-044",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 16.41792,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1308116504854369
+      },
+      {
+        "id": "percussion-045",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 16.42812,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2654815533980583
+      },
+      {
+        "id": "percussion-046",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 16.920349333333334,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08296116504854369
+      },
+      {
+        "id": "percussion-047",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 17.412272666666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.24541553398058252
+      },
+      {
+        "id": "percussion-048",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 17.922329333333334,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.16849320388349515
+      },
+      {
+        "id": "percussion-049",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 18.41576,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26028155339805825
+      },
+      {
+        "id": "percussion-050",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 18.910890666666667,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.062240776699029124
+      },
+      {
+        "id": "percussion-051",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 19.410373333333332,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1086757281553398
+      },
+      {
+        "id": "percussion-052",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 19.419439999999998,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2349009708737864
+      },
+      {
+        "id": "percussion-053",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 19.915466,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21437864077669902
+      },
+      {
+        "id": "percussion-054",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 20.4136,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.12530291262135923
+      },
+      {
+        "id": "percussion-055",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 20.4238,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26644271844660194
+      },
+      {
+        "id": "percussion-056",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 20.92035866666667,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.0913864077669903
+      },
+      {
+        "id": "percussion-057",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 21.40617333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2500757281553398
+      },
+      {
+        "id": "percussion-058",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 21.916808,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.16775728155339806
+      },
+      {
+        "id": "percussion-059",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 22.16171,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.08807766990291262
+      },
+      {
+        "id": "percussion-060",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 22.41144,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.23933786407766988
+      },
+      {
+        "id": "percussion-061",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 22.905244666666665,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06041553398058252
+      },
+      {
+        "id": "percussion-062",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 23.405407333333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10789320388349515
+      },
+      {
+        "id": "percussion-063",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 23.414474,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2221611650485437
+      },
+      {
+        "id": "percussion-064",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 23.913605333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19852427184466018
+      },
+      {
+        "id": "percussion-065",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 24.40928,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.13192038834951456
+      },
+      {
+        "id": "percussion-066",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 24.41948,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2564601941747573
+      },
+      {
+        "id": "percussion-067",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 24.905034,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08419029126213592
+      },
+      {
+        "id": "percussion-068",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 25.40973,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2334019417475728
+      },
+      {
+        "id": "percussion-069",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 25.912306666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1680271844660194
+      },
+      {
+        "id": "percussion-070",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 26.40712,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.24964660194174754
+      },
+      {
+        "id": "percussion-071",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 26.901695333333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06538252427184466
+      },
+      {
+        "id": "percussion-072",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 27.408329333333334,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10016699029126214
+      },
+      {
+        "id": "percussion-073",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 27.417396,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21800388349514563
+      },
+      {
+        "id": "percussion-074",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 27.899108,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20176699029126213
+      },
+      {
+        "id": "percussion-075",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 28.155229999999996,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.09227184466019417
+      },
+      {
+        "id": "percussion-076",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 28.40496,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.12709320388349513
+      },
+      {
+        "id": "percussion-077",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 28.415159999999997,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2556388349514563
+      },
+      {
+        "id": "percussion-078",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 28.902549999999998,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08413592233009709
+      },
+      {
+        "id": "percussion-079",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 29.399369333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2348
+      },
+      {
+        "id": "percussion-080",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 29.907011999999998,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1595650485436893
+      },
+      {
+        "id": "percussion-081",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 30.14666666666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1584466019417476
+      },
+      {
+        "id": "percussion-082",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 30.396,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06058252427184466
+      },
+      {
+        "id": "percussion-083",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 30.4028,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2586135922330097
+      },
+      {
+        "id": "percussion-084",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 30.645333333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19106796116504854
+      },
+      {
+        "id": "percussion-085",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 30.769999999999996,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.13514563106796115
+      },
+      {
+        "id": "percussion-086",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 30.895584666666664,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06145825242718446
+      },
+      {
+        "id": "percussion-087",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 31.401448,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10515339805825243
+      },
+      {
+        "id": "percussion-088",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 31.410514666666668,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22478834951456308
+      },
+      {
+        "id": "percussion-089",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 31.894663333333334,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20653980582524273
+      },
+      {
+        "id": "percussion-090",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 32.400639999999996,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1232893203883495
+      },
+      {
+        "id": "percussion-091",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 32.41084,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2549223300970874
+      },
+      {
+        "id": "percussion-092",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 32.89424066666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08777864077669903
+      },
+      {
+        "id": "percussion-093",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 33.895075999999996,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1357883495145631
+      },
+      {
+        "id": "percussion-094",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 34.39848,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2041728155339806
+      },
+      {
+        "id": "percussion-095",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 34.894914,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.0539747572815534
+      },
+      {
+        "id": "percussion-096",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 35.39938333333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.09082718446601941
+      },
+      {
+        "id": "percussion-097",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 35.40845,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19006990291262135
+      },
+      {
+        "id": "percussion-098",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 35.89703,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.17306990291262137
+      },
+      {
+        "id": "percussion-099",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 36.39632,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10837669902912622
+      },
+      {
+        "id": "percussion-100",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 36.40651999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22700776699029127
+      },
+      {
+        "id": "percussion-101",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 36.90442733333334,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.07506601941747572
+      },
+      {
+        "id": "percussion-102",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 37.39444666666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21579417475728155
+      },
+      {
+        "id": "percussion-103",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 37.903064,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1482873786407767
+      },
+      {
+        "id": "percussion-104",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 38.39416,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20866407766990291
+      },
+      {
+        "id": "percussion-105",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 38.902165333333336,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.05279029126213592
+      },
+      {
+        "id": "percussion-106",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 39.397908,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.0916757281553398
+      },
+      {
+        "id": "percussion-107",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 39.40697466666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20149708737864078
+      },
+      {
+        "id": "percussion-108",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 39.898694,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.17925825242718446
+      },
+      {
+        "id": "percussion-109",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 40.392,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10923495145631068
+      },
+      {
+        "id": "percussion-110",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 40.4022,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2108640776699029
+      },
+      {
+        "id": "percussion-111",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 40.886496,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.07423689320388349
+      },
+      {
+        "id": "percussion-112",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 41.39619,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2063631067961165
+      },
+      {
+        "id": "percussion-113",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 41.894618666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.14666601941747573
+      },
+      {
+        "id": "percussion-114",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 42.38984,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2202407766990291
+      },
+      {
+        "id": "percussion-115",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 42.883554000000004,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.05150485436893204
+      },
+      {
+        "id": "percussion-116",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 43.382934666666664,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08932621359223301
+      },
+      {
+        "id": "percussion-117",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 43.392001333333326,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.190378640776699
+      },
+      {
+        "id": "percussion-118",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 43.89360333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.17922135922330099
+      },
+      {
+        "id": "percussion-119",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 44.137950000000004,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.07894368932038834
+      },
+      {
+        "id": "percussion-120",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 44.387679999999996,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.11012038834951456
+      },
+      {
+        "id": "percussion-121",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 44.397879999999994,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22941165048543688
+      },
+      {
+        "id": "percussion-122",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 44.88405733333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.07253203883495145
+      },
+      {
+        "id": "percussion-123",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 45.384117999999994,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20404271844660193
+      },
+      {
+        "id": "percussion-124",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 45.881118666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.14382330097087379
+      },
+      {
+        "id": "percussion-125",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 46.38552,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21573009708737864
+      },
+      {
+        "id": "percussion-126",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 46.88227133333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.05553009708737864
+      },
+      {
+        "id": "percussion-127",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 47.38663866666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08653009708737863
+      },
+      {
+        "id": "percussion-128",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 47.39570533333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.18428349514563108
+      },
+      {
+        "id": "percussion-129",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 47.892025999999994,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.18363106796116505
+      },
+      {
+        "id": "percussion-130",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 48.38336,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10475145631067961
+      },
+      {
+        "id": "percussion-131",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 48.39356,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21564660194174756
+      },
+      {
+        "id": "percussion-132",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 48.890878,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.07769514563106796
+      },
+      {
+        "id": "percussion-133",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 49.376772,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20339805825242718
+      },
+      {
+        "id": "percussion-134",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 49.77826666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1584466019417476
+      },
+      {
+        "id": "percussion-135",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 49.89005866666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1361145631067961
+      },
+      {
+        "id": "percussion-136",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 50.0276,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06058252427184466
+      },
+      {
+        "id": "percussion-137",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 50.27693333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19106796116504854
+      },
+      {
+        "id": "percussion-138",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 50.3812,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2040233009708738
+      },
+      {
+        "id": "percussion-139",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 50.885318,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06502912621359223
+      },
+      {
+        "id": "percussion-140",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 51.37812533333334,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1006504854368932
+      },
+      {
+        "id": "percussion-141",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 51.387192,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21609320388349515
+      },
+      {
+        "id": "percussion-142",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 51.873867999999995,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21573980582524271
+      },
+      {
+        "id": "percussion-143",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 52.379039999999996,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.12738252427184465
+      },
+      {
+        "id": "percussion-144",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 52.38924,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.25875339805825237
+      },
+      {
+        "id": "percussion-145",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 52.87278799999999,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.09142330097087378
+      },
+      {
+        "id": "percussion-146",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 53.386618666666664,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.24873398058252424
+      },
+      {
+        "id": "percussion-147",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 53.881092,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.171747572815534
+      },
+      {
+        "id": "percussion-148",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 54.12715,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.08807766990291262
+      },
+      {
+        "id": "percussion-149",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 54.37687999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.23730679611650485
+      },
+      {
+        "id": "percussion-150",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 54.88355933333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06297864077669903
+      },
+      {
+        "id": "percussion-151",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 55.37973266666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.0993359223300971
+      },
+      {
+        "id": "percussion-152",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 55.38879933333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21681165048543688
+      },
+      {
+        "id": "percussion-153",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 55.88390733333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.21099417475728155
+      },
+      {
+        "id": "percussion-154",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 56.37472,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.12692427184466018
+      },
+      {
+        "id": "percussion-155",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 56.384919999999994,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26694563106796115
+      },
+      {
+        "id": "percussion-156",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 56.881660000000004,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08462912621359223
+      },
+      {
+        "id": "percussion-157",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 57.377640666666665,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.23858252427184465
+      },
+      {
+        "id": "percussion-158",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 57.87132066666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.16636893203883496
+      },
+      {
+        "id": "percussion-159",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 58.37256,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.24035339805825243
+      },
+      {
+        "id": "percussion-160",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 58.86621733333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06262330097087379
+      },
+      {
+        "id": "percussion-161",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 59.36594933333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10443495145631067
+      },
+      {
+        "id": "percussion-162",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 59.375015999999995,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2293378640776699
+      },
+      {
+        "id": "percussion-163",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 59.86873,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.20410679611650484
+      },
+      {
+        "id": "percussion-164",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 60.12067,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.09227184466019417
+      },
+      {
+        "id": "percussion-165",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 60.3704,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.13312233009708738
+      },
+      {
+        "id": "percussion-166",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 60.3806,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.24810873786407767
+      },
+      {
+        "id": "percussion-167",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 60.87680733333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.08771456310679611
+      },
+      {
+        "id": "percussion-168",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 61.36669066666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2443902912621359
+      },
+      {
+        "id": "percussion-169",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 61.87322266666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.17016310679611651
+      },
+      {
+        "id": "percussion-170",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 62.11851,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.08807766990291262
+      },
+      {
+        "id": "percussion-171",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 62.36824,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.25752233009708736
+      },
+      {
+        "id": "percussion-172",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 62.86520666666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06434757281553398
+      },
+      {
+        "id": "percussion-173",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 63.36976666666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10148932038834951
+      },
+      {
+        "id": "percussion-174",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 63.37883333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22430485436893202
+      },
+      {
+        "id": "percussion-175",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 63.87360133333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19964271844660195
+      },
+      {
+        "id": "percussion-176",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 64.17953333333332,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06058252427184466
+      },
+      {
+        "id": "percussion-177",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 64.36608,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.12380194174757281
+      },
+      {
+        "id": "percussion-178",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 64.37628,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26472621359223303
+      },
+      {
+        "id": "percussion-179",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 64.55353333333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.13514563106796115
+      },
+      {
+        "id": "percussion-180",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 64.87236266666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.09434951456310679
+      },
+      {
+        "id": "percussion-181",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 65.36010399999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2761359223300971
+      },
+      {
+        "id": "percussion-182",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 65.86803,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.18204660194174757
+      },
+      {
+        "id": "percussion-183",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 66.36392,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2637864077669903
+      },
+      {
+        "id": "percussion-184",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 66.86971533333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.07174757281553397
+      },
+      {
+        "id": "percussion-185",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 67.369538,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1145378640776699
+      },
+      {
+        "id": "percussion-186",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 67.37860466666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.256673786407767
+      },
+      {
+        "id": "percussion-187",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 67.866686,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22001747572815536
+      },
+      {
+        "id": "percussion-188",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 68.36176,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.14882718446601942
+      },
+      {
+        "id": "percussion-189",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 68.37196,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2752970873786407
+      },
+      {
+        "id": "percussion-190",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 68.86760066666666,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.09573009708737863
+      },
+      {
+        "id": "percussion-191",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 69.365882,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26313398058252424
+      },
+      {
+        "id": "percussion-192",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 69.861908,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1921126213592233
+      },
+      {
+        "id": "percussion-193",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 70.10987,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.0978640776699029
+      },
+      {
+        "id": "percussion-194",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 70.3596,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26426990291262137
+      },
+      {
+        "id": "percussion-195",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 70.86447733333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06871067961165049
+      },
+      {
+        "id": "percussion-196",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 71.35408866666667,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.11969320388349515
+      },
+      {
+        "id": "percussion-197",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 71.36315533333332,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.24254368932038833
+      },
+      {
+        "id": "percussion-198",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 71.85285733333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22697864077669902
+      },
+      {
+        "id": "percussion-199",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 72.35744,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.14673009708737864
+      },
+      {
+        "id": "percussion-200",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 72.36764,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.29417087378640777
+      },
+      {
+        "id": "percussion-201",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 72.85988066666665,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.10117281553398058
+      },
+      {
+        "id": "percussion-202",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 73.35314133333333,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2559844660194175
+      },
+      {
+        "id": "percussion-203",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 73.85943533333334,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.18189708737864077
+      },
+      {
+        "id": "percussion-204",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 74.35528000000001,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.28650873786407766
+      },
+      {
+        "id": "percussion-205",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 74.85473999999999,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.07073203883495145
+      },
+      {
+        "id": "percussion-206",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 75.36281333333334,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1168116504854369
+      },
+      {
+        "id": "percussion-207",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 75.37187999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2384252427184466
+      },
+      {
+        "id": "percussion-208",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 75.84841266666668,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.23300970873786406
+      },
+      {
+        "id": "percussion-209",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 76.10338999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.10252427184466019
+      },
+      {
+        "id": "percussion-210",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 76.35312,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1376252427184466
+      },
+      {
+        "id": "percussion-211",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 76.36332,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.28327378640776696
+      },
+      {
+        "id": "percussion-212",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 76.84609733333333,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.09406990291262136
+      },
+      {
+        "id": "percussion-213",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 77.36076666666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2802912621359223
+      },
+      {
+        "id": "percussion-214",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 77.4962,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1584466019417476
+      },
+      {
+        "id": "percussion-215",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 77.74553333333334,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.06058252427184466
+      },
+      {
+        "id": "percussion-216",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 77.84717066666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.1791106796116505
+      },
+      {
+        "id": "percussion-217",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 77.99486666666667,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.19106796116504854
+      },
+      {
+        "id": "percussion-218",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 78.10123,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.13514563106796115
+      },
+      {
+        "id": "percussion-219",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 78.35096,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.27992815533980586
+      },
+      {
+        "id": "percussion-220",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 78.85340066666667,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.07074174757281552
+      },
+      {
+        "id": "percussion-221",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 79.357904,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.1193378640776699
+      },
+      {
+        "id": "percussion-222",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 79.36697066666666,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.2595165048543689
+      },
+      {
+        "id": "percussion-223",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 79.85485933333334,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.22589902912621357
+      },
+      {
+        "id": "percussion-224",
+        "role": "tabla-bass",
+        "midi": 48,
+        "beat": 80.12553333333332,
+        "beats": 1e-6,
+        "sound": "boink",
+        "part": "percussion",
+        "gain": 0.12582524271844658
+      },
+      {
+        "id": "percussion-225",
+        "role": "tabla-treble",
+        "midi": 76,
+        "beat": 80.13459999999999,
+        "beats": 1e-6,
+        "sound": "metronomeWood",
+        "part": "percussion",
+        "gain": 0.26097087378640776
+      }
+    ],
+    "fixedBacking": {
+      "outputGroups": ["foundation", "figures"],
+      "volume": 0,
+      "placement": [-1.6, 0.55, -1.7],
+      "terminalGapBeats": 1
+    }
+  },
+  "score": {
+    "durationBeats": 80.63666666666667,
+    "durationSeconds": 71.15,
+    "events": [
+      {
+        "id": "h001",
+        "beat": 0.38193333333333335,
+        "beats": 1.0857333333333334,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h001"],
+        "sourceNoteIds": ["n001"],
+        "pitchTargets": [
+          {
+            "sourceId": "n001",
+            "midi": 61,
+            "beat": 0.38193333333333335,
+            "endBeat": 1.467666666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.26002087682672226,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4999999999999999,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7200417536534445,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8799582463465552,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h002",
+        "beat": 1.496,
+        "beats": 1.7271999999999996,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h002"],
+        "sourceNoteIds": ["n002"],
+        "pitchTargets": [
+          {
+            "sourceId": "n002",
+            "midi": 61,
+            "beat": 1.496,
+            "endBeat": 3.2232
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.25997375328083994,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5000000000000001,
+            "semitones": 0.34
+          },
+          {
+            "fraction": 0.7200131233595801,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8799868766404201,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h003",
+        "beat": 3.2232,
+        "beats": 0.6584666666666671,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h003"],
+        "sourceNoteIds": ["n003"],
+        "pitchTargets": [
+          {
+            "sourceId": "n003",
+            "midi": 59,
+            "beat": 3.2232,
+            "endBeat": 3.881666666666667
+          }
+        ]
+      },
+      {
+        "id": "h004",
+        "beat": 3.91,
+        "beats": 0.7343999999999996,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h004"],
+        "sourceNoteIds": ["n004"],
+        "pitchTargets": [
+          {
+            "sourceId": "n004",
+            "midi": 59,
+            "beat": 3.91,
+            "endBeat": 4.6444
+          }
+        ]
+      },
+      {
+        "id": "h005",
+        "beat": 4.6444,
+        "beats": 2.467266666666667,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h005"],
+        "sourceNoteIds": ["n005", "n006", "n007"],
+        "pitchTargets": [
+          {
+            "sourceId": "n005",
+            "midi": 61,
+            "beat": 4.6444,
+            "endBeat": 4.927733333333333
+          },
+          {
+            "sourceId": "n006",
+            "midi": 59,
+            "beat": 4.927733333333333,
+            "endBeat": 5.302866666666667
+          },
+          {
+            "sourceId": "n007",
+            "midi": 57,
+            "beat": 5.302866666666667,
+            "endBeat": 7.111666666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.09416628387689478,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1584749655489205,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.24621038125861272,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.31051906293063847,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.45751033532384006,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.6334405144694533,
+            "semitones": -3.66
+          },
+          {
+            "fraction": 0.7947175011483691,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.9120349104271932,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h006",
+        "beat": 7.111666666666667,
+        "beats": 0.36266666666666597,
+        "midi": 56,
+        "velocity": 91,
+        "role": "lead-56",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h006"],
+        "sourceNoteIds": ["n008", "n009"],
+        "pitchTargets": [
+          {
+            "sourceId": "n008",
+            "midi": 56,
+            "beat": 7.111666666666667,
+            "endBeat": 7.243133333333333
+          },
+          {
+            "sourceId": "n009",
+            "midi": 57,
+            "beat": 7.243133333333333,
+            "endBeat": 7.474333333333333
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2218750000000004,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5665625000000011,
+            "semitones": 1
+          },
+          {
+            "fraction": 1,
+            "semitones": 1
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h007",
+        "beat": 7.502666666666666,
+        "beats": 0.3909999999999997,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h007"],
+        "sourceNoteIds": ["n010"],
+        "pitchTargets": [
+          {
+            "sourceId": "n010",
+            "midi": 57,
+            "beat": 7.502666666666666,
+            "endBeat": 7.893666666666666
+          }
+        ]
+      },
+      {
+        "id": "h008",
+        "beat": 7.922,
+        "beats": 2.9636666666666667,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h008"],
+        "sourceNoteIds": ["n011", "n012", "n013", "n014", "n015", "n016", "n017"],
+        "pitchTargets": [
+          {
+            "sourceId": "n011",
+            "midi": 57,
+            "beat": 7.922,
+            "endBeat": 8.408199999999999
+          },
+          {
+            "sourceId": "n012",
+            "midi": 59,
+            "beat": 8.408199999999999,
+            "endBeat": 8.8094
+          },
+          {
+            "sourceId": "n013",
+            "midi": 61,
+            "beat": 8.8094,
+            "endBeat": 8.940866666666667
+          },
+          {
+            "sourceId": "n014",
+            "midi": 59,
+            "beat": 8.940866666666667,
+            "endBeat": 9.250266666666667
+          },
+          {
+            "sourceId": "n015",
+            "midi": 57,
+            "beat": 9.250266666666667,
+            "endBeat": 9.466733333333332
+          },
+          {
+            "sourceId": "n016",
+            "midi": 59,
+            "beat": 9.466733333333332,
+            "endBeat": 9.6186
+          },
+          {
+            "sourceId": "n017",
+            "midi": 61,
+            "beat": 9.6186,
+            "endBeat": 10.885666666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.14684512428298277,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.20038240917782027,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.2822179732313575,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.31361376673040153,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.32657743785850857,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.37720841300191205,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.4309751434034417,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.4715487571701721,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5040152963671128,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5376290630975142,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.5552581261950286,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6087954110898661,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.6836328871892925,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.7862332695984703,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.8803059273422562,
+            "semitones": 3.88
+          },
+          {
+            "fraction": 0.94868068833652,
+            "semitones": 4
+          },
+          {
+            "fraction": 1,
+            "semitones": 4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h009",
+        "beat": 10.914000000000001,
+        "beats": 0.5156666666666647,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h009"],
+        "sourceNoteIds": ["n018", "n019"],
+        "pitchTargets": [
+          {
+            "sourceId": "n018",
+            "midi": 61,
+            "beat": 10.914000000000001,
+            "endBeat": 11.217733333333333
+          },
+          {
+            "sourceId": "n019",
+            "midi": 59,
+            "beat": 11.217733333333333,
+            "endBeat": 11.429666666666666
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.490109890109892,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7204395604395631,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h010",
+        "beat": 11.457999999999998,
+        "beats": 1.2988000000000008,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h010"],
+        "sourceNoteIds": ["n020"],
+        "pitchTargets": [
+          {
+            "sourceId": "n020",
+            "midi": 59,
+            "beat": 11.457999999999998,
+            "endBeat": 12.7568
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2600349040139614,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4999999999999996,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7199825479930186,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8800174520069801,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h011",
+        "beat": 12.7568,
+        "beats": 0.611999999999999,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h011"],
+        "sourceNoteIds": ["n021", "n022", "n023"],
+        "pitchTargets": [
+          {
+            "sourceId": "n021",
+            "midi": 61,
+            "beat": 12.7568,
+            "endBeat": 12.934733333333334
+          },
+          {
+            "sourceId": "n022",
+            "midi": 59,
+            "beat": 12.934733333333334,
+            "endBeat": 13.275866666666667
+          },
+          {
+            "sourceId": "n023",
+            "midi": 57,
+            "beat": 13.275866666666667,
+            "endBeat": 13.368799999999998
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.20740740740740773,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4666666666666674,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.764814814814816,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.8966666666666682,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h012",
+        "beat": 13.368799999999998,
+        "beats": 1.5458666666666674,
+        "midi": 56,
+        "velocity": 91,
+        "role": "lead-56",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h012"],
+        "sourceNoteIds": ["n024", "n025"],
+        "pitchTargets": [
+          {
+            "sourceId": "n024",
+            "midi": 56,
+            "beat": 13.368799999999998,
+            "endBeat": 13.486666666666666
+          },
+          {
+            "sourceId": "n025",
+            "midi": 57,
+            "beat": 13.486666666666666,
+            "endBeat": 14.914666666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.04325513196480936,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1458944281524926,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.31642228739002914,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.5381231671554249,
+            "semitones": 1.26
+          },
+          {
+            "fraction": 0.7413489736070378,
+            "semitones": 0.88
+          },
+          {
+            "fraction": 0.8891495601173016,
+            "semitones": 1
+          },
+          {
+            "fraction": 1,
+            "semitones": 1
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h013",
+        "beat": 14.914666666666667,
+        "beats": 1.3294,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h013"],
+        "sourceNoteIds": ["n026", "n027"],
+        "pitchTargets": [
+          {
+            "sourceId": "n026",
+            "midi": 64,
+            "beat": 14.914666666666667,
+            "endBeat": 15.210466666666665
+          },
+          {
+            "sourceId": "n027",
+            "midi": 62,
+            "beat": 15.210466666666665,
+            "endBeat": 16.244066666666665
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.18414322250639387,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3034953111679454,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.42463768115942024,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6112531969309463,
+            "semitones": -1.74
+          },
+          {
+            "fraction": 0.7822676896845694,
+            "semitones": -2.12
+          },
+          {
+            "fraction": 0.9067348678601876,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h014",
+        "beat": 16.244066666666665,
+        "beats": 1.1174666666666673,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h014"],
+        "sourceNoteIds": ["n028", "n029", "n030", "n031", "n032"],
+        "pitchTargets": [
+          {
+            "sourceId": "n028",
+            "midi": 64,
+            "beat": 16.244066666666665,
+            "endBeat": 16.427666666666667
+          },
+          {
+            "sourceId": "n029",
+            "midi": 66,
+            "beat": 16.427666666666667,
+            "endBeat": 16.750666666666664
+          },
+          {
+            "sourceId": "n030",
+            "midi": 64,
+            "beat": 16.750666666666664,
+            "endBeat": 16.927466666666668
+          },
+          {
+            "sourceId": "n031",
+            "midi": 62,
+            "beat": 16.927466666666668,
+            "endBeat": 17.236866666666664
+          },
+          {
+            "sourceId": "n032",
+            "midi": 61,
+            "beat": 17.236866666666664,
+            "endBeat": 17.361533333333334
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1186612576064908,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2567951318458416,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.40770791075050683,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.5039553752535494,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5659229208924946,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7002028397565918,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.842799188640973,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.9241379310344822,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h015",
+        "beat": 17.361533333333334,
+        "beats": 1.4801333333333324,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h015"],
+        "sourceNoteIds": ["n033", "n034"],
+        "pitchTargets": [
+          {
+            "sourceId": "n033",
+            "midi": 59,
+            "beat": 17.361533333333334,
+            "endBeat": 17.717399999999998
+          },
+          {
+            "sourceId": "n034",
+            "midi": 61,
+            "beat": 17.717399999999998,
+            "endBeat": 18.841666666666665
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2059724349157735,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3131699846860645,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.43790199081163883,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.620214395099541,
+            "semitones": 2.26
+          },
+          {
+            "fraction": 0.7872894333843803,
+            "semitones": 1.88
+          },
+          {
+            "fraction": 0.9088820826952533,
+            "semitones": 2
+          },
+          {
+            "fraction": 1,
+            "semitones": 2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h016",
+        "beat": 18.869999999999997,
+        "beats": 0.9916666666666707,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h016"],
+        "sourceNoteIds": ["n035", "n036"],
+        "pitchTargets": [
+          {
+            "sourceId": "n035",
+            "midi": 61,
+            "beat": 18.869999999999997,
+            "endBeat": 19.190733333333334
+          },
+          {
+            "sourceId": "n036",
+            "midi": 59,
+            "beat": 19.190733333333334,
+            "endBeat": 19.861666666666668
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2719999999999989,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4319999999999983,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h017",
+        "beat": 19.89,
+        "beats": 0.7219333333333339,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h017"],
+        "sourceNoteIds": ["n037"],
+        "pitchTargets": [
+          {
+            "sourceId": "n037",
+            "midi": 59,
+            "beat": 19.89,
+            "endBeat": 20.611933333333333
+          }
+        ]
+      },
+      {
+        "id": "h018",
+        "beat": 20.611933333333333,
+        "beats": 2.315399999999999,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h018"],
+        "sourceNoteIds": ["n038", "n039", "n040"],
+        "pitchTargets": [
+          {
+            "sourceId": "n038",
+            "midi": 61,
+            "beat": 20.611933333333333,
+            "endBeat": 20.9406
+          },
+          {
+            "sourceId": "n039",
+            "midi": 59,
+            "beat": 20.9406,
+            "endBeat": 21.348599999999998
+          },
+          {
+            "sourceId": "n040",
+            "midi": 57,
+            "beat": 21.348599999999998,
+            "endBeat": 22.927333333333333
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.11992168379833582,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.18844836025452774,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.2961331375428293,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.3646598139990212,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.4954478707782674,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.6590797846304457,
+            "semitones": -3.74
+          },
+          {
+            "fraction": 0.8091042584434658,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.9181595692608912,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h019",
+        "beat": 22.927333333333333,
+        "beats": 0.5043333333333336,
+        "midi": 56,
+        "velocity": 91,
+        "role": "lead-56",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h019"],
+        "sourceNoteIds": ["n041", "n042"],
+        "pitchTargets": [
+          {
+            "sourceId": "n041",
+            "midi": 56,
+            "beat": 22.927333333333333,
+            "endBeat": 23.058799999999998
+          },
+          {
+            "sourceId": "n042",
+            "midi": 57,
+            "beat": 23.058799999999998,
+            "endBeat": 23.43166666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1595505617977527,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4741573033707862,
+            "semitones": 1
+          },
+          {
+            "fraction": 1,
+            "semitones": 1
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h020",
+        "beat": 23.459999999999997,
+        "beats": 0.7831333333333321,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h020"],
+        "sourceNoteIds": ["n043"],
+        "pitchTargets": [
+          {
+            "sourceId": "n043",
+            "midi": 57,
+            "beat": 23.459999999999997,
+            "endBeat": 24.24313333333333
+          }
+        ]
+      },
+      {
+        "id": "h021",
+        "beat": 24.24313333333333,
+        "beats": 2.5602000000000005,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h021"],
+        "sourceNoteIds": ["n044", "n045", "n046", "n047", "n048", "n049"],
+        "pitchTargets": [
+          {
+            "sourceId": "n044",
+            "midi": 59,
+            "beat": 24.24313333333333,
+            "endBeat": 24.723666666666666
+          },
+          {
+            "sourceId": "n045",
+            "midi": 61,
+            "beat": 24.723666666666666,
+            "endBeat": 24.848333333333333
+          },
+          {
+            "sourceId": "n046",
+            "midi": 59,
+            "beat": 24.848333333333333,
+            "endBeat": 25.2042
+          },
+          {
+            "sourceId": "n047",
+            "midi": 57,
+            "beat": 25.2042,
+            "endBeat": 25.420666666666666
+          },
+          {
+            "sourceId": "n048",
+            "midi": 59,
+            "beat": 25.420666666666666,
+            "endBeat": 25.558933333333332
+          },
+          {
+            "sourceId": "n049",
+            "midi": 61,
+            "beat": 25.558933333333332,
+            "endBeat": 26.80333333333333
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1677733510402833,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.20327578574590524,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.21646746347941564,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.2784417884019477,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.35546702080566617,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.40243470562195655,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.44001770694997777,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.4772023019034971,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.49402390438247007,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5559982293050021,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6403275785745904,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.7569721115537847,
+            "semitones": 2.26
+          },
+          {
+            "fraction": 0.8639220894200973,
+            "semitones": 1.88
+          },
+          {
+            "fraction": 0.9416555998229305,
+            "semitones": 2
+          },
+          {
+            "fraction": 1,
+            "semitones": 2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h022",
+        "beat": 26.80333333333333,
+        "beats": 0.42046666666666915,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h022"],
+        "sourceNoteIds": ["n050", "n051"],
+        "pitchTargets": [
+          {
+            "sourceId": "n050",
+            "midi": 64,
+            "beat": 26.80333333333333,
+            "endBeat": 26.895133333333334
+          },
+          {
+            "sourceId": "n051",
+            "midi": 61,
+            "beat": 26.895133333333334,
+            "endBeat": 27.2238
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.09703504043126626,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4684636118598355,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h023",
+        "beat": 27.2238,
+        "beats": 1.4869333333333306,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h023"],
+        "sourceNoteIds": ["n052"],
+        "pitchTargets": [
+          {
+            "sourceId": "n052",
+            "midi": 59,
+            "beat": 27.2238,
+            "endBeat": 28.71073333333333
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.25998475609756144,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5000000000000009,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7199695121951233,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8800304878048797,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h024",
+        "beat": 28.71073333333333,
+        "beats": 1.9935333333333336,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h024"],
+        "sourceNoteIds": ["n053", "n054", "n055"],
+        "pitchTargets": [
+          {
+            "sourceId": "n053",
+            "midi": 61,
+            "beat": 28.71073333333333,
+            "endBeat": 28.881866666666667
+          },
+          {
+            "sourceId": "n054",
+            "midi": 59,
+            "beat": 28.881866666666667,
+            "endBeat": 29.19806666666667
+          },
+          {
+            "sourceId": "n055",
+            "midi": 57,
+            "beat": 29.19806666666667,
+            "endBeat": 30.704266666666665
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.06026151222285388,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.13661171119954518,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.21887436043206362,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.29846503695281407,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.44087549744172816,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.6222285389425809,
+            "semitones": -3.74
+          },
+          {
+            "fraction": 0.788459351904491,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.9093234792495734,
+            "semitones": -4
+          },
+          {
+            "fraction": 1,
+            "semitones": -4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h025",
+        "beat": 30.89466666666667,
+        "beats": 1.3418666666666639,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h025"],
+        "sourceNoteIds": ["n056", "n057"],
+        "pitchTargets": [
+          {
+            "sourceId": "n056",
+            "midi": 64,
+            "beat": 30.89466666666667,
+            "endBeat": 31.236933333333333
+          },
+          {
+            "sourceId": "n057",
+            "midi": 62,
+            "beat": 31.236933333333333,
+            "endBeat": 32.236533333333334
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.21706081081081127,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3353040540540548,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.44873310810810907,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6275337837837851,
+            "semitones": -1.74
+          },
+          {
+            "fraction": 0.7913851351351369,
+            "semitones": -2.12
+          },
+          {
+            "fraction": 0.9106418918918938,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h026",
+        "beat": 32.236533333333334,
+        "beats": 0.8692666666666661,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h026"],
+        "sourceNoteIds": ["n058", "n059", "n060"],
+        "pitchTargets": [
+          {
+            "sourceId": "n058",
+            "midi": 64,
+            "beat": 32.236533333333334,
+            "endBeat": 32.46093333333333
+          },
+          {
+            "sourceId": "n059",
+            "midi": 62,
+            "beat": 32.46093333333333,
+            "endBeat": 32.75673333333333
+          },
+          {
+            "sourceId": "n060",
+            "midi": 61,
+            "beat": 32.75673333333333,
+            "endBeat": 33.105799999999995
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.19947848761408096,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.367014341590613,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.5397653194263368,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7222946544980449,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h027",
+        "beat": 33.105799999999995,
+        "beats": 2.960266666666669,
+        "midi": 59,
+        "velocity": 91,
+        "role": "lead-59",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h027"],
+        "sourceNoteIds": ["n061", "n062", "n063", "n064", "n065", "n066", "n067"],
+        "pitchTargets": [
+          {
+            "sourceId": "n061",
+            "midi": 59,
+            "beat": 33.105799999999995,
+            "endBeat": 33.22366666666667
+          },
+          {
+            "sourceId": "n062",
+            "midi": 57,
+            "beat": 33.22366666666667,
+            "endBeat": 33.44126666666667
+          },
+          {
+            "sourceId": "n063",
+            "midi": 56,
+            "beat": 33.44126666666667,
+            "endBeat": 34.67093333333333
+          },
+          {
+            "sourceId": "n064",
+            "midi": 57,
+            "beat": 34.67093333333333,
+            "endBeat": 35.0064
+          },
+          {
+            "sourceId": "n065",
+            "midi": 61,
+            "beat": 35.0064,
+            "endBeat": 35.270466666666664
+          },
+          {
+            "sourceId": "n066",
+            "midi": 59,
+            "beat": 35.270466666666664,
+            "endBeat": 35.58553333333333
+          },
+          {
+            "sourceId": "n067",
+            "midi": 57,
+            "beat": 35.58553333333333,
+            "endBeat": 36.066066666666664
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.031852986217457864,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.05966309341500762,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.09862174578866761,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.15735068912710554,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.24624808575803964,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.33763399693721263,
+            "semitones": -2.52
+          },
+          {
+            "fraction": 0.41655819295558927,
+            "semitones": -3.22
+          },
+          {
+            "fraction": 0.47886676875957085,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.4923430321592646,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.5593108728943335,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6193721286370593,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6661217457886672,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.7133996937212859,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.7599770290964772,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.8163859111791725,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.8815007656967835,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h028",
+        "beat": 36.066066666666664,
+        "beats": 6.3489333333333295,
+        "midi": 54,
+        "velocity": 91,
+        "role": "lead-54",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h028"],
+        "sourceNoteIds": [
+          "n068",
+          "n069",
+          "n070",
+          "n071",
+          "n072",
+          "n073",
+          "n074",
+          "n075",
+          "n076",
+          "n077"
+        ],
+        "pitchTargets": [
+          {
+            "sourceId": "n068",
+            "midi": 54,
+            "beat": 36.066066666666664,
+            "endBeat": 38.00066666666667
+          },
+          {
+            "sourceId": "n069",
+            "midi": 52,
+            "beat": 38.00066666666667,
+            "endBeat": 38.0664
+          },
+          {
+            "sourceId": "n070",
+            "midi": 57,
+            "beat": 38.0664,
+            "endBeat": 38.40866666666667
+          },
+          {
+            "sourceId": "n071",
+            "midi": 54,
+            "beat": 38.40866666666667,
+            "endBeat": 38.815533333333335
+          },
+          {
+            "sourceId": "n072",
+            "midi": 52,
+            "beat": 38.815533333333335,
+            "endBeat": 38.99346666666666
+          },
+          {
+            "sourceId": "n073",
+            "midi": 50,
+            "beat": 38.99346666666666,
+            "endBeat": 39.4876
+          },
+          {
+            "sourceId": "n074",
+            "midi": 54,
+            "beat": 39.4876,
+            "endBeat": 39.99986666666666
+          },
+          {
+            "sourceId": "n075",
+            "midi": 52,
+            "beat": 39.99986666666666,
+            "endBeat": 40.579
+          },
+          {
+            "sourceId": "n076",
+            "midi": 52,
+            "beat": 40.60733333333333,
+            "endBeat": 41.85513333333333
+          },
+          {
+            "sourceId": "n077",
+            "midi": 56,
+            "beat": 41.85513333333333,
+            "endBeat": 42.415
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.0975080328454124,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.16454480542663344,
+            "semitones": 0.48
+          },
+          {
+            "fraction": 0.22244019992859707,
+            "semitones": -0.22
+          },
+          {
+            "fraction": 0.2681470903248841,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.28775437343805804,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.30750803284541256,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.3129953588004286,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.3296215637272405,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.35819350232060004,
+            "semitones": 3
+          },
+          {
+            "fraction": 0.3862781149589435,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.42024277043912917,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.44062656194216376,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.45548018564798315,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.48161370938950404,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.4859907176008571,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.5031131738664765,
+            "semitones": -3.73
+          },
+          {
+            "fraction": 0.5179007497322388,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.5233488039985722,
+            "semitones": -4
+          },
+          {
+            "fraction": 0.5594430560514105,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5647340235630135,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5824848268475548,
+            "semitones": 0.27
+          },
+          {
+            "fraction": 0.5978150660478404,
+            "semitones": -0.22
+          },
+          {
+            "fraction": 0.6034630489111035,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6401285255265979,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6487897179578725,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.668857550874688,
+            "semitones": -1.73
+          },
+          {
+            "fraction": 0.6861888611210286,
+            "semitones": -2.22
+          },
+          {
+            "fraction": 0.6998714744734027,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.701892181363799,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7138521956444132,
+            "semitones": -2.28
+          },
+          {
+            "fraction": 0.7349161013923603,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7781720813995007,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.821410210639058,
+            "semitones": -1.52
+          },
+          {
+            "fraction": 0.8587522313459485,
+            "semitones": -2.22
+          },
+          {
+            "fraction": 0.8882327740092829,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.8948589789360948,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.9323455908604075,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.9400357015351665,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.9594359157443776,
+            "semitones": 2.27
+          },
+          {
+            "fraction": 0.976190646197787,
+            "semitones": 1.78
+          },
+          {
+            "fraction": 0.9894180649767946,
+            "semitones": 2
+          },
+          {
+            "fraction": 1,
+            "semitones": 2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h035",
+        "beat": 42.415,
+        "beats": 4.282866666666671,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h035"],
+        "sourceNoteIds": ["n078", "n079", "n080", "n081", "n082", "n083", "n084"],
+        "pitchTargets": [
+          {
+            "sourceId": "n078",
+            "midi": 57,
+            "beat": 42.415,
+            "endBeat": 42.769733333333335
+          },
+          {
+            "sourceId": "n079",
+            "midi": 61,
+            "beat": 42.769733333333335,
+            "endBeat": 43.6254
+          },
+          {
+            "sourceId": "n080",
+            "midi": 59,
+            "beat": 43.6254,
+            "endBeat": 43.928
+          },
+          {
+            "sourceId": "n081",
+            "midi": 57,
+            "beat": 43.928,
+            "endBeat": 44.322399999999995
+          },
+          {
+            "sourceId": "n082",
+            "midi": 54,
+            "beat": 44.322399999999995,
+            "endBeat": 46.263799999999996
+          },
+          {
+            "sourceId": "n083",
+            "midi": 57,
+            "beat": 46.263799999999996,
+            "endBeat": 46.40773333333333
+          },
+          {
+            "sourceId": "n084",
+            "midi": 54,
+            "beat": 46.40773333333333,
+            "endBeat": 46.69786666666666
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.06626091558613384,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.11325747552262493,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.1467584016935696,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.1907118285260649,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.22867160624503816,
+            "semitones": 3.78
+          },
+          {
+            "fraction": 0.2574755226250328,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.30169092352474175,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.3391373379200844,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.3781317808944162,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.42693834347710996,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.47578724530298977,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.5904101614183641,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.6901349563376548,
+            "semitones": -2.52
+          },
+          {
+            "fraction": 0.7762609155861332,
+            "semitones": -3.22
+          },
+          {
+            "fraction": 0.844255093940195,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.8735115109817404,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.9077242656787501,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.9255358560465723,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.9505477639587183,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h039",
+        "beat": 46.69786666666666,
+        "beats": 2.120466666666669,
+        "midi": 52,
+        "velocity": 91,
+        "role": "lead-52",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h039"],
+        "sourceNoteIds": ["n085", "n086", "n087", "n088", "n089", "n090"],
+        "pitchTargets": [
+          {
+            "sourceId": "n085",
+            "midi": 52,
+            "beat": 46.69786666666666,
+            "endBeat": 46.848600000000005
+          },
+          {
+            "sourceId": "n086",
+            "midi": 50,
+            "beat": 46.848600000000005,
+            "endBeat": 47.24413333333333
+          },
+          {
+            "sourceId": "n087",
+            "midi": 54,
+            "beat": 47.24413333333333,
+            "endBeat": 47.513866666666665
+          },
+          {
+            "sourceId": "n088",
+            "midi": 56,
+            "beat": 47.513866666666665,
+            "endBeat": 47.62493333333333
+          },
+          {
+            "sourceId": "n089",
+            "midi": 54,
+            "beat": 47.62493333333333,
+            "endBeat": 48.0658
+          },
+          {
+            "sourceId": "n090",
+            "midi": 52,
+            "beat": 48.0658,
+            "endBeat": 48.818333333333335
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.047033671833244195,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.12185996793158725,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.23356493853554222,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.29834313201496493,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.3607696419027254,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.4016034206306783,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.4131480491715655,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.48797434526990857,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6210582576162472,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6958845537145903,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h040",
+        "beat": 48.846666666666664,
+        "beats": 0.9576666666666653,
+        "midi": 52,
+        "velocity": 91,
+        "role": "lead-52",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h040"],
+        "sourceNoteIds": ["n091"],
+        "pitchTargets": [
+          {
+            "sourceId": "n091",
+            "midi": 52,
+            "beat": 48.846666666666664,
+            "endBeat": 49.80433333333333
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.26000000000000034,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5000000000000007,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7200000000000011,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8800000000000012,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h041",
+        "beat": 49.83266666666666,
+        "beats": 0.5621333333333358,
+        "midi": 52,
+        "velocity": 91,
+        "role": "lead-52",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h041"],
+        "sourceNoteIds": ["n092"],
+        "pitchTargets": [
+          {
+            "sourceId": "n092",
+            "midi": 52,
+            "beat": 49.83266666666666,
+            "endBeat": 50.3948
+          }
+        ]
+      },
+      {
+        "id": "h042",
+        "beat": 50.3948,
+        "beats": 1.4676666666666685,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h042"],
+        "sourceNoteIds": ["n093", "n094"],
+        "pitchTargets": [
+          {
+            "sourceId": "n093",
+            "midi": 57,
+            "beat": 50.3948,
+            "endBeat": 50.796
+          },
+          {
+            "sourceId": "n094",
+            "midi": 61,
+            "beat": 50.796,
+            "endBeat": 51.86246666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2386100386100383,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.34671814671814627,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.4623166023166017,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.6366795366795358,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.7965250965250955,
+            "semitones": 3.88
+          },
+          {
+            "fraction": 0.9128185328185315,
+            "semitones": 4
+          },
+          {
+            "fraction": 1,
+            "semitones": 4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h043",
+        "beat": 51.86246666666667,
+        "beats": 0.5462666666666659,
+        "midi": 54,
+        "velocity": 91,
+        "role": "lead-54",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h043"],
+        "sourceNoteIds": ["n095"],
+        "pitchTargets": [
+          {
+            "sourceId": "n095",
+            "midi": 54,
+            "beat": 51.86246666666667,
+            "endBeat": 52.40873333333334
+          }
+        ]
+      },
+      {
+        "id": "h044",
+        "beat": 52.40873333333334,
+        "beats": 0.5326666666666654,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h044"],
+        "sourceNoteIds": ["n096"],
+        "pitchTargets": [
+          {
+            "sourceId": "n096",
+            "midi": 57,
+            "beat": 52.40873333333334,
+            "endBeat": 52.9414
+          }
+        ]
+      },
+      {
+        "id": "h045",
+        "beat": 52.9414,
+        "beats": 1.3883333333333354,
+        "midi": 62,
+        "velocity": 91,
+        "role": "lead-62",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h045", "h046", "h047"],
+        "sourceNoteIds": ["n097", "n098", "n099"],
+        "pitchTargets": [
+          {
+            "sourceId": "n097",
+            "midi": 62,
+            "beat": 52.9414,
+            "endBeat": 53.190733333333334
+          },
+          {
+            "sourceId": "n098",
+            "midi": 59,
+            "beat": 53.190733333333334,
+            "endBeat": 53.270066666666665
+          },
+          {
+            "sourceId": "n099",
+            "midi": 62,
+            "beat": 53.270066666666665,
+            "endBeat": 54.32973333333334
+          }
+        ],
+        "articulation": "continuous-bend",
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.12244897959183777,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2081632653061232,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.3020408163265257,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.43518367346938674,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6183673469387742,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7862857142857105,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.9084081632653037,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ]
+      },
+      {
+        "id": "h048",
+        "beat": 54.32973333333334,
+        "beats": 0.842066666666661,
+        "midi": 66,
+        "velocity": 91,
+        "role": "lead-66",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h048"],
+        "sourceNoteIds": ["n100"],
+        "pitchTargets": [
+          {
+            "sourceId": "n100",
+            "midi": 66,
+            "beat": 54.32973333333334,
+            "endBeat": 55.1718
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.26002691790040555,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5000000000000033,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7200538358008124,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8799461641991985,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h049",
+        "beat": 55.1718,
+        "beats": 1.1571333333333342,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h049"],
+        "sourceNoteIds": ["n101"],
+        "pitchTargets": [
+          {
+            "sourceId": "n101",
+            "midi": 64,
+            "beat": 55.1718,
+            "endBeat": 56.32893333333333
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.26003917727717907,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.49999999999999956,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7199804113614098,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8800195886385889,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h050",
+        "beat": 56.32893333333333,
+        "beats": 0.822799999999999,
+        "midi": 62,
+        "velocity": 91,
+        "role": "lead-62",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h050"],
+        "sourceNoteIds": ["n102", "n103"],
+        "pitchTargets": [
+          {
+            "sourceId": "n102",
+            "midi": 62,
+            "beat": 56.32893333333333,
+            "endBeat": 56.5862
+          },
+          {
+            "sourceId": "n103",
+            "midi": 59,
+            "beat": 56.5862,
+            "endBeat": 57.151733333333326
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2506887052341601,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4435261707988986,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h051",
+        "beat": 57.151733333333326,
+        "beats": 0.5326666666666734,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h051"],
+        "sourceNoteIds": ["n104"],
+        "pitchTargets": [
+          {
+            "sourceId": "n104",
+            "midi": 57,
+            "beat": 57.151733333333326,
+            "endBeat": 57.684400000000004
+          }
+        ]
+      },
+      {
+        "id": "h052",
+        "beat": 57.684400000000004,
+        "beats": 0.611999999999999,
+        "midi": 54,
+        "velocity": 91,
+        "role": "lead-54",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h052"],
+        "sourceNoteIds": ["n105"],
+        "pitchTargets": [
+          {
+            "sourceId": "n105",
+            "midi": 54,
+            "beat": 57.684400000000004,
+            "endBeat": 58.2964
+          }
+        ]
+      },
+      {
+        "id": "h053",
+        "beat": 58.2964,
+        "beats": 1.5198000000000012,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h053"],
+        "sourceNoteIds": ["n106", "n107"],
+        "pitchTargets": [
+          {
+            "sourceId": "n106",
+            "midi": 57,
+            "beat": 58.2964,
+            "endBeat": 58.61826666666666
+          },
+          {
+            "sourceId": "n107",
+            "midi": 61,
+            "beat": 58.61826666666666,
+            "endBeat": 59.8162
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1782252050708425,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2826249067859804,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.4167039522744217,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.6058911260253538,
+            "semitones": 4
+          },
+          {
+            "fraction": 0.7792692020879933,
+            "semitones": 3.88
+          },
+          {
+            "fraction": 0.9054436987322886,
+            "semitones": 4
+          },
+          {
+            "fraction": 1,
+            "semitones": 4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h054",
+        "beat": 59.8162,
+        "beats": 0.5462666666666659,
+        "midi": 54,
+        "velocity": 91,
+        "role": "lead-54",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h054"],
+        "sourceNoteIds": ["n108"],
+        "pitchTargets": [
+          {
+            "sourceId": "n108",
+            "midi": 54,
+            "beat": 59.8162,
+            "endBeat": 60.36246666666667
+          }
+        ]
+      },
+      {
+        "id": "h055",
+        "beat": 60.36246666666667,
+        "beats": 0.3218666666666654,
+        "midi": 57,
+        "velocity": 91,
+        "role": "lead-57",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h055"],
+        "sourceNoteIds": ["n109"],
+        "pitchTargets": [
+          {
+            "sourceId": "n109",
+            "midi": 57,
+            "beat": 60.36246666666667,
+            "endBeat": 60.684333333333335
+          }
+        ]
+      },
+      {
+        "id": "h056",
+        "beat": 60.684333333333335,
+        "beats": 1.1220000000000023,
+        "midi": 62,
+        "velocity": 91,
+        "role": "lead-62",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h056"],
+        "sourceNoteIds": ["n110"],
+        "pitchTargets": [
+          {
+            "sourceId": "n110",
+            "midi": 62,
+            "beat": 60.684333333333335,
+            "endBeat": 61.806333333333335
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2599999999999995,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.499999999999999,
+            "semitones": 0.26
+          },
+          {
+            "fraction": 0.7199999999999985,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8799999999999982,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h057",
+        "beat": 61.83466666666667,
+        "beats": 1.1333333333333333,
+        "midi": 62,
+        "velocity": 91,
+        "role": "lead-62",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h057"],
+        "sourceNoteIds": ["n111", "n112"],
+        "pitchTargets": [
+          {
+            "sourceId": "n111",
+            "midi": 62,
+            "beat": 61.83466666666667,
+            "endBeat": 62.236999999999995
+          },
+          {
+            "sourceId": "n112",
+            "midi": 66,
+            "beat": 62.236999999999995,
+            "endBeat": 62.968
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.31,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.45,
+            "semitones": 4
+          },
+          {
+            "fraction": 1,
+            "semitones": 4
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h058",
+        "beat": 62.968,
+        "beats": 1.7102000000000004,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h058"],
+        "sourceNoteIds": ["n113"],
+        "pitchTargets": [
+          {
+            "sourceId": "n113",
+            "midi": 64,
+            "beat": 62.968,
+            "endBeat": 64.6782
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2599734923790589,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.49999999999999983,
+            "semitones": 0.34
+          },
+          {
+            "fraction": 0.7200132538104703,
+            "semitones": -0.12
+          },
+          {
+            "fraction": 0.8799867461895293,
+            "semitones": 0
+          },
+          {
+            "fraction": 1,
+            "semitones": 0
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h059",
+        "beat": 64.6782,
+        "beats": 1.68413333333333,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h059"],
+        "sourceNoteIds": ["n114", "n115", "n116", "n117"],
+        "pitchTargets": [
+          {
+            "sourceId": "n114",
+            "midi": 61,
+            "beat": 64.6782,
+            "endBeat": 65.11906666666667
+          },
+          {
+            "sourceId": "n115",
+            "midi": 62,
+            "beat": 65.11906666666667,
+            "endBeat": 65.40806666666667
+          },
+          {
+            "sourceId": "n116",
+            "midi": 61,
+            "beat": 65.40806666666667,
+            "endBeat": 65.61886666666666
+          },
+          {
+            "sourceId": "n117",
+            "midi": 59,
+            "beat": 65.61886666666666,
+            "endBeat": 66.36233333333332
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2314939434724096,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3166890982503371,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.40309555854643414,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.4734185733512795,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.528263795423958,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.622476446837148,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h060",
+        "beat": 66.36233333333332,
+        "beats": 1.7566666666666635,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h060"],
+        "sourceNoteIds": ["n118", "n119", "n120", "n121"],
+        "pitchTargets": [
+          {
+            "sourceId": "n118",
+            "midi": 64,
+            "beat": 66.36233333333332,
+            "endBeat": 67.13866666666667
+          },
+          {
+            "sourceId": "n119",
+            "midi": 66,
+            "beat": 67.13866666666667,
+            "endBeat": 67.33586666666666
+          },
+          {
+            "sourceId": "n120",
+            "midi": 64,
+            "beat": 67.33586666666666,
+            "endBeat": 67.5988
+          },
+          {
+            "sourceId": "n121",
+            "midi": 62,
+            "beat": 67.5988,
+            "endBeat": 68.119
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.13258064516129056,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2254193548387101,
+            "semitones": 0.42
+          },
+          {
+            "fraction": 0.32264516129032317,
+            "semitones": -0.22
+          },
+          {
+            "fraction": 0.4021935483870975,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4194838709677427,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4845806451612912,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.52425806451613,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6110967741935496,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6587096774193559,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7812903225806467,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7927096774193563,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.8549032258064532,
+            "semitones": -1.58
+          },
+          {
+            "fraction": 0.920064516129034,
+            "semitones": -2.22
+          },
+          {
+            "fraction": 0.9733548387096792,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h062",
+        "beat": 68.119,
+        "beats": 0.4760000000000019,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h062"],
+        "sourceNoteIds": ["n122"],
+        "pitchTargets": [
+          {
+            "sourceId": "n122",
+            "midi": 61,
+            "beat": 68.119,
+            "endBeat": 68.595
+          }
+        ]
+      },
+      {
+        "id": "h063",
+        "beat": 68.62333333333333,
+        "beats": 1.7328666666666706,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h063"],
+        "sourceNoteIds": ["n123", "n124", "n125", "n126"],
+        "pitchTargets": [
+          {
+            "sourceId": "n123",
+            "midi": 61,
+            "beat": 68.62333333333333,
+            "endBeat": 69.1118
+          },
+          {
+            "sourceId": "n124",
+            "midi": 62,
+            "beat": 69.1118,
+            "endBeat": 69.343
+          },
+          {
+            "sourceId": "n125",
+            "midi": 61,
+            "beat": 69.343,
+            "endBeat": 69.6184
+          },
+          {
+            "sourceId": "n126",
+            "midi": 59,
+            "beat": 69.6184,
+            "endBeat": 70.3562
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2524525833878346,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3245912361020267,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.3858731196860684,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.46618705035971114,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5448005232177882,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6363636363636349,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h064",
+        "beat": 70.3562,
+        "beats": 1.7362666666666626,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h064"],
+        "sourceNoteIds": ["n127", "n128", "n129", "n130"],
+        "pitchTargets": [
+          {
+            "sourceId": "n127",
+            "midi": 64,
+            "beat": 70.3562,
+            "endBeat": 71.07926666666667
+          },
+          {
+            "sourceId": "n128",
+            "midi": 66,
+            "beat": 71.07926666666667,
+            "endBeat": 71.32973333333334
+          },
+          {
+            "sourceId": "n129",
+            "midi": 64,
+            "beat": 71.32973333333334,
+            "endBeat": 71.57906666666666
+          },
+          {
+            "sourceId": "n130",
+            "midi": 62,
+            "beat": 71.57906666666666,
+            "endBeat": 72.09246666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.12493472584856424,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.21240208877284647,
+            "semitones": 0.42
+          },
+          {
+            "fraction": 0.3039817232375986,
+            "semitones": -0.22
+          },
+          {
+            "fraction": 0.37898172323759877,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3875979112271549,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4712793733681473,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.5319843342036565,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.6152741514360327,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6586161879895576,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7826370757180175,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7930156657963465,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.8550913838120124,
+            "semitones": -1.58
+          },
+          {
+            "fraction": 0.9201697127937357,
+            "semitones": -2.22
+          },
+          {
+            "fraction": 0.9733681462141015,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h066",
+        "beat": 72.09246666666667,
+        "beats": 0.6618666666666622,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h066"],
+        "sourceNoteIds": ["n131"],
+        "pitchTargets": [
+          {
+            "sourceId": "n131",
+            "midi": 61,
+            "beat": 72.09246666666667,
+            "endBeat": 72.75433333333332
+          }
+        ]
+      },
+      {
+        "id": "h067",
+        "beat": 72.78266666666666,
+        "beats": 1.4087333333333276,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h067"],
+        "sourceNoteIds": ["n132", "n133", "n134", "n135"],
+        "pitchTargets": [
+          {
+            "sourceId": "n132",
+            "midi": 61,
+            "beat": 72.78266666666666,
+            "endBeat": 73.15213333333334
+          },
+          {
+            "sourceId": "n133",
+            "midi": 62,
+            "beat": 73.15213333333334,
+            "endBeat": 73.31646666666667
+          },
+          {
+            "sourceId": "n134",
+            "midi": 61,
+            "beat": 73.31646666666667,
+            "endBeat": 73.5794
+          },
+          {
+            "sourceId": "n135",
+            "midi": 59,
+            "beat": 73.5794,
+            "endBeat": 74.19139999999999
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.22606596942880222,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.2995977473853592,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.34271922767498125,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.43861625100563334,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5293644408688678,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.641995172968627,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h068",
+        "beat": 74.19139999999999,
+        "beats": 0.6845333333333324,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h068"],
+        "sourceNoteIds": ["n136", "n137"],
+        "pitchTargets": [
+          {
+            "sourceId": "n136",
+            "midi": 61,
+            "beat": 74.19139999999999,
+            "endBeat": 74.40786666666666
+          },
+          {
+            "sourceId": "n137",
+            "midi": 64,
+            "beat": 74.40786666666666,
+            "endBeat": 74.87593333333332
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.24172185430463605,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.473509933774835,
+            "semitones": 3
+          },
+          {
+            "fraction": 1,
+            "semitones": 3
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h069",
+        "beat": 74.87593333333332,
+        "beats": 0.5326666666666815,
+        "midi": 69,
+        "velocity": 91,
+        "role": "lead-69",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h069"],
+        "sourceNoteIds": ["n138", "n139"],
+        "pitchTargets": [
+          {
+            "sourceId": "n138",
+            "midi": 69,
+            "beat": 74.87593333333332,
+            "endBeat": 75.11846666666668
+          },
+          {
+            "sourceId": "n139",
+            "midi": 66,
+            "beat": 75.11846666666668,
+            "endBeat": 75.4086
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.3595744680850964,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6295744680850889,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h070",
+        "beat": 75.4086,
+        "beats": 0.6901999999999939,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h070"],
+        "sourceNoteIds": ["n140", "n141"],
+        "pitchTargets": [
+          {
+            "sourceId": "n140",
+            "midi": 64,
+            "beat": 75.4086,
+            "endBeat": 75.58653333333334
+          },
+          {
+            "sourceId": "n141",
+            "midi": 62,
+            "beat": 75.58653333333334,
+            "endBeat": 76.0988
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.1839080459770131,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4137931034482795,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h071",
+        "beat": 76.0988,
+        "beats": 2.145400000000001,
+        "midi": 61,
+        "velocity": 91,
+        "role": "lead-61",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h071"],
+        "sourceNoteIds": ["n142", "n143", "n144", "n145"],
+        "pitchTargets": [
+          {
+            "sourceId": "n142",
+            "midi": 61,
+            "beat": 76.0988,
+            "endBeat": 77.10520000000001
+          },
+          {
+            "sourceId": "n143",
+            "midi": 62,
+            "beat": 77.10520000000001,
+            "endBeat": 77.34206666666665
+          },
+          {
+            "sourceId": "n144",
+            "midi": 61,
+            "beat": 77.34206666666665,
+            "endBeat": 77.5404
+          },
+          {
+            "sourceId": "n145",
+            "midi": 59,
+            "beat": 77.5404,
+            "endBeat": 78.2442
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.14072900158478602,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.23924986793449543,
+            "semitones": 0.42
+          },
+          {
+            "fraction": 0.3424194400422608,
+            "semitones": -0.22
+          },
+          {
+            "fraction": 0.4268885367142101,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.4470153195985207,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.5110406761753828,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.5610142630744848,
+            "semitones": 1
+          },
+          {
+            "fraction": 0.614632857897517,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6349709455890119,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.7353407290015844,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7703645007923927,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.8392498679344952,
+            "semitones": -1.58
+          },
+          {
+            "fraction": 0.9114104595879553,
+            "semitones": -2.22
+          },
+          {
+            "fraction": 0.9704701531959848,
+            "semitones": -2
+          },
+          {
+            "fraction": 1,
+            "semitones": -2
+          }
+        ],
+        "articulation": "continuous-bend"
+      },
+      {
+        "id": "h073",
+        "beat": 78.2442,
+        "beats": 2.3924666666666714,
+        "midi": 64,
+        "velocity": 91,
+        "role": "lead-64",
+        "hand": "R",
+        "part": "melody",
+        "sourceIds": ["h073"],
+        "sourceNoteIds": ["n146", "n147", "n148", "n149", "n150"],
+        "pitchTargets": [
+          {
+            "sourceId": "n146",
+            "midi": 64,
+            "beat": 78.2442,
+            "endBeat": 79.12593333333332
+          },
+          {
+            "sourceId": "n147",
+            "midi": 66,
+            "beat": 79.12593333333332,
+            "endBeat": 79.3356
+          },
+          {
+            "sourceId": "n148",
+            "midi": 64,
+            "beat": 79.3356,
+            "endBeat": 79.56
+          },
+          {
+            "sourceId": "n149",
+            "midi": 62,
+            "beat": 79.56,
+            "endBeat": 80.12553333333332
+          },
+          {
+            "sourceId": "n150",
+            "midi": 61,
+            "beat": 80.12553333333332,
+            "endBeat": 80.63666666666667
+          }
+        ],
+        "bend": [
+          {
+            "fraction": 0,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.11056371387967766,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.18796778777830375,
+            "semitones": 0.42
+          },
+          {
+            "fraction": 0.26901942207484547,
+            "semitones": -0.22
+          },
+          {
+            "fraction": 0.33538607295120726,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.35101847465656016,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.40184746565608637,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.43742302226432883,
+            "semitones": 2
+          },
+          {
+            "fraction": 0.4918048318332534,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.516816674561818,
+            "semitones": 0
+          },
+          {
+            "fraction": 0.6068214116532437,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6208905731880613,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.6705352913311213,
+            "semitones": -1.58
+          },
+          {
+            "fraction": 0.7225485551871137,
+            "semitones": -2.22
+          },
+          {
+            "fraction": 0.765087636191377,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.7655613453339635,
+            "semitones": -2
+          },
+          {
+            "fraction": 0.8432022738038828,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.8504500236854554,
+            "semitones": -3
+          },
+          {
+            "fraction": 0.8953102794883923,
+            "semitones": -2.58
+          },
+          {
+            "fraction": 0.9423022264329683,
+            "semitones": -3.22
+          },
+          {
+            "fraction": 0.980767408810988,
+            "semitones": -3
+          },
+          {
+            "fraction": 1,
+            "semitones": -3
+          }
+        ],
+        "articulation": "continuous-bend"
+      }
+    ]
+  },
+  "lessons": [
+    {
+      "id": "phrase-1",
+      "title": "Opening and first turns",
+      "startBeat": 0,
+      "endBeat": 14.914666666666667,
+      "eventIds": [
+        "h001",
+        "h002",
+        "h003",
+        "h004",
+        "h005",
+        "h006",
+        "h007",
+        "h008",
+        "h009",
+        "h010",
+        "h011",
+        "h012"
+      ],
+      "recommendedBpm": 68,
+      "goal": "Keep the repeated pulses distinct and hold through the bends. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "phrase-2",
+      "title": "Upper answer and return",
+      "startBeat": 14.914666666666667,
+      "endBeat": 33.105799999999995,
+      "eventIds": [
+        "h013",
+        "h014",
+        "h015",
+        "h016",
+        "h017",
+        "h018",
+        "h019",
+        "h020",
+        "h021",
+        "h022",
+        "h023",
+        "h024",
+        "h025",
+        "h026"
+      ],
+      "recommendedBpm": 68,
+      "goal": "Follow the upper turns and ease back down with the melody. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "phrase-3",
+      "title": "Connected lower descent",
+      "startBeat": 33.105799999999995,
+      "endBeat": 42.415,
+      "eventIds": ["h027", "h028"],
+      "recommendedBpm": 68,
+      "goal": "Keep Trigger held through the long low phrase. Follow the rises, dips and recovery without re-pressing. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "phrase-4",
+      "title": "Low answer and return",
+      "startBeat": 42.415,
+      "endBeat": 50.3948,
+      "eventIds": ["h035", "h039", "h040", "h041"],
+      "recommendedBpm": 68,
+      "goal": "Connect the descending answer and sustain the low note as it gently rises and falls. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "phrase-5",
+      "title": "Build into the upper phrase",
+      "startBeat": 50.3948,
+      "endBeat": 58.2964,
+      "eventIds": ["h042", "h043", "h044", "h045", "h048", "h049", "h050", "h051", "h052"],
+      "recommendedBpm": 68,
+      "goal": "Follow the new presses through the rising phrase. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "phrase-6",
+      "title": "Upper response",
+      "startBeat": 58.2964,
+      "endBeat": 64.6782,
+      "eventIds": ["h053", "h054", "h055", "h056", "h057", "h058"],
+      "recommendedBpm": 68,
+      "goal": "Keep the upper notes clear and hold through each bend. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "phrase-7",
+      "title": "Expressive closing phrases",
+      "startBeat": 64.6782,
+      "endBeat": 72.78266666666666,
+      "eventIds": ["h059", "h060", "h062", "h063", "h064", "h066"],
+      "recommendedBpm": 68,
+      "goal": "Follow the deeper bends and keep the sustained phrases connected. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "phrase-8",
+      "title": "Final bends",
+      "startBeat": 72.78266666666666,
+      "endBeat": 80.63666666666667,
+      "eventIds": ["h067", "h068", "h069", "h070", "h071", "h073"],
+      "recommendedBpm": 68,
+      "goal": "Hold through the final turns and release at the end. The Loopers play the tabla-inspired backing.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": false,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    },
+    {
+      "id": "performance",
+      "title": "Complete guided performance",
+      "startBeat": 0,
+      "endBeat": 80.63666666666667,
+      "eventIds": [
+        "h001",
+        "h002",
+        "h003",
+        "h004",
+        "h005",
+        "h006",
+        "h007",
+        "h008",
+        "h009",
+        "h010",
+        "h011",
+        "h012",
+        "h013",
+        "h014",
+        "h015",
+        "h016",
+        "h017",
+        "h018",
+        "h019",
+        "h020",
+        "h021",
+        "h022",
+        "h023",
+        "h024",
+        "h025",
+        "h026",
+        "h027",
+        "h028",
+        "h035",
+        "h039",
+        "h040",
+        "h041",
+        "h042",
+        "h043",
+        "h044",
+        "h045",
+        "h048",
+        "h049",
+        "h050",
+        "h051",
+        "h052",
+        "h053",
+        "h054",
+        "h055",
+        "h056",
+        "h057",
+        "h058",
+        "h059",
+        "h060",
+        "h062",
+        "h063",
+        "h064",
+        "h066",
+        "h067",
+        "h068",
+        "h069",
+        "h070",
+        "h071",
+        "h073"
+      ],
+      "recommendedBpm": 68,
+      "goal": "Play the melody at 68 BPM while the Loopers play the tabla-inspired backing. Hold Trigger through every connected bend, including the lower passage and closing sustains. Release between separate presses. Either hand works.",
+      "practice": true,
+      "demonstration": true,
+      "skip": true,
+      "completePerformance": true,
+      "assessment": {
+        "pitchCents": 40,
+        "onsetBeats": 0.23,
+        "durationBeats": 0.3,
+        "bendCents": 80,
+        "bendTimingBeats": 0.18
+      }
+    }
+  ]
+}

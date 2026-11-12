@@ -1,7 +1,4 @@
-import {
-  METRONOME_HANDLE_CONTROLS,
-  METRONOME_SETTINGS,
-} from "../../config/metronome.js";
+import { METRONOME_HANDLE_CONTROLS, METRONOME_SETTINGS } from "../../config/metronome.js";
 import { METRONOME_INTERACTION_ROLES } from "./MetronomeInstrument.js";
 import {
   clamp,
@@ -28,7 +25,8 @@ export class MetronomeHandleRig {
     this.originalChildIndices = new Map();
     for (const config of configs) {
       const handle = this.root.getObjectByName(config.nodeName);
-      if (handle?.parent) this.originalChildIndices.set(handle, handle.parent.children.indexOf(handle));
+      if (handle?.parent)
+        this.originalChildIndices.set(handle, handle.parent.children.indexOf(handle));
     }
     for (const config of configs) this.createControl(config, showDebug);
   }
@@ -36,16 +34,22 @@ export class MetronomeHandleRig {
   createControl(config, showDebug) {
     const handle = this.root.getObjectByName(config.nodeName);
     if (!handle) {
-      console.warn(`Metronome handle node "${config.nodeName}" was not found; ${config.parameter} control disabled.`);
+      console.warn(
+        `Metronome handle node "${config.nodeName}" was not found; ${config.parameter} control disabled.`,
+      );
       return;
     }
     if (!handle.geometry) {
-      console.warn(`Metronome handle node "${config.nodeName}" has no geometry; ${config.parameter} control disabled.`);
+      console.warn(
+        `Metronome handle node "${config.nodeName}" has no geometry; ${config.parameter} control disabled.`,
+      );
       return;
     }
     const axis = vector(this.THREE, config.axis);
     if (axis.lengthSq() < 1e-12) {
-      console.warn(`Metronome handle "${config.nodeName}" has a zero-length rotation axis; control disabled.`);
+      console.warn(
+        `Metronome handle "${config.nodeName}" has a zero-length rotation axis; control disabled.`,
+      );
       return;
     }
     axis.normalize();
@@ -55,11 +59,15 @@ export class MetronomeHandleRig {
     const radialOffset = colliderOffset.clone().addScaledVector(axis, -axialDistance);
     const radius = radialOffset.length();
     if (radius < 1e-6) {
-      console.warn(`Metronome handle "${config.nodeName}" collider offset produces a zero arc radius; control disabled.`);
+      console.warn(
+        `Metronome handle "${config.nodeName}" collider offset produces a zero arc radius; control disabled.`,
+      );
       return;
     }
     if (Math.abs(axialDistance) > Math.max(radius * 0.01, PLANE_TOLERANCE)) {
-      console.warn(`Metronome handle "${config.nodeName}" collider offset is outside its movement plane; projecting it onto the plane.`);
+      console.warn(
+        `Metronome handle "${config.nodeName}" collider offset is outside its movement plane; projecting it onto the plane.`,
+      );
       colliderOffset.copy(radialOffset);
     }
 
@@ -100,19 +108,23 @@ export class MetronomeHandleRig {
     restFrame.scale.copy(restPivotScale);
     originalParent.add(restFrame);
 
-    const geometry = owned(new this.THREE.SphereGeometry(
-      config.colliderRadius,
-      METRONOME_SETTINGS.sphereSegments,
-      METRONOME_SETTINGS.sphereRings,
-    ));
-    const material = owned(new this.THREE.MeshBasicMaterial({
-      color: config.colliderColor,
-      transparent: true,
-      opacity: showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
-      depthTest: !showDebug,
-      depthWrite: false,
-      wireframe: showDebug,
-    }));
+    const geometry = owned(
+      new this.THREE.SphereGeometry(
+        config.colliderRadius,
+        METRONOME_SETTINGS.sphereSegments,
+        METRONOME_SETTINGS.sphereRings,
+      ),
+    );
+    const material = owned(
+      new this.THREE.MeshBasicMaterial({
+        color: config.colliderColor,
+        transparent: true,
+        opacity: showDebug ? METRONOME_SETTINGS.debug.colliderOpacity : 0,
+        depthTest: !showDebug,
+        depthWrite: false,
+        wireframe: showDebug,
+      }),
+    );
     const collider = new this.THREE.Mesh(geometry, material);
     collider.name = `HIT_metronome_${config.parameter}`;
     collider.position.copy(colliderOffset);
@@ -262,43 +274,71 @@ export class MetronomeHandleRig {
 
     const pivot = new this.THREE.Mesh(
       owned(new this.THREE.SphereGeometry(settings.pivotRadius, 12, 8)),
-      owned(new this.THREE.MeshBasicMaterial({ color: control.config.pivotColor, depthTest: false })),
+      owned(
+        new this.THREE.MeshBasicMaterial({ color: control.config.pivotColor, depthTest: false }),
+      ),
     );
     group.add(pivot);
     this.disposables.add(pivot.geometry);
     this.disposables.add(pivot.material);
 
     const axisExtent = control.axis.clone().multiplyScalar(control.radius);
-    group.add(line(
+    group.add(
+      line(
+        this.THREE,
+        [axisExtent.clone().multiplyScalar(-1), axisExtent],
+        control.config.pivotColor,
+        settings.arcOpacity,
+        this.disposables,
+        false,
+      ),
+    );
+
+    const circlePoints = toThreePoints(
       this.THREE,
-      [axisExtent.clone().multiplyScalar(-1), axisExtent],
-      control.config.pivotColor,
-      settings.arcOpacity,
-      this.disposables,
-      false,
-    ));
+      generateArcPoints(arcConfig, {
+        startAngleDegrees: -180 - arcConfig.referenceAngleDegrees,
+        endAngleDegrees: 180 - arcConfig.referenceAngleDegrees,
+        segments: settings.circleSegments,
+      }),
+    );
+    group.add(
+      line(
+        this.THREE,
+        circlePoints,
+        control.config.planeColor,
+        settings.ringOpacity,
+        this.disposables,
+        true,
+      ),
+    );
 
-    const circlePoints = toThreePoints(this.THREE, generateArcPoints(arcConfig, {
-      startAngleDegrees: -180 - arcConfig.referenceAngleDegrees,
-      endAngleDegrees: 180 - arcConfig.referenceAngleDegrees,
-      segments: settings.circleSegments,
-    }));
-    group.add(line(this.THREE, circlePoints, control.config.planeColor, settings.ringOpacity, this.disposables, true));
-
-    const arc = toThreePoints(this.THREE, generateArcPoints(arcConfig, {
-      segments: settings.circleSegments,
-    }));
-    group.add(line(this.THREE, arc, control.config.arcColor, settings.arcOpacity, this.disposables, false));
+    const arc = toThreePoints(
+      this.THREE,
+      generateArcPoints(arcConfig, {
+        segments: settings.circleSegments,
+      }),
+    );
+    group.add(
+      line(this.THREE, arc, control.config.arcColor, settings.arcOpacity, this.disposables, false),
+    );
 
     const plane = new this.THREE.Mesh(
-      owned(new this.THREE.CircleGeometry(control.radius * settings.planeSizeMultiplier, settings.circleSegments)),
-      owned(new this.THREE.MeshBasicMaterial({
-        color: control.config.planeColor,
-        transparent: true,
-        opacity: settings.planeOpacity,
-        side: this.THREE.DoubleSide,
-        depthWrite: false,
-      })),
+      owned(
+        new this.THREE.CircleGeometry(
+          control.radius * settings.planeSizeMultiplier,
+          settings.circleSegments,
+        ),
+      ),
+      owned(
+        new this.THREE.MeshBasicMaterial({
+          color: control.config.planeColor,
+          transparent: true,
+          opacity: settings.planeOpacity,
+          side: this.THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      ),
     );
     plane.quaternion.setFromUnitVectors(new this.THREE.Vector3(0, 0, 1), control.axis);
     plane.userData.isMetronomeDebug = true;
@@ -314,14 +354,16 @@ export class MetronomeHandleRig {
           angle + control.referenceAngle,
         );
         const endpoint = vector(this.THREE, rotated);
-        group.add(line(
-          this.THREE,
-          [new this.THREE.Vector3(), endpoint],
-          control.config.arcColor,
-          settings.arcOpacity,
-          this.disposables,
-          false,
-        ));
+        group.add(
+          line(
+            this.THREE,
+            [new this.THREE.Vector3(), endpoint],
+            control.config.arcColor,
+            settings.arcOpacity,
+            this.disposables,
+            false,
+          ),
+        );
       }
     }
     group.traverse((object) => {
@@ -393,7 +435,9 @@ function restoreChildIndex(parent, child, index) {
 
 function line(THREE, points, color, opacity, disposables, loop) {
   const geometry = owned(new THREE.BufferGeometry().setFromPoints(points));
-  const material = owned(new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthTest: false }));
+  const material = owned(
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthTest: false }),
+  );
   const result = loop ? new THREE.LineLoop(geometry, material) : new THREE.Line(geometry, material);
   result.userData.isMetronomeDebug = true;
   result.renderOrder = METRONOME_SETTINGS.renderOrder - 1;

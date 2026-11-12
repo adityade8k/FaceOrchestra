@@ -19,7 +19,10 @@ test("opening-frame local Z is signed toward the viewer and toward motion crosse
   assert.equal(frame.localZSign, -1);
   const pull = projectPullDistance([0, 0, 0], [0, 0, -0.11], frame.axis);
   assert.ok(Math.abs(pull - 0.11) < 1e-12);
-  assert.equal(resolvePullPhase(RadialMenuPhase.parent, pull, RADIAL_MENU_SETTINGS), RadialMenuPhase.child);
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.parent, pull, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.child,
+  );
 });
 
 test("pull direction follows the opening controller orientation instead of global Z", () => {
@@ -27,7 +30,7 @@ test("pull direction follows the opening controller orientation instead of globa
   const frame = choosePullAxisTowardViewer([2, 0, 3], y90, [1, 0, 3]);
   assert.ok(Math.abs(frame.axis[0] + 1) < 1e-12);
   assert.ok(Math.abs(frame.axis[2]) < 1e-12);
-  assert.ok(projectPullDistance([2, 0, 3], [1.89, 0, 3], frame.axis) > 0.10);
+  assert.ok(projectPullDistance([2, 0, 3], [1.89, 0, 3], frame.axis) > 0.1);
 });
 
 test("sideways and away motion do not open the child layer", () => {
@@ -36,8 +39,14 @@ test("sideways and away motion do not open the child layer", () => {
   const away = projectPullDistance([0, 0, 0], [0, 0, -0.2], axis);
   assert.equal(sideways, 0);
   assert.ok(away < 0);
-  assert.equal(resolvePullPhase(RadialMenuPhase.parent, sideways, RADIAL_MENU_SETTINGS), RadialMenuPhase.parent);
-  assert.equal(resolvePullPhase(RadialMenuPhase.parent, away, RADIAL_MENU_SETTINGS), RadialMenuPhase.parent);
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.parent, sideways, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.parent,
+  );
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.parent, away, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.parent,
+  );
 });
 
 test("shared headset and controller translation does not count as a controller pull", () => {
@@ -49,7 +58,10 @@ test("shared headset and controller translation does not count as a controller p
     pullAxis: [0, 0, 1],
   });
   assert.ok(Math.abs(pull) < 1e-12);
-  assert.equal(resolvePullPhase(RadialMenuPhase.parent, pull, RADIAL_MENU_SETTINGS), RadialMenuPhase.parent);
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.parent, pull, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.parent,
+  );
 });
 
 test("controller movement toward the headset still opens after headset translation is removed", () => {
@@ -61,7 +73,10 @@ test("controller movement toward the headset still opens after headset translati
     pullAxis: [0, 0, 1],
   });
   assert.ok(Math.abs(pull - 0.12) < 1e-12);
-  assert.equal(resolvePullPhase(RadialMenuPhase.parent, pull, RADIAL_MENU_SETTINGS), RadialMenuPhase.child);
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.parent, pull, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.child,
+  );
 });
 
 test("menu position stays on its opening Z plane while preserving X and Y motion", () => {
@@ -82,11 +97,26 @@ test("configured entry and exit hysteresis prevents phase flicker", () => {
   const { childEntryThresholdM: entry, childExitThresholdM: exit } = RADIAL_MENU_SETTINGS;
   const epsilon = 0.001;
   assert.ok(exit < entry);
-  assert.equal(resolvePullPhase(RadialMenuPhase.parent, entry - epsilon, RADIAL_MENU_SETTINGS), RadialMenuPhase.parent);
-  assert.equal(resolvePullPhase(RadialMenuPhase.parent, entry, RADIAL_MENU_SETTINGS), RadialMenuPhase.child);
-  assert.equal(resolvePullPhase(RadialMenuPhase.child, entry - epsilon, RADIAL_MENU_SETTINGS), RadialMenuPhase.child);
-  assert.equal(resolvePullPhase(RadialMenuPhase.child, exit + epsilon, RADIAL_MENU_SETTINGS), RadialMenuPhase.child);
-  assert.equal(resolvePullPhase(RadialMenuPhase.child, exit, RADIAL_MENU_SETTINGS), RadialMenuPhase.parent);
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.parent, entry - epsilon, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.parent,
+  );
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.parent, entry, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.child,
+  );
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.child, entry - epsilon, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.child,
+  );
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.child, exit + epsilon, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.child,
+  );
+  assert.equal(
+    resolvePullPhase(RadialMenuPhase.child, exit, RADIAL_MENU_SETTINGS),
+    RadialMenuPhase.parent,
+  );
 });
 
 test("parent and child quaternion baselines produce independent roll deltas", () => {

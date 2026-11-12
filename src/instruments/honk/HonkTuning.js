@@ -1,7 +1,18 @@
 export const F4_FREQUENCY = 349.23;
 export const F4_MIDI_NOTE = 65;
 export const CHROMATIC_NOTE_NAMES = Object.freeze([
-  "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
 ]);
 
 export const HONK_PITCH_SNAP_STEPS = Object.freeze({
@@ -28,7 +39,11 @@ export function octaveFromControl(octaveControl = 0) {
   return mapLinear(clamp(octaveControl, -1, 1), -1, 1, 2, 6);
 }
 
-export function frequencyFromControls({ pitchControl = 0, octaveControl = 0, pitchSnap = null } = {}) {
+export function frequencyFromControls({
+  pitchControl = 0,
+  octaveControl = 0,
+  pitchSnap = null,
+} = {}) {
   const semitones = semitonesFromPitchControl(pitchControl, pitchSnap);
   const octave = octaveFromControl(octaveControl);
   return F4_FREQUENCY * 2 ** (semitones / 12) * 2 ** (octave - 4);
@@ -61,7 +76,7 @@ export function noteNameFromControls(pitchControl, octaveControl, pitchSnap = nu
 
 export function snapToSteps(value, steps) {
   return steps.reduce(
-    (closest, step) => Math.abs(step - value) < Math.abs(closest - value) ? step : closest,
+    (closest, step) => (Math.abs(step - value) < Math.abs(closest - value) ? step : closest),
     steps[0],
   );
 }
@@ -73,4 +88,9 @@ function mapLinear(value, inMin, inMax, outMin, outMax) {
 function clamp(value, min, max) {
   const number = Number.isFinite(value) ? value : 0;
   return Math.min(Math.max(number, min), max);
+}
+
+export function tuningForMidi(midi) {
+  const octaveOffset = Math.floor((midi - 60) / 12);
+  return { semitonesFromF: midi - 65 - octaveOffset * 12, octaveOffset };
 }

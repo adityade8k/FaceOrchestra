@@ -5,10 +5,7 @@ import {
 } from "../../config/audio.js";
 import { clamp } from "../audioMath.js";
 import { FORMANTS, VOWEL_ROUNDNESS } from "./formantData.js";
-import {
-  CONTROLLER_HONK_RELEASE_SETTINGS,
-  HONK_RELEASE_ORIGINS,
-} from "./HonkReleaseProfile.js";
+import { CONTROLLER_HONK_RELEASE_SETTINGS, HONK_RELEASE_ORIGINS } from "./HonkReleaseProfile.js";
 import { F4_FREQUENCY, getHonkFrequency } from "./pitch.js";
 
 export class HonkVoice {
@@ -116,16 +113,19 @@ export class HonkVoice {
     this.pitchBendSemitones = semitones;
   }
 
-  update({
-    hornAmount,
-    masterGain = 1,
-    leftEar,
-    rightEar,
-    noteGain = 1,
-    pitchBendSemitones = null,
-    pitchSnap = null,
-    activeVoiceCount = 1,
-  }, { scheduledTime = undefined, bendSnapped = false } = {}) {
+  update(
+    {
+      hornAmount,
+      masterGain = 1,
+      leftEar,
+      rightEar,
+      noteGain = 1,
+      pitchBendSemitones = null,
+      pitchSnap = null,
+      activeVoiceCount = 1,
+    },
+    { scheduledTime = undefined, bendSnapped = false } = {},
+  ) {
     const isScheduled = Number.isFinite(scheduledTime);
     const now = isScheduled
       ? Math.max(scheduledTime, this.context.currentTime)
@@ -162,14 +162,14 @@ export class HonkVoice {
       return this.releaseState;
     }
 
-    const now = Math.max(options?.scheduledTime ?? this.context.currentTime, this.context.currentTime);
+    const now = Math.max(
+      options?.scheduledTime ?? this.context.currentTime,
+      this.context.currentTime,
+    );
     const requestedFade = Number.isFinite(fadeSeconds)
       ? fadeSeconds
       : HONK_RELEASE_SETTINGS.liveFadeSeconds;
-    const safeFadeSeconds = Math.max(
-      requestedFade,
-      HONK_RELEASE_SETTINGS.minimumFadeSeconds,
-    );
+    const safeFadeSeconds = Math.max(requestedFade, HONK_RELEASE_SETTINGS.minimumFadeSeconds);
     const silentAt = now + safeFadeSeconds;
     const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
     let completed = false;
@@ -206,10 +206,7 @@ export class HonkVoice {
     try {
       this.source.stop(stopAt);
     } catch {
-      const delayMilliseconds = Math.max(
-        0,
-        Math.ceil((stopAt - this.context.currentTime) * 1000),
-      );
+      const delayMilliseconds = Math.max(0, Math.ceil((stopAt - this.context.currentTime) * 1000));
       fallbackTimer = globalThis.setTimeout?.(handleSourceEnded, delayMilliseconds) ?? null;
       fallbackTimer?.unref?.();
     }
@@ -224,12 +221,23 @@ export class HonkVoice {
 
   cancel(options = {}) {
     if (this.disconnected) return;
-    const now = Math.max(options?.scheduledTime ?? this.context.currentTime, this.context.currentTime);
+    const now = Math.max(
+      options?.scheduledTime ?? this.context.currentTime,
+      this.context.currentTime,
+    );
     const requestedFade = typeof options === "number" ? options : options?.fadeSeconds;
     const fadeSeconds = Number.isFinite(requestedFade) ? Math.max(requestedFade, 0) : 0;
     if (fadeSeconds <= 0) {
-      try { this.source.stop(now); } catch { /* Already stopped. */ }
-      try { this.vibrato.stop(now); } catch { /* Already stopped. */ }
+      try {
+        this.source.stop(now);
+      } catch {
+        /* Already stopped. */
+      }
+      try {
+        this.vibrato.stop(now);
+      } catch {
+        /* Already stopped. */
+      }
       this.disconnect();
       return;
     }
@@ -254,8 +262,16 @@ export class HonkVoice {
     this.output.gain.linearRampToValueAtTime(0, silentAt);
     const stopAt = silentAt + HONK_RELEASE_SETTINGS.stopPaddingSeconds;
     this.source.onended = () => this.disconnect();
-    try { this.source.stop(stopAt); } catch { /* Already stopped. */ }
-    try { this.vibrato.stop(stopAt); } catch { /* Already stopped. */ }
+    try {
+      this.source.stop(stopAt);
+    } catch {
+      /* Already stopped. */
+    }
+    try {
+      this.vibrato.stop(stopAt);
+    } catch {
+      /* Already stopped. */
+    }
     const timer = globalThis.setTimeout?.(
       () => this.disconnect(),
       Math.max(0, Math.ceil((stopAt - this.context.currentTime) * 1000)),

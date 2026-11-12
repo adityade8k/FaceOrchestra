@@ -25,23 +25,14 @@ test("a genuine squeeze release does not turn a held note into a fade", () => {
   timeline.finalizeDuration();
   const snapshot = createActionState();
 
-  assert.equal(
-    timeline.sampleTrack(timeline.getTrack("track-0"), 250, snapshot).squeeze,
-    1,
-  );
-  assert.equal(
-    timeline.sampleTrack(timeline.getTrack("track-0"), 499, snapshot).squeeze,
-    1,
-  );
-  assert.equal(
-    timeline.sampleTrack(timeline.getTrack("track-0"), 500, snapshot).squeeze,
-    0,
-  );
+  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 250, snapshot).squeeze, 1);
+  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 499, snapshot).squeeze, 1);
+  assert.equal(timeline.sampleTrack(timeline.getTrack("track-0"), 500, snapshot).squeeze, 0);
 });
 
 test("standalone 70 BPM reference preserves off-grid attacks and releases exactly", () => {
   const { controller, looper, input } = createRecordingHarness();
-  controller.startRecording(looper, 0);
+  controller.recording.startRecording(looper, 0);
   for (const [timeMs, squeeze] of [
     [0, 1],
     [80, 0],
@@ -52,9 +43,9 @@ test("standalone 70 BPM reference preserves off-grid attacks and releases exactl
   ]) {
     input.squeeze = squeeze;
     input.musicalOnset = squeeze > 0;
-    controller.updateRecordings([looper], timeMs);
+    controller.recording.updateRecordings([looper], timeMs);
   }
-  controller.stopRecording(looper, 1400);
+  controller.recording.stopRecording(looper, 1400);
 
   const gates = looper.looperData.timeline.getTrack("track-0").gateEvents;
   assert.deepEqual(
@@ -118,10 +109,7 @@ test("a baseline never defines standalone pre-roll and held-at-Stop preserves du
   assert.deepEqual(timeline.getMusicalOnsetTimes(), [0]);
   assert.equal(timeline.getTrack("track-0").baselineActionState.bend, 0);
   assert.equal(timeline.recordedDurationMs, 200);
-  assert.equal(
-    timeline.getTrack("track-0").gateEvents.at(-1).preserveDuration,
-    true,
-  );
+  assert.equal(timeline.getTrack("track-0").gateEvents.at(-1).preserveDuration, true);
 });
 
 test("audio lookahead schedules a complete short note between visual frames", () => {
@@ -182,8 +170,8 @@ test("audio lookahead schedules a complete short note between visual frames", ()
   controller.startPlayback(looper, 800);
   audioNow = 10;
   controller.updateClockedTransports([looper], 1000);
-  controller.schedulePlaybackAudioForLooper(looper, 1000);
-  controller.stopAudioScheduler(looper, { release: false });
+  controller.audioScheduler.schedulePlaybackAudioForLooper(looper, 1000);
+  controller.audioScheduler.stopAudioScheduler(looper, { release: false });
 
   assert.deepEqual(
     calls.map(([kind, _voiceId, time]) => [kind, time]),
@@ -211,8 +199,7 @@ test("60 to 200 BPM maps one shared 1000 ms source event to 300 ms", () => {
     getTimingForLooper: () => ({ connected: false }),
     isPlayableHonkId: () => true,
     getPlaybackTargetIds: (_track, honkId) => [honkId],
-    startActionVoice: (_voiceId, _honkId, options) =>
-      calls.push(options.scheduledTime),
+    startActionVoice: (_voiceId, _honkId, options) => calls.push(options.scheduledTime),
     updateActionVoiceByHonkId() {},
   };
   const controller = new LooperController(adapter);
@@ -229,7 +216,7 @@ test("60 to 200 BPM maps one shared 1000 ms source event to 300 ms", () => {
   looper.looperData.timeline.sortTracks();
   looper.looperData.timeline.durationMs = 2000;
 
-  controller.scheduleSourceRange(looper, 0, 1000, {
+  controller.audioScheduler.scheduleSourceRange(looper, 0, 1000, {
     includeStart: true,
     sourceNow: 0,
     rate: 200 / 60,
@@ -254,9 +241,8 @@ function createRecordingHarness() {
 }
 
 test("long suspension skips missed percussion cycles and resumes at musical phase", async () => {
-  const { LooperPlaybackEngine } = await import(
-    "../../../src/instruments/looper/LooperPlaybackEngine.js"
-  );
+  const { LooperPlaybackEngine } =
+    await import("../../../src/instruments/looper/LooperPlaybackEngine.js");
   const engine = new LooperPlaybackEngine();
   let resets = 0,
     boundaries = 0,

@@ -1,3 +1,4 @@
+import { createCompositionSetup } from "../../src/compositions/setup.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -9,47 +10,63 @@ const EXPECTED = Object.freeze({
   Instruments: ["honk", "looper", "metronome"],
   Scales: ["honk-cmajor", "jog-melody"],
   Chords: ["jog-group-1", "jog-group-2", "jog-group-3", "jog-group-4"],
-  Presets: [
-    "preset-quiet",
-    "preset-melody",
-  ],
-  Capture: ['capture-toggle', 'capture-sync', 'capture-pose', 'capture-status'],
+  Presets: ["preset-quiet", "preset-melody"],
+  Capture: ["capture-toggle", "capture-sync", "capture-pose", "capture-status"],
 });
 
 const EXPECTED_LABELS = Object.freeze({
   Scales: ["C Major", "Jog Study"],
-  Chords: ["Group 1: C3 · G3 · C4", "Group 2: C3 · F3 · G3", "Group 3: Bb2 · C3 · G3", "Group 4: G2 · C3 · C4"],
+  Chords: [
+    "Group 1: C3 · G3 · C4",
+    "Group 2: C3 · F3 · G3",
+    "Group 3: Bb2 · C3 · G3",
+    "Group 4: G2 · C3 · C4",
+  ],
   Presets: ["Quiet", "Melody"],
 });
 
 test("radial categories have the required order and exact leaf IDs", () => {
-  const categories = new SpawnCatalog().getRadialCategories();
-  assert.deepEqual(categories.map(({ label }) => label), Object.keys(EXPECTED));
+  const categories = createCompositionSetup().catalog.getRadialCategories();
+  assert.deepEqual(
+    categories.map(({ label }) => label),
+    Object.keys(EXPECTED),
+  );
   for (const category of categories) {
-    assert.deepEqual(category.entries.map(({ id }) => id), EXPECTED[category.label]);
+    assert.deepEqual(
+      category.entries.map(({ id }) => id),
+      EXPECTED[category.label],
+    );
   }
   for (const category of categories.filter(({ label }) => EXPECTED_LABELS[label])) {
-    assert.deepEqual(category.entries.map(({ label }) => label), EXPECTED_LABELS[category.label]);
+    assert.deepEqual(
+      category.entries.map(({ label }) => label),
+      EXPECTED_LABELS[category.label],
+    );
   }
 });
 
 test("obsolete chord and preset IDs are absent from the radial hierarchy", () => {
-  const radialIds = new SpawnCatalog().getRadialCategories().flatMap(({ entries }) => entries.map(({ id }) => id));
+  const radialIds = createCompositionSetup()
+    .catalog.getRadialCategories()
+    .flatMap(({ entries }) => entries.map(({ id }) => id));
   for (const obsoleteId of ["chord-gmajor", "chord-fmajor", "preset-cmajor-two-octaves"]) {
     assert.equal(radialIds.includes(obsoleteId), false);
   }
 });
 
 test("radial categories reuse canonical leaf objects and never expose Stick", () => {
-  const catalog = new SpawnCatalog();
+  const catalog = createCompositionSetup().catalog;
   const radialEntries = catalog.getRadialCategories().flatMap(({ entries }) => entries);
   assert.ok(radialEntries.every((entry) => catalog.get(entry.id) === entry));
-  assert.equal(radialEntries.some(({ id }) => id === "stick"), false);
+  assert.equal(
+    radialEntries.some(({ id }) => id === "stick"),
+    false,
+  );
   assert.equal(catalog.get("stick").visibleInRadial, false);
 });
 
 test("navigation-only category IDs can never resolve as spawn commands", () => {
-  const catalog = new SpawnCatalog();
+  const catalog = createCompositionSetup().catalog;
   for (const category of catalog.getRadialCategories()) {
     assert.equal(catalog.get(category.id), null);
     assert.equal(category.action, undefined);
@@ -74,7 +91,7 @@ test("radial hierarchy validation rejects missing, hidden, and duplicate child I
 });
 
 test("all instrument, formation, and Metronome 93 leaves retain the existing action pipeline", () => {
-  const catalog = new SpawnCatalog();
+  const catalog = createCompositionSetup().catalog;
   assert.deepEqual(
     ["honk", "looper", "metronome"].map((id) => catalog.get(id).action),
     ["instrument", "instrument", "instrument"],
@@ -101,8 +118,11 @@ test("all instrument, formation, and Metronome 93 leaves retain the existing act
 });
 
 test("instrument leaves enter the placement controller; capture commands stay separate", () => {
-  const catalog = new SpawnCatalog();
-  const leaves = catalog.getRadialCategories().flatMap(({ entries }) => entries).filter(entry => entry.action !== 'capture');
+  const catalog = createCompositionSetup().catalog;
+  const leaves = catalog
+    .getRadialCategories()
+    .flatMap(({ entries }) => entries)
+    .filter((entry) => entry.action !== "capture");
   const seen = [];
   const placement = new SpawnPlacementController({
     scene: {},

@@ -36,7 +36,7 @@ Scale, chord, and Honk-row preset entries are placement recipes. Free-play Honks
 
 Aim at a target, then press Trigger to play or use its facial control:
 
-- **Horn:** aim at the squeeze sphere and hold Trigger to play; release Trigger to stop. Moving onto another Honk's squeeze sphere while holding Trigger plays that Honk. Sustain indicators never stop or lock the player's note. A locked Honk responds across its full bounding box. Hold Trigger and roll to bend pitch, within the Honk’s configured range (normally four semitones in either direction; Kuch’s G4 uses five); the held note survives aiming away during a bend. Aiming without Trigger stays silent.
+- **Horn:** aim at the squeeze sphere and hold Trigger to play; release Trigger to stop. Before bend-lock engages, aiming away also stops the note. You can press Trigger before aiming. Moving onto another Honk's squeeze sphere while holding Trigger immediately plays that Honk, even after sustaining the previous note. Sustain indicators never stop or lock the player's note. A locked Honk responds across its full bounding box. Hold Trigger and roll to bend pitch, within the Honk’s configured range (normally four semitones in either direction; Kuch’s G4 uses five); a wrist bend of at least 6° in either direction locks the ray to that Honk. It keeps playing when you aim away, cross another Honk, or return your wrist to neutral. Release Trigger to clear the bend-lock. Holding still never locks the note. Aiming without Trigger stays silent.
 - **Bend targets:** tutorials and guided play snap toward the next written note in your playing sequence. Reaching a note arms the next one, even if the tutorial display is ahead of you. Turning points and final notes block overshoot: a rising bend cannot go above its target unless the next note is higher, and a falling bend cannot go below its target unless the next note is lower. The wider capture zone and fast pitch settling help at quicker tempos. Snapping applies to the sound, live feedback and recorded pitch.
 - **Pitch color:** the original texture is tinted through cool hues below octave 4. Octave 4 keeps its gray texture; octaves 5–7 move from yellow through orange to red. Locked Honks use the blue texture with the same octave tint layered over it.
 - **Mouth:** press Trigger to cycle through A, E, I, O, and U vowels.
@@ -57,12 +57,13 @@ Point at a touching member and press Right B to lock the complete connected comp
 Each Looper stores **one recording**, with up to eight instrument tracks and simultaneous voices. Recording again replaces that recording; separate Loopers hold separate patterns. Each has four transport buttons and three controls:
 
 - **Record** arms capture and latches the selected recording length. Silent waiting consumes no beats.
-- **Stop** finishes recording or stops playback. Pressing Stop again while fully idle clears the recording.
+- **Stop** finishes and saves an active recording. With a loaded loop, it clears the recording whether playing, paused, queued or idle. Use **Pause** to keep a loop for later playback.
 - **Play** selects this Looper within its Metronome output group. An idle group starts it on the next beat. If another Looper on the **same output** is playing, it becomes **QUEUED** until the current complete cycle finishes. Different outputs play simultaneously. Play on the active Looper keeps its cycle running and cancels the queued switch. Unconnected Loopers play independently on their silent internal 70 BPM clock. Pressing exactly on a beat selects the following beat. Recorded offsets and expression remain intact.
 - **Pause** pauses immediately when unconnected, or on the next clock beat when clocked.
 - **Volume** is the left handle and controls Looper playback level.
 - **Gap** chooses 0, 1, 2, 3, or 4 extra whole beats between repetitions. A new Looper starts at Gap 0 with the bottom Gap handle at its down endpoint.
-- **Recording length** is the right handle: 2, 4, 8 or 16 beats, bottom to top. New and legacy Loopers default to 16 at the top. The label shows the next take’s setting; changing it never changes a stored take.
+- **Looper label:** gap is above beats. Fixed recording lengths show their selected beat limit. Open recordings count completed beats while recording and show the saved take’s beat length afterward, excluding any gap.
+- **Recording length** is the right handle: fully down records until you press Stop; higher positions select 2, 4, 8 or 16 beats. New and legacy Loopers default to 16 at the top. Changing the limit never changes a stored take.
 
 ### Connect tracks
 
@@ -76,11 +77,11 @@ Record waits for the first Honk attack or Stick strike. The beat at or immediate
 
 Recording stops automatically at the selected endpoint and animates Stop. A completed take keeps the entire 2/4/8/16-beat window, including leading, interior and final rests. Held recorded gates close at the boundary, preserving final expression. The player’s live gesture continues. Natural releases and percussion tails may sound beyond the logical boundary without extending it.
 
-Manual Stop before the endpoint is a shortened-take override. It captures the final held expression and closes the recorded gate, trims waiting before the first and after the final completed event, and preserves interior rests and complete percussion envelopes. Silent cancellation while still armed retains the prior take. An idle Stop after the completion animation clears the take.
+Manual Stop before the endpoint is a shortened-take override. It captures the final held expression and closes the recorded gate, trims waiting before the first and after the final completed event, and preserves interior rests and complete percussion envelopes. Silent cancellation while still armed retains the prior take. Stop after the completion animation clears the loaded take; Pause preserves it.
 
-At Gap 0, completed takes repeat at their selected beat length from a common absolute origin: 2/4/8/16-beat takes meet again every 16 beats. Gap adds its explicit 0–4 beats; shortened takes and nonzero gaps keep their own cycle lengths. Empty, recording and record-armed Loopers cannot take over. Start All starts at most one eligible recording per output: it preserves active selections and otherwise chooses the most recently connected eligible Looper. Explicit Play takes precedence. Stop/Pause on a queued Looper cancels only that request. Stopping or pausing the active Looper cancels its pending switch.
+At Gap 0, completed takes repeat at their selected beat length from a common absolute origin: 2/4/8/16-beat takes meet again every 16 beats. Gap adds its explicit 0–4 beats; shortened takes and nonzero gaps keep their own cycle lengths. Empty, recording and record-armed Loopers cannot take over. Start All starts at most one eligible recording per output: it preserves active selections and otherwise chooses the most recently connected eligible Looper. Explicit Play takes precedence. Pause on a queued Looper cancels only that request and retains its take. Stop also clears that Looper’s take. Stopping or pausing the active Looper cancels its pending switch.
 
-Multiple Loopers can share one Metronome output, each with its own visible cable. Reconnecting the same cable is idempotent, and each Looper still has only one clock source. Save/load preserves all these cables and the selector separately from the take, and stores explicit fixed-window versus content-trimmed timing. Learner takes survive Practice results and navigation regardless of score. Playback scales the recorded attacks, releases and expression together with tempo. Legacy recordings retain the existing migration policy and receive only the new 16-beat selector default; see [compatibility policy](tutorial.md#clocks-and-compatibility).
+Multiple Loopers can share one Metronome output, each with its own visible cable. Reconnecting the same cable is idempotent, and each Looper still has only one clock source. Save/load preserves all these cables and the selector separately from the take, and stores explicit fixed-window versus content-trimmed timing. Learner takes survive Practice results and navigation regardless of score. Playback scales the recorded attacks, releases and expression together with tempo. Legacy recordings retain the existing migration policy and receive only the new 16-beat selector default.
 
 ### Record Stick hits
 
@@ -137,7 +138,6 @@ The legacy source remains under the following key. Removing it does not clear th
 ```js
 localStorage.removeItem("face-orchestra:scene:v3");
 ```
-
 
 ## Live bend feedback
 

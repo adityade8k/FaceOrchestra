@@ -2,11 +2,7 @@ import { HonkVoice } from "./HonkVoice.js";
 import { HONK_RELEASE_SETTINGS } from "../../config/audio.js";
 
 export class HonkVoiceService {
-  constructor({
-    ensureAudio,
-    getDestination,
-    createVoice = (options) => new HonkVoice(options),
-  }) {
+  constructor({ ensureAudio, getDestination, createVoice = (options) => new HonkVoice(options) }) {
     this.ensureAudio = ensureAudio;
     this.getDestination = getDestination;
     this.createVoice = createVoice;
@@ -45,10 +41,13 @@ export class HonkVoiceService {
         if (update.performance.vowel) {
           this.scheduleVoiceVowel(voice, update.performance.vowel, update.options.scheduledTime);
         }
-        voice.update({
-          ...update.performance,
-          activeVoiceCount: Math.max(this.voices.size + this.startingVoices.size, 1),
-        }, update.options);
+        voice.update(
+          {
+            ...update.performance,
+            activeVoiceCount: Math.max(this.voices.size + this.startingVoices.size, 1),
+          },
+          update.options,
+        );
       }
       if (startToken.release) this.stopVoice(voiceId, startToken.release);
     } finally {
@@ -68,9 +67,11 @@ export class HonkVoiceService {
   scheduleVoiceVowel(voice, vowel, scheduledTime) {
     if (!voice || !vowel) return;
     let sequence = this.vowelSchedules.get(voice);
-    if (!sequence) this.vowelSchedules.set(voice, sequence = { audible: voice.vowel, points: [] });
+    if (!sequence)
+      this.vowelSchedules.set(voice, (sequence = { audible: voice.vowel, points: [] }));
     const now = voice.context?.currentTime ?? 0;
-    const time = voice.context && Number.isFinite(scheduledTime) ? Math.max(scheduledTime, now) : now;
+    const time =
+      voice.context && Number.isFinite(scheduledTime) ? Math.max(scheduledTime, now) : now;
     // Keep the requested sequence, including redundant points, until their time
     // passes. An out-of-order insertion may turn a former repeat into a transition.
     sequence.points = sequence.points.filter((point) => point.time > now || point.timer !== null);
@@ -93,8 +94,10 @@ export class HonkVoiceService {
             point.timer = null;
             sequence.audible = point.vowel;
             voice.setVowel?.(point.vowel);
-            sequence.points = sequence.points.filter((candidate) => candidate !== point &&
-              (candidate.time > point.time || candidate.timer !== null));
+            sequence.points = sequence.points.filter(
+              (candidate) =>
+                candidate !== point && (candidate.time > point.time || candidate.timer !== null),
+            );
           }, delayMs);
           point.timer?.unref?.();
         }
@@ -125,10 +128,13 @@ export class HonkVoiceService {
       return;
     }
 
-    voice.update({
-      ...performance,
-      activeVoiceCount: Math.max(this.voices.size + this.startingVoices.size, 1),
-    }, options);
+    voice.update(
+      {
+        ...performance,
+        activeVoiceCount: Math.max(this.voices.size + this.startingVoices.size, 1),
+      },
+      options,
+    );
   }
 
   releaseVoice(voiceId = "main", options = HONK_RELEASE_SETTINGS.liveFadeSeconds) {
@@ -136,9 +142,10 @@ export class HonkVoiceService {
     const fadeSeconds = Number.isFinite(requestedFade)
       ? Math.max(requestedFade, 0)
       : HONK_RELEASE_SETTINGS.liveFadeSeconds;
-    const releaseOptions = typeof options === "object" && options !== null
-      ? { ...options, fadeSeconds }
-      : { fadeSeconds };
+    const releaseOptions =
+      typeof options === "object" && options !== null
+        ? { ...options, fadeSeconds }
+        : { fadeSeconds };
     const pending = this.startTokens.get(voiceId);
     if (pending && Number.isFinite(releaseOptions.scheduledTime)) {
       pending.release = releaseOptions;
@@ -156,7 +163,7 @@ export class HonkVoiceService {
     }
   }
 
-  cancelVoice(voiceId = 'main', options = {}) {
+  cancelVoice(voiceId = "main", options = {}) {
     this.startTokens.delete(voiceId);
     this.startingVoices.delete(voiceId);
     const active = this.voices.get(voiceId);
@@ -166,16 +173,24 @@ export class HonkVoiceService {
     this.releasingVoices.delete(voiceId);
     for (const voice of voices) {
       this.clearVoiceVowels(voice);
-      if (voice?.cancel) voice.cancel(options); else voice?.disconnect?.();
+      if (voice?.cancel) voice.cancel(options);
+      else voice?.disconnect?.();
       // Keep future releases reachable by Stop/disconnect until they finish.
-      if (Number.isFinite(options.scheduledTime) && options.scheduledTime > voice.context?.currentTime) {
+      if (
+        Number.isFinite(options.scheduledTime) &&
+        options.scheduledTime > voice.context?.currentTime
+      ) {
         let retiring = this.releasingVoices.get(voiceId);
-        if (!retiring) this.releasingVoices.set(voiceId, retiring = new Set());
+        if (!retiring) this.releasingVoices.set(voiceId, (retiring = new Set()));
         retiring.add(voice);
-        const timer = globalThis.setTimeout?.(() => {
-          retiring.delete(voice);
-          if (!retiring.size && this.releasingVoices.get(voiceId) === retiring) this.releasingVoices.delete(voiceId);
-        }, (options.scheduledTime-voice.context.currentTime+0.3)*1000);
+        const timer = globalThis.setTimeout?.(
+          () => {
+            retiring.delete(voice);
+            if (!retiring.size && this.releasingVoices.get(voiceId) === retiring)
+              this.releasingVoices.delete(voiceId);
+          },
+          (options.scheduledTime - voice.context.currentTime + 0.3) * 1000,
+        );
         timer?.unref?.();
       }
     }
@@ -200,16 +215,23 @@ export class HonkVoiceService {
       this.releasingVoices.set(voiceId, releaseGenerations);
     }
     releaseGenerations.add(voice);
-    voice.release(fadeSeconds, () => {
-      this.clearVoiceVowels(voice);
-      const currentGenerations = this.releasingVoices.get(voiceId);
-      if (!currentGenerations) {
-        return;
-      }
-      currentGenerations.delete(voice);
-      if (currentGenerations.size === 0 && this.releasingVoices.get(voiceId) === currentGenerations) {
-        this.releasingVoices.delete(voiceId);
-      }
-    }, options);
+    voice.release(
+      fadeSeconds,
+      () => {
+        this.clearVoiceVowels(voice);
+        const currentGenerations = this.releasingVoices.get(voiceId);
+        if (!currentGenerations) {
+          return;
+        }
+        currentGenerations.delete(voice);
+        if (
+          currentGenerations.size === 0 &&
+          this.releasingVoices.get(voiceId) === currentGenerations
+        ) {
+          this.releasingVoices.delete(voiceId);
+        }
+      },
+      options,
+    );
   }
 }

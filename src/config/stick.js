@@ -7,7 +7,7 @@ export const STICK_SETTINGS = {
   // Local transform from the XR controller to the held stick.
   position: { x: 0, y: -0.02, z: -0.28 },
   rotationDegrees: { x: -90, y: 0, z: 0 },
-  size: { x: 0.25, y: 0.46, z: 0.25},
+  size: { x: 0.25, y: 0.46, z: 0.25 },
 
   // Local transform from the stick to its collider.
   collider: {

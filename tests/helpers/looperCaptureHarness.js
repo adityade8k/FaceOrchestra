@@ -18,12 +18,16 @@ export function createHarness({ connected, trackCount = 8 }) {
   const adapter = {
     isPlayableHonkId: () => true,
     getPlaybackTargetIds: (_track, id) => [id],
-    startActionVoice: (id, honk, options) => calls.push({kind:"start", id, ...options}),
-    updateActionVoiceByHonkId: (id, honk, snapshot, volume, options) => calls.push({kind:"expression", id, snapshot:{...snapshot}, ...options}),
-    releaseActionVoice: (id, honk, options) => calls.push({kind:"release", id, ...options}),
-    playStickPercussion: (type, options) => calls.push({kind:"drum", type, ...options}),
-    cancelLooperPercussion: () => calls.push({kind:"cancelDrums"}),
-    getTimingForLooper: (_id, now) => ({ ...clock, beatPosition:(now - clock.beatOriginMs) / clock.beatIntervalMs }),
+    startActionVoice: (id, honk, options) => calls.push({ kind: "start", id, ...options }),
+    updateActionVoiceByHonkId: (id, honk, snapshot, volume, options) =>
+      calls.push({ kind: "expression", id, snapshot: { ...snapshot }, ...options }),
+    releaseActionVoice: (id, honk, options) => calls.push({ kind: "release", id, ...options }),
+    playStickPercussion: (type, options) => calls.push({ kind: "drum", type, ...options }),
+    cancelLooperPercussion: () => calls.push({ kind: "cancelDrums" }),
+    getTimingForLooper: (_id, now) => ({
+      ...clock,
+      beatPosition: (now - clock.beatOriginMs) / clock.beatIntervalMs,
+    }),
     captureActionByHonkId: (honkId) => ({ ...inputs[Number(honkId.split("-").at(-1))] }),
     updateVisuals() {},
     ensureAudio() {},
@@ -50,5 +54,5 @@ export function setHonk(harness, trackIndex, now, squeeze) {
   harness.inputs[trackIndex].squeeze = squeeze;
   harness.inputs[trackIndex].musicalOnset = squeeze > 0.025;
   if (harness.clock.connected) harness.clock.beatPosition = now / BEAT_INTERVAL_MS;
-  harness.controller.updateRecordings([harness.looper], now);
+  harness.controller.recording.updateRecordings([harness.looper], now);
 }

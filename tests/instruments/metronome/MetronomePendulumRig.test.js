@@ -8,12 +8,13 @@ import {
 
 test("pendulum completes one local-Z oscillation every two beats", () => {
   const swing = Math.PI / 6;
-  const angleAt = (nowMs) => getMetronomePendulumAngle({
-    nowMs,
-    beatOriginMs: 1000,
-    bpm: 120,
-    swingRadians: swing,
-  });
+  const angleAt = (nowMs) =>
+    getMetronomePendulumAngle({
+      nowMs,
+      beatOriginMs: 1000,
+      bpm: 120,
+      swingRadians: swing,
+    });
 
   approximately(angleAt(1000), 0);
   approximately(angleAt(1250), swing);
@@ -31,9 +32,7 @@ test("pendulum premultiplies the imported rest pose around model-local Z", () =>
     updateMatrixWorld() {},
   };
   const root = {
-    getObjectByName: (name) => (
-      name === METRONOME_PENDULUM_SETTINGS.nodeName ? node : null
-    ),
+    getObjectByName: (name) => (name === METRONOME_PENDULUM_SETTINGS.nodeName ? node : null),
   };
   const rig = new MetronomePendulumRig({
     THREE: { Vector3, Quaternion },

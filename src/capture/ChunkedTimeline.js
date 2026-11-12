@@ -68,8 +68,7 @@ export class ChunkedTimeline {
       .then((packets) => {
         if (this.disposed) return;
         this.cache.set(index, new Timeline(packets, [], this.gaps));
-        while (this.cache.size > this.maxChunks)
-          this.cache.delete(this.cache.keys().next().value);
+        while (this.cache.size > this.maxChunks) this.cache.delete(this.cache.keys().next().value);
         this.revision++;
         this.onReady();
       })
@@ -79,7 +78,8 @@ export class ChunkedTimeline {
   }
   seek(t) {
     const index = this.chunkAt(t);
-    let cachedIndex = index, timeline = this.cache.get(index);
+    let cachedIndex = index,
+      timeline = this.cache.get(index);
     if (!timeline) {
       this.ensure(t).catch((error) => this.onError?.(error));
       // ensure() loads the following chunk too. At a boundary its exact
@@ -104,8 +104,7 @@ export class ChunkedTimeline {
     if (!frame) return null;
     const pose = { ...frame, nodes: {} };
     this.poses.set(t, pose);
-    while (this.poses.size > this.maxPoses)
-      this.poses.delete(this.poses.keys().next().value);
+    while (this.poses.size > this.maxPoses) this.poses.delete(this.poses.keys().next().value);
     return pose;
   }
   dispose() {

@@ -106,7 +106,9 @@ test("a directly disposed instrument can still be removed from the registry exac
     root: object3D(),
   });
   let disposeCount = 0;
-  instrument.addDisposeHandler(() => { disposeCount += 1; });
+  instrument.addDisposeHandler(() => {
+    disposeCount += 1;
+  });
   registry.add(instrument);
   instrument.dispose();
 
@@ -133,23 +135,45 @@ test("session reset deletes entities and invokes every injected transient-state 
   const lifecycle = new InstrumentLifecycleService({
     instrumentRegistry: registry,
     contactSystem: {
-      removeHonk(id) { calls.push(`contact.remove:${id}`); return true; },
-      reset() { calls.push("contact.reset"); },
+      removeHonk(id) {
+        calls.push(`contact.remove:${id}`);
+        return true;
+      },
+      reset() {
+        calls.push("contact.reset");
+      },
     },
     lockService: {
       getGroupForMember: () => ({ id: "transient-lock" }),
-      removeMember(id) { calls.push(`lock.remove:${id}`); return null; },
-      reset({ reason }) { calls.push(`lock.reset:${reason}`); },
+      removeMember(id) {
+        calls.push(`lock.remove:${id}`);
+        return null;
+      },
+      reset({ reason }) {
+        calls.push(`lock.reset:${reason}`);
+      },
     },
     stickEquipmentSystem: {
-      unequip(entry) { calls.push(`equipment.unequip:${entry.id}`); return entry; },
-      reset() { calls.push("equipment.reset"); },
+      unequip(entry) {
+        calls.push(`equipment.unequip:${entry.id}`);
+        return entry;
+      },
+      reset() {
+        calls.push("equipment.reset");
+      },
     },
-    releaseInstrumentAudio(entry) { calls.push(`audio.release:${entry.id}`); },
-    resetAudio({ reason }) { calls.push(`audio.reset:${reason}`); },
+    releaseInstrumentAudio(entry) {
+      calls.push(`audio.release:${entry.id}`);
+    },
+    resetAudio({ reason }) {
+      calls.push(`audio.reset:${reason}`);
+    },
     sessionResetters: [
       ({ reason }) => calls.push(`function.reset:${reason}`),
-      { reset: ({ deletedInstrumentIds }) => calls.push(`object.reset:${deletedInstrumentIds.join(",")}`) },
+      {
+        reset: ({ deletedInstrumentIds }) =>
+          calls.push(`object.reset:${deletedInstrumentIds.join(",")}`),
+      },
     ],
   });
   lifecycle.subscribe((event) => events.push(event.type));
@@ -185,8 +209,12 @@ function createHonk(id, x, voiceEvents = { started: [], released: [] }) {
       applyPerformanceState() {},
     },
     voiceService: {
-      startVoice(voiceId) { voiceEvents.started.push(voiceId); },
-      releaseVoice(voiceId) { voiceEvents.released.push(voiceId); },
+      startVoice(voiceId) {
+        voiceEvents.started.push(voiceId);
+      },
+      releaseVoice(voiceId) {
+        voiceEvents.released.push(voiceId);
+      },
     },
   });
 }
@@ -226,14 +254,16 @@ class ResourceOwningLooper extends InstrumentEntity {
     this.controllerReleaseCount = 0;
     this.looperData = {
       transport: createTransportState(),
-      tracks: [{
-        index: 0,
-        trackId: "track-0",
-        connectedHonkId: null,
-        wireMesh: null,
-        automationLayerId: null,
-        actionVoiceId: null,
-      }],
+      tracks: [
+        {
+          index: 0,
+          trackId: "track-0",
+          connectedHonkId: null,
+          wireMesh: null,
+          automationLayerId: null,
+          actionVoiceId: null,
+        },
+      ],
     };
   }
 
@@ -316,8 +346,12 @@ function object3D(x = 0) {
     quaternion: tuple4(0, 0, 0, 1),
     rotation: tuple3(0, 0, 0),
     scale: tuple3(1, 1, 1),
-    removeFromParent() { this.parent = null; },
-    traverse(callback) { callback(this); },
+    removeFromParent() {
+      this.parent = null;
+    },
+    traverse(callback) {
+      callback(this);
+    },
   };
 }
 
@@ -326,9 +360,19 @@ function tuple3(x, y, z) {
     x,
     y,
     z,
-    set(a, b, c) { this.x = a; this.y = b; this.z = c; },
-    setScalar(value) { this.x = value; this.y = value; this.z = value; },
-    toArray() { return [this.x, this.y, this.z]; },
+    set(a, b, c) {
+      this.x = a;
+      this.y = b;
+      this.z = c;
+    },
+    setScalar(value) {
+      this.x = value;
+      this.y = value;
+      this.z = value;
+    },
+    toArray() {
+      return [this.x, this.y, this.z];
+    },
   };
 }
 
@@ -338,8 +382,17 @@ function tuple4(x, y, z, w) {
     y,
     z,
     w,
-    set(a, b, c, d) { this.x = a; this.y = b; this.z = c; this.w = d; },
-    toArray() { return [this.x, this.y, this.z, this.w]; },
-    normalize() { return this; },
+    set(a, b, c, d) {
+      this.x = a;
+      this.y = b;
+      this.z = c;
+      this.w = d;
+    },
+    toArray() {
+      return [this.x, this.y, this.z, this.w];
+    },
+    normalize() {
+      return this;
+    },
   };
 }

@@ -94,9 +94,18 @@ test("right primary maps to spawn open/confirm without changing the left-hand de
     mapper.map({ ...base, handedness: "left", pressed: true })[0].type,
     XRIntentType.InstrumentDelete,
   );
-  assert.equal(mapper.map({ ...base, button: "secondary", handedness: "left", pressed: true })[0].type, XRIntentType.SpawnMenuOpen);
-  assert.equal(mapper.map({ ...base, button: "secondary", handedness: "left", pressed: false })[0].type, XRIntentType.SpawnMenuConfirm);
-  assert.equal(mapper.map({ ...base, button: "secondary", handedness: "right", pressed: true })[0].type, XRIntentType.ContextSecondary);
+  assert.equal(
+    mapper.map({ ...base, button: "secondary", handedness: "left", pressed: true })[0].type,
+    XRIntentType.SpawnMenuOpen,
+  );
+  assert.equal(
+    mapper.map({ ...base, button: "secondary", handedness: "left", pressed: false })[0].type,
+    XRIntentType.SpawnMenuConfirm,
+  );
+  assert.equal(
+    mapper.map({ ...base, button: "secondary", handedness: "right", pressed: true })[0].type,
+    XRIntentType.ContextSecondary,
+  );
 });
 
 test("thumbstick X and Y emit independent edge-triggered steps with intuitive signs", () => {
@@ -161,12 +170,12 @@ test("horizontal steps drive both preview and grip scaling while vertical steps 
     new URL("../../src/app/runtime/XRInteractionRuntime.js", import.meta.url),
     "utf8",
   );
-  const horizontal = source.match(
-    /handleHorizontalScaleStepIntent[\s\S]*?(?=handlePreviewDistanceStepIntent)/,
-  )?.[0] || "";
-  const vertical = source.match(
-    /handlePreviewDistanceStepIntent[\s\S]*?(?=updateGripTransform)/,
-  )?.[0] || "";
+  const horizontal =
+    source.match(
+      /handleHorizontalScaleStepIntent[\s\S]*?(?=handlePreviewDistanceStepIntent)/,
+    )?.[0] || "";
+  const vertical =
+    source.match(/handlePreviewDistanceStepIntent[\s\S]*?(?=updateGripTransform)/)?.[0] || "";
 
   assert.match(horizontal, /handlePendingSpawnScaleThumbstick/);
   assert.match(horizontal, /gripTransformSystem\?\.handleScaleStep/);

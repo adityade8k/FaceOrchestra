@@ -15,8 +15,7 @@ export function prepareControllerHonkAttack(owner, voiceId) {
     liveOwners.set(owner, voices);
   }
   for (const id of voices) if (!owner.hasAudioVoice(id)) voices.delete(id);
-  if (!voices.size && owner.processedLivePerformance)
-    owner.processedLivePerformance.bend = 0;
+  if (!voices.size && owner.processedLivePerformance) owner.processedLivePerformance.bend = 0;
   voices.add(voiceId);
 }
 
