@@ -1,7 +1,7 @@
 name: Verify
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 jobs:
-  verify:
+  source-and-unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -10,8 +10,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run verify
-      - run: npm run test:capture:server
-      - run: npm run test:compositions:browser
+      - run: time npm run verify
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:browser -- --batch capture-server music compositions
         env:
           CHROME_BIN: /usr/bin/google-chrome

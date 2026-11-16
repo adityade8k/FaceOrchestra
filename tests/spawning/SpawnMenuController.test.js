@@ -43,10 +43,10 @@ test("A release in layer 2 returns only the highlighted leaf from the latched ca
   state.radialMenuChildSelectedIndex = 1;
   view.childSelection = 1;
   const selected = menu.confirm({}, state);
-  assert.equal(selected.id, "jog-group-2");
+  assert.equal(selected.id, "chord-emajor");
   assert.equal(selected.action, "formation");
   assert.equal(state.radialMenuOpen, false);
-  assert.deepEqual(changes, [{ type: "confirm", selectedId: "jog-group-2" }]);
+  assert.deepEqual(changes, [{ type: "confirm", selectedId: "chord-emajor" }]);
 });
 
 test("pushing below the exit threshold returns to layer 1 without confirming a category", () => {

@@ -35,6 +35,6 @@ export const ASSET_PATHS = Object.freeze({
     }),
   }),
   fonts: Object.freeze({
-    noteLabel: "/vendor/three/examples/fonts/helvetiker_regular.typeface.json",
+    noteLabel: "/model/fonts/helvetiker_regular.typeface.json",
   }),
 });

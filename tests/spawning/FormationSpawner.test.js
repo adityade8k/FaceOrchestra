@@ -78,6 +78,26 @@ const EXPECTED_TUNINGS = Object.freeze({
     ["A", 4, 0],
     ["D", -3, 1],
   ],
+  "chord-gmajor": [
+    ["G", 2, 0],
+    ["B", 6, 0],
+    ["D", -3, 1],
+  ],
+  "chord-fmajor": [
+    ["F", 0, 0],
+    ["A", 4, 0],
+    ["C", 7, 0],
+  ],
+  "chord-eminor": [
+    ["E", -1, 0],
+    ["G", 2, 0],
+    ["B", 6, 0],
+  ],
+  "chord-dmajor": [
+    ["D", -3, 0],
+    ["F#", 1, 0],
+    ["A", 4, 0],
+  ],
   "preset-quiet": [
     ["G", 2, -1],
     ["C", -5, 0],

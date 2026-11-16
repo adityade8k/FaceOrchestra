@@ -6,7 +6,7 @@ Trigger and Grip work on either hand. Right A and left Y open the menu on that h
 
 | Control                                               | What it does                                                                                                                                           |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Hold **Right A** or **Left Y**                        | Open the category ring. Roll that controller to choose Instruments, Scales, Chords, or Presets; pull it toward you to open that category's item ring.  |
+| Hold **Right A** or **Left Y**                        | Open the category ring. Roll that controller to choose Instruments, Scales, Chords, Presets, or Capture; pull it toward you to open that category's item ring.  |
 | Release **Right A** or **Left Y**                     | On the item ring, confirm the highlighted item and create its placement preview. On the category ring, close without a preview.                        |
 | **Trigger** during preview                            | Place the preview.                                                                                                                                     |
 | **Grip** during menu or preview                       | Cancel it.                                                                                                                                             |
@@ -26,17 +26,36 @@ The radial menu is suppressed whenever Grip is active, including duplication. It
 The radial menu has two depth phases with one ring visible at a time. Keep right A or left Y held while navigating: roll to select a parent category, pull the controller physically toward the headset to hide the category ring and reveal that category's item ring, then roll from the new baseline to select an item. Push the controller away to hide the item ring and restore the category ring. The categories and items are:
 
 - **Instruments:** Honk (one default F4 Honk), Looper (one eight-track Looper), and Metronome.
-- **Scales:** C Major (the existing eight-Honk row) and Jog Study (`C4 Eb4 E4 F4 G4 Bb4 C5`).
-- **Chords:** Group 1 (`C3 G3 C4`); Group 2 (`C3 F3 G3`); Group 3 (`Bb2 C3 G3`); and Group 4 (`G2 C3 C4`).
+- **Scales:** C Major (`C4 D4 E4 F4 G4 A4 B4 C5`), F Natural Minor (`F4 G4 Ab4 Bb4 C5 Db5 Eb5 F5`), and F♯ Natural Minor (`F#4 G#4 A4 B4 C#5 D5 E5 F#5`).
+- **Chords:** A Minor, E Major, C Major, D Minor, G Major, F Major, E Minor, and D Major. Exact voicings are listed below.
 - **Presets:** Quiet (`G3 C4 E4 D5 C5 B4 A4 G#4`) and Melody (`G#4 A4 B4 C4 D4 E4 F4 E6 E4`). The note order and Melody's repeated E4 are intentional.
+
+- **Capture:** Start/Stop Mixed Reality Recording, Mark Sync, Mark Calibration Pose, and Connection Status.
+
+| Chord | Honks in placement order |
+| --- | --- |
+| A Minor | A4 · C4 · E5 |
+| E Major | E3 · B4 · G#4 |
+| C Major | C4 · E4 · G4 |
+| D Minor | F4 · A4 · D5 |
+| G Major | G4 · B4 · D5 |
+| F Major | F4 · A4 · C5 |
+| E Minor | E4 · G4 · B4 |
+| D Major | D4 · F#4 · A4 |
+
+The original four chord voicings are preserved. Note labels use sharps, so a scale's Ab appears as G#, Bb as A#, Db as C#, and Eb as D#.
+
+Raag Jog's step-by-step tutorial temporarily uses C Major and Jog Study (`C4 Eb4 E4 F4 G4 Bb4 C5`) under Scales, and Group 1 (`C3 G3 C4`), Group 2 (`C3 F3 G3`), Group 3 (`Bb2 C3 G3`), and Group 4 (`G2 C3 C4`) under Chords. Returning to Play restores the general menu on both controllers. Other song formations remain available to their lesson setup.
 
 Scale, chord, and Honk-row preset entries are placement recipes. Free-play Honks remain independent after placement. During the tutorial, composition chords lock as groups upon placement; a later intentional unlock is respected. Release the menu button to preview on that hand, then press Trigger to place or Grip to cancel. A held Trigger must first be released. Parent categories are navigation only; releasing there creates nothing. Legacy recipes remain available internally for saved scenes. The Stick is Grip equipment and is not shown in the radial menu.
 
 ## Play a Honk
 
+A held note sustains until you release it. The default live release tail is now **270 ms**, 50% longer than the previous 180 ms; the controller fade curve is stretched by the same amount. Looper action boundaries retain their shorter release so recorded rhythmic timing stays intact.
+
 Aim at a target, then press Trigger to play or use its facial control:
 
-- **Horn:** aim at the squeeze sphere and hold Trigger to play; release Trigger to stop. Before bend-lock engages, aiming away also stops the note. You can press Trigger before aiming. Moving onto another Honk's squeeze sphere while holding Trigger immediately plays that Honk, even after sustaining the previous note. Sustain indicators never stop or lock the player's note. A locked Honk responds across its full bounding box. Hold Trigger and roll to bend pitch, within the Honk’s configured range (normally four semitones in either direction; Kuch’s G4 uses five); a wrist bend of at least 6° in either direction locks the ray to that Honk. It keeps playing when you aim away, cross another Honk, or return your wrist to neutral. Release Trigger to clear the bend-lock. Holding still never locks the note. Aiming without Trigger stays silent.
+- **Horn:** aim at the squeeze sphere and hold Trigger to play; release Trigger to stop. Before bend-lock engages, aiming away also stops the note. You can press Trigger before aiming. Before bend-lock engages, moving onto another Honk's squeeze sphere while holding Trigger immediately plays that Honk. Sustain indicators never stop or lock the player's note. A locked Honk responds across its full bounding box. Hold Trigger and roll to bend pitch, within the Honk’s configured range (normally four semitones in either direction; Kuch’s G4 uses five); a wrist bend of at least 6° in either direction locks the ray to that Honk. It keeps playing when you aim away, cross another Honk, or return your wrist to neutral. Release Trigger to clear the bend-lock. Holding still never locks the note. Aiming without Trigger stays silent.
 - **Bend targets:** tutorials and guided play snap toward the next written note in your playing sequence. Reaching a note arms the next one, even if the tutorial display is ahead of you. Turning points and final notes block overshoot: a rising bend cannot go above its target unless the next note is higher, and a falling bend cannot go below its target unless the next note is lower. The wider capture zone and fast pitch settling help at quicker tempos. Snapping applies to the sound, live feedback and recorded pitch.
 - **Pitch color:** the original texture is tinted through cool hues below octave 4. Octave 4 keeps its gray texture; octaves 5–7 move from yellow through orange to red. Locked Honks use the blue texture with the same octave tint layered over it.
 - **Mouth:** press Trigger to cycle through A, E, I, O, and U vowels.
@@ -133,16 +152,22 @@ Loopers restore stopped and unarmed. Metronomes restore paused. Editing locks ar
 
 Legacy scenes with several Metronomes restore the first in saved order and report skipped objects and affected connections. The original storage value stays untouched and autosave is blocked after a partial restore. Recovery data and details are available in `runtime.sceneRestorer.lastReport` / `runtime.scenePersistence.restoreReport`; export the original before deliberately replacing it.
 
-The legacy source remains under the following key. Removing it does not clear the new IndexedDB workspace; use browser storage tools to inspect `honk-orchestra-workspaces` and export recovery data first:
-
-```js
-localStorage.removeItem("face-orchestra:scene:v3");
-```
+Export important scenes and recovery data before clearing browser storage. Removing a legacy localStorage key does not clear the IndexedDB workspace.
 
 ## Live bend feedback
 
-In Play, a dial follows the actual processed bend used by the sound path. It shows the configured ±4 or ±5 range and gives one haptic pulse when the bend crosses a semitone. Multiple crossings within one frame produce one pulse; jitter around a mark does not produce repeated pulses. Release, deletion, disconnection and mode changes reset it. There are no target markers, assessment messages, snapping or overshoot limits in Play. Wrist sensitivity, synthesis and ordinary pitch processing are unchanged.
+In Play, bend dials are hidden. Semitone haptics follow the processed bend used by the sound path, with one pulse for a crossing and no repeated pulses from jitter. Release, deletion, disconnection and mode changes reset this feedback. Play has no target markers, assessment messages, snapping or overshoot limits.
 
-Tutorial practice and guided song recording use the same dial and haptics. Authored bends in Raag Jog, Kuch To Hua Hai and Nazariya Ki Maari also use ordered target snapping. The next target follows the learner’s progress, even when the display clock has moved ahead. Reversals and retries remain available; each new target requires fresh wrist movement. Turning points and final targets limit overshoot, while intermediate targets permit continued movement in the same direction. Tu Kisi Rail Si and Rishte Naate have no authored bend targets. Demonstrations and saved playback retain their authored expression.
+Tutorial practice and guided song recording show bend guidance and haptics. Authored bends in Raag Jog, Kuch To Hua Hai and Nazariya Ki Maari also use ordered target snapping. The next target follows the learner’s progress, even when the display clock has moved ahead. Reversals and retries remain available; each new target requires fresh wrist movement. Turning points and final targets limit overshoot, while intermediate targets permit continued movement in the same direction. Tu Kisi Rail Si and Rishte Naate have no authored bend targets. Demonstrations and saved playback retain their authored expression.
 
 Clean capture excludes guidance. Explicit UI/guidance capture includes the dial through the shared presentation recorder.
+
+## Tutorials and song recording
+
+The main menu offers Play, Tutorials, and Record Songs. Play restores your saved workspace. Tutorials includes Basics and the compositions in the song library; Record Songs uses the same musical definitions.
+
+Basics uses three rounds of expression practice, seven size pushes in each direction, free movement followed by nearby percussion, and source/destination socket cues. The first two recording exercises use the physical Record and Stop buttons with Manual length. Duplicate waits for Continue; movement, rotation, scale, freeze and delete have no target overlays.
+
+Basics ends with a guided Jog composition: record a 16-beat chord loop, add percussion, practice the descending Eb-to-C bend, then play the melody over both takes. Demonstrate preserves your recordings; completing Practice unlocks the next part. Restart finale repeats that section. Exit restores Play. The last exercise teaches hiding and showing the menu with a left-joystick click.
+
+For mixed reality capture, run `npm run capture:serve`, open the receiver/editor, and pair the headset using the displayed code. Capture and Record Songs share the recorder; finish the current take before entering another recording mode. Saved capture files are separate from your Play workspace.

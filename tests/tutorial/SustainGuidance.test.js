@@ -2,13 +2,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fixture, flushAudio } from "../helpers/manualHonkFixture.mjs";
 import { TutorialAdapter } from "../../src/tutorial/TutorialAdapter.js";
+import { TutorialRoleRegistry } from "../../src/tutorial/TutorialRoleRegistry.js";
 import { NotePracticeGate, NotePracticeGuidance } from "../../src/tutorial/NotePracticeGate.js";
 
 function setup(options = {}) {
   const f = fixture(options);
+  const roleRegistry = new TutorialRoleRegistry({
+    getInstrument: (id) => f.host.instrumentRegistry.get(id),
+    getSession: () => undefined,
+    resolveCommitted: () => [],
+  });
+  for (const h of f.honks) roleRegistry.roles.set(h.id, [h.id]);
   const a = Object.assign(Object.create(TutorialAdapter.prototype), {
     r: f.host,
-    roles: new Map(f.honks.map((h) => [h.id, [h.id]])),
+    roleRegistry,
+    roles: roleRegistry.roles,
     gestures: new Map(),
     pendingStrikes: [],
     sequence: 0,

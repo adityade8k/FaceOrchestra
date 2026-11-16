@@ -185,6 +185,7 @@ export class HonkInstrument extends InstrumentEntity {
   }
 
   resetPresentation() {
+    this.presentationRevision = (this.presentationRevision || 0) + 1;
     this.honkPresentation = null;
     this.lastHonkPerformanceUpdateMs = undefined;
     this.processedLivePerformance = undefined;
@@ -225,6 +226,7 @@ export class HonkInstrument extends InstrumentEntity {
   }
 
   setMorphValue(morphName, value) {
+    this.presentationRevision = (this.presentationRevision || 0) + 1;
     return this.morphs.setMorph(morphName, value);
   }
 
@@ -237,6 +239,7 @@ export class HonkInstrument extends InstrumentEntity {
   }
 
   resetMorphs() {
+    this.presentationRevision = (this.presentationRevision || 0) + 1;
     this.morphs.resetAll();
   }
 

@@ -337,6 +337,7 @@ export class ApplicationNavigation {
       if (this.host.session?.mode === "simulation")
         this.host.simulationProgress = this.host.session.exportProgress();
       this.host.session = null;
+      this.host.r.spawn.setMenuContext("play");
       if (this.freePlayScene) {
         this.host.adapter.clear();
         const restored = await this.host.r.sceneRestorer.restore(this.freePlayScene);

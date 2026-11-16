@@ -8,20 +8,24 @@ import { SpawnPlacementController } from "../../src/spawning/SpawnPlacementContr
 
 const EXPECTED = Object.freeze({
   Instruments: ["honk", "looper", "metronome"],
-  Scales: ["honk-cmajor", "jog-melody"],
-  Chords: ["jog-group-1", "jog-group-2", "jog-group-3", "jog-group-4"],
+  Scales: ["honk-cmajor", "honk-fminor", "honk-fsharpminor"],
+  Chords: [
+    "chord-aminor",
+    "chord-emajor",
+    "chord-cmajor",
+    "chord-dminor",
+    "chord-gmajor",
+    "chord-fmajor",
+    "chord-eminor",
+    "chord-dmajor",
+  ],
   Presets: ["preset-quiet", "preset-melody"],
   Capture: ["capture-toggle", "capture-sync", "capture-pose", "capture-status"],
 });
 
 const EXPECTED_LABELS = Object.freeze({
-  Scales: ["C Major", "Jog Study"],
-  Chords: [
-    "Group 1: C3 · G3 · C4",
-    "Group 2: C3 · F3 · G3",
-    "Group 3: Bb2 · C3 · G3",
-    "Group 4: G2 · C3 · C4",
-  ],
+  Scales: ["C Major", "F Natural Minor", "F# Natural Minor"],
+  Chords: ["A Minor", "E Major", "C Major", "D Minor", "G Major", "F Major", "E Minor", "D Major"],
   Presets: ["Quiet", "Melody"],
 });
 
@@ -45,11 +49,11 @@ test("radial categories have the required order and exact leaf IDs", () => {
   }
 });
 
-test("obsolete chord and preset IDs are absent from the radial hierarchy", () => {
+test("song recipes remain available internally without replacing the Play menu", () => {
   const radialIds = createCompositionSetup()
     .catalog.getRadialCategories()
     .flatMap(({ entries }) => entries.map(({ id }) => id));
-  for (const obsoleteId of ["chord-gmajor", "chord-fmajor", "preset-cmajor-two-octaves"]) {
+  for (const obsoleteId of ["jog-melody", "jog-group-1", "preset-cmajor-two-octaves"]) {
     assert.equal(radialIds.includes(obsoleteId), false);
   }
 });

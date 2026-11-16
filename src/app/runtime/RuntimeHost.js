@@ -178,6 +178,7 @@ export class RuntimeHost {
 
     const compositionSetup = createCompositionSetup();
     this.spawn.spawnCatalog = compositionSetup.catalog;
+    this.spawn.catalogs = { play: compositionSetup.catalog, jog: compositionSetup.jogCatalog };
     this.spawn.radialSpawnMenu = new RadialSpawnMenu({
       categories: this.spawn.spawnCatalog.getRadialCategories(),
       getViewerWorldPosition: (target) => this.getUserCamera().getWorldPosition(target),
@@ -653,6 +654,7 @@ export class RuntimeHost {
     this.metronomeConnectionManager.dispose();
     this.instrumentLifecycle.dispose();
     this.instrumentRegistry.clear();
+    this.presentation.labelGeometries.dispose();
     this.interactionTargetRegistry.clear();
     await this.assetRepository.clear();
     await this.scenePersistence?.store.close?.();

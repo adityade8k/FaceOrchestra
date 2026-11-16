@@ -974,7 +974,7 @@ export async function validateStandalone(app) {
     controller.updateMatrixWorld(true);
     send(menuButton, true);
     const index = categories.findIndex((category) =>
-      category.entries.some((entry) => entry.id === "jog-group-1"),
+      category.entries.some((entry) => entry.id === "chord-cmajor"),
     );
     const rollTo = (predicate) => {
       for (let i = 0; i < 720; i++) {
@@ -990,7 +990,7 @@ export async function validateStandalone(app) {
     controller.updateMatrixWorld(true);
     menu.update(controller, state);
     rollTo(
-      () => categories[index].entries[state.radialMenuChildSelectedIndex]?.id === "jog-group-1",
+      () => categories[index].entries[state.radialMenuChildSelectedIndex]?.id === "chord-cmajor",
     );
     send(menuButton, false);
     const preview = r.spawn.pendingSpawnPlacement;

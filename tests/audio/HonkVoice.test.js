@@ -88,6 +88,7 @@ test("controller release within one XR frame uses the legacy target tail while a
   const releaseState = voice.release(HONK_RELEASE_SETTINGS.liveFadeSeconds, undefined, {
     origin: HONK_RELEASE_ORIGINS.controller,
   });
+  assert.ok(Math.abs(releaseState.silentAt - releaseState.releaseStart - 0.27) < 1e-12);
   const releaseEvents = voice.master.gain.events.slice(-2);
   const outputHold = voice.output.gain.events.at(-2);
   const outputRamp = voice.output.gain.events.at(-1);

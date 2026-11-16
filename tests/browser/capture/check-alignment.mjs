@@ -55,7 +55,7 @@ export async function checkAlignment({ chrome, output }) {
     const point = await evaluate(`(async()=>{
       const {Vector2,Vector3,Raycaster}=await import('three');
       const i=captureEditor.inspector,t=i.transform,r=i.renderer.domElement.getBoundingClientRect();
-      i.render();t.updateMatrixWorld(true);
+      i.render();t.getHelper().updateMatrixWorld(true);
       const center=i.phone.position.clone().project(i.camera),cx=(center.x+1)*r.width/2,cy=(1-center.y)*r.height/2,ray=new Raycaster();
       for(let y=cy-100;y<cy+100;y+=3)for(let x=cx-100;x<cx+100;x+=3){
         if(x<5||y<5||x>r.width-5||y>r.height-5)continue;

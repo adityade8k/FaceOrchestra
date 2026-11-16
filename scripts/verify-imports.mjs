@@ -1,6 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { Linter } from "eslint";
+import { architectureErrors } from "./architecture-rules.mjs";
+
+const startedAt = performance.now();
+const parser = new Linter();
+const modules = new Map();
+const sources = new Map();
 
 const roots = ["src", "capture", "server", "scripts", "tests"];
 const sourceFiles = roots.flatMap(walk).filter((file) => [".js", ".mjs"].includes(extname(file)));
@@ -22,12 +29,22 @@ function checkPath(file, reference, { module = false, root = false } = {}) {
 }
 for (const file of sourceFiles) {
   const source = readFileSync(file, "utf8");
+  sources.set(file, source);
   for (const match of source.matchAll(importPattern)) checkPath(file, match[1], { module: true });
   for (const match of source.matchAll(urlPattern)) checkPath(file, match[1]);
   for (const match of source.matchAll(workerPattern)) checkPath(file, match[1], { root: true });
   for (const match of source.matchAll(assetPattern)) checkPath(file, match[1], { root: true });
-  const syntax = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
-  if (syntax.status !== 0) errors.push(`${file}: ${syntax.stderr.trim() || "syntax check failed"}`);
+  // Parse once in-process; the same AST serves syntax and architecture checks.
+  // ESLint is a declared dev dependency, unlike a transitive parser import.
+  const syntax = parser.verify(source, {
+    languageOptions: { ecmaVersion: "latest", sourceType: "module" },
+  });
+  const fatal = syntax.filter((message) => message.fatal);
+  for (const message of fatal) errors.push(`${file}:${message.line}: ${message.message}`);
+  if (!fatal.length) {
+    const parsed = parser.getSourceCode();
+    modules.set(file, { ast: parsed.ast, visitorKeys: parsed.visitorKeys });
+  }
 }
 for (const file of ["index.html", ...walk("capture").filter((file) => file.endsWith(".html"))]) {
   const source = readFileSync(file, "utf8");
@@ -36,7 +53,7 @@ for (const file of ["index.html", ...walk("capture").filter((file) => file.endsW
 
 const runtimeSource = sourceFiles
   .filter((file) => file.startsWith("src/"))
-  .map((file) => readFileSync(file, "utf8"))
+  .map((file) => sources.get(file))
   .join("\n");
 const interactionLayerSource = sourceFiles
   .filter(
@@ -46,7 +63,7 @@ const interactionLayerSource = sourceFiles
       file.startsWith("src/instruments/looper/") ||
       file.startsWith("src/instruments/formations/"),
   )
-  .map((file) => readFileSync(file, "utf8"))
+  .map((file) => sources.get(file))
   .join("\n");
 for (const [label, pattern] of [
   ["ChordInstrument", /\bChordInstrument\b/],
@@ -78,6 +95,8 @@ for (const [label, pattern] of [
     errors.push(`forbidden ownership leak remains: ${label}`);
 }
 
+errors.push(...architectureErrors(modules));
+
 const privatePaths = ["certs/localhost-key.pem", "certs/localhost.pem"];
 const trackedPrivatePaths = spawnSync("git", ["ls-files", "--", ...privatePaths], {
   encoding: "utf8",
@@ -98,7 +117,7 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Verified ${sourceFiles.length} source files: syntax, imports, workers, worklets, assets, and architecture guards passed.`,
+  `Verified ${sourceFiles.length} source files: syntax, imports, workers, worklets, assets, and architecture guards passed in ${Math.round(performance.now() - startedAt)} ms.`,
 );
 
 function walk(directory) {

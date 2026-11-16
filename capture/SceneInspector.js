@@ -38,7 +38,7 @@ export class SceneInspector {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.setClearColor(0x14211d);
     container.append(this.renderer.domElement);
     this.renderer.domElement.setAttribute(
@@ -113,7 +113,7 @@ export class SceneInspector {
     this.transform = new TransformControls(this.camera, this.renderer.domElement);
     this.transform.setSize(0.85);
     this.transform.setSpace("world");
-    this.helpers.add(this.transform);
+    this.helpers.add(this.transform.getHelper());
     this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
     this.orbit.target.set(0, 1.15, 1.2);
     this.orbit.minDistance = 0.15;

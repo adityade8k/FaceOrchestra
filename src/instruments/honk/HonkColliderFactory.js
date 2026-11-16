@@ -186,6 +186,8 @@ export class HonkColliderFactory {
     const material = new this.THREE.MeshBasicMaterial({
       color,
       transparent: true,
+      // Material visibility suppresses GPU submission without disabling picking.
+      visible: this.showDebug,
       opacity: this.showDebug ? debugOpacity : 0,
       depthTest: !this.showDebug,
       depthWrite: false,

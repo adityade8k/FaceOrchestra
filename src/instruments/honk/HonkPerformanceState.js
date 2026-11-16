@@ -37,6 +37,9 @@ export class HonkPerformanceState {
     this.bendSources = new Map();
     this.automationLayers = new Map();
     this.sequence = 0;
+    // Covers live values, automation contents and layer priority. Membership
+    // has its own revision because visual release easing depends on it.
+    this.revision = (this.revision || 0) + 1;
     this.automationRevision = (this.automationRevision || 0) + 1;
   }
 
@@ -95,14 +98,20 @@ export class HonkPerformanceState {
   }
 
   refreshLiveInteractionState() {
-    copyLiveState(this.live, this.liveBase);
-    for (const value of this.squeezeSources.values()) {
-      this.live.squeeze = Math.max(this.live.squeeze, clamp(value, 0, 1));
+    let squeeze = this.liveBase.squeeze;
+    let bend = this.liveBase.bend;
+    for (const value of this.squeezeSources.values())
+      squeeze = Math.max(squeeze, clamp(value, 0, 1));
+    for (const value of this.bendSources.values()) bend += clamp(value, -1, 1);
+    bend = clamp(bend, -1, 1);
+    let changed = this.live.squeeze !== squeeze || this.live.bend !== bend;
+    this.live.squeeze = squeeze;
+    this.live.bend = bend;
+    for (const field of MORPH_ACTION_FIELDS) {
+      changed ||= this.live[field] !== this.liveBase[field];
+      this.live[field] = this.liveBase[field];
     }
-    for (const value of this.bendSources.values()) {
-      this.live.bend += clamp(value, -1, 1);
-    }
-    this.live.bend = clamp(this.live.bend, -1, 1);
+    if (changed) this.revision++;
     return this.live;
   }
 
@@ -125,20 +134,27 @@ export class HonkPerformanceState {
     };
     layer.action = action;
     layer.updatedAt = ++this.sequence;
+    this.revision++;
     this.automationLayers.set(layerId, layer);
     return layer;
   }
 
   clearAutomationLayer(layerId) {
     if (layerId) {
-      if (this.automationLayers.delete(layerId)) this.automationRevision += 1;
+      if (this.automationLayers.delete(layerId)) {
+        this.automationRevision += 1;
+        this.revision++;
+      }
     }
   }
 
   clearAutomationLayers(predicate = null) {
     for (const [layerId, layer] of this.automationLayers) {
       if (!predicate || predicate(layer)) {
-        if (this.automationLayers.delete(layerId)) this.automationRevision += 1;
+        if (this.automationLayers.delete(layerId)) {
+          this.automationRevision += 1;
+          this.revision++;
+        }
       }
     }
   }
@@ -217,6 +233,7 @@ export class HonkPerformanceState {
     this.bendSources.clear();
     this.automationLayers.clear();
     this.sequence = 0;
+    this.revision = (this.revision || 0) + 1;
     this.automationRevision = (this.automationRevision || 0) + 1;
   }
 }

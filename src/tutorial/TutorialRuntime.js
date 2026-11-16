@@ -216,6 +216,7 @@ export class TutorialRuntime {
       this.stopDemo();
       this.adapter.clear();
       this.session = new TutorialSession({ mode, now: performance.now() });
+      this.r.spawn.setMenuContext("jog");
       this.r.sessionMode = mode;
       const progress = mode === "practice" && this.learningProgress.load(C.id, C.version);
       if (progress?.index >= 0 && progress.index < this.session.steps.length) {

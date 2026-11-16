@@ -1,14 +1,21 @@
-import { cp, mkdir, readFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm } from "node:fs/promises";
 const version = JSON.parse(
   await readFile(new URL("../../node_modules/three/package.json", import.meta.url)),
 ).version;
-if (version !== "0.164.1") throw new Error(`Expected Three 0.164.1, got ${version}`);
+const expected = JSON.parse(await readFile(new URL("../../package.json", import.meta.url)))
+  .dependencies.three;
+if (version !== expected) throw new Error(`Expected Three ${expected}, got ${version}`);
 await mkdir(new URL("../../vendor/three/", import.meta.url), { recursive: true });
-for (const path of ["build", "examples/jsm", "examples/fonts", "LICENSE"]) {
+for (const path of ["build", "examples/jsm", "LICENSE"]) {
+  // These paths contain only generated copies; remove stale modules on upgrades.
+  await rm(new URL(`../../vendor/three/${path}`, import.meta.url), {
+    recursive: true,
+    force: true,
+  });
   await cp(
     new URL(`../../node_modules/three/${path}`, import.meta.url),
     new URL(`../../vendor/three/${path}`, import.meta.url),
     { recursive: true },
   );
 }
-console.log("Local Three.js 0.164.1, addons and fonts ready.");
+console.log(`Local Three.js ${version}, addons and fonts ready.`);

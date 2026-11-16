@@ -22,7 +22,7 @@
     "test:tutorial:browser": "node tests/browser/run.mjs tutorial",
     "test:basics:browser": "node tests/browser/run.mjs basics",
     "test:kuch:browser": "node tests/browser/run.mjs compositions kuch-to-hua-hai",
-    "test:ports:browser": "TUTORIAL_TEST=ports node tests/browser/run.mjs tutorial",
+    "test:ports:browser": "node tests/browser/run.mjs ports",
     "test:audit:browser": "node tests/browser/run.mjs audit",
     "test:capture:long": "node tests/browser/run.mjs capture-long",
     "test:guided:browser": "node tests/browser/run.mjs compositions",
@@ -30,10 +30,14 @@
     "test:browser": "node tests/browser/run.mjs",
     "lint": "eslint src capture server scripts tests eslint.config.js",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "profile:scene": "node tests/browser/run.mjs scene-density",
+    "test:music": "node --test \"tests/spawning/*.test.js\" \"tests/audio/*.test.js\" tests/tutorial/TutorialRadialLesson.test.js",
+    "test:music:browser": "node tests/browser/run.mjs music",
+    "test:radial:browser": "node tests/browser/run.mjs radial"
   },
   "dependencies": {
-    "three": "0.164.1",
+    "three": "0.187.0",
     "ws": "8.21.3"
   },
   "devDependencies": {

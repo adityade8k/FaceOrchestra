@@ -1,3 +1,4 @@
+import { FrameMetrics } from "./FrameMetrics.js";
 import * as THREE from "three";
 import { FrameScheduler } from "./FrameScheduler.js";
 
@@ -42,9 +43,27 @@ export class FaceOrchestraApp {
       this.runtime.tutorial?.recording.observeXRFrame?.(now, xrFrame);
       this.update(delta, this.elapsedSeconds, now);
       // Deliberately outside the scheduler: preview phases can exit early.
+      const captureStart = this.frameMetrics ? performance.now() : 0;
       this.runtime.capture?.sample(now, xrFrame);
+      this.frameMetrics?.record("CAPTURE", performance.now() - captureStart);
+      const renderStart = this.frameMetrics ? performance.now() : 0;
       this.sceneRuntime.render();
+      this.frameMetrics?.record("RENDER", performance.now() - renderStart);
+      this.frameMetrics?.finish(now, this.runtime, this.sceneRuntime.renderer);
     });
+  }
+
+  startProfiling(capacity = 600) {
+    this.frameMetrics = new FrameMetrics(capacity);
+    this.frameScheduler.metrics = this.frameMetrics;
+    return this.frameMetrics;
+  }
+
+  stopProfiling() {
+    const report = this.frameMetrics?.snapshot() || null;
+    this.frameScheduler.metrics = null;
+    this.frameMetrics = null;
+    return report;
   }
 
   stopCompute() {

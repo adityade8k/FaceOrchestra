@@ -199,8 +199,16 @@ export async function recordDemo() {
   track.stop();
   for (let i = 0; recorder.state === "stopping" && i < 300; i++)
     await new Promise((r) => setTimeout(r, 100));
-  if (recorder.state !== "complete")
-    throw new Error(`Demo finalization: ${recorder.state} — ${recorder.message}`);
+  if (recorder.state !== "complete") {
+    const details = {
+      reason: recorder.saved?.reason,
+      gaps: recorder.saved?.gaps || recorder.gaps || [],
+      missingStreams: recorder.saved?.missingStreams || [],
+    };
+    throw new Error(
+      `Demo finalization: ${recorder.state} — ${recorder.message}; ${JSON.stringify(details)}`,
+    );
+  }
   const blob = new Blob(chunks, { type: "video/webm" }),
     base64 = await new Promise((resolve) => {
       const reader = new FileReader();

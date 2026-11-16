@@ -54,12 +54,14 @@ export class FrameScheduler {
       }
       context.skipToPhase = null;
       context.phase = phase;
+      const phaseStart = this.metrics ? performance.now() : 0;
       for (const entry of this.callbacks.get(phase)) {
         entry.callback(context);
         if (context.skipRemaining || context.skipToPhase) {
           break;
         }
       }
+      this.metrics?.record(phase, performance.now() - phaseStart);
     }
     return context;
   }

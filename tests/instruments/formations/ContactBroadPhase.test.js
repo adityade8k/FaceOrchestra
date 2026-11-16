@@ -34,3 +34,39 @@ test("sweep matches quadratic contact admission and exits across motion, scale, 
   assert.equal(fast.pairStates.size, 0);
   assert.equal(fast.measurements, 0);
 });
+
+test("scratch snapshots stay independent across reused resolvers, shrinking membership and reset", () => {
+  const shared = { center: { x: 0, y: 0, z: 0 }, radius: 1 };
+  const system = new HonkContactSystem({
+    getColliderSphere(honk) {
+      shared.center.x = honk.x;
+      return shared;
+    },
+    settings: { consecutiveEntryFrames: 1, consecutiveExitFrames: 1 },
+  });
+  const honks = Array.from({ length: 20 }, (_, i) => ({
+    id: `pooled-${i}`,
+    kind: "honk",
+    x: i * 1.1,
+  }));
+  system.update(honks);
+  const snapshots = [...system.spheres];
+  assert.equal(system.graph.getContacts(honks[0].id).size, 1);
+  system.update(honks);
+  assert.ok(system.spheres.every((sphere, i) => sphere === snapshots[i]));
+  assert.ok(system.spheres.every((sphere, i) => sphere.center[0] === honks[i].x));
+  honks[0].x = 100;
+  system.update(honks.slice(0, 2));
+  assert.equal(system.graph.adjacency.size, 2);
+  assert.equal(system.pairStates.size, 0);
+  system.update(honks);
+  assert.equal(system.graph.adjacency.size, 20);
+  assert.equal(system.graph.getContacts(honks[0].id).size, 0);
+  system.reset();
+  assert.equal(system.sweep.pool.length, 0);
+  assert.equal(system.spherePool.length, 0);
+  assert.equal(system.candidates.length, 0);
+  system.update(honks.slice(1, 3));
+  assert.equal(system.graph.adjacency.size, 2);
+  assert.equal(system.graph.hasContact(honks[1].id, honks[2].id), true);
+});

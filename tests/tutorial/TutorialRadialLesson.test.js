@@ -140,7 +140,7 @@ test("melody needs its own physical targets and clock, but zero or one backing t
   );
 });
 test("learner spawn instructions use visible recipes; legacy simulation aliases remain internal", () => {
-  const catalog = createCompositionSetup().catalog,
+  const catalog = createCompositionSetup().jogCatalog,
     visible = new Set(catalog.getRadialEntries().map((e) => e.id));
   for (const step of LESSON_STEPS.filter((s) => s.type === "spawn"))
     assert.ok(visible.has(step.catalogId), step.id);

@@ -29,6 +29,10 @@ export class RaycastSystem {
     this.allTargets = [];
     this.fallbackTargets = [];
     this.intersections = [];
+    this.ownerBuckets = new WeakMap();
+    this.unownedTargets = [];
+    this.queryOwners = [];
+    this.metrics = { ownerQueries: 0, targetMatrixUpdates: 0 };
   }
 
   getCurrentHit(controller) {
@@ -179,7 +183,10 @@ export class RaycastSystem {
     // Scope the authoritative pose to an owner's complete query, instead of
     // entering/restoring it for every authored mesh. The mesh wrappers remain
     // useful for standalone raycasts and nest without applying the pose twice.
-    const byOwner = new Map();
+    const owners = this.queryOwners;
+    owners.length = 0;
+    this.unownedTargets.length = 0;
+    this.metrics.ownerQueries = this.metrics.targetMatrixUpdates = 0;
     for (const target of this.targets) {
       const owner = this.resolveOwner(target);
       let belongsToOwner = !owner;
@@ -189,18 +196,41 @@ export class RaycastSystem {
         if (object === owner?.root) belongsToOwner = true;
       }
       if (!visible || !belongsToOwner || owner?.disposed) continue;
-      let targets = byOwner.get(owner);
-      if (!targets) byOwner.set(owner, (targets = []));
+      let bucket = owner ? this.ownerBuckets.get(owner) : null;
+      if (owner && !bucket) {
+        bucket = { targets: [] };
+        this.ownerBuckets.set(owner, bucket);
+      }
+      const targets = bucket ? bucket.targets : this.unownedTargets;
+      if (targets.length === 0) owners.push(owner || null);
       targets.push(target);
     }
-    for (const [owner, targets] of byOwner) {
-      // Queries may follow grip, scale, collider or parent changes within the
-      // same frame. Refresh transforms; no frame-number geometry cache is used.
-      if (owner) owner.root.updateWorldMatrix(true, true);
-      else for (const target of targets) target.updateWorldMatrix(true, true);
-      const intersect = () => this.raycaster.intersectObjects(targets, true, this.intersections);
-      if (owner?.withInteractionPose) owner.withInteractionPose(intersect);
-      else intersect();
+    try {
+      for (const owner of owners) {
+        this.metrics.ownerQueries++;
+        const targets = owner ? this.ownerBuckets.get(owner).targets : this.unownedTargets;
+        // Controls are small subtrees. Refresh their ancestor chains and their
+        // own descendants, rather than every model/label/collider on the owner.
+        // These are fresh transforms for every query, including same-frame edits.
+        let needsOwnerFallback = false;
+        for (const target of targets) {
+          if (target.updateWorldMatrix) {
+            target.updateWorldMatrix(true, true);
+            this.metrics.targetMatrixUpdates++;
+          } else needsOwnerFallback = true;
+        }
+        if (needsOwnerFallback) owner?.root.updateWorldMatrix(true, true);
+        const intersect = () => this.raycaster.intersectObjects(targets, true, this.intersections);
+        if (owner?.withInteractionPose) owner.withInteractionPose(intersect);
+        else intersect();
+      }
+    } finally {
+      // A thrown raycast must not retain query targets or poison later queries.
+      for (const owner of owners) {
+        const targets = owner ? this.ownerBuckets.get(owner).targets : this.unownedTargets;
+        targets.length = 0;
+      }
+      owners.length = 0;
     }
   }
 

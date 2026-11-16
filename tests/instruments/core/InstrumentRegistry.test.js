@@ -99,3 +99,23 @@ function tuple(...values) {
     });
   return result;
 }
+
+test("interaction target membership views invalidate on registration/removal while properties stay live", async () => {
+  const { InteractionTargetRegistry } =
+    await import("../../../src/instruments/core/InteractionTargetRegistry.js");
+  const registry = new InteractionTargetRegistry();
+  const first = { userData: {}, visible: true };
+  registry.register({ ownerId: "honk-1", role: "body", object3D: first });
+  const view = registry.getByOwner("honk-1"),
+    revision = registry.revision;
+  assert.equal(registry.getByOwner("honk-1"), view);
+  first.visible = false;
+  assert.equal(view[0].object3D.visible, false);
+  registry.register({ ownerId: "honk-1", role: "nose", object3D: { userData: {} } });
+  assert.notEqual(registry.getByOwner("honk-1"), view);
+  assert.equal(registry.revision, revision + 1);
+  registry.unregister(first);
+  assert.equal(registry.getByOwner("honk-1").length, 1);
+  registry.clear();
+  assert.deepEqual(registry.getByOwner("honk-1"), []);
+});

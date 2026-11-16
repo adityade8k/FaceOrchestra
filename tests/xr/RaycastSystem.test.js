@@ -202,3 +202,37 @@ test("staged selection matches the complete query across priorities and exact-di
     assert.equal(f.system.getCurrentHit({}).object, expected.object, `priority parity ${attempt}`);
   }
 });
+
+test("leaf control queries skip unrelated owner subtrees and see same-frame parent/control moves", async () => {
+  const THREE = await import("three");
+  const parent = new THREE.Group(),
+    root = new THREE.Group();
+  parent.add(root);
+  root.position.z = -2;
+  const control = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial());
+  const unrelated = new THREE.Group();
+  root.add(control, unrelated);
+  let unrelatedRefreshes = 0;
+  const update = unrelated.updateWorldMatrix.bind(unrelated);
+  unrelated.updateWorldMatrix = (...args) => {
+    unrelatedRefreshes++;
+    return update(...args);
+  };
+  const owner = { root, hitTargetList: [control] };
+  const ray = new RaycastSystem({
+    raycaster: new THREE.Raycaster(),
+    getInstruments: () => [owner],
+    resolveOwner: () => owner,
+  });
+  const controller = new THREE.Group();
+  assert.equal(ray.getCurrentHit(controller)?.object, control);
+  assert.equal(unrelatedRefreshes, 0);
+  parent.position.x = 2;
+  assert.equal(ray.getCurrentHit(controller), null);
+  control.position.x = -2;
+  assert.equal(ray.getCurrentHit(controller)?.object, control);
+  control.visible = false;
+  assert.equal(ray.getCurrentHit(controller), null);
+  control.geometry.dispose();
+  control.material.dispose();
+});

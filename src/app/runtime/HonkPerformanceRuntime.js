@@ -4,11 +4,9 @@ import {
   BEND_COLLIDER_ROTATION_DEGREES,
   BEND_SENSITIVITY,
   BEND_LOCK_THRESHOLD_DEGREES,
-  BEND_SMOOTHING,
   MAX_PITCH_BEND_SEMITONES,
   getHonkPitchBendRange,
   INTERACTION_TARGET_NAMES,
-  SQUEEZE_SENSITIVITY,
 } from "../../config/honk.js";
 import { LOOPER_SQUEEZE_GATE_OPEN_THRESHOLD } from "../../config/looper.js";
 import { isHonkSqueezeTarget } from "../../instruments/honk/HonkInteractionProfile.js";
@@ -16,12 +14,8 @@ import {
   releaseControllerHonkVoice,
   prepareControllerHonkAttack,
 } from "./ControllerHonkRelease.js";
-import {
-  REFERENCE_FRAME_MS,
-  captureCanonicalHonkPerformance,
-  advanceHonkPresentation,
-  resolvePresentationValue,
-} from "./HonkPerformanceSampling.js";
+import { captureCanonicalHonkPerformance } from "./HonkPerformanceSampling.js";
+import { HonkPerformanceResolver } from "./HonkPerformanceResolver.js";
 
 const tempBendQuaternion = new THREE.Quaternion();
 const tempBendEuler = new THREE.Euler();
@@ -233,60 +227,12 @@ export const HonkPerformanceRuntimeMethods = {
     }
   },
   applyResolvedHonkPerformanceStates(now = performance.now()) {
-    for (const state of this.instrumentStates) {
-      if (state.kind !== "honk") {
-        continue;
-      }
-
-      const rawLive = state.getLivePerformanceState?.() || {};
-      const deltaMs = Number.isFinite(state.lastHonkPerformanceUpdateMs)
-        ? Math.max(now - state.lastHonkPerformanceUpdateMs, 0)
-        : REFERENCE_FRAME_MS;
-      state.lastHonkPerformanceUpdateMs = now;
-      const processedLive = {
-        ...rawLive,
-        squeeze: resolvePresentationValue(
-          state.processedLivePerformance?.squeeze ?? state.hornSqueezeValue ?? 0,
-          rawLive.squeeze ?? 0,
-          SQUEEZE_SENSITIVITY,
-          deltaMs,
-          false,
-        ),
-        bend: resolvePresentationValue(
-          state.processedLivePerformance?.bend ?? state.bendValue ?? 0,
-          rawLive.bend ?? 0,
-          BEND_SMOOTHING,
-          deltaMs,
-          state.liveBendSnapped && state.hornHolders.size === 1,
-        ),
-      };
-      state.processedLivePerformance = processedLive;
-      const resolved =
-        state.performance?.resolveWithLiveState?.(processedLive) ||
-        state.getResolvedPerformanceState?.();
-      state.hornSqueezeValue = resolved?.squeeze ?? processedLive.squeeze;
-      state.targetBendValue = resolved?.bend ?? processedLive.bend;
-      state.bendValue = state.targetBendValue;
-      state.honkPresentation = advanceHonkPresentation(
-        state.honkPresentation,
-        { squeeze: state.hornSqueezeValue, bend: state.bendValue },
-        processedLive,
-        state.performance?.automationRevision ?? 0,
-        deltaMs,
-      );
-      if (resolved) {
-        state.applyMorphPerformanceState({
-          ...resolved,
-          squeeze: state.honkPresentation.squeeze,
-          bend: state.honkPresentation.bend,
-        });
-        this.applyResolvedHonkMorphState(state, resolved);
-      }
-      this.updateBendAlignedColliders(state);
-
-      const pulse = 1 + state.hornSqueezeValue * 0.035;
-      this.applyInstrumentVisualScale(state, pulse);
-    }
+    this.honkPerformanceResolver ||= new HonkPerformanceResolver({
+      applyMorphState: (state, resolved) => this.applyResolvedHonkMorphState(state, resolved),
+      updateColliders: (state) => this.updateBendAlignedColliders(state),
+      applyScale: (state, pulse) => this.applyInstrumentVisualScale(state, pulse),
+    });
+    this.honkPerformanceResolver.update(this.instrumentStates, now);
   },
   releaseHonkVoice(voiceId, options = {}) {
     for (const honk of this.instrumentRegistry.getByKind("honk")) {

@@ -1,4 +1,4 @@
-import { contactCandidates } from "./contactCandidates.js";
+import { ContactSweep } from "./contactCandidates.js";
 import { HONK_CONTACT_SETTINGS } from "../../config/formations.js";
 import { INSTRUMENT_KINDS } from "../core/capabilities.js";
 import { canonicalPairKey, HonkContactGraph } from "./HonkContactGraph.js";
@@ -21,51 +21,72 @@ export class HonkContactSystem {
     this.measurePair = measurePair;
     this.settings = { ...HONK_CONTACT_SETTINGS, ...settings };
     this.pairStates = new Map();
+    this.candidates = [];
+    this.spheres = [];
+    this.spherePool = [];
+    this.activeIds = new Set();
+    this.indices = new Map();
+    this.observedPairs = new Set();
+    this.removedIds = [];
+    this.sweep = new ContactSweep();
+    this.observe = (i, j) => {
+      const first = this.candidates[i],
+        second = this.candidates[j];
+      const key = canonicalPairKey(first.id, second.id);
+      if (this.observedPairs.has(key)) return;
+      this.observedPairs.add(key);
+      this.measurements++;
+      this.updatePair(key, first, second, this.spheres[i], this.spheres[j]);
+    };
   }
 
   update(honks = null) {
-    const candidates = [
-      ...(honks ||
-        this.getHonks?.() ||
-        this.instrumentRegistry?.getByKind?.(INSTRUMENT_KINDS.honk) ||
-        []),
-    ].filter(isContactCandidate);
-    const activeIds = new Set(candidates.map((honk) => honk.id));
-
-    for (const honk of candidates) {
+    const { candidates, spheres, spherePool, activeIds, indices, observedPairs, removedIds } = this;
+    candidates.length = 0;
+    spheres.length = 0;
+    activeIds.clear();
+    indices.clear();
+    observedPairs.clear();
+    removedIds.length = 0;
+    const source =
+      honks ||
+      this.getHonks?.() ||
+      this.instrumentRegistry?.getByKind?.(INSTRUMENT_KINDS.honk) ||
+      [];
+    for (const honk of source) {
+      if (!isContactCandidate(honk)) continue;
+      indices.set(honk.id, candidates.length);
+      candidates.push(honk);
+      activeIds.add(honk.id);
       this.graph.addHonk(honk.id);
     }
-    for (const honkId of [...this.graph.adjacency.keys()]) {
-      if (!activeIds.has(honkId)) {
-        this.removeHonk(honkId);
-      }
-    }
+    for (const honkId of this.graph.adjacency.keys())
+      if (!activeIds.has(honkId)) removedIds.push(honkId);
+    for (const honkId of removedIds) this.removeHonk(honkId);
 
-    // Resolvers may reuse a mutable sphere and center between calls.
-    const spheres = candidates.map((honk) => {
-      const sphere = this.getColliderSphere(honk);
-      return sphere ? { radius: sphere.radius, center: readPoint(sphere.center) } : null;
-    });
-    const indices = new Map(candidates.map((h, i) => [h.id, i]));
-    const observedPairs = new Set();
-    const pairs = this.broadPhase ? contactCandidates(spheres) : allPairs(candidates.length);
+    // Some resolvers reuse one mutable sphere. Copy its numeric values into an
+    // independent pooled slot before calling the next resolver.
+    for (let i = 0; i < candidates.length; i++) {
+      const sphere = this.getColliderSphere(candidates[i]);
+      const snapshot = (spherePool[i] ||= { radius: 0, center: [0, 0, 0] });
+      if (!sphere || !readPoint(sphere.center, snapshot.center)) {
+        spheres.push(null);
+        continue;
+      }
+      snapshot.radius = sphere.radius;
+      spheres.push(snapshot);
+    }
     this.measurements = 0;
-    const observe = (i, j) => {
-      const first = candidates[i],
-        second = candidates[j];
-      const key = canonicalPairKey(first.id, second.id);
-      if (observedPairs.has(key)) return;
-      observedPairs.add(key);
-      this.measurements++;
-      this.updatePair(key, first, second, spheres[i], spheres[j]);
-    };
-    for (const [i, j] of pairs) observe(i, j);
-    // Pending admissions and existing contacts must see separation frames even
-    // after leaving the sweep. Otherwise teleporting could strand an edge.
-    for (const state of [...this.pairStates.values()]) {
+    if (this.broadPhase) this.sweep.forEach(spheres, this.observe);
+    else
+      for (let i = 0; i < candidates.length; i++)
+        for (let j = i + 1; j < candidates.length; j++) this.observe(i, j);
+    // Existing/pending contacts must see separation frames even after leaving
+    // the sweep. Deleting a current Map entry does not invalidate its iterator.
+    for (const state of this.pairStates.values()) {
       const i = indices.get(state.firstId),
         j = indices.get(state.secondId);
-      if (i !== undefined && j !== undefined) observe(i, j);
+      if (i !== undefined && j !== undefined) this.observe(i, j);
     }
     return this.graph;
   }
@@ -128,6 +149,14 @@ export class HonkContactSystem {
   reset() {
     this.pairStates.clear();
     this.graph.clear();
+    this.candidates.length = 0;
+    this.spheres.length = 0;
+    this.spherePool.length = 0;
+    this.activeIds.clear();
+    this.indices.clear();
+    this.observedPairs.clear();
+    this.removedIds.length = 0;
+    this.sweep.clear();
   }
 }
 
@@ -180,22 +209,33 @@ function normalizeMeasurement(measurement) {
   };
 }
 
-function readPoint(point) {
+function readPoint(point, target = [0, 0, 0]) {
   if (Array.isArray(point) || ArrayBuffer.isView(point)) {
-    return point.length >= 3 ? [point[0], point[1], point[2]] : null;
+    if (point.length < 3) return null;
+    target[0] = point[0];
+    target[1] = point[1];
+    target[2] = point[2];
+    return target;
   }
   if (typeof point?.toArray === "function") {
-    return point.toArray();
+    const values = point.toArray(target);
+    if (values !== target) {
+      target[0] = values[0];
+      target[1] = values[1];
+      target[2] = values[2];
+    }
+    return target;
   }
-  return [point?.x, point?.y, point?.z].every(Number.isFinite) ? [point.x, point.y, point.z] : null;
+  if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y) || !Number.isFinite(point?.z))
+    return null;
+  target[0] = point.x;
+  target[1] = point.y;
+  target[2] = point.z;
+  return target;
 }
 
 function isContactCandidate(honk) {
   return Boolean(
     honk?.id && honk.kind === INSTRUMENT_KINDS.honk && !honk.disposed && honk.visible !== false,
   );
-}
-
-function* allPairs(count) {
-  for (let i = 0; i < count; i++) for (let j = i + 1; j < count; j++) yield [i, j];
 }

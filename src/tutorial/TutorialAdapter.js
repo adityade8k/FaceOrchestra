@@ -20,6 +20,7 @@ import {
 } from "./TutorialRoutes.js";
 import { TutorialStrikeTargets } from "./TutorialStrikeTargets.js";
 import { committedRoleBindings } from "./TutorialRoleBindings.js";
+import { TutorialRoleRegistry } from "./TutorialRoleRegistry.js";
 import { TutorialLabels } from "./TutorialLabels.js";
 import { scoreForStep } from "./scoring.js";
 import { BEND_PRACTICE_DURATION_MS } from "./bendCueState.js";
@@ -28,8 +29,24 @@ export class TutorialAdapter {
   constructor(runtime, emit) {
     this.r = runtime;
     this.emit = emit;
-    this.roles = new Map();
-    this.bindings = new Map();
+    this.roleRegistry = new TutorialRoleRegistry({
+      getInstrument: (id) => runtime.instrumentRegistry.get(id),
+      getSession: () => runtime.tutorial?.session,
+      resolveCommitted: committedRoleBindings,
+      previewRoles: new Map([
+        ...TUTORIAL_PRESETS.map((p) => [p.id, p.role]),
+        ...TUTORIAL_LOOPERS.map((l) => [l.catalogId, l.role]),
+        ["metronome", "metronome"],
+      ]),
+      memberRoles: new Map([["melody", Object.keys(PITCHES).map((pitch) => `melody-${pitch}`)]]),
+      onChange: () => {
+        this.snapshotAt = -Infinity;
+      },
+    });
+    // Existing composition adapters still share these maps. They hold IDs, not
+    // instrument snapshots; scene deletion is authoritative at every lookup.
+    this.roles = this.roleRegistry.roles;
+    this.bindings = this.roleRegistry.bindings;
     this.membershipSince = new Map();
     this.gestures = new Map();
     this.pendingStrikes = [];
@@ -56,7 +73,6 @@ export class TutorialAdapter {
     this.strikeTargets = new Map();
     this.initialized = false;
     this.labelPresentation = new TutorialLabels(this);
-    this.ordinaryHonks = new Set();
     this.bodyTargets = new TutorialStrikeTargets(this);
     this.stickBounds = new WeakMap();
     this.stickBox = new THREE.Box3();
@@ -140,55 +156,34 @@ export class TutorialAdapter {
     }
   }
   get(role) {
-    const id = this.roles.get(role)?.[0];
-    return this.r.instrumentRegistry.get(id);
+    return this.roleRegistry.get(role);
   }
   ids(role) {
-    return this.roles.get(role) || [];
+    return this.roleRegistry.ids(role);
   }
   members(role) {
-    return this.ids(role)
-      .map((id) => this.r.instrumentRegistry.get(id))
-      .filter(Boolean);
+    return this.roleRegistry.members(role);
   }
   bindPreview(preview, entry, controller) {
     preview.tutorialEntry = entry;
-    if (this.r.tutorial?.session?.mode === "practice") {
-      for (const h of preview.instruments) {
-        if (h.kind === "metronome") this.r.setInstrumentBaseScale(h, 0.75);
-        if (h.kind === "looper") this.r.setInstrumentBaseScale(h, 0.65);
-        this.labelPresentation.styleNote(h);
-      }
-      return;
-    }
-    const preset = TUTORIAL_PRESETS.find((p) => p.id === entry.id);
-    const role =
-      preset?.role ||
-      TUTORIAL_LOOPERS.find((l) => l.catalogId === entry.id)?.role ||
-      (entry.id === "metronome" ? "metronome" : null);
-    if (!role) return;
-    const source = controller?.userData.tutorialOrigin || "learner";
-    const ids = preview.instruments.map((h) => h.id);
+    const bound = this.roleRegistry.bindPreview(
+      entry.id,
+      preview.instruments,
+      controller?.userData.tutorialOrigin || "learner",
+    );
+    if (!bound && this.r.tutorial?.session?.mode !== "practice") return;
     for (const h of preview.instruments) {
       if (h.kind === "metronome") this.r.setInstrumentBaseScale(h, 0.75);
       if (h.kind === "looper") this.r.setInstrumentBaseScale(h, 0.65);
       this.labelPresentation.styleNote(h);
     }
-    this.roles.set(role, ids);
-    this.bindings.set(role, { source, entryId: entry.id });
-    if (role === "melody")
-      Object.keys(PITCHES).forEach((pitch, i) => {
-        this.roles.set(`melody-${pitch}`, [ids[i]]);
-        this.bindings.set(`melody-${pitch}`, { source, entryId: entry.id });
-      });
-    this.snapshotAt = -Infinity;
   }
   placed(instruments, preview) {
     const entry = preview?.tutorialEntry;
     if (preview) delete preview.tutorialEntry;
     if (this.r.tutorial?.session?.mode === "practice" && entry) {
       this.bindCommitted(entry.id, instruments);
-      if (entry.id === "honk") for (const h of instruments) this.ordinaryHonks.add(h.id);
+      if (entry.id === "honk") this.roleRegistry.rememberOrdinaryHonks(instruments);
       if (C.backing.some((group) => group.catalogId === entry.id))
         this.r.honkLockService.lockMembers(instruments.map((h) => h.id));
     }
@@ -200,43 +195,13 @@ export class TutorialAdapter {
     this.snapshotAt = -Infinity;
   }
   bindCommitted(entryId, instruments) {
-    const assignments = committedRoleBindings(entryId, instruments, {
-      get: (id) => this.r.instrumentRegistry.get(id),
-      ids: (role) => this.ids(role),
-      step: this.r.tutorial?.session?.step,
-    });
-    for (const binding of assignments) {
-      this.roles.set(binding.role, binding.ids);
-      this.bindings.set(binding.role, { source: "learner", entryId });
-    }
-    this.snapshotAt = -Infinity;
-    return assignments;
+    return this.roleRegistry.bindCommitted(entryId, instruments);
   }
   bindOrdinaryPercussion() {
-    if (
-      this.r.tutorial?.session?.mode !== "practice" ||
-      this.r.tutorial.session.step?.role !== "percussion" ||
-      this.get("percussion")
-    )
-      return;
-    for (const id of this.ordinaryHonks) {
-      const h = this.r.instrumentRegistry.get(id);
-      if (!h) {
-        this.ordinaryHonks.delete(id);
-        continue;
-      }
-      if (!h.pendingPlacement) {
-        this.bindCommitted("honk", [h]);
-        break;
-      }
-    }
+    this.roleRegistry.bindOrdinaryPercussion();
   }
   roleForId(id) {
-    for (const [role, ids] of this.roles) {
-      if (role === "melody") continue;
-      if (ids.includes(id)) return role;
-    }
-    return null;
+    return this.roleRegistry.roleForId(id);
   }
   addLabel(h, role) {
     this.labelPresentation.add(role);
@@ -264,9 +229,10 @@ export class TutorialAdapter {
     }
     if (step.kind === "metronome" && this.r.instrumentRegistry.getByKind("metronome").length) {
       const existing = this.r.instrumentRegistry.getByKind("metronome")[0];
-      this.roles.set("metronome", [existing.id]);
-      this.bindings.set("metronome", { source: origin, entryId: "metronome" });
-      this.snapshotAt = -Infinity;
+      this.roleRegistry.assign("metronome", [existing.id], {
+        source: origin,
+        entryId: "metronome",
+      });
       return;
     }
     // Replacing an invalid role is explicit, confined to this lesson.
@@ -274,7 +240,7 @@ export class TutorialAdapter {
       const h = this.r.instrumentRegistry.get(id);
       if (h) this.r.deleteInstrument(h);
     }
-    this.roles.delete(step.role);
+    this.roleRegistry.remove(step.role);
     this.r.spawn.beginPendingSpawnPlacement(controller, step.catalogId);
     const pending = this.r.spawn.pendingSpawnPlacement;
     if (pending) {
@@ -427,6 +393,7 @@ export class TutorialAdapter {
     this.snapshotAt = -Infinity;
     this.emit({ id: `command-${++this.sequence}`, kind: "command", origin, action, startMs: now });
   }
+  /** @param {number} now Monotonic wall milliseconds, matching performance.now(). */
   input(controller, button, pressed, now = performance.now()) {
     const state = this.r.controllerStates.get(controller);
     if (state?.[button] === pressed) return;
@@ -701,6 +668,7 @@ export class TutorialAdapter {
         )
     );
   }
+  /** @param {number} now Monotonic wall milliseconds; audio seconds and score beats stay in their owners. */
   snapshot(now) {
     const looper = this.get("chordLooper"),
       metro = this.get("metronome");
@@ -966,10 +934,8 @@ export class TutorialAdapter {
     this.r.honkContactSystem.reset();
     this.r.stickCollisionSystem.motionByStickId.clear();
     this.labelPresentation.clear();
-    this.ordinaryHonks.clear();
     this.labels.clear();
-    this.roles.clear();
-    this.bindings.clear();
+    this.roleRegistry.clear();
     this.membershipSince.clear();
     this.strikeTargets.clear();
     this.bodyTargets.clear();
@@ -1001,6 +967,6 @@ export class TutorialAdapter {
     }
     this.virtuals = [];
     this.labelPresentation.clear();
-    this.ordinaryHonks.clear();
+    this.roleRegistry.clear();
   }
 }

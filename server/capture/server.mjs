@@ -335,7 +335,7 @@ export async function startServer({
       if (
         !(
           (testRoutes &&
-            /^\/tests\/browser\/(?:validate-[\w-]+|profile-tutorial-scenes)\.mjs$/.test(
+            /^\/tests\/browser\/(?:validate-[\w-]+|profile-tutorial-scenes|benchmark-manual-honks-browser|benchmark-scene-density-browser)\.mjs$/.test(
               staticPath,
             )) ||
           /^\/(index\.html|style\.css|(?:src|model|vendor\/three|capture)\/[^\0]+)$/.test(

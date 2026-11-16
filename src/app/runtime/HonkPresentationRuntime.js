@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { applyHonkPitchMask, updateHonkPitchColor } from "../../scene/honkPitchColor.js";
-import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { LabelGeometryPool } from "../../scene/LabelGeometryPool.js";
 import {
   INTERACTION_TARGET_NAMES,
   INTERACTION_TYPES,
@@ -36,6 +35,8 @@ export class HonkPresentationRuntime {
     this.currentVowelIndex = -1;
     this.currentVowelLetter = "neutral";
     this.labelWorldScale = new THREE.Vector3();
+    this.labelGeometries = new LabelGeometryPool();
+    this.releasedLabels = new WeakSet();
   }
   updateMetronomes(now = performance.now()) {
     for (const metronome of this.host.instrumentRegistry.getByKind("metronome")) {
@@ -79,6 +80,7 @@ export class HonkPresentationRuntime {
       this.positionModelTextLabel(state, group);
       state.root.add(group);
       state[groupKey] = group;
+      state.addDisposeHandler?.(() => this.disposeNoteLabelMesh(state[meshKey]));
     }
     this.updateModelTextLabelScale(state, group);
     if (state[textKey] === text) return;
@@ -163,38 +165,13 @@ export class HonkPresentationRuntime {
       );
   }
   createTextLabelMesh(text, settings = NOTE_LABEL_SETTINGS) {
-    const lines = text.split("\n");
-    const rows = lines.map((line, index) => {
-      const row = new TextGeometry(line, {
-        font: this.host.noteFont,
-        size: settings.size,
-        depth: settings.depth,
-        curveSegments: settings.curveSegments,
-      });
-      row.computeBoundingBox();
-      const bounds = row.boundingBox;
-      // Center each row independently. Stack upward so the bottom row keeps
-      // the same clearance above the instrument as a single-line label.
-      if (bounds)
-        row.translate(
-          -(bounds.min.x + bounds.max.x) / 2,
-          -(bounds.min.y + bounds.max.y) / 2 + (lines.length - index - 1) * settings.size * 1.4,
-          0,
-        );
-      return row;
-    });
-    const geometry = rows.length === 1 ? rows[0] : mergeGeometries(rows);
-    if (rows.length > 1) for (const row of rows) row.dispose();
-    geometry.computeBoundingBox();
-    geometry.userData.disposeOnInstrumentDelete = true;
-    geometry.userData.disposeWithOwner = true;
+    const geometry = this.labelGeometries.acquire(this.host.noteFont, text, settings);
     const material = new THREE.MeshStandardMaterial({
       color: settings.color,
       roughness: 0.36,
       metalness: 0.02,
       side: THREE.DoubleSide,
     });
-    material.userData.disposeOnInstrumentDelete = true;
     const mesh = new THREE.Mesh(geometry, material);
     mesh.userData.isNoteLabel = true;
     mesh.raycast = () => {};
@@ -380,6 +357,7 @@ export class HonkPresentationRuntime {
     this.applyNoteLabelTransform(group);
     state.root.add(group);
     state.noteLabelGroup = group;
+    state.addDisposeHandler?.(() => this.disposeNoteLabelMesh(state.noteLabelMesh));
     this.positionModelTextLabel(state, group);
     this.updateNoteLabel(state);
     if (this.host.tutorial?.session) this.host.tutorial.adapter.labelPresentation.styleNote(state);
@@ -421,8 +399,10 @@ export class HonkPresentationRuntime {
     state.noteLabelTextValue = labelText;
   }
   disposeNoteLabelMesh(mesh) {
+    if (!mesh || this.releasedLabels.has(mesh)) return;
+    this.releasedLabels.add(mesh);
     mesh.removeFromParent();
-    mesh.geometry?.dispose?.();
+    this.labelGeometries.release(mesh.geometry);
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of materials) {
       material?.dispose?.();

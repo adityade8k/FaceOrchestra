@@ -1,3 +1,4 @@
+import { collectResources, releaseResources } from "../../scene/resourceOwnership.js";
 import * as THREE from "three";
 import { DEBUG_SHOW_RAYS } from "../../config/debug.js";
 import { FORMATION_SPAWN_SETTINGS } from "../../config/formations.js";
@@ -98,6 +99,27 @@ export class SpawnRuntime {
     }
     if (selectedOption) {
       this.beginPendingSpawnPlacement(controller, selectedOption.id);
+    }
+  }
+  setMenuContext(context) {
+    const catalog = this.catalogs?.[context];
+    if (!catalog || catalog === this.spawnCatalog) return;
+    const controllers = this.host.controllers.filter(
+      (controller) => !controller.userData.virtualTutorial,
+    );
+    for (const controller of controllers) {
+      this.closeRadialMenu(controller);
+      const oldMenu = controller.userData.radialMenu;
+      oldMenu?.removeFromParent();
+      releaseResources(collectResources(oldMenu));
+    }
+    this.spawnCatalog = catalog;
+    this.spawnMenuController.catalog = catalog;
+    this.radialSpawnMenu.categories = catalog.getRadialCategories();
+    for (const controller of controllers) {
+      const menu = this.radialSpawnMenu.create();
+      controller.add(menu);
+      controller.userData.radialMenu = menu;
     }
   }
   openRadialMenu(controller) {

@@ -1,0 +1,435 @@
+{
+  "three": "164",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+  "viewport": [
+    1440,
+    1050
+  ],
+  "frames": 90,
+  "scenario": "grid of idle Honks, two controller hover rays, desktop rendering; no audio or capture",
+  "results": [
+    {
+      "count": 8,
+      "shadows": true,
+      "cpuMs": {
+        "p50": 2.299999952316284,
+        "p95": 3.1000001430511475
+      },
+      "renderSubmissionMs": {
+        "p50": 1.2000000476837158,
+        "p95": 1.5999999046325684
+      },
+      "frameIntervalMs": {
+        "p50": 16.700000047683716,
+        "p95": 17.299999952316284
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.40000009536743164,
+          "p95": 0.6000001430511475
+        },
+        "COLLISION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0.09999990463256836
+        },
+        "PERFORMANCE": {
+          "p50": 0.40000009536743164,
+          "p95": 0.7999999523162842
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        }
+      },
+      "drawCalls": 73,
+      "triangles": 83360,
+      "geometries": 59,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 0
+    },
+    {
+      "count": 8,
+      "shadows": false,
+      "cpuMs": {
+        "p50": 1.5999999046325684,
+        "p95": 2.5
+      },
+      "renderSubmissionMs": {
+        "p50": 0.7999999523162842,
+        "p95": 1.2000000476837158
+      },
+      "frameIntervalMs": {
+        "p50": 16.699999809265137,
+        "p95": 17.40000009536743
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.2999999523162842,
+          "p95": 0.5999999046325684
+        },
+        "COLLISION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "PERFORMANCE": {
+          "p50": 0.2999999523162842,
+          "p95": 0.6000001430511475
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        }
+      },
+      "drawCalls": 73,
+      "triangles": 83360,
+      "geometries": 59,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 0
+    },
+    {
+      "count": 32,
+      "shadows": true,
+      "cpuMs": {
+        "p50": 3.1000001430511475,
+        "p95": 4.400000095367432
+      },
+      "renderSubmissionMs": {
+        "p50": 1.8000001907348633,
+        "p95": 2.799999952316284
+      },
+      "frameIntervalMs": {
+        "p50": 16.699999809265137,
+        "p95": 17.300000190734863
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.5,
+          "p95": 0.7999999523162842
+        },
+        "COLLISION": {
+          "p50": 0.09999990463256836,
+          "p95": 0.20000004768371582
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "PERFORMANCE": {
+          "p50": 0.5,
+          "p95": 0.7999999523162842
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        }
+      },
+      "drawCalls": 289,
+      "triangles": 333440,
+      "geometries": 227,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 24
+    },
+    {
+      "count": 32,
+      "shadows": false,
+      "cpuMs": {
+        "p50": 3.3000001907348633,
+        "p95": 4.099999904632568
+      },
+      "renderSubmissionMs": {
+        "p50": 1.8999998569488525,
+        "p95": 2.5
+      },
+      "frameIntervalMs": {
+        "p50": 16.699999809265137,
+        "p95": 17.100000143051147
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.6000001430511475,
+          "p95": 0.7999999523162842
+        },
+        "COLLISION": {
+          "p50": 0.09999990463256836,
+          "p95": 0.20000004768371582
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0.09999990463256836
+        },
+        "PERFORMANCE": {
+          "p50": 0.5999999046325684,
+          "p95": 0.8000001907348633
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        }
+      },
+      "drawCalls": 289,
+      "triangles": 333440,
+      "geometries": 227,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 24
+    },
+    {
+      "count": 64,
+      "shadows": true,
+      "cpuMs": {
+        "p50": 2.4000000953674316,
+        "p95": 5.700000047683716
+      },
+      "renderSubmissionMs": {
+        "p50": 1.5,
+        "p95": 3.200000047683716
+      },
+      "frameIntervalMs": {
+        "p50": 16.699999809265137,
+        "p95": 16.899999856948853
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.40000009536743164,
+          "p95": 1.2999999523162842
+        },
+        "COLLISION": {
+          "p50": 0.09999990463256836,
+          "p95": 0.20000004768371582
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0.09999990463256836
+        },
+        "PERFORMANCE": {
+          "p50": 0.3000001907348633,
+          "p95": 1.2000000476837158
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        }
+      },
+      "drawCalls": 577,
+      "triangles": 666880,
+      "geometries": 451,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 56
+    },
+    {
+      "count": 64,
+      "shadows": false,
+      "cpuMs": {
+        "p50": 2.200000047683716,
+        "p95": 5.200000047683716
+      },
+      "renderSubmissionMs": {
+        "p50": 1.2000000476837158,
+        "p95": 2.8000001907348633
+      },
+      "frameIntervalMs": {
+        "p50": 16.699999809265137,
+        "p95": 16.899999856948853
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.5,
+          "p95": 1.2999999523162842
+        },
+        "COLLISION": {
+          "p50": 0.10000014305114746,
+          "p95": 0.20000004768371582
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0
+        },
+        "PERFORMANCE": {
+          "p50": 0.39999985694885254,
+          "p95": 1.1000001430511475
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.09999990463256836
+        }
+      },
+      "drawCalls": 577,
+      "triangles": 666880,
+      "geometries": 451,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 56
+    },
+    {
+      "count": 128,
+      "shadows": true,
+      "cpuMs": {
+        "p50": 5,
+        "p95": 5.5
+      },
+      "renderSubmissionMs": {
+        "p50": 3.4000000953674316,
+        "p95": 3.9000000953674316
+      },
+      "frameIntervalMs": {
+        "p50": 16.699999809265137,
+        "p95": 17.299999952316284
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.09999990463256836
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.7000000476837158,
+          "p95": 0.9000000953674316
+        },
+        "COLLISION": {
+          "p50": 0.20000004768371582,
+          "p95": 0.20000004768371582
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0.09999990463256836
+        },
+        "PERFORMANCE": {
+          "p50": 0.5999999046325684,
+          "p95": 0.7000000476837158
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        }
+      },
+      "drawCalls": 1153,
+      "triangles": 1333760,
+      "geometries": 899,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 120
+    },
+    {
+      "count": 128,
+      "shadows": false,
+      "cpuMs": {
+        "p50": 4.1000001430511475,
+        "p95": 4.5
+      },
+      "renderSubmissionMs": {
+        "p50": 2.6000001430511475,
+        "p95": 3
+      },
+      "frameIntervalMs": {
+        "p50": 16.700000047683716,
+        "p95": 16.700000047683716
+      },
+      "phases": {
+        "INPUT": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        },
+        "INTENT": {
+          "p50": 0,
+          "p95": 0
+        },
+        "TRANSFORM": {
+          "p50": 0.7000000476837158,
+          "p95": 0.8999998569488525
+        },
+        "COLLISION": {
+          "p50": 0.10000014305114746,
+          "p95": 0.20000004768371582
+        },
+        "RELATIONSHIPS": {
+          "p50": 0,
+          "p95": 0.09999990463256836
+        },
+        "PERFORMANCE": {
+          "p50": 0.5999999046325684,
+          "p95": 0.7000000476837158
+        },
+        "PRESENTATION": {
+          "p50": 0,
+          "p95": 0.10000014305114746
+        }
+      },
+      "drawCalls": 1153,
+      "triangles": 1333760,
+      "geometries": 899,
+      "textures": 5,
+      "programs": 7,
+      "contactMeasurements": 120
+    }
+  ],
+  "date": "2026-11-16",
+  "limitations": [
+    "Single desktop run; not a headset or GPU completion measurement.",
+    "No active audio, Loopers, wires or capture; grid layout can contain contacts.",
+    "Three r164 render counters represent the main pass; shadow work is not fully counted."
+  ]
+}

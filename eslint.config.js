@@ -47,6 +47,11 @@ export default [
       },
     },
     plugins: { repository: { rules: { "unused-imports": unusedImports } } },
-    rules: { "no-undef": "error", "no-dupe-keys": "error", "repository/unused-imports": "error" },
+    rules: {
+      "no-undef": "error",
+      "no-dupe-keys": "error",
+      "no-dupe-class-members": "error",
+      "repository/unused-imports": "error",
+    },
   },
 ];

@@ -36,17 +36,18 @@ export function createCompositionSetup() {
       recipeId: p.id,
     })),
   ];
-  const categories = SPAWN_RADIAL_CATEGORIES.map((category) => ({
+  const jogCategories = SPAWN_RADIAL_CATEGORIES.map((category) => ({
     ...category,
     childIds:
       category.id === "category-chords"
         ? COMPOSITION.backing.map((group) => group.catalogId)
         : category.id === "category-scales"
-          ? [...category.childIds, "jog-melody"]
+          ? ["honk-cmajor", "jog-melody"]
           : category.childIds,
   }));
   return {
-    catalog: new SpawnCatalog(entries, categories),
+    catalog: new SpawnCatalog(entries, SPAWN_RADIAL_CATEGORIES),
+    jogCatalog: new SpawnCatalog(entries, jogCategories),
     recipes: { get: (id) => formations.get(id) || getFormationRecipe(id) },
   };
 }

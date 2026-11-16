@@ -1,3 +1,4 @@
+import { RENDER_QUALITY } from "../config/rendering.js";
 import * as THREE from "three";
 import { createFallbackEnvironment } from "./createFallbackEnvironment.js";
 import { createLighting } from "./createLighting.js";
@@ -22,12 +23,15 @@ export class SceneRuntime {
   }
 
   setXRBlendMode(blendMode = null) {
+    this.renderer.shadowMap.enabled = RENDER_QUALITY.xr.shadows;
+    this.renderer.xr.setFoveation?.(RENDER_QUALITY.xr.foveation);
     const passthrough = blendMode === "alpha-blend" || blendMode === "additive";
     this.scene.background = passthrough ? null : new THREE.Color(0x202124);
     this.fallbackEnvironment.visible = !passthrough;
   }
 
   resetAfterXR() {
+    this.renderer.shadowMap.enabled = RENDER_QUALITY.desktop.shadows;
     this.scene.background = new THREE.Color(0x202124);
     this.fallbackEnvironment.visible = true;
   }

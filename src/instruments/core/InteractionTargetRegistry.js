@@ -1,11 +1,15 @@
 import { assertStableId, createStableId } from "./id.js";
 
+const EMPTY_TARGET_VIEW = Object.freeze([]);
+
 export class InteractionTargetRegistry {
   constructor({ idFactory = () => createStableId("target") } = {}) {
     this.idFactory = idFactory;
     this.targets = new Map();
     this.targetIdsByOwner = new Map();
     this.targetIdByObject = new WeakMap();
+    this.ownerViews = new Map();
+    this.revision = 0;
   }
 
   register({
@@ -48,6 +52,8 @@ export class InteractionTargetRegistry {
       this.targetIdsByOwner.set(ownerId, ownerTargets);
     }
     ownerTargets.add(targetId);
+    this.ownerViews.delete(ownerId);
+    this.revision++;
 
     object3D.userData ||= {};
     object3D.userData.interactionTarget = descriptor;
@@ -63,6 +69,8 @@ export class InteractionTargetRegistry {
     }
 
     this.targets.delete(record.targetId);
+    this.ownerViews.delete(record.ownerId);
+    this.revision++;
     this.targetIdByObject.delete(record.object3D);
     const ownerTargets = this.targetIdsByOwner.get(record.ownerId);
     ownerTargets?.delete(record.targetId);
@@ -90,9 +98,19 @@ export class InteractionTargetRegistry {
   }
 
   getByOwner(ownerId) {
-    return [...(this.targetIdsByOwner.get(ownerId) || [])]
-      .map((targetId) => this.targets.get(targetId))
-      .filter(Boolean);
+    if (!this.targetIdsByOwner.has(ownerId)) return EMPTY_TARGET_VIEW;
+    // Membership is immutable until registration changes; descriptors and their
+    // Object3D visibility/poses remain live. No geometry or hit is cached here.
+    if (!this.ownerViews.has(ownerId))
+      this.ownerViews.set(
+        ownerId,
+        Object.freeze(
+          [...(this.targetIdsByOwner.get(ownerId) || [])]
+            .map((id) => this.targets.get(id))
+            .filter(Boolean),
+        ),
+      );
+    return this.ownerViews.get(ownerId);
   }
 
   getRaycastObjects({ ownerId = null, role = null, visibleOnly = true } = {}) {
@@ -134,6 +152,7 @@ export class InteractionTargetRegistry {
   }
 
   clear() {
+    this.ownerViews.clear();
     for (const targetId of [...this.targets.keys()]) {
       this.unregister(targetId);
     }

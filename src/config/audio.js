@@ -12,7 +12,7 @@ export function getHonkNoteGainFromNose(nose = 0) {
   );
 }
 export const HONK_RELEASE_SETTINGS = Object.freeze({
-  liveFadeSeconds: 0.18,
+  liveFadeSeconds: 0.27,
   looperActionFadeSeconds: 0.035,
   minimumFadeSeconds: 0.01,
   stopPaddingSeconds: 0.008,

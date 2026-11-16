@@ -10,10 +10,10 @@ This page covers setup. Use the topic guides below for controls, musical work an
 - A WebXR browser with WebGL and Web Audio. Passthrough AR is preferred when available; immersive VR is the fallback.
 - A development computer on the same network as the headset.
 - Python 3 for the included web servers.
-- Node.js 22 or newer for dependency setup, the capture receiver and automated checks.
+- Node.js 22.13+ in the 22.x line, or Node.js 24+ for dependency setup, the capture receiver and automated checks.
 - Internet access during dependency setup only. Three.js, its addons and the note-label font are served locally afterward.
 
-Run `npm ci` once. The browser import map pins local Three.js `0.164.1`; postinstall prepares the vendor files.
+Run `npm ci` once. The project pins local Three.js `0.187.0`; postinstall prepares matching core and addon files. The note-label font and its license live in `model/fonts/`.
 
 ## Start the app
 
@@ -46,17 +46,27 @@ npm run dev:https
 
 Open `https://YOUR_LAN_IP:8443` in the headset browser. The headset and computer must share a network, the firewall must allow port `8443`, and the headset must trust the certificate authority. Never commit the certificate or private key.
 
-The main menu contains **Play**, **Tutorials**, and **Record Songs**. Play restores the saved workspace. Tutorials starts with Basics, followed by Raag Jog, Kuch To Hua Hai, Rishte Naate, Tu Kisi Rail Si, and Nazariya Ki Maari. Record Songs uses the same compositions and musical definitions.
+The main menu contains **Play**, **Tutorials**, and **Record Songs**. Play restores your workspace and offers three scales and eight chords in the radial menu. Raag Jog lessons retain their own setup menu. The default Honk release tail is 270 ms.
 
-Free Play shows model-attached 3D note labels, gap/beat counts above Loopers, and BPM above the Metronome. Bend dials stay hidden; semitone haptics remain active. Basics uses three rounds of expression practice, seven size pushes in each direction, free movement followed by nearby percussion, and consistent source/destination socket cues. Its first two recording exercises use the physical Record and Stop buttons with the Manual length setting, so the player chooses the duration. Looper labels show the beat count even for open recordings. Duplicate waits for Continue; movement, rotation, scale, freeze and delete have no target overlays.
+## Documentation and checks
 
-Basics ends with a guided Jog composition: record a 16-beat chord loop, record percussion over it, practice the descending Eb-to-C bend, then play the complete melody over both of your takes. Each part offers Demonstrate and Practice. Demonstrations preserve your recordings; completing Practice unlocks the next part. Restart finale repeats the composition section, and Exit restores your saved Play workspace. The last exercise teaches hiding and showing the menu with a left-joystick click.
+- [Controls and musical behavior](docs/controls.md): controller mapping, current menu, voicings, tutorials, recording, and saving.
+- [Architecture, performance, and testing](docs/architecture.md): component ownership, implemented optimizations, measured scene costs, profiling, and remaining device checks.
+- [Manual XR regression](docs/manual-xr-regression.md): headset acceptance checks. Automated checks do not replace these.
 
-## Documentation
+```sh
+npm run test:music                # focused audio/spawning checks
+npm run verify                    # imports, lint, formatting, all unit tests
+npm run test:browser               # isolated musical-menu smoke check
+npm run test:browser -- --list     # available browser suites
+npm run test:browser -- --batch ports radial # shared follow-ups run once
+npm run test:browser -- articulation
+npm run profile:scene             # isolated 8/32/64/128-Honk desktop benchmark
+```
 
-- [Controls and behavior](docs/controls.md).
+Run `npm run test:compositions:browser -- --full` for the full song/recording checks when those systems change. Browser checks use temporary storage and a temporary Chrome profile. Set `CHROME_BIN` if Chrome is installed at a nonstandard location. Test tiers and remaining coverage gaps are documented in the audit.
 
-Run `npm run verify` for source checks and unit tests. Run `npm run test:compositions:browser -- --full` for isolated browser checks with temporary recording storage. No dependency upgrades or performance optimization are part of this cleanup.
+Rendering settings are centralized in `src/config/rendering.js`: desktop retains shadows; XR uses full framebuffer scale, requests foveation, and disables shadows. Use the [live profiler](docs/architecture.md#profile-a-real-scene-without-clearing-it) to inspect your current scene without clearing it. The desktop density comparison shows 66.6% fewer main-pass draw calls at 128 Honks; headset frame-rate improvements still need device measurement.
 
 ## Troubleshooting
 
@@ -64,8 +74,8 @@ Run `npm run verify` for source checks and unit tests. Run `npm run test:composi
 - **Headset refuses XR over the LAN:** use `https://`, confirm the headset trusts the certificate authority, and open port `8443` on the computer firewall.
 - **Blank model or missing note labels:** check the console for failed local GLB, texture, vendor module, or font requests.
 - **No sound:** interact once to allow the browser to start Web Audio, raise the relevant Honk/Looper/Metronome volume, and confirm the headset is not muted.
-- **A opens no menu:** release Grip, finish or cancel any active placement, and remember the menu is bound to the right-hand primary button. Pull toward the headset while holding A to enter the item ring.
-- **A preview will not place:** use Trigger; Grip cancels it. The right thumbstick changes preview scale.
+- **A opens no menu:** release Grip, finish or cancel any active placement, and hold Right A or Left Y on the owning controller. Pull toward the headset while holding that button to enter the item ring.
+- **A preview will not place:** use Trigger; Grip cancels it. The owning thumbstick changes preview scale horizontally and distance vertically.
 - **Cannot transform an object:** aim at its body transform target and hold Grip. If no target is selected, Grip intentionally equips the Stick.
 - **Looper starts later than expected:** a clocked Play waits for the next beat. A clocked Record waits for the first musical onset. Manual length records until Stop and preserves the chosen duration, including rests. The 2/4/8/16-beat settings still stop automatically; stopping those settings early trims idle waiting.
 - **Looper is disconnected:** it uses the stable internal 70 BPM grid. Reconnect its Metronome cable to follow the lesson’s 80 BPM clock.

@@ -2,7 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
 import { readFile } from "node:fs/promises";
+import * as THREE from "three";
 import { LIMITS, STREAMS } from "../../src/capture/format.js";
+import { PresentationCapture } from "../../src/capture/PresentationCapture.js";
+import { ReplayScene } from "../../src/capture/ReplayScene.js";
+import { Timeline } from "../../src/capture/Timeline.js";
+import { updateWireMeshGeometry } from "../../src/instruments/looper/view/wireUtils.js";
 const source = (
   await readFile(new URL("../../src/capture/stream-worker.js", import.meta.url), "utf8")
 ).replace(/^import[^\n]+\n/, "");
@@ -85,6 +90,63 @@ test("worker delta compression, periodic full samples, independent sequences and
   const pcm = Buffer.from(audio.data.pcm, "base64");
   assert.equal(pcm.readInt16LE(0), 16384);
   assert.equal(pcm.readInt16LE(2), -16384);
+});
+test("reused wire geometry records moving paths and radius changes through delta compression and reverse replay", async () => {
+  const h = await harness(),
+    scene = new THREE.Scene(),
+    wire = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial()),
+    events = [];
+  wire.name = "LOOPER_wire_fixture";
+  scene.add(wire);
+  const capture = new PresentationCapture(
+    { scene, instrumentRegistry: new Map(), controllers: [] },
+    (kind, data, t) => events.push({ type: "event", kind, data, t }),
+  );
+  const start = new THREE.Vector3(0, 1, 0),
+    end = new THREE.Vector3(1, 1, 0),
+    settings = { minTubularSegments: 24, maxTubularSegments: 24, radius: 0.008 },
+    expected = [];
+  let geometry;
+  for (let i = 0; i < 4; i++) {
+    if (i === 1) end.set(1.2, 1.5, 0.3);
+    if (i === 2) settings.radius = 0.014;
+    updateWireMeshGeometry(wire, start, end, { settings });
+    geometry ||= wire.geometry;
+    assert.equal(wire.geometry, geometry);
+    expected.push(wire.geometry.attributes.position.array.slice());
+    const state = capture.sample(i / 10);
+    assert.equal(
+      state.nodes[0].geometry,
+      null,
+      "procedural wires bypass cached geometry resources",
+    );
+    capture.flushResources(i / 10);
+    for (const event of events.splice(0)) await h.send(event);
+    await h.send({ ...sample(i / 10), ...state });
+    capture.recycle(state.buffer);
+  }
+  const packets = h.sockets[0].sent.filter((m) => m.type === "packet").map((m) => m.packet),
+    samples = packets.filter((p) => p.stream === "samples"),
+    recordedEvents = packets.filter((p) => p.stream === "events");
+  assert.deepEqual(
+    samples.map((p) => Object.keys(p.data.nodes).length),
+    [1, 1, 1, 0],
+  );
+  const timeline = new Timeline(samples, recordedEvents),
+    replay = new ReplayScene({});
+  try {
+    await replay.load(recordedEvents);
+    for (const index of [0, 1, 2, 3, 1, 0]) {
+      replay.apply(timeline.seek(index / 10));
+      const node = [...replay.nodes.values()][0];
+      assert.equal(node.visible, true);
+      assert.deepEqual(node.geometry.attributes.position.array, expected[index]);
+    }
+  } finally {
+    replay.dispose();
+    wire.geometry.dispose();
+    wire.material.dispose();
+  }
 });
 test("worker resumes only unacknowledged packets and retries finalization when its reply is lost", async () => {
   const h = await harness();
